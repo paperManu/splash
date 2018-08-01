@@ -50,6 +50,29 @@ class Timer
         uint32_t secs{0};
         uint32_t frame{0};
         bool paused{false};
+
+        // Equality operator. Does not compare the pause status,
+        // only the stored time point
+        bool operator==(const Point& rhs) const
+        {
+            if (frame != rhs.frame)
+                return false;
+            if (secs != rhs.secs)
+                return false;
+            if (mins != rhs.mins)
+                return false;
+            if (hours != rhs.hours)
+                return false;
+            if (days != rhs.days)
+                return false;
+            if (months != rhs.months)
+                return false;
+            if (years != rhs.years)
+                return false;
+            return true;
+        }
+
+        bool operator!=(const Point& rhs) const { return !operator==(rhs); }
     };
 
     /**
@@ -270,9 +293,10 @@ class Timer
     void setMasterClock(const Timer::Point& clock)
     {
         std::lock_guard<Spinlock> lockClock(_clockMutex);
+        if (clock != _clock)
+            _lastMasterClockUpdate = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch());
         _clockSet = true;
         _clock = clock;
-        _lastMasterClockUpdate = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch());
     }
 
     /**

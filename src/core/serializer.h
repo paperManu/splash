@@ -26,6 +26,7 @@
 #ifndef SPLASH_SERIALIZER_H
 #define SPLASH_SERIALIZER_H
 
+#include <chrono>
 #include <iterator>
 #include <numeric>
 #include <string>
@@ -97,15 +98,24 @@ template <class T, class Enable = void>
 struct getSizeHelper;
 
 template <class T>
-struct getSizeHelper<T, typename std::enable_if<std::is_arithmetic<T>::value>::type>
+struct getSizeHelper<T, typename std::enable_if<std::is_arithmetic<T>::value || std::is_enum<T>::value>::type>
 {
-    static size_t value(const T& obj) { return sizeof(T); };
+    static size_t value(const T& obj) { return sizeof(obj); };
 };
 
 template <class T>
 struct getSizeHelper<T, typename std::enable_if<std::is_same<T, std::string>::value>::type>
 {
     static size_t value(const T& obj) { return sizeof(size_t) + obj.size() * sizeof(char); }
+};
+
+template <class T>
+struct getSizeHelper<T, typename std::enable_if<is_specialisation_of<std::chrono::time_point, T>::value>::type>
+{
+    static size_t value(const T& /*obj*/)
+    {
+        return sizeof(int64_t);
+    }
 };
 
 template <class T>
@@ -166,13 +176,26 @@ template <class T>
 void serializer(const T& obj, std::vector<uint8_t>::iterator& it);
 
 template <class T>
-struct serializeHelper<T, typename std::enable_if<std::is_arithmetic<T>::value>::type>
+struct serializeHelper<T, typename std::enable_if<std::is_arithmetic<T>::value || std::is_enum<T>::value>::type>
 {
     static void apply(const T& obj, std::vector<uint8_t>::iterator& it)
     {
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&obj);
         std::copy(ptr, ptr + sizeof(T), it);
         it += sizeof(T);
+    }
+};
+
+template <class T>
+struct serializeHelper<T, typename std::enable_if<is_specialisation_of<std::chrono::time_point, T>::value>::type>
+{
+    static void apply(const T& obj, std::vector<uint8_t>::iterator& it)
+    {
+        using namespace std::chrono;
+        int64_t value = duration_cast<milliseconds>(obj.time_since_epoch()).count();
+        const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&value);
+        std::copy(ptr, ptr + sizeof(value), it);
+        it += sizeof(value);
     }
 };
 
@@ -247,7 +270,7 @@ template <class T>
 T deserializer(std::vector<uint8_t>::const_iterator& it);
 
 template <class T>
-struct deserializeHelper<T, typename std::enable_if<std::is_arithmetic<T>::value>::type>
+struct deserializeHelper<T, typename std::enable_if<std::is_arithmetic<T>::value || std::is_enum<T>::value>::type>
 {
     static T apply(std::vector<uint8_t>::const_iterator& it)
     {
@@ -272,14 +295,30 @@ struct deserializeHelper<T, typename std::enable_if<std::is_same<T, std::string>
 };
 
 template <class T>
+struct deserializeHelper<T, typename std::enable_if<is_specialisation_of<std::chrono::time_point, T>::value>::type>
+{
+    static T apply(std::vector<uint8_t>::const_iterator& it)
+    {
+        int64_t value;
+        std::copy(it, it + sizeof(value), reinterpret_cast<uint8_t*>(&value));
+        it += sizeof(value);
+        return T(std::chrono::duration<int64_t, std::milli>(value));
+    }
+};
+
+template <class T>
 struct deserializeHelper<T, typename std::enable_if<isIterable<T>::value && !std::is_same<T, std::string>::value>::type>
 {
     static T apply(std::vector<uint8_t>::const_iterator& it)
     {
         auto size = deserializer<size_t>(it);
         auto obj = T(size);
+        auto objIt = obj.begin();
         for (uint32_t i = 0; i < size; ++i)
-            obj[i] = deserializer<typename T::value_type>(it);
+        {
+            *objIt = deserializer<typename T::value_type>(it);
+            ++objIt;
+        }
         return obj;
     }
 };

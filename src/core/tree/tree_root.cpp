@@ -1,9 +1,4 @@
-#include "./core/tree.h"
-
-#include <algorithm>
-#include <list>
-#include <regex>
-#include <stdexcept>
+#include "./core/tree/tree_root.h"
 
 #include "./utils/log.h"
 
@@ -54,7 +49,7 @@ bool Root::addBranchAt(const string& path, bool silent)
     if (!silent)
     {
         lock_guard<mutex> lock(_updatesMutex);
-        auto seed = make_tuple(Task::AddBranch, Values({path}), chrono::system_clock::now());
+        auto seed = make_tuple(Task::AddBranch, Values({path}), chrono::system_clock::now(), _uuid);
         _updates.emplace_back(move(seed));
     }
 
@@ -88,7 +83,7 @@ bool Root::addLeafAt(const std::string& path, Values value, bool silent)
     if (!silent)
     {
         lock_guard<mutex> lock(_updatesMutex);
-        auto seed = make_tuple(Task::AddLeaf, Values({path, value}), chrono::system_clock::now());
+        auto seed = make_tuple(Task::AddLeaf, Values({path, value}), chrono::system_clock::now(), _uuid);
         _updates.emplace_back(move(seed));
     }
 
@@ -96,19 +91,26 @@ bool Root::addLeafAt(const std::string& path, Values value, bool silent)
 }
 
 /*************/
-void Root::addTaskToQueue(Tree::Task taskType, Values args, chrono::system_clock::time_point timestamp)
+void Root::addSeedToQueue(Tree::Task taskType, Values args, chrono::system_clock::time_point timestamp)
 {
-    auto seed = make_tuple(taskType, args, timestamp);
+    auto seed = make_tuple(taskType, args, timestamp, UUID(false));
     lock_guard<mutex> lock(_taskMutex);
     _taskQueue.push_back(seed);
 }
 
 /*************/
-void Root::addTasksToQueue(const list<Seed>& seeds)
+void Root::addSeedsToQueue(const list<Seed>& seeds)
 {
     lock_guard<mutex> lock(_taskMutex);
     for (const auto& seed : seeds)
         _taskQueue.push_back(seed);
+}
+
+/*************/
+void Root::clearSeedList()
+{
+    lock_guard<mutex> lock(_updatesMutex);
+    _updates.clear();
 }
 
 /*************/
@@ -151,6 +153,30 @@ bool Root::getValueForLeafAt(const string& path, Value& value)
     value = leaf->get();
     return true;
 }
+
+/*************/
+bool Root::hasLeafAt(const string& path) const
+{
+    auto parts = processPath(path);
+    if (parts.empty())
+    {
+        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
+        return false;
+    }
+
+    auto leafName = parts.back();
+    parts.pop_back();
+
+    auto holdingBranch = getBranchAt(parts);
+    if (!holdingBranch)
+        return false;
+
+    if (holdingBranch->hasLeaf(leafName))
+        return true;
+    else
+        return false;
+}
+
 /*************/
 bool Root::setValueForLeafAt(const string& path, const Values& value, int64_t timestamp, bool silent)
 {
@@ -176,7 +202,7 @@ bool Root::setValueForLeafAt(const string& path, const Values& value, chrono::sy
     if (!silent)
     {
         lock_guard<mutex> lock(_updatesMutex);
-        auto seed = make_tuple(Task::SetLeaf, Values({path, value}), timestamp);
+        auto seed = make_tuple(Task::SetLeaf, Values({path, value}), timestamp, _uuid);
         _updates.emplace_back(move(seed));
     }
 
@@ -202,7 +228,7 @@ string Root::print() const
 }
 
 /*************/
-bool Root::processQueue()
+bool Root::processQueue(bool propagate)
 {
     _taskMutex.lock();
     decltype(_taskQueue) tasks;
@@ -216,6 +242,10 @@ bool Root::processQueue()
         auto& task = std::get<0>(seed);
         auto args = std::get<1>(seed).as<Values>();
         auto& timestamp = std::get<2>(seed);
+        auto& sourceTreeUUID = std::get<3>(seed);
+
+        if (sourceTreeUUID == _uuid)
+            continue;
 
         switch (task)
         {
@@ -321,6 +351,9 @@ bool Root::processQueue()
         }
     }
 
+    if (propagate)
+        _updates.merge(tasks, [](const auto& a, const auto& b) { return std::get<2>(a) < std::get<2>(b); });
+
     return true;
 }
 
@@ -353,7 +386,7 @@ bool Root::removeBranchAt(const string& path, bool silent)
     if (!silent)
     {
         lock_guard<mutex> lock(_updatesMutex);
-        auto seed = make_tuple(Task::RemoveBranch, Values({path}), chrono::system_clock::now());
+        auto seed = make_tuple(Task::RemoveBranch, Values({path}), chrono::system_clock::now(), _uuid);
         _updates.emplace_back(move(seed));
     }
 
@@ -389,7 +422,7 @@ bool Root::removeLeafAt(const string& path, bool silent)
     if (!silent)
     {
         lock_guard<mutex> lock(_updatesMutex);
-        auto seed = make_tuple(Task::RemoveLeaf, Values({path}), chrono::system_clock::now());
+        auto seed = make_tuple(Task::RemoveLeaf, Values({path}), chrono::system_clock::now(), _uuid);
         _updates.emplace_back(move(seed));
     }
 
@@ -497,211 +530,6 @@ list<string> Root::processPath(const string& path)
     }
 
     return parts;
-}
-
-/*************/
-Branch::Branch(const string& name, Branch* parent)
-    : _name(name)
-    , _parentBranch(parent)
-{
-}
-
-/*************/
-bool Branch::operator==(const Branch& rhs) const
-{
-    for (const auto& it : _branches)
-    {
-        auto rhsIt = rhs._branches.find(it.first);
-        if (rhsIt == rhs._branches.end())
-            return false;
-        if (*it.second != *rhsIt->second)
-            return false;
-    }
-
-    for (const auto& it : _leaves)
-    {
-        auto rhsIt = rhs._leaves.find(it.first);
-        if (rhsIt == rhs._leaves.end())
-            return false;
-        if (*it.second != *rhsIt->second)
-            return false;
-    }
-
-    return true;
-}
-
-/*************/
-bool Branch::addBranch(unique_ptr<Branch>&& branch)
-{
-    if (!branch)
-        return false;
-
-    if (_branches.find(branch->getName()) != _branches.end())
-        return false;
-
-    branch->setParent(this);
-    _branches.emplace(make_pair(branch->getName(), move(branch)));
-    return true;
-}
-
-/*************/
-bool Branch::addLeaf(unique_ptr<Leaf>&& leaf)
-{
-    if (!leaf)
-        return false;
-
-    if (_leaves.find(leaf->getName()) != _leaves.end())
-        return false;
-
-    leaf->setParent(this);
-    _leaves.emplace(make_pair(leaf->getName(), move(leaf)));
-    return true;
-}
-
-/*************/
-Branch* Branch::getBranch(const string& path)
-{
-    auto branchIt = _branches.find(path);
-    if (branchIt == _branches.end())
-        return {nullptr};
-
-    return branchIt->second.get();
-}
-
-/*************/
-Leaf* Branch::getLeaf(const string& path)
-{
-    auto leafIt = _leaves.find(path);
-    if (leafIt == _leaves.end())
-        return {nullptr};
-
-    return leafIt->second.get();
-}
-
-/*************/
-list<string> Branch::getLeafNames() const
-{
-    list<string> leafNames{};
-    for (const auto& leaf : _leaves)
-        leafNames.push_back(leaf.second->getName());
-    return leafNames;
-}
-
-/*************/
-string Branch::getPath() const
-{
-    string path{};
-    if (_parentBranch)
-        path = _parentBranch->getPath() + _name + "/";
-    else
-        path = "/";
-
-    return path;
-}
-
-/*************/
-string Branch::print(int indent) const
-{
-    string description;
-    description = string(indent, ' ') + "|-- " + _name + "\n";
-
-    for (const auto& branch : _branches)
-        description += branch.second->print(indent + 2);
-
-    for (const auto& leaf : _leaves)
-        description += leaf.second->print(indent + 2);
-
-    return description;
-}
-
-/*************/
-bool Branch::removeBranch(string name)
-{
-    if (!hasBranch(name))
-        return false;
-
-    _branches[name]->setParent(nullptr);
-    _branches.erase(name);
-    return true;
-}
-
-/*************/
-bool Branch::removeLeaf(string name)
-{
-    if (!hasLeaf(name))
-        return false;
-
-    _leaves[name]->setParent(nullptr);
-    _leaves.erase(name);
-    return true;
-}
-
-/*************/
-Leaf::Leaf(const string& name, Value value, Branch* branch)
-    : _name(name)
-    , _value(value)
-    , _parentBranch(branch)
-{
-}
-
-/*************/
-bool Leaf::operator==(const Leaf& rhs) const
-{
-    return (_value == rhs._value);
-}
-
-/*************/
-int Leaf::addCallback(const UpdateCallback& callback)
-{
-    lock_guard<mutex> lock(_callbackMutex);
-    auto id = ++_currentCallbackID;
-    _callbacks[id] = callback;
-    return id;
-}
-
-/*************/
-bool Leaf::removeCallback(int id)
-{
-    lock_guard<mutex> lock(_callbackMutex);
-    auto callbackIt = _callbacks.find(id);
-    if (callbackIt == _callbacks.end())
-        return false;
-    _callbacks.erase(callbackIt);
-    return true;
-}
-
-/*************/
-string Leaf::print(int indent) const
-{
-    string description;
-    description = string(indent, ' ') + "|-- " + _name + "\n";
-    if (_value.getType() == Value::Type::values)
-    {
-        for (const auto& v : _value.as<Values>())
-            description += string(indent + 2, ' ') + "|-- " + v.as<string>() + "\n";
-    }
-    else
-    {
-        description += string(indent + 2, ' ') + "|-- " + _value.as<string>() + "\n";
-    }
-
-    return description;
-}
-
-/*************/
-bool Leaf::set(Value value, chrono::system_clock::time_point timestamp)
-{
-    if (timestamp < _timestamp)
-        return false;
-
-    _timestamp = timestamp;
-    _value = value;
-
-    lock_guard<mutex> lock(_callbackMutex);
-    for (const auto& callback : _callbacks)
-        callback.second(value, _timestamp);
-
-    return true;
 }
 
 } // namespace Tree

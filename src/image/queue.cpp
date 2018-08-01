@@ -2,7 +2,6 @@
 
 #include <algorithm>
 
-#include "./core/world.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
 

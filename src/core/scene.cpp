@@ -1,5 +1,6 @@
 #include "./core/scene.h"
 
+#include <list>
 #include <utility>
 
 #include "./controller/controller_blender.h"
@@ -81,6 +82,7 @@ Scene::Scene(const string& name, const string& socketPrefix)
     }
 
     registerAttributes();
+    initializeTree();
 
     init(_name);
 }
@@ -434,6 +436,9 @@ void Scene::run()
     _mainWindow->setAsCurrentContext();
     while (_isRunning)
     {
+        // Process tree updates
+        _tree.processQueue();
+
         // This gets the whole loop duration
         if (_runInBackground && _swapInterval != 0)
         {
@@ -461,6 +466,19 @@ void Scene::run()
         Timer::get() << "inputsUpdate";
         updateInputs();
         Timer::get() >> "inputsUpdate";
+
+        // Update tree, send update to World
+        auto& durationMap = Timer::get().getDurationMap();
+        for (auto& d : durationMap)
+        {
+            string path = "/" + _name + "/durations/" + d.first;
+            if (!_tree.hasLeafAt(path))
+                if (!_tree.addLeafAt(path))
+                    continue;
+            _tree.setValueForLeafAt(path, {static_cast<int>(d.second)});
+        }
+
+        propagateTree();
     }
     _mainWindow->releaseContext();
 
@@ -1212,6 +1230,31 @@ void Scene::registerAttributes()
         },
         {'n'});
     setAttributeDescription("runInBackground", "If set to 1, Splash will run in the background (useful for background processing)");
+}
+
+/*************/
+void Scene::initializeTree()
+{
+    _tree.setName(_name);
+
+    auto leaf = _tree.getLeafAt("/world/master_clock");
+    leaf->addCallback([](const Value& value, const chrono::system_clock::time_point& /*timestamp*/)
+    {
+        auto args = value.as<Values>();
+        Timer::Point clock;
+        clock.years = args[0].as<uint32_t>();
+        clock.months = args[1].as<uint32_t>();
+        clock.days = args[2].as<uint32_t>();
+        clock.hours = args[3].as<uint32_t>();
+        clock.mins = args[4].as<uint32_t>();
+        clock.secs = args[5].as<uint32_t>();
+        clock.frame = args[6].as<uint32_t>();
+        clock.paused = args[7].as<bool>();
+        Timer::get().setMasterClock(clock);
+    });
+
+    _tree.addBranchAt("/" + _name);
+    _tree.addBranchAt("/" + _name + "/durations");
 }
 
 } // namespace Splash

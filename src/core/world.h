@@ -43,6 +43,7 @@
 #endif
 #include "./core/name_registry.h"
 #include "./core/root_object.h"
+#include "./core/tree.h"
 
 namespace Splash
 {
@@ -182,8 +183,9 @@ class World : public RootObject
      * \brief Redefinition of a method from RootObject. Send the input buffers back to all pairs
      * \param name Object name
      * \param obj Serialized object
+     * \return Return true if the object has been handled
      */
-    void handleSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj) override;
+    bool handleSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj) override;
 
     /**
      * \brief Initializes the World
@@ -242,6 +244,11 @@ class World : public RootObject
      * \brief Register new functors to modify attributes
      */
     void registerAttributes();
+
+    /**
+     * Initialize the tree
+     */
+    void initializeTree();
 };
 
 } // end of namespace

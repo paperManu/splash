@@ -315,6 +315,11 @@ class Scene : public RootObject
     void registerAttributes();
 
     /**
+     * Initialize the tree
+     */
+    void initializeTree();
+
+    /**
      * \brief Update the various inputs (mouse, keyboard...)
      */
     void updateInputs();

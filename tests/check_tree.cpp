@@ -45,30 +45,30 @@ TEST_CASE("Testing the basic functionnalities of the Tree")
 TEST_CASE("Testing the Seed queue")
 {
     Tree::Root tree;
-    tree.addTaskToQueue(Tree::Task::AddBranch, Values({"/some_object"}));
-    tree.addTaskToQueue(Tree::Task::AddLeaf, Values({"/some_object/a_leaf"}));
+    tree.addSeedToQueue(Tree::Task::AddBranch, Values({"/some_object"}));
+    tree.addSeedToQueue(Tree::Task::AddLeaf, Values({"/some_object/a_leaf"}));
 
     CHECK_NOTHROW(tree.processQueue());
     CHECK(tree.addBranchAt("/some_object") == false);
     CHECK(tree.addLeafAt("/some_object/a_leaf") == false);
 
-    tree.addTaskToQueue(Tree::Task::RemoveLeaf, Values({"/some_object/a_leaf"}));
-    tree.addTaskToQueue(Tree::Task::RemoveBranch, Values({"/some_object"}));
+    tree.addSeedToQueue(Tree::Task::RemoveLeaf, Values({"/some_object/a_leaf"}));
+    tree.addSeedToQueue(Tree::Task::RemoveBranch, Values({"/some_object"}));
 
     CHECK_NOTHROW(tree.processQueue());
     CHECK(tree.addBranchAt("/some_object") == true);
     CHECK(tree.addLeafAt("/some_object/a_leaf") == true);
 
     auto value = Values({1.0, "I've got a flying machine", false});
-    tree.addTaskToQueue(Tree::Task::SetLeaf, Values({"/some_object/a_leaf", value}));
+    tree.addSeedToQueue(Tree::Task::SetLeaf, Values({"/some_object/a_leaf", value}));
 
     CHECK_NOTHROW(tree.processQueue());
     Value leafValue;
     CHECK(tree.getValueForLeafAt("/some_object/a_leaf", leafValue) == true);
     CHECK(leafValue == value);
 
-    tree.addTaskToQueue(Tree::Task::RemoveLeaf, Values({"/some_object/a_leaf"}));
-    tree.addTaskToQueue(Tree::Task::RemoveBranch, Values({"/some_object"}));
+    tree.addSeedToQueue(Tree::Task::RemoveLeaf, Values({"/some_object/a_leaf"}));
+    tree.addSeedToQueue(Tree::Task::RemoveBranch, Values({"/some_object"}));
 
     CHECK_NOTHROW(tree.processQueue());
 }
@@ -84,7 +84,7 @@ TEST_CASE("Testing the synchronization between trees")
     maple.addLeafAt("/some_branch/some_leaf", value);
     auto updates = maple.getSeedList();
 
-    oak.addTasksToQueue(updates);
+    oak.addSeedsToQueue(updates);
     CHECK_NOTHROW(oak.processQueue());
     CHECK(maple == oak);
 
@@ -97,7 +97,7 @@ TEST_CASE("Testing the synchronization between trees")
     maple.removeBranchAt("/some_branch");
 
     updates = maple.getSeedList();
-    oak.addTasksToQueue(updates);
+    oak.addSeedsToQueue(updates);
     CHECK_NOTHROW(oak.processQueue());
     CHECK(!oak.getError(error));
     CHECK(error.empty());
@@ -117,8 +117,8 @@ TEST_CASE("Testing the chronology handling of updates")
     oak.setValueForLeafAt("/a_branch/a_leaf", {"Fresh meat!"});
     maple.setValueForLeafAt("/a_branch/a_leaf", {"Stop clicking on me!"});
 
-    beech.addTasksToQueue(maple.getSeedList());
-    beech.addTasksToQueue(oak.getSeedList());
+    beech.addSeedsToQueue(maple.getSeedList());
+    beech.addSeedsToQueue(oak.getSeedList());
 
     Value leafValue;
     CHECK_NOTHROW(beech.processQueue());
@@ -144,4 +144,21 @@ TEST_CASE("Testing the Leaf's callbacks")
 
     maple.setValueForLeafAt("/a_leaf", {"Ceci non plus"});
     CHECK(extValue == Values({"Ceci n'est pas un test"}));
+}
+
+/*************/
+TEST_CASE("Testing propagation through a main tree")
+{
+    Tree::Root main, maple, oak;
+    maple.addLeafAt("/some_leaf");
+    maple.addBranchAt("/a_branch");
+    auto seeds = maple.getSeedList();
+    main.addSeedsToQueue(seeds);
+    main.processQueue(true);
+    seeds = main.getSeedList();
+    oak.addSeedsToQueue(seeds);
+    oak.processQueue();
+
+    CHECK(main == maple);
+    CHECK(main == oak);
 }

@@ -97,6 +97,7 @@ link_directories(${GPHOTO_LIBRARY_DIRS})
 link_directories(${PORTAUDIO_LIBRARY_DIRS})
 link_directories(${OPENCV_LIBRARY_DIRS})
 link_directories(${PYTHON_LIBRARY_DIRS})
+link_directories(${UUID_LIBRARY_DIRS})
 
 #
 # Targets
@@ -122,7 +123,9 @@ target_sources(splash-${API_VERSION} PRIVATE
     core/name_registry.cpp
     core/root_object.cpp
     core/scene.cpp
-    core/tree.cpp
+    core/tree/tree_branch.cpp
+    core/tree/tree_leaf.cpp
+    core/tree/tree_root.cpp
     controller/controller.cpp
     controller/controller_blender.cpp
     controller/controller_gui.cpp
@@ -256,6 +259,7 @@ target_link_libraries(splash-${API_VERSION} ${GPHOTO_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${PORTAUDIO_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${OPENCV_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${PYTHON_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} ${UUID_LIBRARIES})
 
 #
 # splash executable

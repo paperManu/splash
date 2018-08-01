@@ -1,5 +1,6 @@
 #include <doctest.h>
 
+#include <chrono>
 #include <deque>
 #include <tuple>
 #include <vector>
@@ -25,6 +26,8 @@ TEST_CASE("Testing serialized size computation")
 
     std::string someText{"So long, and thanks for the fish!"};
     CHECK(Serial::getSize(someText) == someText.size() * sizeof(char) + sizeof(size_t));
+
+    CHECK(Serial::getSize(chrono::system_clock::time_point(chrono::duration<int64_t, std::milli>(123456))) == sizeof(int64_t));
 }
 
 /*************/
@@ -58,11 +61,13 @@ TEST_CASE("Testing serialized size computation for tuples")
 /*************/
 TEST_CASE("Testing elementary serialization")
 {
+    string testString("Fresh meat");
     vector<uint8_t> buffer;
     Serial::serialize((int)7243, buffer);
     Serial::serialize((float)3.14159f, buffer);
     Serial::serialize((double)2.71828, buffer);
-    Serial::serialize(string("Fresh meat"), buffer);
+    Serial::serialize(testString, buffer);
+    Serial::serialize(chrono::system_clock::time_point(chrono::duration<int64_t, std::milli>(123456)), buffer);
 
     auto bufferPtr = buffer.data();
     CHECK(*reinterpret_cast<int*>(bufferPtr) == 7243);
@@ -72,9 +77,11 @@ TEST_CASE("Testing elementary serialization")
     CHECK(*reinterpret_cast<double*>(bufferPtr) == 2.71828);
     bufferPtr += sizeof(double);
     auto stringLength = *reinterpret_cast<size_t*>(bufferPtr);
-    CHECK(stringLength == string("Fresh meat").size());
+    CHECK(stringLength == testString.size());
     bufferPtr += sizeof(size_t);
-    CHECK(string(reinterpret_cast<char*>(bufferPtr), stringLength) == string("Fresh meat"));
+    CHECK(string(reinterpret_cast<char*>(bufferPtr), stringLength) == testString);
+    bufferPtr += sizeof(char) * testString.size();
+    CHECK(*reinterpret_cast<int64_t*>(bufferPtr) == 123456);
 }
 
 /*************/
@@ -153,6 +160,14 @@ TEST_CASE("Testing deserialization")
         string data{"This is a good day to die"};
         Serial::serialize(data, buffer);
         auto outData = Serial::deserialize<string>(buffer);
+        CHECK(data == outData);
+    }
+
+    {
+        vector<uint8_t> buffer;
+        auto data = chrono::system_clock::time_point(chrono::duration<int64_t, std::milli>(123456));
+        Serial::serialize(data, buffer);
+        auto outData = Serial::deserialize<chrono::system_clock::time_point>(buffer);
         CHECK(data == outData);
     }
 

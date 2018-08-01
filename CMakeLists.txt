@@ -61,6 +61,7 @@ find_package(PkgConfig REQUIRED)
 pkg_search_module(GSL REQUIRED gsl)
 pkg_search_module(ZMQ REQUIRED libzmq)
 pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswscale)
+pkg_check_modules(UUID REQUIRED uuid)
 
 # Optional dependencies
 if(UNIX AND NOT APPLE)

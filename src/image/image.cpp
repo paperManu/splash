@@ -129,7 +129,7 @@ shared_ptr<SerializedObject> Image::serialize() const
     auto obj = make_shared<SerializedObject>(totalSize);
 
     auto currentObjPtr = obj->data();
-    const char* ptr = reinterpret_cast<const char*>(&nbrChar);
+    const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&nbrChar);
     copy(ptr, ptr + sizeof(nbrChar), currentObjPtr);
     currentObjPtr += sizeof(nbrChar);
 

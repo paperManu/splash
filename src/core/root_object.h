@@ -36,6 +36,7 @@
 #include "./core/factory.h"
 #include "./core/graph_object.h"
 #include "./core/link.h"
+#include "./core/tree.h"
 
 namespace Splash
 {
@@ -103,6 +104,12 @@ class RootObject : public BaseObject
     std::string getMediaPath() const { return _mediaPath; }
 
     /**
+     * Get a reference to the root tree
+     * \return Return the Tree::Root
+     */
+    Tree::Root& getTree() { return _tree; }
+
+    /**
      * \brief Set the attribute of the named object with the given args
      * \param name Object name
      * \param attrib Attribute name
@@ -138,6 +145,7 @@ class RootObject : public BaseObject
     void signalBufferObjectUpdated();
 
   protected:
+    Tree::Root _tree{};                 //!< Configuration / status tree, shared between all root objects
     std::string _configurationPath{""}; //!< Path to the configuration file
     std::string _mediaPath{""};         //!< Default path to the medias
 
@@ -176,8 +184,9 @@ class RootObject : public BaseObject
      * \brief Method to process a serialized object
      * \param name Object name to receive the serialized object
      * \param obj Serialized object
+     * \return Return true if the object has been handled
      */
-    virtual void handleSerializedObject(const std::string& /*name*/, std::shared_ptr<SerializedObject> /*obj*/) {}
+    virtual bool handleSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj);
 
     /**
      * Add a task repeated at each frame
@@ -185,6 +194,11 @@ class RootObject : public BaseObject
      * \param task Task function
      */
     void addRecurringTask(const std::string& name, const std::function<void()>& task);
+
+    /**
+     * Propagate the Tree to peers
+     */
+    void propagateTree();
 
     /**
      * Remove a recurring task
@@ -202,6 +216,11 @@ class RootObject : public BaseObject
      * \brief Register new functors to modify attributes
      */
     void registerAttributes();
+
+    /**
+     * Initialize the tree
+     */
+    void initializeTree();
 
     /**
      * \brief Send a message to another root object

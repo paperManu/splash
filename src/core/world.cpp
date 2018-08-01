@@ -14,6 +14,7 @@
 #include "./core/buffer_object.h"
 #include "./core/link.h"
 #include "./core/scene.h"
+#include "./core/serializer.h"
 #include "./image/image.h"
 #include "./image/queue.h"
 #include "./mesh/mesh.h"
@@ -36,6 +37,7 @@ World* World::_that;
 World::World(int argc, char** argv)
 {
     registerAttributes();
+    initializeTree();
     parseArguments(argc, argv);
     init();
 }
@@ -72,6 +74,9 @@ void World::run()
         Timer::get() << "loop_world";
         Timer::get() << "loop_world_inner";
         lock_guard<mutex> lockConfiguration(_configurationMutex);
+
+        // Process tree updates
+        _tree.processQueue(true);
 
         // Execute waiting tasks
         runTasks();
@@ -136,33 +141,41 @@ void World::run()
             }
         }
 
-        // If the master scene is not an inner scene, we have to send it some information
-        if (_scenes[_masterSceneName] != -1)
-        {
-            // Send current timings to all Scenes, for display purpose
-            auto& durationMap = Timer::get().getDurationMap();
-            for (auto& d : durationMap)
-                sendMessage(_masterSceneName, "duration", {d.first, (int)d.second});
-            // Also send the master clock if needed
-            Timer::Point clock;
-            if (Timer::get().getMasterClock(clock))
-            {
-                auto clockValues = Values({clock.years, clock.months, clock.days, clock.hours, clock.mins, clock.secs, clock.frame, clock.paused});
-                sendMessage(_masterSceneName, "masterClock", clockValues);
-            }
-
-            // Send newer logs to all master Scene
-            auto logs = Log::get().getNewLogs();
-            for (auto& log : logs)
-                sendMessage(_masterSceneName, "log", {log.first, (int)log.second});
-        }
-
         if (_quit)
         {
             for (auto& s : _scenes)
                 sendMessage(s.first, "quit", {});
             break;
         }
+
+        // If the master scene is not an inner scene, we have to send it some information
+        if (_scenes[_masterSceneName] != -1)
+        {
+            // Send newer logs to all master Scene
+            auto logs = Log::get().getNewLogs();
+            for (auto& log : logs)
+                sendMessage(_masterSceneName, "log", {log.first, (int)log.second});
+        }
+
+        // Update durations inside the tree
+        auto& durationMap = Timer::get().getDurationMap();
+        for (auto& d : durationMap)
+        {
+            string path = "/world/durations/" + d.first;
+            if (!_tree.hasLeafAt(path))
+                if (!_tree.addLeafAt(path))
+                    continue;
+            _tree.setValueForLeafAt(path, {static_cast<int>(d.second)});
+        }
+
+        // Sync trees
+        _tree.setValueForLeafAt("/world/clock", {Timer::getTime()});
+        Timer::Point masterClock;
+        if (Timer::get().getMasterClock(masterClock))
+            _tree.setValueForLeafAt("/world/master_clock",
+                {masterClock.years, masterClock.months, masterClock.days, masterClock.hours, masterClock.mins, masterClock.secs, masterClock.frame, masterClock.paused});
+
+        propagateTree();
 
         // Sync with buffer object update
         Timer::get() >> "loop_world_inner";
@@ -705,9 +718,11 @@ Values World::getObjectsNameByType(const string& type)
 }
 
 /*************/
-void World::handleSerializedObject(const string& name, shared_ptr<SerializedObject> obj)
+bool World::handleSerializedObject(const string& name, shared_ptr<SerializedObject> obj)
 {
-    _link->sendBuffer(name, obj);
+    if (!RootObject::handleSerializedObject(name, obj))
+        _link->sendBuffer(name, obj);
+    return true;
 }
 
 /*************/
@@ -1731,4 +1746,11 @@ void World::registerAttributes()
         {'s'});
     setAttributeDescription("mediaPath", "Path to the media files");
 }
+
+/*************/
+void World::initializeTree()
+{
+    _tree.setName(_name);
 }
+
+} // namespace Splash

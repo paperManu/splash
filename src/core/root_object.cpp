@@ -1,6 +1,7 @@
 #include "./core/root_object.h"
 
 #include "./core/buffer_object.h"
+#include "./core/serializer.h"
 
 using namespace std;
 
@@ -12,6 +13,7 @@ RootObject::RootObject()
     : _factory(unique_ptr<Factory>(new Factory(this)))
 {
     registerAttributes();
+    initializeTree();
 }
 
 /*************/
@@ -156,6 +158,22 @@ bool RootObject::waitSignalBufferObjectUpdated(uint64_t timeout)
 }
 
 /*************/
+bool RootObject::handleSerializedObject(const string& name, shared_ptr<SerializedObject> obj)
+{
+    if (name == "_tree")
+    {
+        auto dataPtr = reinterpret_cast<uint8_t*>(obj->data());
+        auto serializedSeeds = vector<uint8_t>(dataPtr, dataPtr + obj->size());
+        auto seeds = Serial::deserialize<list<Tree::Seed>>(serializedSeeds);
+        _tree.addSeedsToQueue(seeds);
+
+        return true;
+    }
+
+    return false;
+}
+
+/*************/
 void RootObject::addRecurringTask(const string& name, const function<void()>& task)
 {
     unique_lock<mutex> lock(_recurringTaskMutex, std::try_to_lock);
@@ -172,6 +190,16 @@ void RootObject::addRecurringTask(const string& name, const function<void()>& ta
         recurringTask->second = task;
 
     return;
+}
+
+/*************/
+void RootObject::propagateTree()
+{
+    auto treeSeeds = _tree.getSeedList();
+    vector<uint8_t> serializedSeeds;
+    Serial::serialize(treeSeeds, serializedSeeds);
+    auto dataPtr = reinterpret_cast<char*>(serializedSeeds.data());
+    _link->sendBuffer("_tree", make_shared<SerializedObject>(dataPtr, dataPtr + serializedSeeds.size()));
 }
 
 /*************/
@@ -200,6 +228,19 @@ void RootObject::registerAttributes()
         _answerCondition.notify_one();
         return true;
     });
+}
+
+/*************/
+void RootObject::initializeTree()
+{
+    _tree.addBranchAt("/world");
+    _tree.addBranchAt("/world/durations");
+    _tree.addBranchAt("/world/logs");
+    _tree.addLeafAt("/world/clock");
+    _tree.addLeafAt("/world/master_clock");
+
+    // Clear the seed list, all these leaves being automatically added to all root objets
+    _tree.clearSeedList();
 }
 
 /*************/
