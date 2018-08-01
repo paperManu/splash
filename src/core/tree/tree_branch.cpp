@@ -22,6 +22,12 @@ Branch::Branch(const string& name, Branch* parent)
 /*************/
 bool Branch::operator==(const Branch& rhs) const
 {
+    if (_branches.size() != rhs._branches.size())
+        return false;
+
+    if (_leaves.size() != rhs._leaves.size())
+        return false;
+
     for (const auto& it : _branches)
     {
         auto rhsIt = rhs._branches.find(it.first);
@@ -49,11 +55,12 @@ bool Branch::addBranch(unique_ptr<Branch>&& branch)
     if (!branch)
         return false;
 
-    if (_branches.find(branch->getName()) != _branches.end())
+    auto branchName = branch->getName();
+    if (_branches.find(branchName) != _branches.end())
         return false;
 
     branch->setParent(this);
-    _branches.emplace(make_pair(branch->getName(), move(branch)));
+    _branches.emplace(make_pair(branchName, move(branch)));
     return true;
 }
 
@@ -63,12 +70,41 @@ bool Branch::addLeaf(unique_ptr<Leaf>&& leaf)
     if (!leaf)
         return false;
 
-    if (_leaves.find(leaf->getName()) != _leaves.end())
+    auto leafName = leaf->getName();
+    if (_leaves.find(leafName) != _leaves.end())
         return false;
 
     leaf->setParent(this);
-    _leaves.emplace(make_pair(leaf->getName(), move(leaf)));
+    _leaves.emplace(make_pair(leafName, move(leaf)));
     return true;
+}
+
+/*************/
+unique_ptr<Branch> Branch::cutBranch(const string& branchName)
+{
+    auto branchIt = _branches.find(branchName);
+    if (branchIt == _branches.end())
+        return {nullptr};
+
+    unique_ptr<Branch> branch{nullptr};
+    swap(branchIt->second, branch);
+    _branches.erase(branchIt);
+    branch->setParent(nullptr);
+    return branch;
+}
+
+/*************/
+unique_ptr<Leaf> Branch::cutLeaf(const string& leafName)
+{
+    auto leafIt = _leaves.find(leafName);
+    if (leafIt == _leaves.end())
+        return {nullptr};
+
+    unique_ptr<Leaf> leaf{nullptr};
+    swap(leafIt->second, leaf);
+    _leaves.erase(leafIt);
+    leaf->setParent(nullptr);
+    return leaf;
 }
 
 /*************/
@@ -107,15 +143,6 @@ list<string> Branch::getLeafList() const
     for (const auto& leaf : _leaves)
         leafList.push_back(leaf.first);
     return leafList;
-}
-
-/*************/
-list<string> Branch::getLeafNames() const
-{
-    list<string> leafNames{};
-    for (const auto& leaf : _leaves)
-        leafNames.push_back(leaf.second->getName());
-    return leafNames;
 }
 
 /*************/

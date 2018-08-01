@@ -69,18 +69,32 @@ class Branch
     bool operator!=(const Branch& rhs) const { return !operator==(rhs); }
 
     /**
-     * Add a new branch
+     * Add a new branch. The tree gets ownership over the branch
      * \param branch Branch to add
-     * \return Return false if a branch with the same name already exists
+     * \return Return true if the branch was successfully added
      */
     bool addBranch(std::unique_ptr<Branch>&& branch);
 
     /**
-     * Add a new leaf
+     * Add a new leaf. The tree gets ownership over the leaf
      * \param leaf Leaf to add
-     * \return Return false if a leaf with the same name already exists
+     * \return Return true if the leaf was successfully added
      */
     bool addLeaf(std::unique_ptr<Leaf>&& leaf);
+
+    /**
+     * Cut a branch from the current one, acquiring its ownership in the process
+     * \param branch Name of the branch to cut
+     * \return Return a pointer to the cut branch
+     */
+    std::unique_ptr<Branch> cutBranch(const std::string& branchName);
+
+    /**
+     * Cut a leaf from the current one, acquiring its ownership in the process
+     * \param leaf Name of the leaf to cut
+     * \return Return a pointer to the cut leaf
+     */
+    std::unique_ptr<Leaf> cutLeaf(const std::string& leafName);
 
     /**
      * Get the branch by its name
@@ -107,12 +121,6 @@ class Branch
      * \return Return the list of leaves
      */
     std::list<std::string> getLeafList() const;
-
-    /**
-     * Get the list of leaves for this branch
-     * \return Return the list of leaf names
-     */
-    std::list<std::string> getLeafNames() const;
 
     /**
      * Get the branch name

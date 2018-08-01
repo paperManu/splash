@@ -473,7 +473,7 @@ void Scene::run()
         {
             string path = "/" + _name + "/durations/" + d.first;
             if (!_tree.hasLeafAt(path))
-                if (!_tree.addLeafAt(path))
+                if (!_tree.createLeafAt(path))
                     continue;
             _tree.setValueForLeafAt(path, {static_cast<int>(d.second)});
         }
@@ -1253,8 +1253,8 @@ void Scene::initializeTree()
         Timer::get().setMasterClock(clock);
     });
 
-    _tree.addBranchAt("/" + _name);
-    _tree.addBranchAt("/" + _name + "/durations");
+    _tree.createBranchAt("/" + _name);
+    _tree.createBranchAt("/" + _name + "/durations");
 }
 
 } // namespace Splash

@@ -1,5 +1,6 @@
 #include "./core/tree/tree_leaf.h"
 
+#include "./core/tree/tree_branch.h"
 #include "./utils/log.h"
 
 using namespace std;
@@ -42,6 +43,18 @@ bool Leaf::removeCallback(int id)
         return false;
     _callbacks.erase(callbackIt);
     return true;
+}
+
+/*************/
+string Leaf::getPath() const
+{
+    string path{};
+    if (_parentBranch)
+        path = _parentBranch->getPath() + _name + "/";
+    else
+        path = _name;
+
+    return path;
 }
 
 /*************/

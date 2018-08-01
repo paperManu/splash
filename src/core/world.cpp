@@ -163,7 +163,7 @@ void World::run()
         {
             string path = "/world/durations/" + d.first;
             if (!_tree.hasLeafAt(path))
-                if (!_tree.addLeafAt(path))
+                if (!_tree.createLeafAt(path))
                     continue;
             _tree.setValueForLeafAt(path, {static_cast<int>(d.second)});
         }

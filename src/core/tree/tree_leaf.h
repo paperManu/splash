@@ -93,6 +93,12 @@ class Leaf
     std::string getName() const { return _name; }
 
     /**
+     * Get the full path for this leaf
+     * \return Return the full path
+     */
+    std::string getPath() const;
+
+    /**
      * Return a string describing the leaf
      * \param indent Indent for this leaf
      * \return Return the leaf as a string

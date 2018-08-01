@@ -233,11 +233,11 @@ void RootObject::registerAttributes()
 /*************/
 void RootObject::initializeTree()
 {
-    _tree.addBranchAt("/world");
-    _tree.addBranchAt("/world/durations");
-    _tree.addBranchAt("/world/logs");
-    _tree.addLeafAt("/world/clock");
-    _tree.addLeafAt("/world/master_clock");
+    _tree.createBranchAt("/world");
+    _tree.createBranchAt("/world/durations");
+    _tree.createBranchAt("/world/logs");
+    _tree.createLeafAt("/world/clock");
+    _tree.createLeafAt("/world/master_clock");
 
     // Clear the seed list, all these leaves being automatically added to all root objets
     _tree.clearSeedList();
