@@ -39,7 +39,7 @@
 namespace Splash
 {
 
-class GraphObject;
+class BaseObject;
 
 /*************/
 // Handle to a callback for an attribute modification
@@ -47,12 +47,9 @@ class GraphObject;
 class CallbackHandle : public std::enable_shared_from_this<CallbackHandle>
 {
   public:
-    CallbackHandle()
-        : _isValid(false)
-    {
-    }
+    CallbackHandle() = default;
 
-    CallbackHandle(const std::weak_ptr<GraphObject>& owner, const std::string& attr)
+    CallbackHandle(const std::weak_ptr<BaseObject>& owner, const std::string& attr)
         : _callbackId(_nextCallbackId.fetch_add(1))
         , _isValid(true)
         , _owner(owner)
@@ -78,7 +75,7 @@ class CallbackHandle : public std::enable_shared_from_this<CallbackHandle>
 
     uint32_t _callbackId{0};
     bool _isValid{false};
-    std::weak_ptr<GraphObject> _owner;
+    std::weak_ptr<BaseObject> _owner{};
     std::string _attribute{""};
 };
 
@@ -185,10 +182,11 @@ class Attribute
 
     /**
      * Register a callback to any call to the setter
+     * \param caller Weak pointer to the caller BaseObject
      * \param cb Callback function
      * \return Return a callback handle
      */
-    CallbackHandle registerCallback(std::weak_ptr<GraphObject> caller, Callback cb);
+    CallbackHandle registerCallback(std::weak_ptr<BaseObject> caller, Callback cb);
 
     /**
      * Unregister a callback
@@ -250,6 +248,6 @@ class Attribute
     bool _isLocked{false};
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_ATTRIBUTE_H

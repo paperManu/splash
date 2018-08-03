@@ -1,5 +1,7 @@
 #include "./core/root_object.h"
 
+#include <stdexcept>
+
 #include "./core/buffer_object.h"
 #include "./core/serializer.h"
 
@@ -17,7 +19,30 @@ RootObject::RootObject()
 }
 
 /*************/
-RootObject::~RootObject() {}
+Attribute& RootObject::addTreeAttribute(const string& name, const function<bool(const Values&)>& set, const function<const Values()>& get, const vector<char>& types)
+{
+    auto& attribute = BaseObject::addAttribute(name, set, get, types);
+    assert(_tree.getBranchAt("/" + _name) != nullptr);
+
+    auto path = "/" + _name + "/attributes/" + name;
+    if (_tree.hasLeafAt(path))
+        _tree.removeLeafAt(path);
+    if (!_tree.createLeafAt(path))
+        throw runtime_error("Error while adding a leaf at path " + path);
+
+    auto leaf = _tree.getLeafAt(path);
+    _treeCallbackIds[name] = leaf->addCallback([=](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
+        auto attribIt = _attribFunctions.find(name);
+        if (attribIt == _attribFunctions.end())
+            return;
+        auto currentValue = Value(attribIt->second());
+        if (value == currentValue)
+            return;
+        setAttribute(name, value.as<Values>());
+    });
+
+    return attribute;
+}
 
 /*************/
 weak_ptr<GraphObject> RootObject::createObject(const string& type, const string& name)
@@ -195,6 +220,46 @@ void RootObject::addRecurringTask(const string& name, const function<void()>& ta
 /*************/
 void RootObject::propagateTree()
 {
+    auto attributePath = string("/" + _name + "/attributes");
+    auto attributesBranch = _tree.getBranchAt(attributePath);
+    assert(attributesBranch != nullptr);
+
+    auto leafList = attributesBranch->getLeafList();
+    for (const auto& leafName : leafList)
+    {
+        auto attribIt = _attribFunctions.find(leafName);
+        if (attribIt == _attribFunctions.end())
+            continue;
+        Values attribValue = attribIt->second();
+        _tree.setValueForLeafAt(attributePath + "/" + leafName, attribValue);
+    }
+
+    auto objectsPath = string("/" + _name + "/objects");
+    auto objectsBranch = _tree.getBranchAt(objectsPath);
+    assert(objectsBranch != nullptr);
+
+    auto objectLeafList = objectsBranch->getLeafList();
+    for (const auto& objectName : objectLeafList)
+    {
+        auto objectIt = _objects.find(objectName);
+        if (objectIt == _objects.end())
+            continue;
+        auto object = objectIt->second;
+
+        attributePath = string("/" + _name + "/objects/" + objectName + "/attributes");
+        attributesBranch = _tree.getBranchAt(attributePath);
+        if (!attributesBranch)
+            continue;
+
+        leafList = attributesBranch->getLeafList();
+        for (const auto& leafName : leafList)
+        {
+            Values attribValue;
+            object->getAttribute(leafName, attribValue);
+            _tree.setValueForLeafAt(attributePath + "/" + leafName, attribValue);
+        }
+    }
+
     auto treeSeeds = _tree.getSeedList();
     vector<uint8_t> serializedSeeds;
     Serial::serialize(treeSeeds, serializedSeeds);
@@ -234,8 +299,10 @@ void RootObject::registerAttributes()
 void RootObject::initializeTree()
 {
     _tree.createBranchAt("/world");
+    _tree.createBranchAt("/world/attributes");
     _tree.createBranchAt("/world/durations");
     _tree.createBranchAt("/world/logs");
+    _tree.createBranchAt("/world/objects");
     _tree.createLeafAt("/world/clock");
     _tree.createLeafAt("/world/master_clock");
 

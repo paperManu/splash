@@ -288,6 +288,9 @@ bool Root::setValueForLeafAt(const string& path, const Values& value, chrono::sy
     if (!leaf)
         return false;
 
+    if (Value(value) == leaf->get())
+        return true;
+
     if (!leaf->set(value, timestamp))
         return false;
 

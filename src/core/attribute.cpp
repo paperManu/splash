@@ -138,7 +138,7 @@ bool Attribute::lock(const Values& v)
 }
 
 /*************/
-CallbackHandle Attribute::registerCallback(weak_ptr<GraphObject> caller, Callback cb)
+CallbackHandle Attribute::registerCallback(weak_ptr<BaseObject> caller, Callback cb)
 {
     lock_guard<mutex> lockCb(_callbackMutex);
     auto handle = CallbackHandle(caller, _name);

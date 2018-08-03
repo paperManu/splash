@@ -121,30 +121,6 @@ bool GraphObject::setRenderingPriority(Priority priority)
     _renderingPriority = priority;
     return true;
 }
-
-/*************/
-CallbackHandle GraphObject::registerCallback(const string& attr, Attribute::Callback cb)
-{
-    auto attribute = _attribFunctions.find(attr);
-    if (attribute == _attribFunctions.end())
-        return CallbackHandle();
-
-    return attribute->second.registerCallback(shared_from_this(), cb);
-}
-
-/*************/
-bool GraphObject::unregisterCallback(const CallbackHandle& handle)
-{
-    if (!handle)
-        return false;
-
-    auto attribute = _attribFunctions.find(handle.getAttribute());
-    if (attribute == _attribFunctions.end())
-        return false;
-
-    return attribute->second.unregisterCallback(handle);
-}
-
 /*************/
 void GraphObject::registerAttributes()
 {

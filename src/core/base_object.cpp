@@ -245,6 +245,29 @@ void BaseObject::setAttributeParameter(const string& name, bool savable, bool up
 }
 
 /*************/
+CallbackHandle BaseObject::registerCallback(const string& attr, Attribute::Callback cb)
+{
+    auto attribute = _attribFunctions.find(attr);
+    if (attribute == _attribFunctions.end())
+        return CallbackHandle();
+
+    return attribute->second.registerCallback(shared_from_this(), cb);
+}
+
+/*************/
+bool BaseObject::unregisterCallback(const CallbackHandle& handle)
+{
+    if (!handle)
+        return false;
+
+    auto attribute = _attribFunctions.find(handle.getAttribute());
+    if (attribute == _attribFunctions.end())
+        return false;
+
+    return attribute->second.unregisterCallback(handle);
+}
+
+/*************/
 void BaseObject::runTasks()
 {
     lock_guard<recursive_mutex> lock(_taskMutex);

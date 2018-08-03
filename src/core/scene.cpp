@@ -1254,7 +1254,10 @@ void Scene::initializeTree()
     });
 
     _tree.createBranchAt("/" + _name);
+    _tree.createBranchAt("/" + _name + "/attributes");
     _tree.createBranchAt("/" + _name + "/durations");
+    _tree.createBranchAt("/" + _name + "/logs");
+    _tree.createBranchAt("/" + _name + "/objects");
 }
 
 } // namespace Splash

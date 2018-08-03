@@ -33,7 +33,7 @@ namespace Splash
 class RootObject;
 
 /*************/
-class GraphObject : public BaseObject, public std::enable_shared_from_this<GraphObject>
+class GraphObject : public BaseObject
 {
   public:
     enum class Priority
@@ -246,21 +246,6 @@ class GraphObject : public BaseObject, public std::enable_shared_from_this<Graph
      * \return Return true if the priority was set
      */
     bool setRenderingPriority(Priority priority);
-
-    /**
-     * Register a callback to any call to the setter
-     * \param attr Attribute to add a callback to
-     * \param cb Callback function
-     * \return Return a callback handle
-     */
-    CallbackHandle registerCallback(const std::string& attr, Attribute::Callback cb);
-
-    /**
-     * Unregister a callback
-     * \param handle A handle to the callback to remove
-     * \return True if the callback has been successfully removed
-     */
-    bool unregisterCallback(const CallbackHandle& handle);
 
     /**
      * \brief Virtual method to render the object

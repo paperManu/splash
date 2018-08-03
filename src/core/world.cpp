@@ -36,8 +36,6 @@ World* World::_that;
 /*************/
 World::World(int argc, char** argv)
 {
-    registerAttributes();
-    initializeTree();
     parseArguments(argc, argv);
     init();
 }
@@ -742,6 +740,9 @@ void World::init()
         if (_linkSocketPrefix.empty())
             _linkSocketPrefix = to_string(static_cast<int>(getpid()));
         _link = make_shared<Link>(this, _name);
+
+        initializeTree();
+        registerAttributes();
     }
 }
 
@@ -1327,37 +1328,6 @@ void World::registerAttributes()
         {'s', 's'});
     setAttributeDescription("unlink", "Unlink the two given objects");
 
-#if HAVE_LINUX
-    addAttribute("forceRealtime",
-        [&](const Values& args) {
-            _enforceRealtime = args[0].as<int>();
-
-            if (!_enforceRealtime)
-                return true;
-
-            addTask([=]() {
-                if (Utils::setRealTime())
-                    Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Set to realtime priority" << Log::endl;
-                else
-                    Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to set scheduling priority" << Log::endl;
-            });
-
-            return true;
-        },
-        [&]() -> Values { return {(int)_enforceRealtime}; },
-        {'n'});
-    setAttributeDescription("forceRealtime", "Ask the scheduler to run Splash with realtime priority.");
-#endif
-
-    addAttribute("framerate",
-        [&](const Values& args) {
-            _worldFramerate = std::max(1, args[0].as<int>());
-            return true;
-        },
-        [&]() -> Values { return {(int)_worldFramerate}; },
-        {'n'});
-    setAttributeDescription("framerate", "Set the minimum refresh rate for the world (adapted to video framerate)");
-
     addAttribute("getAttribute",
         [&](const Values& args) {
             addTask([=]() {
@@ -1469,34 +1439,6 @@ void World::registerAttributes()
         },
         {'s'});
     setAttributeDescription("copyCameraParameters", "Copy the camera parameters from the given configuration file (based on camera names)");
-
-#if HAVE_PORTAUDIO
-    addAttribute("clockDeviceName",
-        [&](const Values& args) {
-            addTask([=]() {
-                auto clockDeviceName = args[0].as<string>();
-                if (clockDeviceName != _clockDeviceName)
-                {
-                    _clockDeviceName = clockDeviceName;
-                    _clock.reset();
-                    _clock = unique_ptr<LtcClock>(new LtcClock(true, _clockDeviceName));
-                }
-            });
-
-            return true;
-        },
-        [&]() -> Values { return {_clockDeviceName}; },
-        {'s'});
-    setAttributeDescription("clockDeviceName", "Set the audio device name from which to read the LTC clock signal");
-#endif
-
-    addAttribute("looseClock",
-        [&](const Values& args) {
-            Timer::get().setLoose(args[0].as<bool>());
-            return true;
-        },
-        [&]() -> Values { return {static_cast<int>(Timer::get().isLoose())}; },
-        {'n'});
 
     addAttribute("pong",
         [&](const Values& args) {
@@ -1736,7 +1678,70 @@ void World::registerAttributes()
         {'s'});
     setAttributeDescription("configurationPath", "Path to the configuration files");
 
-    addAttribute("mediaPath",
+    //
+    // Tree attributes
+    //
+
+#if HAVE_LINUX
+    addTreeAttribute("forceRealtime",
+        [&](const Values& args) {
+            _enforceRealtime = args[0].as<int>();
+
+            if (!_enforceRealtime)
+                return true;
+
+            addTask([=]() {
+                if (Utils::setRealTime())
+                    Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Set to realtime priority" << Log::endl;
+                else
+                    Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to set scheduling priority" << Log::endl;
+            });
+
+            return true;
+        },
+        [&]() -> Values { return {(int)_enforceRealtime}; },
+        {'n'});
+    setAttributeDescription("forceRealtime", "Ask the scheduler to run Splash with realtime priority.");
+#endif
+
+    addTreeAttribute("framerate",
+        [&](const Values& args) {
+            _worldFramerate = std::max(1, args[0].as<int>());
+            return true;
+        },
+        [&]() -> Values { return {(int)_worldFramerate}; },
+        {'n'});
+    setAttributeDescription("framerate", "Set the minimum refresh rate for the world (adapted to video framerate)");
+
+#if HAVE_PORTAUDIO
+    addTreeAttribute("clockDeviceName",
+        [&](const Values& args) {
+            addTask([=]() {
+                auto clockDeviceName = args[0].as<string>();
+                if (clockDeviceName != _clockDeviceName)
+                {
+                    _clockDeviceName = clockDeviceName;
+                    _clock.reset();
+                    _clock = unique_ptr<LtcClock>(new LtcClock(true, _clockDeviceName));
+                }
+            });
+
+            return true;
+        },
+        [&]() -> Values { return {_clockDeviceName}; },
+        {'s'});
+    setAttributeDescription("clockDeviceName", "Set the audio device name from which to read the LTC clock signal");
+#endif
+
+    addTreeAttribute("looseClock",
+        [&](const Values& args) {
+            Timer::get().setLoose(args[0].as<bool>());
+            return true;
+        },
+        [&]() -> Values { return {static_cast<int>(Timer::get().isLoose())}; },
+        {'n'});
+
+    addTreeAttribute("mediaPath",
         [&](const Values& args) {
             _mediaPath = args[0].as<string>();
             addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "mediaPath", {_mediaPath}); });
