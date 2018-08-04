@@ -143,11 +143,6 @@ class Warp : public Texture
     std::shared_ptr<Object> _screen{nullptr};
     ImageBufferSpec _outTextureSpec;
 
-    // Some default models use in various situations
-    std::list<std::shared_ptr<Mesh>> _modelMeshes;
-    std::list<std::shared_ptr<Geometry>> _modelGeometries;
-    std::unordered_map<std::string, std::shared_ptr<Object>> _models;
-
     // Render options
     bool _showControlPoints{false};
     int _selectedControlPointIndex{-1};

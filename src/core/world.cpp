@@ -74,7 +74,9 @@ void World::run()
         lock_guard<mutex> lockConfiguration(_configurationMutex);
 
         // Process tree updates
+        Timer::get() << "tree_process";
         _tree.processQueue(true);
+        Timer::get() >> "tree_process";
 
         // Execute waiting tasks
         runTasks();
@@ -173,12 +175,15 @@ void World::run()
             _tree.setValueForLeafAt("/world/master_clock",
                 {masterClock.years, masterClock.months, masterClock.days, masterClock.hours, masterClock.mins, masterClock.secs, masterClock.frame, masterClock.paused});
 
+        Timer::get() << "tree_propagate";
         propagateTree();
+        Timer::get() >> "tree_propagate";
+        cout << _tree.print() << endl;
 
         // Sync with buffer object update
         Timer::get() >> "loop_world_inner";
         auto elapsed = Timer::get().getDuration("loop_world_inner");
-        waitSignalBufferObjectUpdated(1e6 / (float)_worldFramerate - elapsed);
+        waitSignalBufferObjectUpdated(std::max<uint64_t>(1, 1e6 / (float)_worldFramerate - elapsed));
 
         // Sync to world framerate
         Timer::get() >> "loop_world";
@@ -741,8 +746,8 @@ void World::init()
             _linkSocketPrefix = to_string(static_cast<int>(getpid()));
         _link = make_shared<Link>(this, _name);
 
-        initializeTree();
         registerAttributes();
+        initializeTree();
     }
 }
 
@@ -1239,8 +1244,6 @@ void World::setAttribute(const string& name, const string& attrib, const Values&
 /*************/
 void World::registerAttributes()
 {
-    RootObject::registerAttributes();
-
     addAttribute("addObject",
         [&](const Values& args) {
             addTask([=]() {
@@ -1678,12 +1681,8 @@ void World::registerAttributes()
         {'s'});
     setAttributeDescription("configurationPath", "Path to the configuration files");
 
-    //
-    // Tree attributes
-    //
-
 #if HAVE_LINUX
-    addTreeAttribute("forceRealtime",
+    addAttribute("forceRealtime",
         [&](const Values& args) {
             _enforceRealtime = args[0].as<int>();
 
@@ -1704,7 +1703,7 @@ void World::registerAttributes()
     setAttributeDescription("forceRealtime", "Ask the scheduler to run Splash with realtime priority.");
 #endif
 
-    addTreeAttribute("framerate",
+    addAttribute("framerate",
         [&](const Values& args) {
             _worldFramerate = std::max(1, args[0].as<int>());
             return true;
@@ -1714,7 +1713,7 @@ void World::registerAttributes()
     setAttributeDescription("framerate", "Set the minimum refresh rate for the world (adapted to video framerate)");
 
 #if HAVE_PORTAUDIO
-    addTreeAttribute("clockDeviceName",
+    addAttribute("clockDeviceName",
         [&](const Values& args) {
             addTask([=]() {
                 auto clockDeviceName = args[0].as<string>();
@@ -1733,7 +1732,7 @@ void World::registerAttributes()
     setAttributeDescription("clockDeviceName", "Set the audio device name from which to read the LTC clock signal");
 #endif
 
-    addTreeAttribute("looseClock",
+    addAttribute("looseClock",
         [&](const Values& args) {
             Timer::get().setLoose(args[0].as<bool>());
             return true;
@@ -1741,7 +1740,7 @@ void World::registerAttributes()
         [&]() -> Values { return {static_cast<int>(Timer::get().isLoose())}; },
         {'n'});
 
-    addTreeAttribute("mediaPath",
+    addAttribute("mediaPath",
         [&](const Values& args) {
             _mediaPath = args[0].as<string>();
             addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "mediaPath", {_mediaPath}); });
@@ -1750,6 +1749,8 @@ void World::registerAttributes()
         [&]() -> Values { return {_mediaPath}; },
         {'s'});
     setAttributeDescription("mediaPath", "Path to the media files");
+
+    RootObject::registerAttributes();
 }
 
 /*************/

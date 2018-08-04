@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <iostream>
 
+#include "./core/root_object.h"
+
 using namespace std;
 
 namespace Splash
@@ -23,7 +25,7 @@ std::string NameRegistry::generateName(const string& prefix)
         if (registerName(newName))
         {
             lock_guard<mutex> lock(_registryMutex);
-            _registry.push_back(newName);
+            _registry.insert(newName);
             return newName;
         }
     }
@@ -33,9 +35,9 @@ std::string NameRegistry::generateName(const string& prefix)
 bool NameRegistry::registerName(const string& name)
 {
     lock_guard<mutex> lock(_registryMutex);
-    if (std::find(_registry.begin(), _registry.end(), name) == _registry.end())
+    if (_registry.find(name) == _registry.end())
     {
-        _registry.push_back(name);
+        _registry.insert(name);
         return true;
     }
     else
@@ -48,7 +50,7 @@ bool NameRegistry::registerName(const string& name)
 void NameRegistry::unregisterName(const string& name)
 {
     lock_guard<mutex> lock(_registryMutex);
-    auto nameIt = std::find(_registry.begin(), _registry.end(), name);
+    auto nameIt = _registry.find(name);
     if (nameIt != _registry.end())
         _registry.erase(nameIt);
 }

@@ -74,16 +74,12 @@ class GraphObject : public BaseObject
      * \brief Constructor.
      * \param root Specify the root object.
      */
-    explicit GraphObject(RootObject* root)
-        : _root(root)
-    {
-        registerAttributes();
-    }
+    explicit GraphObject(RootObject* root);
 
     /**
      * \brief Destructor.
      */
-    virtual ~GraphObject(){};
+    virtual ~GraphObject();
 
     /**
      * \brief Safe bool idiom.
@@ -96,6 +92,25 @@ class GraphObject : public BaseObject
      * \return Returns a reference to the attribute.
      */
     Attribute& operator[](const std::string& attr);
+
+    /**
+     * \brief Add a new attribute to this object
+     * \param name Attribute name
+     * \param set Set function
+     * \param types Vector of char holding the expected parameters for the set function
+     * \return Return a reference to the created attribute
+     */
+    Attribute& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types = {}) override;
+
+    /**
+     * \brief Add a new attribute to this object
+     * \param name Attribute name
+     * \param set Set function
+     * \param get Get function
+     * \param types Vector of char holding the expected parameters for the set function
+     * \return Return a reference to the created attribute
+     */
+    Attribute& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types = {}) override;
 
     /**
      * \brief Get the real type of this BaseObject, as a std::string.
@@ -120,6 +135,12 @@ class GraphObject : public BaseObject
      * \return Return the alias
      */
     inline std::string getAlias() const { return _alias.empty() ? _name : _alias; }
+
+    /**
+     * \brief Set the name of the object.
+     * \param name name of the object.
+     */
+    void setName(const std::string& name) override;
 
     /**
      * \brief Set the remote type of the object. This implies that this object gets data streamed from a World object
@@ -185,12 +206,6 @@ class GraphObject : public BaseObject
      * \param savable Desired savability
      */
     inline virtual void setSavable(bool savable) { _savable = savable; }
-
-    /**
-     * \brief Set the name of the object.
-     * \param name name of the object.
-     */
-    inline void setName(const std::string& name) { _name = name; }
 
     /**
      * Set the object as a ghost, meaning it mimics an object in another scene
@@ -261,6 +276,7 @@ class GraphObject : public BaseObject
     std::string _remoteType{""};          //!< When the object root is a Scene, this is the type of the corresponding object in the World
     std::string _alias{""};               //!< Alias name
     std::vector<GraphObject*> _parents{}; //!< Objects parents
+    std::unordered_map<std::string, int> _treeCallbackIds{};
 
     Priority _renderingPriority{Priority::NO_RENDER}; //!< Rendering priority, if negative the object won't be rendered
     int _priorityShift{0};                            //!< Shift applied to rendering priority
@@ -287,6 +303,18 @@ class GraphObject : public BaseObject
      * \brief Register new attributes
      */
     void registerAttributes();
+
+    /**
+     * Initialize the tree
+     * This is called at object creation, or during setName
+     */
+    void initializeTree();
+
+    /**
+     * Uninitialize the tree
+     * This is called at object destruction
+     */
+    virtual void uninitializeTree();
 };
 
 } // namespace Splash

@@ -41,7 +41,6 @@
 #if HAVE_PORTAUDIO
 #include "./sound/ltcclock.h"
 #endif
-#include "./core/name_registry.h"
 #include "./core/root_object.h"
 #include "./core/tree.h"
 
@@ -108,7 +107,6 @@ class World : public RootObject
     bool _runAsChild{false}; //!< If true, runs as a child process
     std::string _childSceneName{"scene"};
 
-    NameRegistry _nameRegistry{};       //!< Object name registry
     std::map<std::string, int> _scenes; //!< Map holding the PID of the Scene processes
     std::string _masterSceneName{""};   //!< Name of the master Scene
     std::string _displayServer{"0"};    //!< Display server.
@@ -119,6 +117,7 @@ class World : public RootObject
     std::string _projectFilename; //!< Project configuration file path
     Json::Value _config;          //!< Configuration as JSon
 
+    NameRegistry _nameRegistry{}; //!< Object name registry
     bool _sceneLaunched{false};
     std::mutex _childProcessMutex;
     std::condition_variable _childProcessConditionVariable;

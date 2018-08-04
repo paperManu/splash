@@ -2,16 +2,46 @@
 
 #include <algorithm>
 
+#include "./core/root_object.h"
+
 using namespace std;
 
 namespace Splash
 {
 
 /*************/
+GraphObject::GraphObject(RootObject* root)
+    : _root(root)
+{
+    initializeTree();
+    registerAttributes();
+}
+
+/*************/
+GraphObject::~GraphObject()
+{
+    uninitializeTree();
+}
+
+/*************/
 Attribute& GraphObject::operator[](const string& attr)
 {
     auto attribFunction = _attribFunctions.find(attr);
     return attribFunction->second;
+}
+
+/*************/
+Attribute& GraphObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const vector<char>& types)
+{
+    return BaseObject::addAttribute(name, set, types);
+}
+
+/*************/
+Attribute& GraphObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const function<const Values()>& get, const vector<char>& types)
+{
+    auto& attribute = BaseObject::addAttribute(name, set, get, types);
+    initializeTree();
+    return attribute;
 }
 
 /*************/
@@ -114,6 +144,31 @@ unordered_map<string, Values> GraphObject::getDistantAttributes() const
 }
 
 /*************/
+void GraphObject::setName(const string& name)
+{
+    if (name.empty())
+        return;
+
+    auto oldName = _name;
+    _name = name;
+
+    if (!_root)
+        return;
+
+    if (oldName.empty())
+    {
+        initializeTree();
+    }
+    else
+    {
+        auto& tree = _root->getTree();
+        auto path = "/" + _root->getName() + "/objects/" + oldName;
+        if (tree.hasBranchAt(path))
+            tree.renameBranchAt(path, name);
+    }
+}
+
+/*************/
 bool GraphObject::setRenderingPriority(Priority priority)
 {
     if (priority < Priority::PRE_CAMERA || priority >= Priority::POST_WINDOW)
@@ -175,6 +230,66 @@ void GraphObject::registerAttributes()
             return true;
         },
         {'s'});
+}
+
+/*************/
+void GraphObject::initializeTree()
+{
+    if (!_root || _name.empty())
+        return;
+
+    auto& tree = _root->getTree();
+    auto path = "/" + _root->getName() + "/objects/" + _name;
+
+    if (!tree.hasBranchAt(path))
+        tree.createBranchAt(path);
+    if (!tree.hasBranchAt(path + "/attributes"))
+        tree.createBranchAt(path + "/attributes");
+
+    // Create the leaves for the attributes in the tree
+    path = path + "/attributes/";
+    for (const auto& attribute : _attribFunctions)
+    {
+        if (!attribute.second.hasGetter())
+            continue;
+        auto attributeName = attribute.first;
+        auto leafPath = path + attributeName;
+        if (tree.hasLeafAt(leafPath))
+            continue;
+        if (!tree.createLeafAt(leafPath))
+            throw runtime_error("Error while adding a leaf at path " + leafPath);
+
+        auto leaf = tree.getLeafAt(leafPath);
+        _treeCallbackIds[attributeName] = leaf->addCallback([=](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
+            auto attribIt = _attribFunctions.find(attributeName);
+            if (attribIt == _attribFunctions.end())
+                return;
+            if (value == attribIt->second())
+                return;
+            setAttribute(attributeName, value.as<Values>());
+        });
+    }
+
+    // Remove leaves for attributes which do not exist anymore
+    auto leafList = tree.getBranchAt(path)->getLeafList();
+    for (const auto& leafName : leafList)
+    {
+        if (_attribFunctions.find(leafName) != _attribFunctions.end())
+            continue;
+        tree.removeLeafAt(path + leafName);
+    }
+}
+
+/*************/
+void GraphObject::uninitializeTree()
+{
+    if (!_root || _name.empty())
+        return;
+
+    auto& tree = _root->getTree();
+    auto path = "/" + _root->getName() + "/objects/" + _name;
+    if (tree.hasBranchAt(path))
+        tree.removeBranchAt(path);
 }
 
 } // namespace Splash

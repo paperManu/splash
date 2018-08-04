@@ -19,32 +19,6 @@ RootObject::RootObject()
 }
 
 /*************/
-Attribute& RootObject::addTreeAttribute(const string& name, const function<bool(const Values&)>& set, const function<const Values()>& get, const vector<char>& types)
-{
-    auto& attribute = BaseObject::addAttribute(name, set, get, types);
-    assert(_tree.getBranchAt("/" + _name) != nullptr);
-
-    auto path = "/" + _name + "/attributes/" + name;
-    if (_tree.hasLeafAt(path))
-        _tree.removeLeafAt(path);
-    if (!_tree.createLeafAt(path))
-        throw runtime_error("Error while adding a leaf at path " + path);
-
-    auto leaf = _tree.getLeafAt(path);
-    _treeCallbackIds[name] = leaf->addCallback([=](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
-        auto attribIt = _attribFunctions.find(name);
-        if (attribIt == _attribFunctions.end())
-            return;
-        auto currentValue = Value(attribIt->second());
-        if (value == currentValue)
-            return;
-        setAttribute(name, value.as<Values>());
-    });
-
-    return attribute;
-}
-
-/*************/
 weak_ptr<GraphObject> RootObject::createObject(const string& type, const string& name)
 {
     lock_guard<recursive_mutex> registerLock(_objectsMutex);
@@ -238,7 +212,7 @@ void RootObject::propagateTree()
     auto objectsBranch = _tree.getBranchAt(objectsPath);
     assert(objectsBranch != nullptr);
 
-    auto objectLeafList = objectsBranch->getLeafList();
+    auto objectLeafList = objectsBranch->getBranchList();
     for (const auto& objectName : objectLeafList)
     {
         auto objectIt = _objects.find(objectName);
@@ -308,6 +282,33 @@ void RootObject::initializeTree()
 
     // Clear the seed list, all these leaves being automatically added to all root objets
     _tree.clearSeedList();
+
+    // Create the leaves for all of the root attributes
+    // This is done in the main loop to grab all created attributes
+    addTask([this]() {
+        auto path = "/" + _name + "/attributes/";
+        for (const auto& attribute : _attribFunctions)
+        {
+            if (!attribute.second.hasGetter())
+                continue;
+            auto attributeName = attribute.first;
+            auto leafPath = path + attributeName;
+            if (_tree.hasLeafAt(leafPath))
+                continue;
+            if (!_tree.createLeafAt(leafPath))
+                throw runtime_error("Error while adding a leaf at path " + leafPath);
+
+            auto leaf = _tree.getLeafAt(leafPath);
+            _treeCallbackIds[attributeName] = leaf->addCallback([=](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
+                auto attribIt = _attribFunctions.find(attributeName);
+                if (attribIt == _attribFunctions.end())
+                    return;
+                if (value == attribIt->second())
+                    return;
+                setAttribute(attributeName, value.as<Values>());
+            });
+        }
+    });
 }
 
 /*************/

@@ -36,6 +36,7 @@
 #include "./core/factory.h"
 #include "./core/graph_object.h"
 #include "./core/link.h"
+#include "./core/name_registry.h"
 #include "./core/tree.h"
 
 namespace Splash
@@ -145,7 +146,7 @@ class RootObject : public BaseObject
     void signalBufferObjectUpdated();
 
   protected:
-    Tree::Root _tree{};                 //!< Configuration / status tree, shared between all root objects
+    Tree::Root _tree{}; //!< Configuration / status tree, shared between all root objects
     std::unordered_map<std::string, int> _treeCallbackIds{};
     std::unordered_map<std::string, CallbackHandle> _attributeCallbackHandles{};
 
@@ -175,17 +176,6 @@ class RootObject : public BaseObject
     mutable std::recursive_mutex _objectsMutex{};                             //!< Used in registration and unregistration of objects
     std::atomic_bool _objectsCurrentlyUpdated{false};                         //!< Prevents modification of objects from multiple places at the same time
     std::unordered_map<std::string, std::shared_ptr<GraphObject>> _objects{}; //!< Map of all the objects
-
-    /**
-     * \brief Add a new attribute to this object, connected to the branch corresponding to this RootObject
-     * \param name Attribute name
-     * \param set Set function
-     * \param get Get function
-     * \param types Vector of char holding the expected parameters for the set function
-     * \return Return a reference to the created attribute
-     */
-    Attribute& addTreeAttribute(
-        const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types = {});
 
     /**
      * \brief Wait for a BufferObject update. This does not prevent spurious wakeups.

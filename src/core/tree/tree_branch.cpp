@@ -175,7 +175,7 @@ string Branch::print(int indent) const
 }
 
 /*************/
-bool Branch::removeBranch(string name)
+bool Branch::removeBranch(const string& name)
 {
     if (!hasBranch(name))
         return false;
@@ -186,13 +186,42 @@ bool Branch::removeBranch(string name)
 }
 
 /*************/
-bool Branch::removeLeaf(string name)
+bool Branch::removeLeaf(const string& name)
 {
     if (!hasLeaf(name))
         return false;
 
     _leaves[name]->setParent(nullptr);
     _leaves.erase(name);
+    return true;
+}
+
+/*************/
+bool Branch::renameBranch(const string& name, const string& newName)
+{
+    if (_branches.find(name) == _branches.end())
+        return false;
+
+    if (_branches.find(newName) != _branches.end())
+        return false;
+
+    auto branchIt = _branches.find(name);
+    branchIt->second->setName(newName);
+    _branches.emplace(make_pair(newName, move(branchIt->second)));
+    _branches.erase(name);
+    return true;
+}
+
+/*************/
+bool Branch::renameLeaf(const string& name, const string& newName)
+{
+    if (_leaves.find(newName) != _leaves.end())
+        return false;
+
+    auto leafIt = _leaves.find(name);
+    leafIt->second->setName(newName);
+    _leaves.emplace(make_pair(newName, move(leafIt->second)));
+    _leaves.erase(leafIt);
     return true;
 }
 

@@ -114,6 +114,12 @@ class Leaf
     bool set(Value value, std::chrono::system_clock::time_point timestamp = std::chrono::system_clock::now());
 
     /**
+     * Set leaf name
+     * \param name Leaf name
+     */
+    void setName(const std::string& name) { _name = name; }
+
+    /**
      * Set this leaf parent
      * \param parent Parent branch
      */

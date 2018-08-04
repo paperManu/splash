@@ -164,6 +164,18 @@ struct Value
         }
     }
 
+    bool operator==(const Values v) const
+    {
+        if (_type != Type::values)
+            return false;
+        if (_values->size() != v.size())
+            return false;
+        bool isEqual = true;
+        for (uint32_t i = 0; i < _values->size(); ++i)
+            isEqual &= (_values->at(i) == v.at(i));
+        return isEqual;
+    }
+
     bool operator!=(const Value& v) const { return !operator==(v); }
 
     Value& operator[](int index)

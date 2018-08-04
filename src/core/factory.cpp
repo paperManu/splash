@@ -150,7 +150,7 @@ Values Factory::jsonToValues(const Json::Value& values)
 /*************/
 shared_ptr<GraphObject> Factory::create(const string& type)
 {
-    // Not all object types are listed here, only those which are available to the user are
+    // Not all object types are listed here, only those available to the user
     auto page = _objectBook.find(type);
     if (page != _objectBook.end())
     {

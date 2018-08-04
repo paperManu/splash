@@ -151,6 +151,12 @@ class Attribute
     Values getArgsTypes() const;
 
     /**
+     * Get whether a getter is defined
+     * \return Return true if the default getter is overriden
+     */
+    bool hasGetter() const { return _getFunc != nullptr; }
+
+    /**
      * \brief Ask whether the attribute is locked.
      * \return Returns true if the attribute is locked.
      */

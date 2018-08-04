@@ -158,14 +158,36 @@ class Branch
      * \param name Branch name
      * \return Return true if the branch has been removed
      */
-    bool removeBranch(std::string name);
+    bool removeBranch(const std::string& name);
 
     /**
      * Remove a leaf given its name
      * \param name Leaf name
      * \return Return true if the leaf has been removed
      */
-    bool removeLeaf(std::string name);
+    bool removeLeaf(const std::string& name);
+
+    /**
+     * Renamed a branch
+     * \param name Branch name
+     * \param newName New branch name
+     * \return Return true if the branch has been renamed, false if a branch by this name already exists
+     */
+    bool renameBranch(const std::string& name, const std::string& newName);
+
+    /**
+     * Renamed a leaf
+     * \param name Leaf name
+     * \param newName New leaf name
+     * \return Return true if the leaf has been renamed, false if a leaf by this name already exists
+     */
+    bool renameLeaf(const std::string& name, const std::string& newName);
+
+    /**
+     * Set the branch name
+     * \param name New branch name
+     */
+    void setName(const std::string& name) { _name = name; }
 
     /**
      * Set this branch parent

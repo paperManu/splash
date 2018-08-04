@@ -72,6 +72,9 @@ Scene::Scene(const string& name, const string& socketPrefix)
     _name = name;
     _linkSocketPrefix = socketPrefix;
 
+    registerAttributes();
+    initializeTree();
+
     // We have to reset the factory to create a Scene factory
     _factory.reset(new Factory(this));
     _blender = make_shared<Blender>(this);
@@ -80,9 +83,6 @@ Scene::Scene(const string& name, const string& socketPrefix)
         _blender->setName("blender");
         _objects["blender"] = _blender;
     }
-
-    registerAttributes();
-    initializeTree();
 
     init(_name);
 }
@@ -931,8 +931,6 @@ void Scene::glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum 
 /*************/
 void Scene::registerAttributes()
 {
-    RootObject::registerAttributes();
-
     addAttribute("addObject",
         [&](const Values& args) {
             addTask([=]() {
@@ -1121,16 +1119,6 @@ void Scene::registerAttributes()
     });
     setAttributeDescription("stop", "Stop the Scene main loop");
 
-    addAttribute("swapInterval",
-        [&](const Values& args) {
-            _swapInterval = max(-1, args[0].as<int>());
-            _targetFrameDuration = updateTargetFrameDuration();
-            return true;
-        },
-        [&]() -> Values { return {(int)_swapInterval}; },
-        {'n'});
-    setAttributeDescription("swapInterval", "Set the interval between two video frames. 1 is synced, 0 is not, -1 to sync when possible ");
-
     addAttribute("swapTest", [&](const Values& args) {
         addTask([=]() {
             lock_guard<recursive_mutex> lock(_objectsMutex);
@@ -1230,16 +1218,23 @@ void Scene::registerAttributes()
         },
         {'n'});
     setAttributeDescription("runInBackground", "If set to 1, Splash will run in the background (useful for background processing)");
+
+    addAttribute("swapInterval",
+        [&](const Values& args) {
+            _swapInterval = max(-1, args[0].as<int>());
+            _targetFrameDuration = updateTargetFrameDuration();
+            return true;
+        },
+        [&]() -> Values { return {(int)_swapInterval}; },
+        {'n'});
+    setAttributeDescription("swapInterval", "Set the interval between two video frames. 1 is synced, 0 is not, -1 to sync when possible ");
 }
 
 /*************/
 void Scene::initializeTree()
 {
-    _tree.setName(_name);
-
     auto leaf = _tree.getLeafAt("/world/master_clock");
-    leaf->addCallback([](const Value& value, const chrono::system_clock::time_point& /*timestamp*/)
-    {
+    leaf->addCallback([](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
         auto args = value.as<Values>();
         Timer::Point clock;
         clock.years = args[0].as<uint32_t>();
@@ -1253,6 +1248,7 @@ void Scene::initializeTree()
         Timer::get().setMasterClock(clock);
     });
 
+    _tree.setName(_name);
     _tree.createBranchAt("/" + _name);
     _tree.createBranchAt("/" + _name + "/attributes");
     _tree.createBranchAt("/" + _name + "/durations");

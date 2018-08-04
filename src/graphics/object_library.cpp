@@ -32,12 +32,9 @@ bool ObjectLibrary::loadModel(const string& name, const string& filename)
     }
 
     auto mesh = make_shared<Mesh>(_root);
-    mesh->setName(name);
     mesh->setAttribute("file", {filepath});
     _meshes.emplace(make_pair(name, mesh));
-
     auto obj = make_unique<Object>(_root);
-    obj->setName(name);
 
     // We create the geometry manually for it not to be registered in the root
     auto geometry = make_shared<Geometry>(_root);

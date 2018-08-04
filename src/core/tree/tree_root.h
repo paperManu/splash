@@ -61,6 +61,8 @@ enum class Task : uint8_t
     AddLeaf,
     RemoveBranch,
     RemoveLeaf,
+    RenameBranch,
+    RenameLeaf,
     SetLeaf
 };
 
@@ -167,8 +169,16 @@ class Root
     bool hasError() const { return _hasError; }
 
     /**
+     * Return whether the given branch exists
+     * \param path Path to the branch
+     * \return Return true if the branch exists
+     */
+    bool hasBranchAt(const std::string& path) const;
+
+    /**
      * Return whether the given leaf exists
      * \param path Path to the leaf
+     * \return Return true if the leaf exists
      */
     bool hasLeafAt(const std::string& path) const;
 
@@ -253,6 +263,24 @@ class Root
      * \return Return true if the leaf was removed successfully
      */
     bool removeLeafAt(const std::string& path, bool silent = false);
+
+    /**
+     * Rename the branch at the given path to the given name
+     * \param path Path to the branch
+     * \param name New name
+     * \param silent do not add this action to the update list
+     * \return Return true if the branch was renamed successfully
+     */
+    bool renameBranchAt(const std::string& path, const std::string& name, bool silent = false);
+
+    /**
+     * Rename the leaf at the given path to the given name
+     * \param path Path to the leaf
+     * \param name New name
+     * \param silent do not add this action to the update list
+     * \return Return true if the leaf was renamed successfully
+     */
+    bool renameLeafAt(const std::string& path, const std::string& name, bool silent = false);
 
     /**
      * Set the root's name

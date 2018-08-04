@@ -39,6 +39,22 @@ TEST_CASE("Testing the basic functionnalities of the Tree")
 
     CHECK(tree.removeLeafAt("/some_object/a_leaf") == true);
     CHECK(tree.removeLeafAt("/some_object/a_leaf") == false);
+
+    tree.createBranchAt("/random_branch");
+    tree.createBranchAt("/randomer_branch");
+
+    CHECK(tree.renameBranchAt("/random_branch", "randomer_branch") == false);
+    CHECK(tree.renameBranchAt("/random_branch", "randomerer_branch") == true);
+    CHECK(tree.hasBranchAt("/randomerer_branch") == true);
+    CHECK(tree.hasBranchAt("/random_branch") == false);
+
+    tree.createLeafAt("/randomerer_branch/potatoe");
+    tree.createLeafAt("/randomerer_branch/salad");
+
+    CHECK(tree.renameLeafAt("/randomerer_branch/potatoe", "salad") == false);
+    CHECK(tree.renameLeafAt("/randomerer_branch/potatoe", "burger") == true);
+    CHECK(tree.hasLeafAt("/randomerer_branch/burger") == true);
+    CHECK(tree.hasLeafAt("/randomerer_branch/potatoe") == false);
 }
 
 /*************/
@@ -82,6 +98,8 @@ TEST_CASE("Testing the synchronization between trees")
 
     maple.createBranchAt("/some_branch");
     maple.createLeafAt("/some_branch/some_leaf", value);
+    maple.createBranchAt("/some_branch/child_branch");
+    maple.renameBranchAt("/some_branch/child_branch", "you_are_my_son");
     auto updates = maple.getSeedList();
 
     oak.addSeedsToQueue(updates);

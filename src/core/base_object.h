@@ -59,7 +59,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      * \brief Set the name of the object.
      * \param name name of the object.
      */
-    inline void setName(const std::string& name) { _name = name; }
+    virtual void setName(const std::string& name) { _name = name; }
 
     /**
      * \brief Get the name of the object.
@@ -170,7 +170,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      * \param types Vector of char holding the expected parameters for the set function
      * \return Return a reference to the created attribute
      */
-    Attribute& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types = {});
+    virtual Attribute& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types = {});
 
     /**
      * \brief Add a new attribute to this object
@@ -180,7 +180,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      * \param types Vector of char holding the expected parameters for the set function
      * \return Return a reference to the created attribute
      */
-    Attribute& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types = {});
+    virtual Attribute& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types = {});
 
     /**
      * Run a task asynchronously, one task at a time

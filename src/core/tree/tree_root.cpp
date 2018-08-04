@@ -245,6 +245,30 @@ bool Root::getValueForLeafAt(const string& path, Value& value)
 }
 
 /*************/
+bool Root::hasBranchAt(const string& path) const
+{
+    auto parts = processPath(path);
+    if (parts.empty())
+    {
+        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
+        return false;
+    }
+
+    auto branchName = parts.back();
+    parts.pop_back();
+
+    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    auto holdingBranch = getBranchAt(parts);
+    if (!holdingBranch)
+        return false;
+
+    if (holdingBranch->hasBranch(branchName))
+        return true;
+    else
+        return false;
+}
+
+/*************/
 bool Root::hasLeafAt(const string& path) const
 {
     auto parts = processPath(path);
@@ -359,7 +383,6 @@ bool Root::processQueue(bool propagate)
             if (args.size() != 1)
             {
                 auto errorStr = "Root::" + string(__FUNCTION__) + " - Wrong number of arguments for task AddBranch";
-                Log::get() << Log::WARNING << errorStr << Log::endl;
                 throw runtime_error(errorStr);
             }
 
@@ -377,7 +400,6 @@ bool Root::processQueue(bool propagate)
             if (args.size() < 1)
             {
                 auto errorStr = "Root::" + string(__FUNCTION__) + " - Wrong number of arguments for task AddLeaf";
-                Log::get() << Log::WARNING << errorStr << Log::endl;
                 throw runtime_error(errorStr);
             }
 
@@ -396,7 +418,6 @@ bool Root::processQueue(bool propagate)
             if (args.size() != 1)
             {
                 auto errorStr = "Root::" + string(__FUNCTION__) + " - Wrong number of arguments for task RemoveBranch";
-                Log::get() << Log::WARNING << errorStr << Log::endl;
                 throw runtime_error(errorStr);
             }
 
@@ -414,7 +435,6 @@ bool Root::processQueue(bool propagate)
             if (args.size() != 1)
             {
                 auto errorStr = "Root::" + string(__FUNCTION__) + " - Wrong number of arguments for task RemoveLeaf";
-                Log::get() << Log::WARNING << errorStr << Log::endl;
                 throw runtime_error(errorStr);
             }
 
@@ -427,11 +447,47 @@ bool Root::processQueue(bool propagate)
             }
             break;
         }
+        case Task::RenameBranch:
+        {
+            if (args.size() != 2)
+            {
+                auto errorStr = "Root::" + string(__FUNCTION__) + " - Wrong number of arguments for task RenamedBranch";
+                throw runtime_error(errorStr);
+            }
+
+            auto branchPath = args[0].as<string>();
+            auto branchName = args[1].as<string>();
+            if (!renameBranchAt(branchPath, branchName, true))
+            {
+                _hasError = true;
+                _errorMsg = "Could not rename branch " + branchPath;
+                break;
+            }
+            break;
+        }
+        case Task::RenameLeaf:
+        {
+            if (args.size() != 2)
+            {
+                auto errorStr = "Root::" + string(__FUNCTION__) + " - Wrong number of arguments for task RenamedLeaf";
+                throw runtime_error(errorStr);
+            }
+
+            auto leafPath = args[0].as<string>();
+            auto leafName = args[1].as<string>();
+            if (!renameLeafAt(leafPath, leafName, true))
+            {
+                _hasError = true;
+                _errorMsg = "Could not rename leaf " + leafPath;
+                break;
+            }
+            break;
+        }
         case Task::SetLeaf:
+        {
             if (args.size() < 1)
             {
                 auto errorStr = "Root::" + string(__FUNCTION__) + " - Wrong number of arguments for task SetLeaf";
-                Log::get() << Log::WARNING << errorStr << Log::endl;
                 throw runtime_error(errorStr);
             }
             auto leafPath = args[0].as<string>();
@@ -444,6 +500,7 @@ bool Root::processQueue(bool propagate)
             }
 
             break;
+        }
         }
     }
 
@@ -521,6 +578,80 @@ bool Root::removeLeafAt(const string& path, bool silent)
     {
         lock_guard<recursive_mutex> lock(_updatesMutex);
         auto seed = make_tuple(Task::RemoveLeaf, Values({path}), chrono::system_clock::now(), _uuid);
+        _updates.emplace_back(move(seed));
+    }
+
+    return true;
+}
+
+/*************/
+bool Root::renameBranchAt(const string& path, const string& name, bool silent)
+{
+    auto parts = processPath(path);
+    if (parts.empty())
+    {
+        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
+        return false;
+    }
+
+    auto branchToRename = parts.back();
+    parts.pop_back();
+
+    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    auto holdingBranch = getBranchAt(parts);
+    if (!holdingBranch)
+    {
+        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Could not find branch holding path " << path << Log::endl;
+        return false;
+    }
+
+    if (!holdingBranch->renameBranch(branchToRename, name))
+    {
+        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Could not rename branch " << path << " to " << name << Log::endl;
+        return false;
+    }
+
+    if (!silent)
+    {
+        lock_guard<recursive_mutex> lock(_updatesMutex);
+        auto seed = make_tuple(Task::RenameBranch, Values({path, name}), chrono::system_clock::now(), _uuid);
+        _updates.emplace_back(move(seed));
+    }
+
+    return true;
+}
+
+/*************/
+bool Root::renameLeafAt(const string& path, const string& name, bool silent)
+{
+    auto parts = processPath(path);
+    if (parts.empty())
+    {
+        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
+        return false;
+    }
+
+    auto leafToRename = parts.back();
+    parts.pop_back();
+
+    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    auto holdingBranch = getBranchAt(parts);
+    if (!holdingBranch)
+    {
+        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Could not find branch holding path " << path << Log::endl;
+        return false;
+    }
+
+    if (!holdingBranch->renameLeaf(leafToRename, name))
+    {
+        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Could not rename leaf " << path << " to " << name << Log::endl;
+        return false;
+    }
+
+    if (!silent)
+    {
+        lock_guard<recursive_mutex> lock(_updatesMutex);
+        auto seed = make_tuple(Task::RenameLeaf, Values({path, name}), chrono::system_clock::now(), _uuid);
         _updates.emplace_back(move(seed));
     }
 
