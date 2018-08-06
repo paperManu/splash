@@ -63,6 +63,7 @@ bool Scene::getHasNVSwapGroup()
 
 /*************/
 Scene::Scene(const string& name, const string& socketPrefix)
+    : _objectLibrary(dynamic_cast<RootObject*>(this))
 {
     Log::get() << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
 

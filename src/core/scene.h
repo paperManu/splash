@@ -38,6 +38,7 @@
 #include "./core/factory.h"
 #include "./core/root_object.h"
 #include "./core/spinlock.h"
+#include "./graphics/object_library.h"
 
 namespace Splash
 {
@@ -128,6 +129,12 @@ class Scene : public RootObject
      * \return Return true if they are
      */
     static bool getHasNVSwapGroup();
+
+    /**
+     * Get a reference to the object library
+     * \return Return a reference to the object library
+     */
+    ObjectLibrary& getObjectLibrary() { return _objectLibrary; }
 
     /**
      * \brief Get the status of the scene
@@ -235,6 +242,8 @@ class Scene : public RootObject
 #endif
 
   private:
+    ObjectLibrary _objectLibrary; //!< Library of 3D objects used by multiple GraphObjects
+
     static bool _hasNVSwapGroup; //!< If true, NV swap groups have been detected and are used
     static std::vector<int> _glVersion;
 
@@ -311,6 +320,6 @@ class Scene : public RootObject
     void updateInputs();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_SCENE_H

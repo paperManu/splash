@@ -238,10 +238,6 @@ class Camera : public GraphObject
     bool _isColorLUTActivated{false};
     glm::mat3 _colorMixMatrix;
 
-    // Some default models use in various situations
-    std::list<std::shared_ptr<Mesh>> _modelMeshes;
-    std::unordered_map<std::string, std::shared_ptr<Object>> _models;
-
     // Camera parameters
     float _fov{35.f};                      //!< Vertical FOV
     float _width{512.f}, _height{512.f};   //!< Current width and height

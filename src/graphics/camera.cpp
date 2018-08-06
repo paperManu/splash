@@ -11,6 +11,7 @@
 
 #include "./core/scene.h"
 #include "./graphics/object.h"
+#include "./graphics/object_library.h"
 #include "./graphics/shader.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"
@@ -628,6 +629,9 @@ void Camera::render()
         auto viewMatrix = computeViewMatrix();
         auto projectionMatrix = computeProjectionMatrix();
 
+        auto scene = dynamic_cast<Scene*>(_root);
+        assert(scene != nullptr);
+
         // Draw the calibrations points of all the cameras
         if (_displayAllCalibrations)
         {
@@ -636,20 +640,20 @@ void Camera::render()
                 auto object = objWeakPtr.lock();
                 auto points = object->getCalibrationPoints();
 
-                auto worldMarker = _models.find("3d_marker");
-                if (worldMarker != _models.end())
+                auto worldMarker = scene->getObjectLibrary().getModel("3d_marker");
+                if (worldMarker != nullptr)
                 {
                     for (auto& point : points)
                     {
                         glm::dvec4 transformedPoint = projectionMatrix * viewMatrix * glm::dvec4(point.x, point.y, point.z, 1.0);
-                        worldMarker->second->setAttribute("scale", {WORLDMARKER_SCALE * 0.66 * std::max(transformedPoint.z, 1.0) * _fov});
-                        worldMarker->second->setAttribute("position", {point.x, point.y, point.z});
-                        worldMarker->second->setAttribute("color", OBJECT_MARKER);
+                        worldMarker->setAttribute("scale", {WORLDMARKER_SCALE * 0.66 * std::max(transformedPoint.z, 1.0) * _fov});
+                        worldMarker->setAttribute("position", {point.x, point.y, point.z});
+                        worldMarker->setAttribute("color", OBJECT_MARKER);
 
-                        worldMarker->second->activate();
-                        worldMarker->second->setViewProjectionMatrix(viewMatrix, projectionMatrix);
-                        worldMarker->second->draw();
-                        worldMarker->second->deactivate();
+                        worldMarker->activate();
+                        worldMarker->setViewProjectionMatrix(viewMatrix, projectionMatrix);
+                        worldMarker->draw();
+                        worldMarker->deactivate();
                     }
                 }
             }
@@ -658,43 +662,43 @@ void Camera::render()
         // Draw the calibration points
         if (_displayCalibration)
         {
-            auto worldMarker = _models.find("3d_marker");
-            auto screenMarker = _models.find("2d_marker");
-            if (worldMarker != _models.end() && screenMarker != _models.end())
+            auto worldMarker = scene->getObjectLibrary().getModel("3d_marker");
+            auto screenMarker = scene->getObjectLibrary().getModel("2d_marker");
+            if (worldMarker != nullptr && screenMarker != nullptr)
             {
                 for (uint32_t i = 0; i < _calibrationPoints.size(); ++i)
                 {
                     auto& point = _calibrationPoints[i];
 
-                    worldMarker->second->setAttribute("position", {point.world.x, point.world.y, point.world.z});
+                    worldMarker->setAttribute("position", {point.world.x, point.world.y, point.world.z});
                     glm::dvec4 transformedPoint = projectionMatrix * viewMatrix * glm::dvec4(point.world.x, point.world.y, point.world.z, 1.0);
-                    worldMarker->second->setAttribute("scale", {WORLDMARKER_SCALE * std::max(transformedPoint.z, 1.0) * _fov});
+                    worldMarker->setAttribute("scale", {WORLDMARKER_SCALE * std::max(transformedPoint.z, 1.0) * _fov});
                     if (_selectedCalibrationPoint == static_cast<int>(i))
-                        worldMarker->second->setAttribute("color", MARKER_SELECTED);
+                        worldMarker->setAttribute("color", MARKER_SELECTED);
                     else if (point.isSet)
-                        worldMarker->second->setAttribute("color", MARKER_SET);
+                        worldMarker->setAttribute("color", MARKER_SET);
                     else
-                        worldMarker->second->setAttribute("color", MARKER_ADDED);
+                        worldMarker->setAttribute("color", MARKER_ADDED);
 
-                    worldMarker->second->activate();
-                    worldMarker->second->setViewProjectionMatrix(viewMatrix, projectionMatrix);
-                    worldMarker->second->draw();
-                    worldMarker->second->deactivate();
+                    worldMarker->activate();
+                    worldMarker->setViewProjectionMatrix(viewMatrix, projectionMatrix);
+                    worldMarker->draw();
+                    worldMarker->deactivate();
 
                     if ((point.isSet && _selectedCalibrationPoint == static_cast<int>(i)) || _showAllCalibrationPoints) // Draw the target position on screen as well
                     {
 
-                        screenMarker->second->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
-                        screenMarker->second->setAttribute("scale", {SCREENMARKER_SCALE});
+                        screenMarker->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
+                        screenMarker->setAttribute("scale", {SCREENMARKER_SCALE});
                         if (_selectedCalibrationPoint == static_cast<int>(i))
-                            screenMarker->second->setAttribute("color", SCREEN_MARKER_SELECTED);
+                            screenMarker->setAttribute("color", SCREEN_MARKER_SELECTED);
                         else
-                            screenMarker->second->setAttribute("color", SCREEN_MARKER_SET);
+                            screenMarker->setAttribute("color", SCREEN_MARKER_SET);
 
-                        screenMarker->second->activate();
-                        screenMarker->second->setViewProjectionMatrix(dmat4(1.f), dmat4(1.f));
-                        screenMarker->second->draw();
-                        screenMarker->second->deactivate();
+                        screenMarker->activate();
+                        screenMarker->setViewProjectionMatrix(dmat4(1.f), dmat4(1.f));
+                        screenMarker->draw();
+                        screenMarker->deactivate();
                     }
                 }
             }
@@ -703,10 +707,9 @@ void Camera::render()
         // Draw the additionals objects
         for (auto& object : _drawables)
         {
-            auto modelIt = _models.find(object.model);
-            if (modelIt != _models.end())
+            auto model = scene->getObjectLibrary().getModel(object.model);
+            if (model != nullptr)
             {
-                auto& model = modelIt->second;
                 auto rtMatrix = glm::inverse(object.rtMatrix);
 
                 auto position = glm::column(rtMatrix, 3);
@@ -1000,40 +1003,18 @@ void Camera::loadDefaultModels()
 {
     map<string, string> files{{"3d_marker", "3d_marker.obj"}, {"2d_marker", "2d_marker.obj"}, {"camera", "camera.obj"}, {"probe", "probe.obj"}};
 
+    auto scene = dynamic_cast<Scene*>(_root);
+    assert(scene != nullptr);
+
     for (auto& file : files)
     {
-        if (!ifstream(file.second, ios::in | ios::binary))
-        {
-            if (ifstream(string(DATADIR) + file.second, ios::in | ios::binary))
-                file.second = string(DATADIR) + file.second;
-#if HAVE_OSX
-            else if (ifstream("../Resources/" + file.second, ios::in | ios::binary))
-                file.second = "../Resources/" + file.second;
-#endif
-            else
-            {
-                Log::get() << Log::ERROR << "Camera::" << __FUNCTION__ << " - File " << file.second << " does not seem to be readable." << Log::endl;
-                exit(1);
-            }
-        }
+        if (!scene->getObjectLibrary().loadModel(file.first, file.second))
+            continue;
 
-        shared_ptr<Mesh> mesh = make_shared<Mesh>(_root);
-        mesh->setName(file.first);
-        mesh->setAttribute("file", {file.second});
-        _modelMeshes.push_back(mesh);
+        auto object = scene->getObjectLibrary().getModel(file.first);
+        assert(object != nullptr);
 
-        shared_ptr<Object> obj = make_shared<Object>(_root);
-        obj->setName(file.first);
-        obj->setAttribute("scale", {WORLDMARKER_SCALE});
-        obj->setAttribute("fill", {"color"});
-        obj->setAttribute("color", MARKER_SET);
-
-        // We create the geometry manually for it not to be registered in the root
-        auto geometry = make_shared<Geometry>(_root);
-        geometry->linkTo(mesh);
-        obj->linkTo(geometry);
-
-        _models[file.first] = obj;
+        object->setAttribute("fill", {"color"});
     }
 }
 
