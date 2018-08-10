@@ -145,7 +145,7 @@ class Log
      * \brief Get the full logs
      * \return Return the full logs
      */
-    std::deque<std::pair<std::string, Priority>> getFullLogs() { return _logs; }
+    std::deque<std::tuple<uint64_t, std::string, Priority>> getFullLogs() { return _logs; }
 
     /**
      * \brief Get the logs by priority
@@ -160,8 +160,8 @@ class Log
         std::vector<std::string> logs;
         for (auto log : _logs)
             for (auto p : priorities)
-                if (log.second == p)
-                    logs.push_back(log.first);
+                if (std::get<2>(log) == p)
+                    logs.push_back(std::get<1>(log));
 
         return logs;
     }
@@ -170,10 +170,10 @@ class Log
      * \brief Get the new logs (from last call to this method)
      * \return Return the new logs
      */
-    std::vector<std::pair<std::string, Priority>> getNewLogs()
+    std::vector<std::tuple<uint64_t, std::string, Priority>> getNewLogs()
     {
         std::lock_guard<Spinlock> lock(_mutex);
-        std::vector<std::pair<std::string, Priority>> logs;
+        std::vector<std::tuple<uint64_t, std::string, Priority>> logs;
         for (uint32_t i = _logPointer; i < _logs.size(); ++i)
             logs.push_back(_logs[i]);
         _logPointer = _logs.size();
@@ -203,10 +203,10 @@ class Log
      * \param log Log
      * \param priority Priority
      */
-    void setLog(const std::string& log, Priority priority)
+    void setLog(uint64_t timestamp, const std::string& log, Priority priority)
     {
         std::lock_guard<Spinlock> lock(_mutex);
-        _logs.push_back(std::pair<std::string, Priority>(log, priority));
+        _logs.push_back(std::make_tuple(timestamp, log, priority));
 
         if (_logs.size() > _logLength)
         {
@@ -234,7 +234,7 @@ class Log
 
   private:
     mutable Spinlock _mutex;
-    std::deque<std::pair<std::string, Priority>> _logs;
+    std::deque<std::tuple<uint64_t, std::string, Priority>> _logs;
     bool _logToFile{false};
     uint32_t _logLength{500};
     int _logPointer{0};
@@ -274,24 +274,8 @@ class Log
     void rec(Priority p, T... args)
     {
         std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-        std::time_t now_c = std::chrono::system_clock::to_time_t(now);
-        char time_c[64];
-        strftime(time_c, 64, "%FT%T", std::localtime(&now_c));
-
-        std::string timedMsg;
-        std::string type;
-        if (p == Priority::MESSAGE)
-            type = std::string("[MESSAGE]");
-        else if (p == Priority::DEBUGGING)
-            type = std::string(" [DEBUG] ");
-        else if (p == Priority::WARNING)
-            type = std::string("[WARNING]");
-        else if (p == Priority::ERROR)
-            type = std::string(" [ERROR] ");
-
-        timedMsg = std::string(time_c) + std::string(" / ") + type + std::string(" / ");
-
-        addToString(timedMsg, args...);
+        std::string message("");
+        addToString(message, args...);
 
         // Write to log file, if we may
         if (_logToFile)
@@ -299,21 +283,42 @@ class Log
             std::ofstream logFile(SPLASH_LOG_FILE, std::ostream::out | std::ostream::app);
             if (logFile.good())
             {
-                logFile << timedMsg << "\n";
+                logFile << formatMessage(now, message, p) << "\n";
                 logFile.close();
             }
         }
 
         // Write to console
         if (p >= _verbosity)
-            toConsole(timedMsg);
+            toConsole(formatMessage(now, message, p));
 
-        _logs.push_back(std::pair<std::string, Priority>(timedMsg, p));
+        uint64_t timeAsUsecs = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+        _logs.push_back(std::make_tuple(timeAsUsecs, message, p));
         if (_logs.size() > _logLength)
         {
             _logPointer = _logPointer > 0 ? _logPointer - 1 : _logPointer;
             _logs.erase(_logs.begin());
         }
+    }
+
+    /*********/
+    std::string formatMessage(const std::chrono::system_clock::time_point& timestamp, const std::string& message, Priority priority)
+    {
+        std::time_t now_c = std::chrono::system_clock::to_time_t(timestamp);
+        char time_c[64];
+        strftime(time_c, 64, "%FT%T", std::localtime(&now_c));
+
+        std::string type;
+        if (priority == Priority::MESSAGE)
+            type = std::string("[MESSAGE]");
+        else if (priority == Priority::DEBUGGING)
+            type = std::string(" [DEBUG] ");
+        else if (priority == Priority::WARNING)
+            type = std::string("[WARNING]");
+        else if (priority == Priority::ERROR)
+            type = std::string(" [ERROR] ");
+
+        return std::string(time_c) + " / " + type + " / " + message;
     }
 
     /*****/
@@ -333,6 +338,6 @@ class Log
     }
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_LOG_H

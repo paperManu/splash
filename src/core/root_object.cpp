@@ -194,6 +194,35 @@ void RootObject::addRecurringTask(const string& name, const function<void()>& ta
 /*************/
 void RootObject::propagateTree()
 {
+    // Update logs
+    auto logs = Log::get().getNewLogs();
+    for (auto& log : logs)
+    {
+        auto timestampAsStr = to_string(std::get<0>(log));
+        auto path = "/" + _name + "/logs/" + to_string(std::get<0>(log));
+        if (!_tree.hasBranchAt(path))
+            _tree.createBranchAt(path);
+        path = path + "/";
+        uint32_t logIndex = 0;
+        while (_tree.hasLeafAt(path + to_string(logIndex)))
+            logIndex++;
+        path = path + to_string(logIndex);
+        _tree.createLeafAt(path);
+        _tree.setValueForLeafAt(path, {std::get<1>(log), static_cast<int>(std::get<2>(log))});
+    }
+
+    // Update durations
+    auto& durationMap = Timer::get().getDurationMap();
+    for (auto& d : durationMap)
+    {
+        string path = "/" + _name + "/durations/" + d.first;
+        if (!_tree.hasLeafAt(path))
+            if (!_tree.createLeafAt(path))
+                continue;
+        _tree.setValueForLeafAt(path, {static_cast<int>(d.second)});
+    }
+
+    // Update the Root object attributes
     auto attributePath = string("/" + _name + "/attributes");
     auto attributesBranch = _tree.getBranchAt(attributePath);
     assert(attributesBranch != nullptr);
@@ -208,6 +237,7 @@ void RootObject::propagateTree()
         _tree.setValueForLeafAt(attributePath + "/" + leafName, attribValue);
     }
 
+    // Update the GraphObjects attributes
     auto objectsPath = string("/" + _name + "/objects");
     auto objectsBranch = _tree.getBranchAt(objectsPath);
     assert(objectsBranch != nullptr);
@@ -277,8 +307,6 @@ void RootObject::initializeTree()
     _tree.createBranchAt("/world/durations");
     _tree.createBranchAt("/world/logs");
     _tree.createBranchAt("/world/objects");
-    _tree.createLeafAt("/world/clock");
-    _tree.createLeafAt("/world/master_clock");
 
     // Clear the seed list, all these leaves being automatically added to all root objets
     _tree.clearSeedList();

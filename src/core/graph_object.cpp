@@ -74,13 +74,24 @@ bool GraphObject::linkTo(const shared_ptr<GraphObject>& obj)
         return false;
     });
 
-    if (objectIt == _linkedObjects.end())
+    if (objectIt != _linkedObjects.end())
+        return false;
+
+    _linkedObjects.push_back(obj);
+    obj->linkToParent(this);
+
+    if (_root && !_name.empty() && !obj->getName().empty())
     {
-        _linkedObjects.push_back(obj);
-        obj->linkToParent(this);
-        return true;
+        auto rootName = _root->getName();
+        auto& tree = _root->getTree();
+        auto path = "/" + rootName + "/objects/" + _name + "/links";
+        assert(tree.hasBranchAt(path));
+        auto leafPath = path + "/" + obj->getName();
+        if (!tree.hasLeafAt(leafPath))
+            tree.createLeafAt(leafPath);
     }
-    return false;
+
+    return true;
 }
 
 /*************/
@@ -95,10 +106,19 @@ void GraphObject::unlinkFrom(const shared_ptr<GraphObject>& obj)
         return false;
     });
 
-    if (objectIt != _linkedObjects.end())
+    if (objectIt == _linkedObjects.end())
+        return;
+
+    _linkedObjects.erase(objectIt);
+    obj->unlinkFromParent(this);
+
+    if (_root && !_name.empty() && !obj->getName().empty())
     {
-        _linkedObjects.erase(objectIt);
-        obj->unlinkFromParent(this);
+        auto rootName = _root->getName();
+        auto& tree = _root->getTree();
+        auto path = "/" + rootName + "/objects/" + _name + "/links/" + obj->getName();
+        assert(tree.hasLeafAt(path));
+        tree.removeLeafAt(path);
     }
 }
 
@@ -240,11 +260,12 @@ void GraphObject::initializeTree()
 
     auto& tree = _root->getTree();
     auto path = "/" + _root->getName() + "/objects/" + _name;
-
     if (!tree.hasBranchAt(path))
         tree.createBranchAt(path);
     if (!tree.hasBranchAt(path + "/attributes"))
         tree.createBranchAt(path + "/attributes");
+    if (!tree.hasBranchAt(path + "/links"))
+        tree.createBranchAt(path + "/links");
 
     // Create the leaves for the attributes in the tree
     path = path + "/attributes/";

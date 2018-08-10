@@ -148,33 +148,6 @@ void World::run()
             break;
         }
 
-        // If the master scene is not an inner scene, we have to send it some information
-        if (_scenes[_masterSceneName] != -1)
-        {
-            // Send newer logs to all master Scene
-            auto logs = Log::get().getNewLogs();
-            for (auto& log : logs)
-                sendMessage(_masterSceneName, "log", {log.first, (int)log.second});
-        }
-
-        // Update durations inside the tree
-        auto& durationMap = Timer::get().getDurationMap();
-        for (auto& d : durationMap)
-        {
-            string path = "/world/durations/" + d.first;
-            if (!_tree.hasLeafAt(path))
-                if (!_tree.createLeafAt(path))
-                    continue;
-            _tree.setValueForLeafAt(path, {static_cast<int>(d.second)});
-        }
-
-        // Sync trees
-        _tree.setValueForLeafAt("/world/clock", {Timer::getTime()});
-        Timer::Point masterClock;
-        if (Timer::get().getMasterClock(masterClock))
-            _tree.setValueForLeafAt("/world/master_clock",
-                {masterClock.years, masterClock.months, masterClock.days, masterClock.hours, masterClock.mins, masterClock.secs, masterClock.frame, masterClock.paused});
-
         Timer::get() << "tree_propagate";
         propagateTree();
         Timer::get() >> "tree_propagate";
@@ -1227,7 +1200,7 @@ void World::parseArguments(int argc, char** argv)
         }
     }
 
-    if (defaultFile)
+    if (defaultFile && !_runAsChild)
         Log::get() << Log::MESSAGE << "No filename specified, loading default file" << Log::endl;
     else
         Log::get() << Log::MESSAGE << "Loading file " << filename << Log::endl;
@@ -1749,6 +1722,21 @@ void World::registerAttributes()
         [&]() -> Values { return {_mediaPath}; },
         {'s'});
     setAttributeDescription("mediaPath", "Path to the media files");
+
+    addAttribute("clock", [&](const Values& /*args*/) { return true; }, [&]() -> Values { return {Timer::getTime()}; }, {});
+    setAttributeDescription("clock", "Current World clock (not settable)");
+
+    addAttribute("masterClock",
+        [&](const Values& /*args*/) { return true; },
+        [&]() -> Values {
+            Timer::Point masterClock;
+            if (Timer::get().getMasterClock(masterClock))
+                return {masterClock.years, masterClock.months, masterClock.days, masterClock.hours, masterClock.mins, masterClock.secs, masterClock.frame, masterClock.paused};
+            else
+                return {};
+        },
+        {});
+    setAttributeDescription("masterClock", "Current World master clock (not settable)");
 
     RootObject::registerAttributes();
 }

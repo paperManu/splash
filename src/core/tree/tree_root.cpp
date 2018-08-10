@@ -63,6 +63,20 @@ bool Root::addLeafAt(const string& path, unique_ptr<Leaf>&& leaf)
 }
 
 /*************/
+bool Root::addCallbackToLeafAt(const string& path, const Leaf::UpdateCallback& cb, bool pending)
+{
+    auto leaf = getLeafAt(path);
+    if (!leaf && !pending)
+        return false;
+
+    if (leaf)
+        return leaf->addCallback(cb);
+
+    _callbacksToRegister.push_back(make_pair(path, cb));
+    return true;
+}
+
+/*************/
 void Root::addSeedToQueue(Tree::Task taskType, Values args, chrono::system_clock::time_point timestamp)
 {
     auto seed = make_tuple(taskType, args, timestamp, UUID(false));
@@ -90,7 +104,7 @@ bool Root::createBranchAt(const string& path, bool silent)
     auto parts = processPath(path);
     if (parts.empty())
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
         return false;
     }
 
@@ -105,7 +119,7 @@ bool Root::createBranchAt(const string& path, bool silent)
     auto newBranch = make_unique<Branch>(newBranchName);
     if (!holdingBranch->addBranch(move(newBranch)))
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Branch " << holdingBranch->getPath() << " already has a branch named " << newBranchName << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Branch " << holdingBranch->getPath() << " already has a branch named " << newBranchName << Log::endl;
         return false;
     }
 
@@ -125,7 +139,7 @@ bool Root::createLeafAt(const std::string& path, Values value, bool silent)
     auto parts = processPath(path);
     if (parts.empty())
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
         return false;
     }
 
@@ -140,7 +154,7 @@ bool Root::createLeafAt(const std::string& path, Values value, bool silent)
     auto newLeaf = make_unique<Leaf>(newLeafName, value);
     if (!holdingBranch->addLeaf(move(newLeaf)))
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Branch " << holdingBranch->getPath() << " already has a leaf named " << newLeafName << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Branch " << holdingBranch->getPath() << " already has a leaf named " << newLeafName << Log::endl;
         return false;
     }
 
@@ -160,7 +174,7 @@ unique_ptr<Branch> Root::cutBranchAt(const string& path)
     auto parts = processPath(path);
     if (parts.empty())
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
         return nullptr;
     }
 
@@ -184,7 +198,7 @@ unique_ptr<Leaf> Root::cutLeafAt(const string& path)
     auto parts = processPath(path);
     if (parts.empty())
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
         return nullptr;
     }
 
@@ -224,7 +238,7 @@ bool Root::getValueForLeafAt(const string& path, Value& value)
     auto parts = processPath(path);
     if (parts.empty())
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
         return false;
     }
 
@@ -250,7 +264,7 @@ bool Root::hasBranchAt(const string& path) const
     auto parts = processPath(path);
     if (parts.empty())
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
         return false;
     }
 
@@ -274,7 +288,7 @@ bool Root::hasLeafAt(const string& path) const
     auto parts = processPath(path);
     if (parts.empty())
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
         return false;
     }
 
@@ -507,6 +521,7 @@ bool Root::processQueue(bool propagate)
     if (propagate)
         _updates.merge(tasks, [](const auto& a, const auto& b) { return std::get<2>(a) < std::get<2>(b); });
 
+    registerPendingCallbacks();
     return true;
 }
 
@@ -516,7 +531,7 @@ bool Root::removeBranchAt(const string& path, bool silent)
     auto parts = processPath(path);
     if (parts.empty())
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
         return false;
     }
 
@@ -527,13 +542,14 @@ bool Root::removeBranchAt(const string& path, bool silent)
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Could not find branch holding path " << path << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Could not find branch holding path " << path << Log::endl;
         return false;
     }
 
     if (!holdingBranch->removeBranch(branchToRemove))
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Branch " << holdingBranch->getPath() << " does not have a branch named " << branchToRemove << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Branch " << holdingBranch->getPath() << " does not have a branch named " << branchToRemove
+                   << Log::endl;
         return false;
     }
 
@@ -553,7 +569,7 @@ bool Root::removeLeafAt(const string& path, bool silent)
     auto parts = processPath(path);
     if (parts.empty())
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
         return false;
     }
 
@@ -564,13 +580,13 @@ bool Root::removeLeafAt(const string& path, bool silent)
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Could not find branch holding leaf " << path << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Could not find branch holding leaf " << path << Log::endl;
         return false;
     }
 
     if (!holdingBranch->removeLeaf(leafToRemove))
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Branch " << holdingBranch->getPath() << " does not have a leaf named " << leafToRemove << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Branch " << holdingBranch->getPath() << " does not have a leaf named " << leafToRemove << Log::endl;
         return false;
     }
 
@@ -590,7 +606,7 @@ bool Root::renameBranchAt(const string& path, const string& name, bool silent)
     auto parts = processPath(path);
     if (parts.empty())
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
         return false;
     }
 
@@ -601,13 +617,13 @@ bool Root::renameBranchAt(const string& path, const string& name, bool silent)
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Could not find branch holding path " << path << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Could not find branch holding path " << path << Log::endl;
         return false;
     }
 
     if (!holdingBranch->renameBranch(branchToRename, name))
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Could not rename branch " << path << " to " << name << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Could not rename branch " << path << " to " << name << Log::endl;
         return false;
     }
 
@@ -627,7 +643,7 @@ bool Root::renameLeafAt(const string& path, const string& name, bool silent)
     auto parts = processPath(path);
     if (parts.empty())
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
         return false;
     }
 
@@ -638,13 +654,13 @@ bool Root::renameLeafAt(const string& path, const string& name, bool silent)
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Could not find branch holding path " << path << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Could not find branch holding path " << path << Log::endl;
         return false;
     }
 
     if (!holdingBranch->renameLeaf(leafToRename, name))
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Could not rename leaf " << path << " to " << name << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Could not rename leaf " << path << " to " << name << Log::endl;
         return false;
     }
 
@@ -704,7 +720,7 @@ Branch* Root::getBranchAt(const list<string>& path) const
         auto childBranch = branch->getBranch(part);
         if (!childBranch)
         {
-            Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Branch " << branch->getPath() << " does not have branch " << part << Log::endl;
+            Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Branch " << branch->getPath() << " does not have branch " << part << Log::endl;
             return nullptr;
         }
         branch = childBranch;
@@ -727,7 +743,7 @@ Leaf* Root::getLeafAt(const string& path) const
     auto parts = processPath(path);
     if (parts.empty())
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
         return nullptr;
     }
 
@@ -750,7 +766,7 @@ Leaf* Root::getLeafAt(const list<string>& path) const
         auto childBranch = branch->getBranch(part);
         if (!childBranch)
         {
-            Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Branch " << branch->getPath() << " does not have branch " << part << Log::endl;
+            Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Branch " << branch->getPath() << " does not have branch " << part << Log::endl;
             return nullptr;
         }
         branch = childBranch;
@@ -759,7 +775,7 @@ Leaf* Root::getLeafAt(const list<string>& path) const
     auto leaf = branch->getLeaf(leafName);
     if (!leaf)
     {
-        Log::get() << Log::WARNING << "Tree::Root::" << __FUNCTION__ << " - Branch " << branch->getPath() << " does not have a leaf name " << leafName << Log::endl;
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Branch " << branch->getPath() << " does not have a leaf name " << leafName << Log::endl;
         return nullptr;
     }
 
@@ -797,6 +813,12 @@ list<string> Root::processPath(const string& path)
     }
 
     return parts;
+}
+
+/*************/
+void Root::registerPendingCallbacks()
+{
+    _callbacksToRegister.remove_if([this](const pair<string, Leaf::UpdateCallback>& callback) { return addCallbackToLeafAt(callback.first, callback.second); });
 }
 
 } // namespace Tree

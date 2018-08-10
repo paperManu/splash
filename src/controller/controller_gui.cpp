@@ -1106,18 +1106,20 @@ void Gui::initImWidgets()
 
         // Master clock
         {
-            auto leaf = tree.getLeafAt("/world/master_clock");
-            assert(leaf != nullptr);
-            auto clock = leaf->get();
-            if (clock.size() == 8)
+            auto leaf = tree.getLeafAt("/world/attributes/masterClock");
+            if (leaf)
             {
-                stream << "Master clock:\n";
-                stream << "  " << clock[0].as<int>() << "/" << clock[1].as<int>() << "/" << clock[2].as<int>();
-                stream << " - ";
-                stream << clock[3].as<int>() << ":" << clock[4].as<int>() << ":" << clock[5].as<int>() << ":" << clock[6].as<int>();
-                if (clock[7].as<bool>())
-                    stream << " - Paused";
-                stream << "\n";
+                auto clock = leaf->get();
+                if (clock.size() == 8)
+                {
+                    stream << "Master clock:\n";
+                    stream << "  " << clock[0].as<int>() << "/" << clock[1].as<int>() << "/" << clock[2].as<int>();
+                    stream << " - ";
+                    stream << clock[3].as<int>() << ":" << clock[4].as<int>() << ":" << clock[5].as<int>() << ":" << clock[6].as<int>();
+                    if (clock[7].as<bool>())
+                        stream << " - Paused";
+                    stream << "\n";
+                }
             }
         }
 

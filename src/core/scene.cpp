@@ -437,7 +437,9 @@ void Scene::run()
     while (_isRunning)
     {
         // Process tree updates
+        Timer::get() << "tree_process";
         _tree.processQueue();
+        Timer::get() >> "tree_process";
 
         // This gets the whole loop duration
         if (_runInBackground && _swapInterval != 0)
@@ -467,18 +469,9 @@ void Scene::run()
         updateInputs();
         Timer::get() >> "inputsUpdate";
 
-        // Update tree, send update to World
-        auto& durationMap = Timer::get().getDurationMap();
-        for (auto& d : durationMap)
-        {
-            string path = "/" + _name + "/durations/" + d.first;
-            if (!_tree.hasLeafAt(path))
-                if (!_tree.createLeafAt(path))
-                    continue;
-            _tree.setValueForLeafAt(path, {static_cast<int>(d.second)});
-        }
-
+        Timer::get() << "tree_propagate";
         propagateTree();
+        Timer::get() >> "tree_propagate";
     }
     _mainWindow->releaseContext();
 
@@ -1039,10 +1032,10 @@ void Scene::registerAttributes()
 
     addAttribute("log",
         [&](const Values& args) {
-            Log::get().setLog(args[0].as<string>(), (Log::Priority)args[1].as<int>());
+            Log::get().setLog(args[0].as<uint64_t>(), args[1].as<string>(), (Log::Priority)args[2].as<int>());
             return true;
         },
-        {'s', 'n'});
+        {'n', 's', 'n'});
     setAttributeDescription("log", "Add an entry to the logs, given its message and priority");
 
     addAttribute("logToFile",
@@ -1233,20 +1226,21 @@ void Scene::registerAttributes()
 /*************/
 void Scene::initializeTree()
 {
-    auto leaf = _tree.getLeafAt("/world/master_clock");
-    leaf->addCallback([](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
-        auto args = value.as<Values>();
-        Timer::Point clock;
-        clock.years = args[0].as<uint32_t>();
-        clock.months = args[1].as<uint32_t>();
-        clock.days = args[2].as<uint32_t>();
-        clock.hours = args[3].as<uint32_t>();
-        clock.mins = args[4].as<uint32_t>();
-        clock.secs = args[5].as<uint32_t>();
-        clock.frame = args[6].as<uint32_t>();
-        clock.paused = args[7].as<bool>();
-        Timer::get().setMasterClock(clock);
-    });
+    _tree.addCallbackToLeafAt("/world/attributes/masterClock",
+        [](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
+            auto args = value.as<Values>();
+            Timer::Point clock;
+            clock.years = args[0].as<uint32_t>();
+            clock.months = args[1].as<uint32_t>();
+            clock.days = args[2].as<uint32_t>();
+            clock.hours = args[3].as<uint32_t>();
+            clock.mins = args[4].as<uint32_t>();
+            clock.secs = args[5].as<uint32_t>();
+            clock.frame = args[6].as<uint32_t>();
+            clock.paused = args[7].as<bool>();
+            Timer::get().setMasterClock(clock);
+        },
+        true);
 
     _tree.setName(_name);
     _tree.createBranchAt("/" + _name);
