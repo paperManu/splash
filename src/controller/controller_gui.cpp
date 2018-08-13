@@ -1102,11 +1102,11 @@ void Gui::initImWidgets()
     timingBox->setTextFunc([this]() {
         static unordered_map<string, float> stats;
         ostringstream stream;
-        auto& tree = _root->getTree();
+        auto tree = _root->getTree();
 
         // Master clock
         {
-            auto leaf = tree.getLeafAt("/world/attributes/masterClock");
+            auto leaf = tree->getLeafAt("/world/attributes/masterClock");
             if (leaf)
             {
                 auto clock = leaf->get();
@@ -1124,7 +1124,7 @@ void Gui::initImWidgets()
         }
 
         auto runningAverage = [](float a, float b) { return a * 0.9 + 0.001 * b * 0.1; };
-        auto getLeafValue = [&tree](Tree::Branch* branch, const string& name) {
+        auto getLeafValue = [](Tree::Branch* branch, const string& name) {
             auto leaf = branch->getLeaf(name);
             if (!leaf)
                 return 0.f;
@@ -1133,7 +1133,7 @@ void Gui::initImWidgets()
 
         // We process the world before the scenes
         {
-            auto branch = tree.getBranchAt("/world/durations");
+            auto branch = tree->getBranchAt("/world/durations");
             assert(branch != nullptr);
 
             stats["world_loop_world"] = runningAverage(stats["world_loop_world"], getLeafValue(branch, "loop_world"));
@@ -1148,12 +1148,12 @@ void Gui::initImWidgets()
 
         // Then the scenes
         stream << "Scenes:\n";
-        for (const auto& branchName : tree.getBranchList())
+        for (const auto& branchName : tree->getBranchList())
         {
             if (branchName == "world")
                 continue;
 
-            auto branch = tree.getBranchAt("/" + branchName + "/durations");
+            auto branch = tree->getBranchAt("/" + branchName + "/durations");
             if (!branch)
                 continue;
 

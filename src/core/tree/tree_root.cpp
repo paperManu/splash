@@ -13,6 +13,13 @@ namespace Tree
 {
 
 /*************/
+RootHandle::RootHandle(Root* root)
+    : _root(root)
+    , _rootLock(root->_treeMutex)
+{
+}
+
+/*************/
 Root::Root()
     : _rootBranch(new Branch(""))
 {

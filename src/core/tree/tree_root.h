@@ -74,7 +74,22 @@ enum class Task : uint8_t
  */
 using Seed = std::tuple<Task, Value, std::chrono::system_clock::time_point, UUID>;
 
-/*************/
+class Root;
+
+/**
+ * Tree Handle. The tree is locked as long as it exists
+ */
+class RootHandle
+{
+  public:
+    explicit RootHandle(Tree::Root* root);
+    Root* operator->() const noexcept { return _root; }
+
+  private:
+    Tree::Root* _root;
+    std::unique_lock<std::recursive_mutex> _rootLock;
+};
+
 /**
  * Tree::Root class, which holds the main branch
  * All commands should be applied to this class directly, otherwise
@@ -82,6 +97,8 @@ using Seed = std::tuple<Task, Value, std::chrono::system_clock::time_point, UUID
  */
 class Root
 {
+    friend RootHandle;
+
   public:
     /**
      * Constructor
@@ -212,6 +229,12 @@ class Root
     Branch* getBranchAt(const std::string& path) const;
 
     /**
+     * Get a handle over this root
+     * \param Returned handle
+     */
+    Tree::RootHandle getHandle() { return Tree::RootHandle(this); }
+
+    /**
      * Get a pointer to the leaf at the given path
      * \param path Path to the leaf
      * \return Return the leaf, or nullptr
@@ -303,11 +326,13 @@ class Root
      */
     std::string print() const;
 
+  protected:
+    mutable std::recursive_mutex _treeMutex{};
+
   private:
     UUID _uuid{};
     std::string _name{"root"};
     std::unique_ptr<Branch> _rootBranch{nullptr};
-    mutable std::recursive_mutex _treeMutex{};
     mutable std::mutex _taskMutex{};
     mutable std::recursive_mutex _updatesMutex{};
     std::list<Seed> _seedQueue{}; //!< Queue of seeds to be applied to the tree by calling processQueue()

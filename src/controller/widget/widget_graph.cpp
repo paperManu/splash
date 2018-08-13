@@ -12,14 +12,14 @@ void GuiGraph::render()
 {
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
-        auto& tree = _root->getTree();
+        auto tree = _root->getTree();
         auto width = ImGui::GetWindowSize().x;
 
-        for (const auto& branchName : tree.getBranchList())
+        for (const auto& branchName : tree->getBranchList())
         {
             if (ImGui::TreeNode(branchName.c_str()))
             {
-                auto branch = tree.getBranchAt("/" + branchName + "/durations");
+                auto branch = tree->getBranchAt("/" + branchName + "/durations");
                 if (!branch)
                     continue;
 

@@ -108,7 +108,7 @@ class RootObject : public BaseObject
      * Get a reference to the root tree
      * \return Return the Tree::Root
      */
-    Tree::Root& getTree() { return _tree; }
+    Tree::RootHandle getTree() { return _tree.getHandle(); }
 
     /**
      * \brief Set the attribute of the named object with the given args

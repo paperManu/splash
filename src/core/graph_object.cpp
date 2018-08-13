@@ -83,12 +83,12 @@ bool GraphObject::linkTo(const shared_ptr<GraphObject>& obj)
     if (_root && !_name.empty() && !obj->getName().empty())
     {
         auto rootName = _root->getName();
-        auto& tree = _root->getTree();
+        auto tree = _root->getTree();
         auto path = "/" + rootName + "/objects/" + _name + "/links";
-        assert(tree.hasBranchAt(path));
+        assert(tree->hasBranchAt(path));
         auto leafPath = path + "/" + obj->getName();
-        if (!tree.hasLeafAt(leafPath))
-            tree.createLeafAt(leafPath);
+        if (!tree->hasLeafAt(leafPath))
+            tree->createLeafAt(leafPath);
     }
 
     return true;
@@ -115,10 +115,10 @@ void GraphObject::unlinkFrom(const shared_ptr<GraphObject>& obj)
     if (_root && !_name.empty() && !obj->getName().empty())
     {
         auto rootName = _root->getName();
-        auto& tree = _root->getTree();
+        auto tree = _root->getTree();
         auto path = "/" + rootName + "/objects/" + _name + "/links/" + obj->getName();
-        assert(tree.hasLeafAt(path));
-        tree.removeLeafAt(path);
+        assert(tree->hasLeafAt(path));
+        tree->removeLeafAt(path);
     }
 }
 
@@ -181,10 +181,10 @@ void GraphObject::setName(const string& name)
     }
     else
     {
-        auto& tree = _root->getTree();
+        auto tree = _root->getTree();
         auto path = "/" + _root->getName() + "/objects/" + oldName;
-        if (tree.hasBranchAt(path))
-            tree.renameBranchAt(path, name);
+        if (tree->hasBranchAt(path))
+            tree->renameBranchAt(path, name);
     }
 }
 
@@ -258,14 +258,14 @@ void GraphObject::initializeTree()
     if (!_root || _name.empty())
         return;
 
-    auto& tree = _root->getTree();
+    auto tree = _root->getTree();
     auto path = "/" + _root->getName() + "/objects/" + _name;
-    if (!tree.hasBranchAt(path))
-        tree.createBranchAt(path);
-    if (!tree.hasBranchAt(path + "/attributes"))
-        tree.createBranchAt(path + "/attributes");
-    if (!tree.hasBranchAt(path + "/links"))
-        tree.createBranchAt(path + "/links");
+    if (!tree->hasBranchAt(path))
+        tree->createBranchAt(path);
+    if (!tree->hasBranchAt(path + "/attributes"))
+        tree->createBranchAt(path + "/attributes");
+    if (!tree->hasBranchAt(path + "/links"))
+        tree->createBranchAt(path + "/links");
 
     // Create the leaves for the attributes in the tree
     path = path + "/attributes/";
@@ -275,12 +275,12 @@ void GraphObject::initializeTree()
             continue;
         auto attributeName = attribute.first;
         auto leafPath = path + attributeName;
-        if (tree.hasLeafAt(leafPath))
+        if (tree->hasLeafAt(leafPath))
             continue;
-        if (!tree.createLeafAt(leafPath))
+        if (!tree->createLeafAt(leafPath))
             throw runtime_error("Error while adding a leaf at path " + leafPath);
 
-        auto leaf = tree.getLeafAt(leafPath);
+        auto leaf = tree->getLeafAt(leafPath);
         _treeCallbackIds[attributeName] = leaf->addCallback([=](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
             auto attribIt = _attribFunctions.find(attributeName);
             if (attribIt == _attribFunctions.end())
@@ -292,12 +292,12 @@ void GraphObject::initializeTree()
     }
 
     // Remove leaves for attributes which do not exist anymore
-    auto leafList = tree.getBranchAt(path)->getLeafList();
+    auto leafList = tree->getBranchAt(path)->getLeafList();
     for (const auto& leafName : leafList)
     {
         if (_attribFunctions.find(leafName) != _attribFunctions.end())
             continue;
-        tree.removeLeafAt(path + leafName);
+        tree->removeLeafAt(path + leafName);
     }
 }
 
@@ -307,10 +307,10 @@ void GraphObject::uninitializeTree()
     if (!_root || _name.empty())
         return;
 
-    auto& tree = _root->getTree();
+    auto tree = _root->getTree();
     auto path = "/" + _root->getName() + "/objects/" + _name;
-    if (tree.hasBranchAt(path))
-        tree.removeBranchAt(path);
+    if (tree->hasBranchAt(path))
+        tree->removeBranchAt(path);
 }
 
 } // namespace Splash

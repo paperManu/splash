@@ -217,3 +217,16 @@ TEST_CASE("Testing propagation through a main tree")
     CHECK(main == maple);
     CHECK(main == oak);
 }
+
+/*************/
+TEST_CASE("Testing RootHandle")
+{
+    Tree::Root main;
+    main.createLeafAt("/first_leaf");
+    {
+        auto handle = main.getHandle();
+        handle->createBranchAt("/first_branch");
+        CHECK(handle->hasLeafAt("/first_leaf"));
+    }
+    CHECK(main.hasBranchAt("/first_branch"));
+}
