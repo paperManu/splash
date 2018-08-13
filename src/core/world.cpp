@@ -79,6 +79,7 @@ void World::run()
         Timer::get() >> "tree_process";
 
         // Execute waiting tasks
+        executeTreeCommands();
         runTasks();
 
         {
@@ -151,7 +152,7 @@ void World::run()
         Timer::get() << "tree_propagate";
         propagateTree();
         Timer::get() >> "tree_propagate";
-        cout << _tree.print() << endl;
+        // cout << _tree.print() << endl;
 
         // Sync with buffer object update
         Timer::get() >> "loop_world_inner";
@@ -1232,19 +1233,19 @@ void World::registerAttributes()
 
                 if (scene.empty())
                 {
+                    addToWorld(type, name);
                     for (auto& s : _scenes)
                     {
                         sendMessage(s.first, "addObject", {type, name, s.first});
-                        addToWorld(type, name);
                         sendMessageWithAnswer(s.first, "sync");
                     }
                 }
                 else
                 {
+                    addToWorld(type, name);
                     sendMessage(scene, "addObject", {type, name, scene});
                     if (scene != _masterSceneName)
                         sendMessage(_masterSceneName, "addObject", {type, name, scene});
-                    addToWorld(type, name);
                     sendMessageWithAnswer(scene, "sync");
                 }
 

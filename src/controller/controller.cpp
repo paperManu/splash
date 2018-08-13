@@ -23,98 +23,160 @@ shared_ptr<GraphObject> ControllerObject::getObject(const string& name) const
 /*************/
 string ControllerObject::getObjectAlias(const std::string& name) const
 {
-    auto object = getObject(name);
-    if (object)
-        return object->getAlias();
-    else
-        return {};
+    auto tree = _root->getTree();
+
+    auto rootList = tree->getBranchList();
+    for (const auto& rootName : rootList)
+    {
+        auto path = "/" + rootName + "/objects/" + name + "/attributes/alias";
+        if (!tree->hasLeafAt(path))
+            continue;
+        Value value;
+        tree->getValueForLeafAt(path, value);
+        return value.size() == 0 ? name : value[0].as<string>();
+    }
+
+    return {};
 }
 
 /*************/
 unordered_map<string, string> ControllerObject::getObjectAliases() const
 {
-    auto objectNames = getObjectNames();
-    unordered_map<string, string> objectAliases;
+    auto aliases = unordered_map<string, string>();
+    auto tree = _root->getTree();
 
-    for (const auto& name : objectNames)
-        objectAliases[name] = getObjectAlias(name);
+    auto rootList = tree->getBranchList();
+    for (const auto& rootName : rootList)
+    {
+        auto objectPath = "/" + rootName + "/objects";
+        auto objectList = tree->getBranchListAt(objectPath);
 
-    return objectAliases;
+        for (const auto& objectName : objectList)
+        {
+            if (aliases.find(objectName) == aliases.end())
+            {
+                Value value;
+                tree->getValueForLeafAt(objectPath + "/" + objectName + "/attributes/alias", value);
+                assert(value.size() == 1 && value.getType() == Value::values);
+                aliases[objectName] = value.size() == 0 ? objectName : value[0].as<string>();
+            }
+        }
+    }
+
+    return aliases;
 }
 
 /*************/
 vector<string> ControllerObject::getObjectNames() const
 {
-    auto scene = dynamic_cast<Scene*>(_root);
-    if (!scene)
-        return {};
+    auto names = vector<string>();
+    auto tree = _root->getTree();
 
-    vector<string> objNames;
-
-    for (auto& o : scene->_objects)
+    auto rootList = tree->getBranchList();
+    for (const auto& rootName : rootList)
     {
-        if (!o.second->getSavable())
-            continue;
-        objNames.push_back(o.first);
+        auto objectPath = "/" + rootName + "/objects";
+        auto objectList = tree->getBranchListAt(objectPath);
+
+        for (const auto& objectName : objectList)
+            if (std::find(names.begin(), names.end(), objectName) == names.end())
+                names.push_back(objectName);
     }
 
-    return objNames;
+    return names;
 }
 
 /*************/
 Values ControllerObject::getObjectAttributeDescription(const string& name, const string& attr) const
 {
-    auto scene = dynamic_cast<Scene*>(_root);
-    if (!scene)
-        return {};
-    else
-        return scene->getAttributeDescriptionFromObject(name, attr);
+    auto tree = _root->getTree();
+    auto rootList = tree->getBranchList();
+    for (const auto& rootName : rootList)
+    {
+        auto objectPath = "/" + rootName + "/objects/" + name;
+        if (!tree->hasBranchAt(objectPath))
+            continue;
+        auto docPath = objectPath + "/documentation/" + attr + "/description";
+        if (!tree->hasLeafAt(docPath))
+            continue;
+        Value value;
+        tree->getValueForLeafAt(docPath, value);
+        return value.as<Values>();
+    }
+
+    return {};
 }
 
 /*************/
 Values ControllerObject::getObjectAttribute(const string& name, const string& attr) const
 {
-    auto scene = dynamic_cast<Scene*>(_root);
-    if (!scene)
-        return {};
-    else
-        return scene->getAttributeFromObject(name, attr);
+    auto tree = _root->getTree();
+
+    auto rootList = tree->getBranchList();
+    for (const auto& rootName : rootList)
+    {
+        Value value;
+        auto attrPath = "/" + rootName + "/objects/" + name + "/attributes/" + attr;
+        if (!tree->hasLeafAt(attrPath))
+            continue;
+        tree->getValueForLeafAt(attrPath, value);
+        return value.as<Values>();
+    }
+
+    return {};
 }
 
 /*************/
 unordered_map<string, Values> ControllerObject::getObjectAttributes(const string& name) const
 {
-    auto scene = dynamic_cast<Scene*>(_root);
-    if (!scene)
-        return {};
+    auto attributes = unordered_map<string, Values>();
+    auto tree = _root->getTree();
 
-    auto objectIt = scene->_objects.find(name);
-    if (objectIt == scene->_objects.end())
-        return {};
+    auto rootList = tree->getBranchList();
+    for (const auto& rootName : rootList)
+    {
+        auto objectPath = "/" + rootName + "/objects/" + name;
+        if (!tree->hasBranchAt(objectPath))
+            continue;
+        auto attrPath = objectPath + "/attributes";
+        auto attrList = tree->getBranchAt(attrPath)->getLeafList();
+        for (const auto& attrName : attrList)
+        {
+            Value value;
+            tree->getValueForLeafAt(attrPath + "/" + attrName, value);
+            attributes[attrName] = value.as<Values>();
+        }
+    }
 
-    return objectIt->second->getAttributes(true);
+    return attributes;
 }
 
 /*************/
 unordered_map<string, vector<string>> ControllerObject::getObjectLinks() const
 {
-    auto scene = dynamic_cast<Scene*>(_root);
-    if (!scene)
-        return {};
-
     auto links = unordered_map<string, vector<string>>();
+    auto tree = _root->getTree();
 
-    for (auto& o : scene->_objects)
+    auto rootList = tree->getBranchList();
+    for (const auto& rootName : rootList)
     {
-        if (!o.second->getSavable())
-            continue;
-        links[o.first] = vector<string>();
-        auto linkedObjects = o.second->getLinkedObjects();
-        for (auto& weakObject : linkedObjects)
+        auto objectPath = "/" + rootName + "/objects";
+        auto objectList = tree->getBranchListAt(objectPath);
+
+        for (const auto& objectName : objectList)
         {
-            auto object = weakObject.lock();
-            if (object)
-                links[o.first].push_back(object->getName());
+            auto linksIt = links.find(objectName);
+            if (linksIt == links.end())
+                links.emplace(make_pair(objectName, vector<string>()));
+
+            auto childrenPath = objectPath + "/" + objectName + "/links/children";
+            auto children = tree->getBranchAt(childrenPath)->getLeafList();
+            for (const auto& child : children)
+            {
+                auto& childList = links[objectName];
+                if (std::find(childList.begin(), childList.end(), child) == childList.end())
+                    childList.push_back(child);
+            }
         }
     }
 
@@ -124,30 +186,33 @@ unordered_map<string, vector<string>> ControllerObject::getObjectLinks() const
 /*************/
 unordered_map<string, vector<string>> ControllerObject::getObjectReversedLinks() const
 {
-    auto links = getObjectLinks();
-    auto reversedLinks = unordered_map<string, vector<string>>();
+    auto links = unordered_map<string, vector<string>>();
+    auto tree = _root->getTree();
 
-    for (auto& l : links)
+    auto rootList = tree->getBranchList();
+    for (const auto& rootName : rootList)
     {
-        auto parent = l.first;
-        auto children = l.second;
-        for (auto& child : children)
+        auto objectPath = "/" + rootName + "/objects";
+        auto objectList = tree->getBranchListAt(objectPath);
+
+        for (const auto& objectName : objectList)
         {
-            auto childIt = reversedLinks.find(child);
-            if (childIt == reversedLinks.end())
+            auto linksIt = links.find(objectName);
+            if (linksIt == links.end())
+                links.emplace(make_pair(objectName, vector<string>()));
+
+            auto childrenPath = objectPath + "/" + objectName + "/links/parents";
+            auto children = tree->getBranchAt(childrenPath)->getLeafList();
+            for (const auto& child : children)
             {
-                reversedLinks[child] = {parent};
-            }
-            else
-            {
-                auto parentIt = find(childIt->second.begin(), childIt->second.end(), parent);
-                if (parentIt == childIt->second.end())
-                    childIt->second.push_back(parent);
+                auto& childList = links[objectName];
+                if (std::find(childList.begin(), childList.end(), child) == childList.end())
+                    childList.push_back(child);
             }
         }
     }
 
-    return reversedLinks;
+    return links;
 }
 
 /*************/
@@ -174,19 +239,36 @@ vector<string> ControllerObject::getTypesFromCategory(const GraphObject::Categor
 /*************/
 map<string, string> ControllerObject::getObjectTypes() const
 {
-    auto scene = dynamic_cast<Scene*>(_root);
-    if (!scene)
-        return {};
-
     auto types = map<string, string>();
+    auto tree = _root->getTree();
 
-    for (auto& o : scene->_objects)
+    auto feedListFunc = [&](const string& branch) {
+        auto objectPath = "/" + branch + "/objects";
+        auto objectList = tree->getBranchListAt(objectPath);
+        for (const auto& objectName : objectList)
+        {
+            auto typePath = objectPath + "/" + objectName + "/type";
+            assert(tree->hasLeafAt(typePath));
+            Value value;
+            tree->getValueForLeafAt(typePath, value);
+            assert(value.size() == 1 && value.getType() == Value::values);
+            auto type = value[0].as<string>();
+            types[objectName] = type;
+        }
+    };
+
+    auto rootList = tree->getBranchList();
+    // Loop over all Scenes
+    for (const auto& rootName : rootList)
     {
-        if (!o.second->getSavable())
+        if (rootName == "world")
             continue;
-        auto type = o.second->getRemoteType();
-        types[o.first] = type.empty() ? o.second->getType() : type;
+        feedListFunc(rootName);
     }
+
+    // Loop over the World to get the remote types
+    feedListFunc("world");
+
     return types;
 }
 
@@ -215,66 +297,76 @@ void ControllerObject::sendBuffer(const std::string& name, const std::shared_ptr
 /*************/
 void ControllerObject::setWorldAttribute(const string& name, const Values& values) const
 {
-    auto scene = dynamic_cast<Scene*>(_root);
-    if (!scene)
-        return;
-
-    scene->sendMessageToWorld(name, values);
+    auto tree = _root->getTree();
+    auto attrPath = "/world/attributes/" + name;
+    if (tree->hasLeafAt(attrPath))
+        tree->setValueForLeafAt(attrPath, values);
+    else
+        _root->addTreeCommand("world", RootObject::Command::callRoot, {name, values});
 }
 
 /*************/
 void ControllerObject::setInScene(const string& name, const Values& values) const
 {
-    auto scene = dynamic_cast<Scene*>(_root);
-    if (!scene)
+    auto tree = _root->getTree();
+    auto attrPath = "/" + _root->getName() + "/attributes/" + name;
+    if (!tree->hasLeafAt(attrPath))
         return;
-
-    scene->setAttribute(name, values);
+    tree->setValueForLeafAt(attrPath, values);
 }
 
 /*************/
 Values ControllerObject::getWorldAttribute(const string& attr) const
 {
-    auto scene = dynamic_cast<Scene*>(_root);
-    if (!scene)
+    auto tree = _root->getTree();
+    auto attrPath = "/world/attributes/" + attr;
+    if (!tree->hasLeafAt(attrPath))
         return {};
-
-    // Do not lock permanently if no answer is received, if the attribute does not exist for example
-    // We wait for no more than 10000us
-    auto answer = scene->sendMessageToWorldWithAnswer("getWorldAttribute", {attr}, 10000);
-    if (!answer.empty())
-        answer.pop_front();
-    return answer;
+    Value value;
+    tree->getValueForLeafAt(attrPath, value);
+    return value.as<Values>();
 }
 
 /*************/
 void ControllerObject::setObjectAttribute(const string& name, const string& attr, const Values& values) const
 {
-    auto scene = dynamic_cast<Scene*>(_root);
-    if (!scene)
-        return;
-
-    auto message = values;
-    message.push_front(attr);
-    message.push_front(name);
-    scene->sendMessageToWorld("sendAll", message);
+    auto tree = _root->getTree();
+    auto branchList = tree->getBranchList();
+    for (const auto& branchName : branchList)
+    {
+        auto path = "/" + branchName + "/objects/" + name + "/attributes/" + attr;
+        if (!tree->hasLeafAt(path))
+            continue;
+        tree->setValueForLeafAt(path, values);
+    }
 }
 
 /*************/
 void ControllerObject::setObjectsOfType(const string& type, const string& attr, const Values& values) const
 {
-    auto scene = dynamic_cast<Scene*>(_root);
-    if (!scene)
-        return;
-
-    for (auto& obj : scene->_objects)
-        if (obj.second->getType() == type)
+    auto tree = _root->getTree();
+    auto branchList = tree->getBranchList();
+    for (const auto& branchName : branchList)
+    {
+        auto path = "/" + branchName + "/objects";
+        assert(tree->hasBranchAt(path));
+        auto objectList = tree->getBranchListAt(path);
+        for (const auto& objectName : objectList)
         {
-            auto msg = values;
-            msg.push_front(attr);
-            msg.push_front(obj.first);
-            scene->sendMessageToWorld("sendAll", msg);
+            auto typePath = path + "/" + objectName + "/type";
+            Value objectType;
+            if (!tree->getValueForLeafAt(typePath, objectType))
+                continue;
+            if (objectType[0].as<string>() == type)
+            {
+                auto attrPath = path + "/" + objectName + "/attributes/" + attr;
+                if (tree->hasLeafAt(attrPath))
+                    tree->setValueForLeafAt(attrPath, values);
+                else
+                    _root->addTreeCommand(branchName, RootObject::Command::callObject, {objectName, attr, values});
+            }
         }
+    }
 }
 
 /*************/
@@ -283,4 +375,4 @@ void ControllerObject::setUserInputCallback(const UserInput::State& state, std::
     UserInput::setCallback(state, cb);
 }
 
-} // end of namespace
+} // namespace Splash

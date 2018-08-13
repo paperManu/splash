@@ -19,6 +19,25 @@ RootObject::RootObject()
 }
 
 /*************/
+bool RootObject::addTreeCommand(const string& root, Command cmd, const Values& args)
+{
+    if (!_tree.hasBranchAt("/" + root))
+        return false;
+    assert(_tree.hasBranchAt("/" + root + "/commands"));
+
+    auto timestampAsStr = to_string(Timer::get().getTime());
+    auto path = "/" + root + "/commands/" + timestampAsStr + "_";
+    uint32_t cmdIndex = 0;
+    while (_tree.hasLeafAt(path + to_string(cmdIndex)))
+        cmdIndex++;
+    path += "_" + to_string(cmdIndex);
+    _tree.createLeafAt(path);
+    _tree.setValueForLeafAt(path, {static_cast<int>(cmd), args});
+
+    return true;
+}
+
+/*************/
 weak_ptr<GraphObject> RootObject::createObject(const string& type, const string& name)
 {
     lock_guard<recursive_mutex> registerLock(_objectsMutex);
@@ -58,6 +77,56 @@ void RootObject::disposeObject(const string& name)
         if (objectIt != _objects.end() && objectIt->second.use_count() == 1)
             _objects.erase(objectIt);
     });
+}
+
+/*************/
+void RootObject::executeTreeCommands()
+{
+    const std::string path = "/" + _name + "/commands";
+
+    auto commandIds = _tree.getBranchAt(path)->getLeafList();
+    commandIds.sort(); // We want the commands by timing order
+    for (const auto& commandId : commandIds)
+    {
+        Value value;
+        _tree.getValueForLeafAt(path + "/" + commandId, value);
+        auto command = value.as<Values>();
+        assert(command.size() == 2);
+        auto type = static_cast<Command>(command[0].as<int>());
+        auto args = command[1].as<Values>();
+
+        switch (type)
+        {
+        default:
+        {
+            assert(false);
+            break;
+        }
+        case Command::callObject:
+        {
+            assert(args.size() == 3);
+            auto objectName = args[0].as<string>();
+            auto attrName = args[1].as<string>();
+            auto params = args[2].as<Values>();
+
+            auto objectIt = _objects.find(objectName);
+            if (objectIt != _objects.end())
+                objectIt->second->setAttribute(attrName, params);
+            break;
+        }
+        case Command::callRoot:
+        {
+            assert(args.size() == 2);
+            auto attrName = args[0].as<string>();
+            auto params = args[1].as<Values>();
+            setAttribute(attrName, params);
+            break;
+        }
+        }
+    }
+
+    _tree.removeBranchAt(path);
+    _tree.createBranchAt(path);
 }
 
 /*************/
@@ -199,14 +268,11 @@ void RootObject::propagateTree()
     for (auto& log : logs)
     {
         auto timestampAsStr = to_string(std::get<0>(log));
-        auto path = "/" + _name + "/logs/" + to_string(std::get<0>(log));
-        if (!_tree.hasBranchAt(path))
-            _tree.createBranchAt(path);
-        path = path + "/";
+        auto path = "/" + _name + "/logs/" + to_string(std::get<0>(log)) + "_";
         uint32_t logIndex = 0;
-        while (_tree.hasLeafAt(path + to_string(logIndex)))
+        while (_tree.hasLeafAt(path + "_" + to_string(logIndex)))
             logIndex++;
-        path = path + to_string(logIndex);
+        path = path + "_" + to_string(logIndex);
         _tree.createLeafAt(path);
         _tree.setValueForLeafAt(path, {std::get<1>(log), static_cast<int>(std::get<2>(log))});
     }
@@ -304,6 +370,7 @@ void RootObject::initializeTree()
 {
     _tree.createBranchAt("/world");
     _tree.createBranchAt("/world/attributes");
+    _tree.createBranchAt("/world/commands");
     _tree.createBranchAt("/world/durations");
     _tree.createBranchAt("/world/logs");
     _tree.createBranchAt("/world/objects");

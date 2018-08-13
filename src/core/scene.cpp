@@ -173,55 +173,6 @@ void Scene::addGhost(const string& type, const string& name)
 }
 
 /*************/
-Values Scene::getAttributeFromObject(const string& name, const string& attribute)
-{
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-    auto object = getObject(name);
-
-    Values values;
-    if (object)
-    {
-        object->getAttribute(attribute, values);
-    }
-    // Ask the World if it knows more about this object
-    else
-    {
-        auto answer = sendMessageToWorldWithAnswer("getAttribute", {name, attribute}, 1e4);
-        for (unsigned int i = 1; i < answer.size(); ++i)
-            values.push_back(answer[i]);
-    }
-
-    return values;
-}
-
-/*************/
-Values Scene::getAttributeDescriptionFromObject(const string& name, const string& attribute)
-{
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-    auto objectIt = _objects.find(name);
-
-    Values values;
-    if (objectIt != _objects.end())
-    {
-        auto& object = objectIt->second;
-        values.push_back(object->getAttributeDescription(attribute));
-    }
-
-    // Ask the World if it knows more about this object
-    if (values.size() == 0 || values[0].as<string>() == "")
-    {
-        auto answer = sendMessageToWorldWithAnswer("getAttributeDescription", {name, attribute}, 10000);
-        if (!answer.empty())
-        {
-            values.clear();
-            values.push_back(answer[1]);
-        }
-    }
-
-    return values;
-}
-
-/*************/
 Json::Value Scene::getConfigurationAsJson()
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
@@ -453,6 +404,7 @@ void Scene::run()
         Timer::get() << "loop_scene";
 
         // Execute waiting tasks
+        executeTreeCommands();
         runTasks();
 
         if (!_started)
@@ -1245,6 +1197,7 @@ void Scene::initializeTree()
     _tree.setName(_name);
     _tree.createBranchAt("/" + _name);
     _tree.createBranchAt("/" + _name + "/attributes");
+    _tree.createBranchAt("/" + _name + "/commands");
     _tree.createBranchAt("/" + _name + "/durations");
     _tree.createBranchAt("/" + _name + "/logs");
     _tree.createBranchAt("/" + _name + "/objects");

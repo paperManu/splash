@@ -217,9 +217,19 @@ class Root
 
     /**
      * Get the list of branches connected to the root
+     * \param path Optional branch path
      * \return Return the list of branches
      */
     std::list<std::string> getBranchList() const { return _rootBranch->getBranchList(); }
+    std::list<std::string> getBranchListAt(const std::string& path) const;
+
+    /**
+     * Get the list of leaves connected to the root
+     * \param path Optional branch path
+     * \return Return the list of leaves
+     */
+    std::list<std::string> getLeafList() const { return _rootBranch->getLeafList(); }
+    std::list<std::string> getLeafListAt(const std::string& path) const;
 
     /**
      * Get a pointer to the branch at the given path

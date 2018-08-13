@@ -55,6 +55,13 @@ class RootObject : public BaseObject
     friend UserInput;
 
   public:
+    enum Command
+    {
+        callObject,
+        callRoot
+    };
+
+  public:
     /**
      * Constructor
      */
@@ -64,6 +71,15 @@ class RootObject : public BaseObject
      * Destructor
      */
     virtual ~RootObject() override = default;
+
+    /**
+     * Add a command into the tree
+     * \param root Target root object
+     * \param cmd Command type
+     * \param args Command arguments
+     * \return Return true if the command has been added successfully
+     */
+    bool addTreeCommand(const std::string& root, Command cmd, const Values& args);
 
     /**
      * Create and return an object given its type and name
@@ -78,6 +94,11 @@ class RootObject : public BaseObject
      * \param name Object name
      */
     void disposeObject(const std::string& name);
+
+    /**
+     * Execute the commands stored in the tree
+     */
+    void executeTreeCommands();
 
     /**
      * Get the object of the given name

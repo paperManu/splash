@@ -83,22 +83,6 @@ class Scene : public RootObject
     void addGhost(const std::string& type, const std::string& name = "");
 
     /**
-     * \brief Get an attribute for the given object. Try locally and to the World
-     * \param name Object name
-     * \param attribute Attribute
-     * \return Return the attribute value
-     */
-    Values getAttributeFromObject(const std::string& name, const std::string& attribute);
-
-    /**
-     * \brief Get an attribute description. Try locally and to the World
-     * \param name Object name
-     * \param attribute Attribute
-     * \return Return the attribute description
-     */
-    Values getAttributeDescriptionFromObject(const std::string& name, const std::string& attribute);
-
-    /**
      * \brief Get the current configuration of the scene as a json object
      * \return Return a Json object holding the configuration
      */

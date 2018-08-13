@@ -50,7 +50,17 @@ void GraphObject::linkToParent(GraphObject* obj)
     auto parentIt = find(_parents.begin(), _parents.end(), obj);
     if (parentIt == _parents.end())
         _parents.push_back(obj);
-    return;
+
+    if (_root && !_name.empty() && !obj->getName().empty())
+    {
+        auto rootName = _root->getName();
+        auto tree = _root->getTree();
+        auto path = "/" + rootName + "/objects/" + _name + "/links/parents";
+        assert(tree->hasBranchAt(path));
+        auto leafPath = path + "/" + obj->getName();
+        if (!tree->hasLeafAt(leafPath))
+            tree->createLeafAt(leafPath);
+    }
 }
 
 /*************/
@@ -59,7 +69,15 @@ void GraphObject::unlinkFromParent(GraphObject* obj)
     auto parentIt = find(_parents.begin(), _parents.end(), obj);
     if (parentIt != _parents.end())
         _parents.erase(parentIt);
-    return;
+
+    if (_root && !_name.empty() && !obj->getName().empty())
+    {
+        auto rootName = _root->getName();
+        auto tree = _root->getTree();
+        auto path = "/" + rootName + "/objects/" + _name + "/links/parents/" + obj->getName();
+        assert(tree->hasLeafAt(path));
+        tree->removeLeafAt(path);
+    }
 }
 
 /*************/
@@ -84,7 +102,7 @@ bool GraphObject::linkTo(const shared_ptr<GraphObject>& obj)
     {
         auto rootName = _root->getName();
         auto tree = _root->getTree();
-        auto path = "/" + rootName + "/objects/" + _name + "/links";
+        auto path = "/" + rootName + "/objects/" + _name + "/links/children";
         assert(tree->hasBranchAt(path));
         auto leafPath = path + "/" + obj->getName();
         if (!tree->hasLeafAt(leafPath))
@@ -116,7 +134,7 @@ void GraphObject::unlinkFrom(const shared_ptr<GraphObject>& obj)
     {
         auto rootName = _root->getName();
         auto tree = _root->getTree();
-        auto path = "/" + rootName + "/objects/" + _name + "/links/" + obj->getName();
+        auto path = "/" + rootName + "/objects/" + _name + "/links/children/" + obj->getName();
         assert(tree->hasLeafAt(path));
         tree->removeLeafAt(path);
     }
@@ -264,31 +282,68 @@ void GraphObject::initializeTree()
         tree->createBranchAt(path);
     if (!tree->hasBranchAt(path + "/attributes"))
         tree->createBranchAt(path + "/attributes");
+    if (!tree->hasBranchAt(path + "/attributes"))
+        tree->createBranchAt(path + "/attributes");
+    if (!tree->hasBranchAt(path + "/documentation"))
+        tree->createBranchAt(path + "/documentation");
     if (!tree->hasBranchAt(path + "/links"))
+    {
         tree->createBranchAt(path + "/links");
+        tree->createBranchAt(path + "/links/children");
+        tree->createBranchAt(path + "/links/parents");
+    }
+    if (!tree->hasLeafAt(path + "/type"))
+        tree->createLeafAt(path + "/type");
+    tree->setValueForLeafAt(path + "/type", {_type});
 
     // Create the leaves for the attributes in the tree
-    path = path + "/attributes/";
-    for (const auto& attribute : _attribFunctions)
     {
-        if (!attribute.second.hasGetter())
-            continue;
-        auto attributeName = attribute.first;
-        auto leafPath = path + attributeName;
-        if (tree->hasLeafAt(leafPath))
-            continue;
-        if (!tree->createLeafAt(leafPath))
-            throw runtime_error("Error while adding a leaf at path " + leafPath);
+        auto attrPath = path + "/attributes/";
+        for (const auto& attribute : _attribFunctions)
+        {
+            if (!attribute.second.hasGetter())
+                continue;
+            auto attributeName = attribute.first;
+            auto leafPath = attrPath + attributeName;
+            if (tree->hasLeafAt(leafPath))
+                continue;
 
-        auto leaf = tree->getLeafAt(leafPath);
-        _treeCallbackIds[attributeName] = leaf->addCallback([=](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
-            auto attribIt = _attribFunctions.find(attributeName);
-            if (attribIt == _attribFunctions.end())
-                return;
-            if (value == attribIt->second())
-                return;
-            setAttribute(attributeName, value.as<Values>());
-        });
+            tree->createLeafAt(leafPath);
+            auto leaf = tree->getLeafAt(leafPath);
+            _treeCallbackIds[attributeName] = leaf->addCallback([=](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
+                auto attribIt = _attribFunctions.find(attributeName);
+                if (attribIt == _attribFunctions.end())
+                    return;
+                if (value == attribIt->second())
+                    return;
+                setAttribute(attributeName, value.as<Values>());
+            });
+        }
+    }
+
+    // Store the documentation inside the tree
+    {
+        auto docPath = path + "/documentation/";
+        auto attributesDescriptions = getAttributesDescriptions();
+        for (auto& d : attributesDescriptions)
+        {
+            if (d[1].size() == 0)
+                continue;
+            if (d[2].size() == 0)
+                continue;
+            auto attrName = d[0].as<string>();
+            auto attrPath = docPath + attrName;
+            if (tree->hasBranchAt(attrPath))
+                continue;
+            tree->createBranchAt(attrPath);
+            tree->createLeafAt(attrPath + "/description");
+            tree->createLeafAt(attrPath + "/arguments");
+
+            auto description = d[1].as<string>();
+            auto arguments = d[2].as<Values>();
+            tree->setValueForLeafAt(attrPath + "/description", {description});
+            tree->setValueForLeafAt(attrPath + "/arguments", arguments);
+        }
     }
 
     // Remove leaves for attributes which do not exist anymore

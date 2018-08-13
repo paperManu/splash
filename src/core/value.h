@@ -199,6 +199,19 @@ struct Value
             return std::to_string(_real);
         case Type::string:
             return _string;
+        case Type::values:
+            std::string out = "";
+            if (_type == Type::values)
+                out += "[";
+            for (uint32_t i = 0; i < _values->size(); ++i)
+            {
+                out += (*_values)[i].as<std::string>();
+                if (_values->size() > 1 && i < _values->size() - 1)
+                    out += ", ";
+            }
+            if (_type == Type::values)
+                out += "]";
+            return out;
         }
     }
 

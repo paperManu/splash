@@ -240,6 +240,42 @@ bool Root::getError(string& error)
 }
 
 /*************/
+list<string> Root::getBranchListAt(const string& path) const
+{
+    auto parts = processPath(path);
+    if (parts.empty())
+    {
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
+        return {};
+    }
+
+    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    auto holdingBranch = getBranchAt(parts);
+    if (!holdingBranch)
+        return {};
+
+    return holdingBranch->getBranchList();
+}
+
+/*************/
+list<string> Root::getLeafListAt(const string& path) const
+{
+    auto parts = processPath(path);
+    if (parts.empty())
+    {
+        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
+        return {};
+    }
+
+    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    auto holdingBranch = getBranchAt(parts);
+    if (!holdingBranch)
+        return {};
+
+    return holdingBranch->getLeafList();
+}
+
+/*************/
 bool Root::getValueForLeafAt(const string& path, Value& value)
 {
     auto parts = processPath(path);
