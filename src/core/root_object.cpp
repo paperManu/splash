@@ -3,6 +3,8 @@
 #include <stdexcept>
 
 #include "./core/buffer_object.h"
+#include "./core/serialize/serialize_value.h"
+#include "./core/serialize/serialize_uuid.h"
 #include "./core/serializer.h"
 
 using namespace std;
@@ -333,7 +335,7 @@ void RootObject::propagateTree()
     auto treeSeeds = _tree.getSeedList();
     vector<uint8_t> serializedSeeds;
     Serial::serialize(treeSeeds, serializedSeeds);
-    auto dataPtr = reinterpret_cast<char*>(serializedSeeds.data());
+    auto dataPtr = reinterpret_cast<uint8_t*>(serializedSeeds.data());
     _link->sendBuffer("_tree", make_shared<SerializedObject>(dataPtr, dataPtr + serializedSeeds.size()));
 }
 

@@ -175,7 +175,7 @@ class ImageBuffer
      * \brief Return a pointer to the image data
      * \return Return a pointer to the data
      */
-    char* data() const { return _buffer.data(); }
+    uint8_t* data() const { return _buffer.data(); }
 
     /**
      * \brief Get the image spec
@@ -199,11 +199,11 @@ class ImageBuffer
      * \brief Set the inner raw buffer, to use with caution, its size must match the spec
      * \param buffer Buffer to use as inner buffer
      */
-    void setRawBuffer(ResizableArray<char>&& buffer) { _buffer = std::move(buffer); }
+    void setRawBuffer(ResizableArray<uint8_t>&& buffer) { _buffer = std::move(buffer); }
 
   private:
     ImageBufferSpec _spec{};
-    ResizableArray<char> _buffer;
+    ResizableArray<uint8_t> _buffer;
 
     /**
      * \brief Initialization

@@ -42,15 +42,15 @@ struct SerializedObject
      * \brief Constructor with an initial size
      * \param size Initial array size
      */
-    SerializedObject(int size) { _data.resize(size); }
+    explicit SerializedObject(int size) { _data.resize(size); }
 
     /**
      * \brief Constructor from two iterators
      * \param start Begin iterator
      * \param end End iterator
      */
-    SerializedObject(char* start, char* end)
-        : _data(ResizableArray<char>(start, end))
+    SerializedObject(uint8_t* start, uint8_t* end)
+        : _data(start, end)
     {
     }
 
@@ -58,28 +58,28 @@ struct SerializedObject
      * \brief Get the pointer to the data
      * \return Return a pointer to the data
      */
-    char* data() { return _data.data(); }
+    inline uint8_t* data() { return _data.data(); }
 
     /**
      * \brief Get ownership over the inner buffer. Use with caution, as it invalidates the SerializedObject
      * \return Return the inner buffer as a rvalue
      */
-    ResizableArray<char>&& grabData() { return std::move(_data); }
+    inline ResizableArray<uint8_t>&& grabData() { return std::move(_data); }
 
     /**
      * \brief Get the size of the data
      * \return Return the size
      */
-    std::size_t size() { return _data.size(); }
+    inline std::size_t size() { return _data.size(); }
 
     /**
      * \brief Modify the size of the data
      * \param s New size
      */
-    void resize(size_t s) { _data.resize(s); }
+    inline void resize(size_t s) { _data.resize(s); }
 
     //! Inner buffer
-    ResizableArray<char> _data{};
+    ResizableArray<uint8_t> _data{};
 };
 
 } // end of namespace

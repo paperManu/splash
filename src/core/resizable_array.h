@@ -182,6 +182,6 @@ class ResizableArray
     std::unique_ptr<T[]> _buffer{nullptr}; //!< Pointer to the buffer data
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_RESIZABLE_ARRAY_H

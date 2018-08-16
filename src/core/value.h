@@ -25,11 +25,12 @@
 #ifndef SPLASH_VALUE_H
 #define SPLASH_VALUE_H
 
+#include <cassert>
 #include <deque>
 #include <memory>
 #include <string>
 
-#include "./core/serializer.h"
+#include "./core/resizable_array.h"
 
 namespace Splash
 {
@@ -41,12 +42,16 @@ using Values = std::deque<Value>;
 struct Value
 {
   public:
+    using Buffer = ResizableArray<uint8_t>;
+
+  public:
     enum Type : uint8_t
     {
         integer = 0, // integer
         real,        // float
         string,      // string
-        values       // values
+        values,      // values
+        buffer       // buffer
     };
 
     Value() = default;
@@ -91,6 +96,14 @@ struct Value
     {
     }
 
+    template <class T, typename std::enable_if<std::is_same<T, Buffer>::value>::type* = nullptr>
+    Value(const T& v, const std::string& name = "")
+        : _name(name)
+        , _type(Type::buffer)
+        , _buffer(std::make_unique<Buffer>(v))
+    {
+    }
+
     Value(const Value& v) { operator=(v); }
     Value& operator=(const Value& v)
     {
@@ -105,13 +118,17 @@ struct Value
             if (v._values)
             {
                 _values = std::make_unique<Values>();
-                if (v._values)
-                    *_values = *(v._values);
+                *_values = *(v._values);
             }
             else
             {
                 _values.reset(nullptr);
             }
+
+            if (v._buffer)
+                _buffer = std::make_unique<Buffer>(*v._buffer);
+            else
+                _buffer.reset(nullptr);
         }
 
         return *this;
@@ -147,6 +164,7 @@ struct Value
         switch (_type)
         {
         default:
+            assert(false);
             return false;
         case Type::integer:
             return _integer == v._integer;
@@ -155,12 +173,23 @@ struct Value
         case Type::string:
             return _string == v._string;
         case Type::values:
+        {
             if (_values->size() != v._values->size())
                 return false;
             bool isEqual = true;
             for (uint32_t i = 0; i < _values->size(); ++i)
                 isEqual &= (_values->at(i) == v._values->at(i));
             return isEqual;
+        }
+        case Type::buffer:
+        {
+            if (_buffer->size() != v._buffer->size())
+                return false;
+            for (uint32_t i = 0; i < _buffer->size(); ++i)
+                if ((*_buffer)[i] != (*v._buffer)[i])
+                    return false;
+            return true;
+        }
         }
     }
 
@@ -180,10 +209,15 @@ struct Value
 
     Value& operator[](int index)
     {
-        if (_type != Type::values)
-            return *this;
-        else
+        if (_type == Type::values)
+        {
+            assert(_values != nullptr);
             return _values->at(index);
+        }
+        else
+        {
+            return *this;
+        }
     }
 
     template <class T, typename std::enable_if<std::is_same<T, std::string>::value>::type* = nullptr>
@@ -192,6 +226,7 @@ struct Value
         switch (_type)
         {
         default:
+            assert(false);
             return "";
         case Type::integer:
             return std::to_string(_integer);
@@ -200,18 +235,28 @@ struct Value
         case Type::string:
             return _string;
         case Type::values:
-            std::string out = "";
-            if (_type == Type::values)
-                out += "[";
+        {
+            std::string out = "[";
             for (uint32_t i = 0; i < _values->size(); ++i)
             {
                 out += (*_values)[i].as<std::string>();
                 if (_values->size() > 1 && i < _values->size() - 1)
                     out += ", ";
             }
-            if (_type == Type::values)
-                out += "]";
+            out += "]";
             return out;
+        }
+        case Type::buffer:
+        {
+            std::string out = "(";
+            const static size_t maxBufferPrinted = 16;
+            for (uint32_t i = 0; i < std::min(static_cast<size_t>(maxBufferPrinted), _buffer->size()); ++i)
+                out += std::to_string((*_buffer)[i]);
+            if (_buffer->size() > maxBufferPrinted)
+                out += "...";
+            out += ")";
+            return out;
+        }
         }
     }
 
@@ -221,6 +266,7 @@ struct Value
         switch (_type)
         {
         default:
+            assert(false);
             return 0;
         case Type::integer:
             return _integer;
@@ -235,6 +281,10 @@ struct Value
             {
                 return 0;
             }
+        case Type::values:
+            return 0;
+        case Type::buffer:
+            return 0;
         }
     }
 
@@ -244,6 +294,7 @@ struct Value
         switch (_type)
         {
         default:
+            assert(false);
             return {};
         case Type::integer:
             return {_integer};
@@ -253,7 +304,17 @@ struct Value
             return {_string};
         case Type::values:
             return *_values;
+        case Type::buffer:
+            return {};
         }
+    }
+
+    template <class T, typename std::enable_if<std::is_same<T, Buffer>::value>::type* = nullptr>
+    T as() const
+    {
+        if (_type != Type::buffer)
+            return {};
+        return *_buffer;
     }
 
     void* data() const
@@ -261,6 +322,7 @@ struct Value
         switch (_type)
         {
         default:
+            assert(false);
             return nullptr;
         case Type::integer:
             return (void*)&_integer;
@@ -268,6 +330,10 @@ struct Value
             return (void*)&_real;
         case Type::string:
             return (void*)_string.c_str();
+        case Type::values:
+            return nullptr;
+        case Type::buffer:
+            return _buffer->data();
         }
     }
 
@@ -281,6 +347,7 @@ struct Value
         switch (_type)
         {
         default:
+            assert(false);
             return ' ';
         case Type::integer:
             return 'n';
@@ -290,14 +357,17 @@ struct Value
             return 's';
         case Type::values:
             return 'v';
+        case Type::buffer:
+            return 'b';
         }
     }
 
-    uint32_t size() const
+    size_t size() const
     {
         switch (_type)
         {
         default:
+            assert(false);
             return 0;
         case Type::integer:
             return sizeof(_integer);
@@ -307,6 +377,8 @@ struct Value
             return _string.size();
         case Type::values:
             return _values->size();
+        case Type::buffer:
+            return _buffer->size();
         }
     }
 
@@ -317,90 +389,8 @@ struct Value
     double _real{0.0};
     std::string _string{""};
     std::unique_ptr<Values> _values{nullptr};
-};
-
-// Specialisation of serialization for Splash::Value
-namespace Serial
-{
-
-namespace detail
-{
-
-template <class T>
-struct getSizeHelper<T, typename std::enable_if<std::is_same<T, Value>::value>::type>
-{
-    static size_t value(const Value& obj)
-    {
-        size_t acc = sizeof(Value::Type);
-        auto objType = obj.getType();
-
-        if (objType == Value::Type::values)
-            return acc + getSize(obj.as<Values>());
-        else if (objType == Value::Type::string)
-            return acc + getSize(obj.as<std::string>());
-        else
-            return acc + obj.size();
-    }
-};
-
-template <class T>
-struct serializeHelper<T, typename std::enable_if<std::is_same<T, Value>::value>::type>
-{
-    static void apply(const Value& obj, std::vector<uint8_t>::iterator& it)
-    {
-        auto objType = obj.getType();
-        serializer(static_cast<typename std::underlying_type<Value::Type>::type>(objType), it);
-
-        if (objType == Value::Type::values)
-        {
-            serializer(obj.as<Values>(), it);
-        }
-        else if (objType == Value::Type::string)
-        {
-            serializer(obj.as<std::string>(), it);
-        }
-        else
-        {
-            auto ptr = reinterpret_cast<uint8_t*>(obj.data());
-            std::copy(ptr, ptr + obj.size(), it);
-            it += obj.size();
-        }
-    }
-};
-
-template <class T>
-struct deserializeHelper<T, typename std::enable_if<std::is_same<T, Value>::value>::type>
-{
-    static Value apply(std::vector<uint8_t>::const_iterator& it)
-    {
-        T obj;
-        Value::Type type;
-        std::copy(it, it + sizeof(Value::Type), reinterpret_cast<char*>(&type));
-        it += sizeof(Value::Type);
-
-        switch (type)
-        {
-        case Value::Type::integer:
-            obj = Value(deserializer<int64_t>(it));
-            break;
-        case Value::Type::real:
-            obj = Value(deserializer<double>(it));
-            break;
-        case Value::Type::string:
-            obj = Value(deserializer<std::string>(it));
-            break;
-        case Value::Type::values:
-            obj = Value(deserializer<Values>(it));
-            break;
-        }
-
-        return obj;
-    }
-};
-
-} // namespace detail
-
-} // namespace Serial
+    std::unique_ptr<Buffer> _buffer{nullptr};
+}; // namespace Splash
 
 } // namespace Splash
 

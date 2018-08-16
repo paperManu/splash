@@ -430,7 +430,7 @@ void Link::handleInputBuffers()
             string name((char*)msg.data());
 
             _socketBufferIn->recv(&msg);
-            shared_ptr<SerializedObject> buffer = make_shared<SerializedObject>((char*)msg.data(), (char*)msg.data() + msg.size());
+            shared_ptr<SerializedObject> buffer = make_shared<SerializedObject>(static_cast<uint8_t*>(msg.data()), static_cast<uint8_t*>(msg.data()) + msg.size());
 
             if (_rootObject)
                 _rootObject->setFromSerializedObject(name, std::move(buffer));

@@ -2,6 +2,7 @@
 #include <random>
 #include <vector>
 
+#include "./core/serialize/serialize_value.h"
 #include "./core/serializer.h"
 #include "./core/value.h"
 
@@ -90,6 +91,32 @@ TEST_CASE("Testing Values comparison")
 }
 
 /*************/
+TEST_CASE("Testing buffer in Value")
+{
+    Value::Buffer buffer(256);
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<uint8_t> dist(0, 255);
+    for (uint32_t i = 0; i < buffer.size(); ++i)
+        buffer[i] = dist(gen);
+
+    Value value(buffer);
+
+    bool isEqual = true;
+    for (uint32_t i = 0; i < buffer.size(); ++i)
+        isEqual &= (buffer[i] == value.as<Value::Buffer>()[i]);
+    CHECK(isEqual);
+
+    auto otherValue = value;
+    CHECK(otherValue == value);
+
+    isEqual = true;
+    for (uint32_t i = 0; i < buffer.size(); ++i)
+        isEqual &= (buffer[i] == otherValue.as<Value::Buffer>()[i]);
+    CHECK(isEqual);
+}
+
+/*************/
 TEST_CASE("Testing Value serialization")
 {
     string testString({"One to rule them all"});
@@ -175,6 +202,21 @@ TEST_CASE("Testing Value serialization")
     {
         vector<uint8_t> buffer;
         auto data = Value(Values({42, 2.71828, testString}));
+        Serial::serialize(data, buffer);
+        auto outData = Serial::deserialize<Value>(buffer);
+        CHECK(data == outData);
+    }
+
+    {
+        Value::Buffer inputBuffer(256);
+        random_device rd;
+        mt19937 gen(rd());
+        uniform_int_distribution<uint8_t> dist(0, 255);
+        for (uint32_t i = 0; i < inputBuffer.size(); ++i)
+            inputBuffer[i] = dist(gen);
+
+        vector<uint8_t> buffer;
+        auto data = Value(inputBuffer);
         Serial::serialize(data, buffer);
         auto outData = Serial::deserialize<Value>(buffer);
         CHECK(data == outData);
