@@ -25,6 +25,12 @@ TEST_CASE("Testing the basic functionnalities of the Tree")
     CHECK(tree.createLeafAt("/some_object/a_leaf") == true);
     CHECK(tree.createLeafAt("/some_object/a_leaf") == false);
 
+    CHECK(tree.createBranchAt("/some/branch/hidden/in/tree") == true);
+    CHECK(tree.hasBranchAt("/some/branch/hidden/in/tree") == true);
+
+    CHECK(tree.createLeafAt("/some/leaf/hidden/in/tree") == true);
+    CHECK(tree.hasLeafAt("/some/leaf/hidden/in/tree") == true);
+
     auto value = Values({1.0, "I've got a flying machine", false});
     CHECK(tree.createLeafAt("/some_object/another_leaf", {1.0, "I've got a flying machine", false}) == true);
 
@@ -180,6 +186,29 @@ TEST_CASE("Testing the chronology handling of updates")
     CHECK(beech.getValueForLeafAt("/a_branch/a_leaf", leafValue) == true);
     CHECK(leafValue == Values({"Stop clicking on me!"}));
     CHECK(beech.hasError());
+}
+
+/*************/
+TEST_CASE("Testing the Branch's callbacks")
+{
+    Tree::Root maple;
+    string lastName = "";
+    maple.addCallbackToBranchAt("/", Tree::Branch::Task::AddBranch, [&lastName](Tree::Branch& branch, string name) { lastName = name; });
+    maple.addCallbackToBranchAt("/", Tree::Branch::Task::RemoveBranch, [&lastName](Tree::Branch& branch, string name) { lastName = name; });
+    maple.addCallbackToBranchAt("/", Tree::Branch::Task::AddLeaf, [&lastName](Tree::Branch& branch, string name) { lastName = name; });
+    maple.addCallbackToBranchAt("/", Tree::Branch::Task::RemoveLeaf, [&lastName](Tree::Branch& branch, string name) { lastName = name; });
+
+    maple.createBranchAt("/some_branch");
+    CHECK(lastName == "some_branch");
+    lastName = "";
+    maple.removeBranchAt("/some_branch");
+    CHECK(lastName == "some_branch");
+
+    maple.createLeafAt("/some_leaf");
+    CHECK(lastName == "some_leaf");
+    lastName = "";
+    maple.removeLeafAt("/some_leaf");
+    CHECK(lastName == "some_leaf");
 }
 
 /*************/

@@ -32,7 +32,7 @@ bool Root::operator==(const Root& rhs) const
 }
 
 /*************/
-bool Root::addBranchAt(const string& path, unique_ptr<Branch>&& branch)
+bool Root::addBranchAt(const string& path, unique_ptr<Branch>&& branch, bool silent)
 {
     lock_guard<recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(processPath(path));
@@ -43,15 +43,18 @@ bool Root::addBranchAt(const string& path, unique_ptr<Branch>&& branch)
     if (!holdingBranch->addBranch(move(branch)))
         return false;
 
-    auto seeds = generateSeedsForBranch(getBranchAt(branchPath));
-    lock_guard<recursive_mutex> lock(_updatesMutex);
-    _updates.merge(seeds, [](const auto& a, const auto& b) { return std::get<2>(a) < std::get<2>(b); });
+    if (!silent)
+    {
+        auto seeds = generateSeedsForBranch(getBranchAt(branchPath));
+        lock_guard<recursive_mutex> lock(_updatesMutex);
+        _updates.merge(seeds, [](const auto& a, const auto& b) { return std::get<2>(a) < std::get<2>(b); });
+    }
 
     return true;
 }
 
 /*************/
-bool Root::addLeafAt(const string& path, unique_ptr<Leaf>&& leaf)
+bool Root::addLeafAt(const string& path, unique_ptr<Leaf>&& leaf, bool silent)
 {
     lock_guard<recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(processPath(path));
@@ -62,10 +65,27 @@ bool Root::addLeafAt(const string& path, unique_ptr<Leaf>&& leaf)
     if (!holdingBranch->addLeaf(move(leaf)))
         return false;
 
-    auto seeds = generateSeedsForLeaf(getLeafAt(leafPath));
-    lock_guard<recursive_mutex> lock(_updatesMutex);
-    _updates.merge(seeds, [](const auto& a, const auto& b) { return std::get<2>(a) < std::get<2>(b); });
+    if (!silent)
+    {
+        auto seeds = generateSeedsForLeaf(getLeafAt(leafPath));
+        lock_guard<recursive_mutex> lock(_updatesMutex);
+        _updates.merge(seeds, [](const auto& a, const auto& b) { return std::get<2>(a) < std::get<2>(b); });
+    }
 
+    return true;
+}
+
+/*************/
+bool Root::addCallbackToBranchAt(const string& path, Branch::Task target, const Branch::UpdateCallback& cb, bool pending)
+{
+    auto branch = getBranchAt(path);
+    if (!branch && !pending)
+        return false;
+
+    if (branch)
+        return branch->addCallback(target, cb);
+
+    _branchCallbacksToRegister.push_back(make_tuple(path, target, cb));
     return true;
 }
 
@@ -79,7 +99,7 @@ bool Root::addCallbackToLeafAt(const string& path, const Leaf::UpdateCallback& c
     if (leaf)
         return leaf->addCallback(cb);
 
-    _callbacksToRegister.push_back(make_pair(path, cb));
+    _leafCallbacksToRegister.push_back(make_pair(path, cb));
     return true;
 }
 
@@ -121,7 +141,16 @@ bool Root::createBranchAt(const string& path, bool silent)
     lock_guard<recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
-        return false;
+    {
+        string parentPath;
+        for (const auto& part : parts)
+            parentPath += "/" + part;
+
+        if (!createBranchAt(parentPath, silent))
+            return false;
+        assert(getBranchAt(parts));
+        holdingBranch = getBranchAt(parts);
+    }
 
     auto newBranch = make_unique<Branch>(newBranchName);
     if (!holdingBranch->addBranch(move(newBranch)))
@@ -156,7 +185,16 @@ bool Root::createLeafAt(const std::string& path, Values value, bool silent)
     lock_guard<recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
-        return false;
+    {
+        string parentPath;
+        for (const auto& part : parts)
+            parentPath += "/" + part;
+
+        if (!createBranchAt(parentPath, silent))
+            return false;
+        assert(getBranchAt(parts));
+        holdingBranch = getBranchAt(parts);
+    }
 
     auto newLeaf = make_unique<Leaf>(newLeafName, value);
     if (!holdingBranch->addLeaf(move(newLeaf)))
@@ -176,7 +214,7 @@ bool Root::createLeafAt(const std::string& path, Values value, bool silent)
 }
 
 /*************/
-unique_ptr<Branch> Root::cutBranchAt(const string& path)
+unique_ptr<Branch> Root::cutBranchAt(const string& path, bool silent)
 {
     auto parts = processPath(path);
     if (parts.empty())
@@ -193,14 +231,17 @@ unique_ptr<Branch> Root::cutBranchAt(const string& path)
     if (!holdingBranch)
         return nullptr;
 
-    lock_guard<recursive_mutex> lock(_updatesMutex);
-    _updates.emplace_back(make_tuple(Task::RemoveBranch, Values({path}), chrono::system_clock::now(), _uuid));
+    if (!silent)
+    {
+        lock_guard<recursive_mutex> lock(_updatesMutex);
+        _updates.emplace_back(make_tuple(Task::RemoveBranch, Values({path}), chrono::system_clock::now(), _uuid));
+    }
 
     return holdingBranch->cutBranch(branchName);
 }
 
 /*************/
-unique_ptr<Leaf> Root::cutLeafAt(const string& path)
+unique_ptr<Leaf> Root::cutLeafAt(const string& path, bool silent)
 {
     auto parts = processPath(path);
     if (parts.empty())
@@ -217,8 +258,11 @@ unique_ptr<Leaf> Root::cutLeafAt(const string& path)
     if (!holdingBranch)
         return nullptr;
 
-    lock_guard<recursive_mutex> lock(_updatesMutex);
-    _updates.emplace_back(make_tuple(Task::RemoveLeaf, Values({path}), chrono::system_clock::now(), _uuid));
+    if (!silent)
+    {
+        lock_guard<recursive_mutex> lock(_updatesMutex);
+        _updates.emplace_back(make_tuple(Task::RemoveLeaf, Values({path}), chrono::system_clock::now(), _uuid));
+    }
 
     return holdingBranch->cutLeaf(leafName);
 }
@@ -861,7 +905,10 @@ list<string> Root::processPath(const string& path)
 /*************/
 void Root::registerPendingCallbacks()
 {
-    _callbacksToRegister.remove_if([this](const pair<string, Leaf::UpdateCallback>& callback) { return addCallbackToLeafAt(callback.first, callback.second); });
+    _branchCallbacksToRegister.remove_if([this](const tuple<string, Branch::Task, Branch::UpdateCallback>& callback) {
+        return addCallbackToBranchAt(std::get<0>(callback), std::get<1>(callback), std::get<2>(callback));
+    });
+    _leafCallbacksToRegister.remove_if([this](const pair<string, Leaf::UpdateCallback>& callback) { return addCallbackToLeafAt(callback.first, callback.second); });
 }
 
 } // namespace Tree

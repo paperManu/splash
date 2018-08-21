@@ -122,7 +122,7 @@ void GuiControl::render()
             string newName = objectAliases[_targetObjectName];
             newName.resize(256);
             if (ImGui::InputText("Rename", const_cast<char*>(newName.c_str()), newName.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                setWorldAttribute("setAlias", {_targetObjectName, newName});
+                setObjectAttribute("alias", _targetObjectName, {newName});
 
             ImGui::Spacing();
             ImGui::Separator();

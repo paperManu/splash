@@ -48,6 +48,13 @@ set(DEBUG_OPENGL OFF CACHE BOOL "Enable OpenGL debugging")
 set(PROFILE_OPENGL OFF CACHE BOOL "Enable OpenGL profiling")
 set(USE_SYSTEM_LIBS OFF CACHE BOOL "Enable using system libraries instead of bundle ones")
 
+# Force color output (useful when building with Ninja)
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+   add_compile_options (-fdiagnostics-color=always)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+   add_compile_options (-fcolor-diagnostics)
+endif ()
+
 #
 # Find the various libraries
 #

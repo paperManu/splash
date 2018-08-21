@@ -153,7 +153,6 @@ void World::run()
         Timer::get() << "tree_propagate";
         propagateTree();
         Timer::get() >> "tree_propagate";
-        // cout << _tree.print() << endl;
 
         // Sync with buffer object update
         Timer::get() >> "loop_world_inner";
@@ -1207,14 +1206,6 @@ void World::parseArguments(int argc, char** argv)
 }
 
 /*************/
-void World::setAttribute(const string& name, const string& attrib, const Values& args)
-{
-    auto object = getObject(name);
-    if (object)
-        object->setAttribute(attrib, args);
-}
-
-/*************/
 void World::registerAttributes()
 {
     addAttribute("addObject",
@@ -1304,74 +1295,6 @@ void World::registerAttributes()
         {'s', 's'});
     setAttributeDescription("unlink", "Unlink the two given objects");
 
-    addAttribute("getAttribute",
-        [&](const Values& args) {
-            addTask([=]() {
-                auto objectName = args[0].as<string>();
-                auto attrName = args[1].as<string>();
-
-                auto object = getObject(objectName);
-                if (object)
-                {
-                    Values values{};
-                    object->getAttribute(attrName, values);
-
-                    values.push_front("getAttribute");
-                    sendMessage(SPLASH_ALL_PEERS, "answerMessage", values);
-                }
-                else
-                {
-                    sendMessage(SPLASH_ALL_PEERS, "answerMessage", {});
-                }
-            });
-
-            return true;
-        },
-        {'s', 's'});
-    setAttributeDescription("getAttribute", "Ask the given object for the given attribute");
-
-    addAttribute("getAttributeDescription",
-        [&](const Values& args) {
-            auto objectName = args[0].as<string>();
-            auto attrName = args[1].as<string>();
-
-            addTask([=]() {
-                lock_guard<recursive_mutex> lock(_objectsMutex);
-
-                auto object = getObject(objectName);
-                // If the object exists locally
-                if (object)
-                {
-                    Values values{"getAttributeDescription"};
-                    values.push_back(object->getAttributeDescription(attrName));
-                    sendMessage(SPLASH_ALL_PEERS, "answerMessage", values);
-                }
-                // Else, ask the Scenes for some info
-                else
-                {
-                    sendMessage(SPLASH_ALL_PEERS, "answerMessage", {""});
-                }
-            });
-
-            return true;
-        },
-        {'s', 's'});
-    setAttributeDescription("getAttributeDescription", "Ask the given object for the description of the given attribute");
-
-    addAttribute("getWorldAttribute",
-        [&](const Values& args) {
-            auto attrName = args[0].as<string>();
-            addTask([=]() {
-                Values attr;
-                getAttribute(attrName, attr);
-                attr.push_front("getWorldAttribute");
-                sendMessage(SPLASH_ALL_PEERS, "answerMessage", attr);
-            });
-            return true;
-        },
-        {'s'});
-    setAttributeDescription("getWorldAttribute", "Get a World's attribute and send it to the Scenes");
-
     addAttribute("loadConfig",
         [&](const Values& args) {
             string filename = args[0].as<string>();
@@ -1428,27 +1351,6 @@ void World::registerAttributes()
     });
     setAttributeDescription("quit", "Ask the world to quit");
 
-    addAttribute("setAlias",
-        [&](const Values& args) {
-            auto name = args[0].as<string>();
-            auto alias = args[1].as<string>();
-
-            addTask([=]() {
-                lock_guard<recursive_mutex> lock(_objectsMutex);
-
-                // Update the alias in the World
-                auto object = getObject(name);
-                if (object)
-                    object->setAlias(alias);
-
-                // Update the name in the Scenes
-                setAttribute("sendAll", {name, "alias", alias});
-            });
-
-            return true;
-        },
-        {'s', 's'});
-
     addAttribute("replaceObject",
         [&](const Values& args) {
             auto objName = args[0].as<string>();
@@ -1463,7 +1365,6 @@ void World::registerAttributes()
 
             setAttribute("deleteObject", {objName});
             setAttribute("addObject", {objType, objName, "", false});
-            setAttribute("setAlias", {objName, objAlias});
             addTask([=]() {
                 for (const auto& t : targets)
                     setAttribute("sendAllScenes", {"link", objName, t});

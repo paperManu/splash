@@ -28,10 +28,12 @@
 #include <chrono>
 #include <functional>
 #include <list>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <tuple>
+#include <set>
 #include <unordered_map>
 #include <utility>
 
@@ -53,6 +55,20 @@ class Leaf;
 class Branch
 {
     friend Root;
+
+  public:
+    using UpdateCallback = std::function<void(Branch&, std::string)>;
+
+    /**
+     * Targets for callbacks
+     */
+    enum class Task : uint8_t
+    {
+        AddBranch,
+        AddLeaf,
+        RemoveBranch,
+        RemoveLeaf
+    };
 
   public:
     /**
@@ -81,6 +97,21 @@ class Branch
      * \return Return true if the leaf was successfully added
      */
     bool addLeaf(std::unique_ptr<Leaf>&& leaf);
+
+    /**
+     * Add a callback for the given target operation
+     * \param target Callback target operation
+     * \param callback Callback to add
+     * \return Return an ID number for the callback
+     */
+    int addCallback(Task target, const UpdateCallback& callback);
+
+    /**
+     * Remove a callback given its ID
+     * \param id Callback ID
+     * \return Return true if the callback has been removed successfully
+     */
+    bool removeCallback(int id);
 
     /**
      * Cut a branch from the current one, acquiring its ownership in the process
@@ -196,6 +227,10 @@ class Branch
     void setParent(Branch* parent) { _parentBranch = parent; }
 
   private:
+    int _currentCallbackID{0};
+    std::mutex _callbackMutex;
+    std::map<Task, std::set<int>> _callbackTargetIds{};
+    std::unordered_map<int, UpdateCallback> _callbacks{};
     std::string _name{"branch"};
     std::unordered_map<std::string, std::unique_ptr<Branch>> _branches{};
     std::unordered_map<std::string, std::unique_ptr<Leaf>> _leaves{};

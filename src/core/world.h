@@ -225,15 +225,6 @@ class World : public RootObject
     Values jsonToValues(const Json::Value& values);
 
     /**
-     * \brief Set a parameter for an object, given its name
-     * \param name Object name
-     * \param attrib Attribute name
-     * \param args Value to set the attribute to
-     */
-    void setAttribute(const std::string& name, const std::string& attrib, const Values& args);
-    using BaseObject::setAttribute;
-
-    /**
      * \brief Callback for GLFW errors
      */
     static void glfwErrorCallback(int code, const char* msg);

@@ -61,6 +61,10 @@ bool Branch::addBranch(unique_ptr<Branch>&& branch)
 
     branch->setParent(this);
     _branches.emplace(make_pair(branchName, move(branch)));
+
+    for (const auto& id : _callbackTargetIds[Task::AddBranch])
+        _callbacks[id](*this, branchName);
+
     return true;
 }
 
@@ -76,6 +80,33 @@ bool Branch::addLeaf(unique_ptr<Leaf>&& leaf)
 
     leaf->setParent(this);
     _leaves.emplace(make_pair(leafName, move(leaf)));
+
+    for (const auto& id : _callbackTargetIds[Task::AddLeaf])
+        _callbacks[id](*this, leafName);
+
+    return true;
+}
+
+/*************/
+int Branch::addCallback(Task target, const UpdateCallback& callback)
+{
+    lock_guard<mutex> lock(_callbackMutex);
+    auto id = ++_currentCallbackID;
+    _callbackTargetIds[target].emplace(id);
+    _callbacks[id] = callback;
+    return id;
+}
+
+/*************/
+bool Branch::removeCallback(int id)
+{
+    lock_guard<mutex> lock(_callbackMutex);
+    auto callbackIt = _callbacks.find(id);
+    if (callbackIt == _callbacks.end())
+        return false;
+    _callbacks.erase(callbackIt);
+    for (auto& ids : _callbackTargetIds)
+        ids.second.erase(id);
     return true;
 }
 
@@ -180,8 +211,12 @@ bool Branch::removeBranch(const string& name)
     if (!hasBranch(name))
         return false;
 
+    for (const auto& id : _callbackTargetIds[Task::RemoveBranch])
+        _callbacks[id](*this, name);
+
     _branches[name]->setParent(nullptr);
     _branches.erase(name);
+
     return true;
 }
 
@@ -190,6 +225,9 @@ bool Branch::removeLeaf(const string& name)
 {
     if (!hasLeaf(name))
         return false;
+
+    for (const auto& id : _callbackTargetIds[Task::RemoveLeaf])
+        _callbacks[id](*this, name);
 
     _leaves[name]->setParent(nullptr);
     _leaves.erase(name);

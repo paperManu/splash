@@ -407,19 +407,20 @@ void Scene::run()
         executeTreeCommands();
         runTasks();
 
-        if (!_started)
+        if (_started)
+        {
+            Timer::get() << "rendering";
+            render();
+            Timer::get() >> "rendering";
+
+            Timer::get() << "inputsUpdate";
+            updateInputs();
+            Timer::get() >> "inputsUpdate";
+        }
+        else
         {
             this_thread::sleep_for(chrono::milliseconds(50));
-            continue;
         }
-
-        Timer::get() << "rendering";
-        render();
-        Timer::get() >> "rendering";
-
-        Timer::get() << "inputsUpdate";
-        updateInputs();
-        Timer::get() >> "inputsUpdate";
 
         Timer::get() << "tree_propagate";
         propagateTree();
@@ -917,7 +918,7 @@ void Scene::registerAttributes()
     addAttribute("deleteObject",
         [&](const Values& args) {
             addTask([=]() -> void {
-                // We wait until we can indeed deleted the object
+                // We wait until we can indeed delete the object
                 bool expectedAtomicValue = false;
                 while (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true, std::memory_order_acquire))
                     this_thread::sleep_for(chrono::milliseconds(1));
@@ -1031,23 +1032,6 @@ void Scene::registerAttributes()
         },
         {'s'});
     setAttributeDescription("remove", "Remove the object of the given name");
-
-    addAttribute("setAlias",
-        [&](const Values& args) {
-            auto name = args[0].as<string>();
-            auto alias = args[1].as<string>();
-
-            addTask([=]() {
-                lock_guard<recursive_mutex> lock(_objectsMutex);
-
-                auto object = getObject(name);
-                if (object)
-                    object->setAlias(alias);
-            });
-
-            return true;
-        },
-        {'s', 's'});
 
     addAttribute("setMaster", [&](const Values& args) {
         addTask([=]() {

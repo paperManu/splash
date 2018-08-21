@@ -25,8 +25,7 @@ string ControllerObject::getObjectAlias(const std::string& name) const
 {
     auto tree = _root->getTree();
 
-    auto rootList = tree->getBranchList();
-    for (const auto& rootName : rootList)
+    for (const auto& rootName : tree->getBranchList())
     {
         auto path = "/" + rootName + "/objects/" + name + "/attributes/alias";
         if (!tree->hasLeafAt(path))
@@ -45,8 +44,7 @@ unordered_map<string, string> ControllerObject::getObjectAliases() const
     auto aliases = unordered_map<string, string>();
     auto tree = _root->getTree();
 
-    auto rootList = tree->getBranchList();
-    for (const auto& rootName : rootList)
+    for (const auto& rootName : tree->getBranchList())
     {
         auto objectPath = "/" + rootName + "/objects";
         auto objectList = tree->getBranchListAt(objectPath);
@@ -57,7 +55,6 @@ unordered_map<string, string> ControllerObject::getObjectAliases() const
             {
                 Value value;
                 tree->getValueForLeafAt(objectPath + "/" + objectName + "/attributes/alias", value);
-                assert(value.size() == 1 && value.getType() == Value::values);
                 aliases[objectName] = value.size() == 0 ? objectName : value[0].as<string>();
             }
         }
@@ -72,8 +69,7 @@ vector<string> ControllerObject::getObjectNames() const
     auto names = vector<string>();
     auto tree = _root->getTree();
 
-    auto rootList = tree->getBranchList();
-    for (const auto& rootName : rootList)
+    for (const auto& rootName : tree->getBranchList())
     {
         auto objectPath = "/" + rootName + "/objects";
         auto objectList = tree->getBranchListAt(objectPath);
@@ -90,8 +86,7 @@ vector<string> ControllerObject::getObjectNames() const
 Values ControllerObject::getObjectAttributeDescription(const string& name, const string& attr) const
 {
     auto tree = _root->getTree();
-    auto rootList = tree->getBranchList();
-    for (const auto& rootName : rootList)
+    for (const auto& rootName : tree->getBranchList())
     {
         auto objectPath = "/" + rootName + "/objects/" + name;
         if (!tree->hasBranchAt(objectPath))
@@ -112,8 +107,7 @@ Values ControllerObject::getObjectAttribute(const string& name, const string& at
 {
     auto tree = _root->getTree();
 
-    auto rootList = tree->getBranchList();
-    for (const auto& rootName : rootList)
+    for (const auto& rootName : tree->getBranchList())
     {
         Value value;
         auto attrPath = "/" + rootName + "/objects/" + name + "/attributes/" + attr;
@@ -132,8 +126,7 @@ unordered_map<string, Values> ControllerObject::getObjectAttributes(const string
     auto attributes = unordered_map<string, Values>();
     auto tree = _root->getTree();
 
-    auto rootList = tree->getBranchList();
-    for (const auto& rootName : rootList)
+    for (const auto& rootName : tree->getBranchList())
     {
         auto objectPath = "/" + rootName + "/objects/" + name;
         if (!tree->hasBranchAt(objectPath))
@@ -157,8 +150,7 @@ unordered_map<string, vector<string>> ControllerObject::getObjectLinks() const
     auto links = unordered_map<string, vector<string>>();
     auto tree = _root->getTree();
 
-    auto rootList = tree->getBranchList();
-    for (const auto& rootName : rootList)
+    for (const auto& rootName : tree->getBranchList())
     {
         auto objectPath = "/" + rootName + "/objects";
         auto objectList = tree->getBranchListAt(objectPath);
@@ -189,8 +181,7 @@ unordered_map<string, vector<string>> ControllerObject::getObjectReversedLinks()
     auto links = unordered_map<string, vector<string>>();
     auto tree = _root->getTree();
 
-    auto rootList = tree->getBranchList();
-    for (const auto& rootName : rootList)
+    for (const auto& rootName : tree->getBranchList())
     {
         auto objectPath = "/" + rootName + "/objects";
         auto objectList = tree->getBranchListAt(objectPath);
@@ -257,9 +248,8 @@ map<string, string> ControllerObject::getObjectTypes() const
         }
     };
 
-    auto rootList = tree->getBranchList();
     // Loop over all Scenes
-    for (const auto& rootName : rootList)
+    for (const auto& rootName : tree->getBranchList())
     {
         if (rootName == "world")
             continue;
