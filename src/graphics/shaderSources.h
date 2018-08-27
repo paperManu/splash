@@ -144,6 +144,27 @@ struct ShaderSources
                 yuv = pow(yuv, vec3(2.2));
                 return yuv;
             }
+        )"},
+        //
+        // Color correction: brightness, saturation and contrast
+        // hsv also needs to be included
+        {"correctColor", R"( 
+            vec4 correctColor(in vec4 color, in float brightness, in float saturation, in float contrast)
+            {
+                if (brightness != 1.f || saturation != 1.f || contrast != 1.f)
+                {
+                    vec3 hsv = rgb2hsv(color.rgb);
+                    // Brightness correction
+                    hsv.z *= brightness;
+                    // Saturation
+                    hsv.y = min(1.0, hsv.y * saturation);
+                    // Contrast correction
+                    hsv.z = (hsv.z - 0.5f) * contrast + 0.5f;
+                    hsv.z = min(1.0, hsv.z);
+                    color.rgb = hsv2rgb(hsv);
+                }
+                return color;
+            }
         )"}};
 
 /**
@@ -761,7 +782,7 @@ struct ShaderSources
 
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
-        uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
+        uniform vec4 _cameraAttributes = vec4(0.05, 1.0, 1.0, 1.0); // blendWidth, brightness, saturation, contrast
 
         out VertexData
         {
@@ -802,6 +823,7 @@ struct ShaderSources
      */
     const std::string FRAGMENT_SHADER_FILTER{R"(
         #include hsv
+        #include correctColor
         #include yuv
 
         #define PI 3.14159265359
@@ -915,18 +937,7 @@ struct ShaderSources
             color.g *= 1.0 / maxBalanceRatio;
             color.b *= _colorBalance.g / maxBalanceRatio;
 
-            if (_brightness != 1.f || _saturation != 1.f || _contrast != 1.f)
-            {
-                vec3 hsv = rgb2hsv(color.rgb);
-                // Brightness correction
-                hsv.z *= _brightness;
-                // Saturation
-                hsv.y = min(1.0, hsv.y * _saturation);
-                // Contrast correction
-                hsv.z = (hsv.z - 0.5f) * _contrast + 0.5f;
-                hsv.z = min(1.0, hsv.z);
-                color.rgb = hsv2rgb(hsv);
-            }
+            color = correctColor(color, _brightness, _saturation, _contrast);
 
             // Black level
             if (_blackLevel != 0.0)
@@ -1156,7 +1167,7 @@ struct ShaderSources
 
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
-        uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
+        uniform vec4 _cameraAttributes = vec4(0.05, 1.0, 1.0, 1.0); // blendWidth, brightness, saturation, contrast
 
         out VertexData
         {
@@ -1191,6 +1202,9 @@ struct ShaderSources
      * Textured fragment shader
      */
     const std::string FRAGMENT_SHADER_TEXTURE{R"(
+        #include hsv
+        #include correctColor
+
         #define PI 3.14159265359
 
     #ifdef TEX_1
@@ -1210,7 +1224,7 @@ struct ShaderSources
 
         uniform int _showCameraCount = 0;
         uniform int _sideness = 0;
-        uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
+        uniform vec4 _cameraAttributes = vec4(0.05, 1.0, 1.0, 1.0); // blendWidth, brightness, saturation, contrast
         uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
         uniform int _isColorLUT = 0;
         uniform vec4 _color = vec4(0.0, 0.0, 0.0, 1.0);
@@ -1235,6 +1249,8 @@ struct ShaderSources
         {
             float blendWidth = _cameraAttributes.x;
             float brightness = _cameraAttributes.y;
+            float saturation = _cameraAttributes.z;
+            float contrast = _cameraAttributes.w;
 
             vec4 position = vertexIn.position;
             vec2 texCoord = vertexIn.texCoord;
@@ -1271,7 +1287,7 @@ struct ShaderSources
         #endif
 
             // Brightness correction
-            color.rgb = color.rgb * brightness;
+            color = correctColor(color, brightness, saturation, contrast);
 
             // Color correction through a LUT
             if (_isColorLUT != 0)
@@ -1386,7 +1402,7 @@ struct ShaderSources
 
         out vec4 fragColor;
 
-        uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
+        uniform vec4 _cameraAttributes = vec4(0.05, 1.0, 1.0, 1.0); // blendWidth, brightness, saturation, contrast
         uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
 
         void main(void)

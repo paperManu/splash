@@ -601,7 +601,7 @@ void Camera::render()
 
             vec2 colorBalance = colorBalanceFromTemperature(_colorTemperature);
             obj->getShader()->setAttribute("uniform", {"_wireframeColor", _wireframeColor.x, _wireframeColor.y, _wireframeColor.z, _wireframeColor.w});
-            obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _brightness});
+            obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _brightness, _saturation, _contrast});
             obj->getShader()->setAttribute("uniform", {"_fovAndColorBalance", _fov * _width / _height * M_PI / 180.0, _fov * M_PI / 180.0, colorBalance.x, colorBalance.y});
             obj->getShader()->setAttribute("uniform", {"_showCameraCount", (int)_showCameraCount});
             if (_colorLUT.size() == 768 && _isColorLUTActivated)
@@ -1476,12 +1476,30 @@ void Camera::registerAttributes()
 
     addAttribute("brightness",
         [&](const Values& args) {
-            _brightness = args[0].as<float>();
+            _brightness = std::max(0.f, std::min(2.f, args[0].as<float>()));
             return true;
         },
         [&]() -> Values { return {_brightness}; },
         {'n'});
     setAttributeDescription("brightness", "Set the camera brightness");
+
+    addAttribute("contrast",
+        [&](const Values& args) {
+            _contrast = std::max(0.f, std::min(2.f, args[0].as<float>()));
+            return true;
+        },
+        [&]() -> Values { return {_contrast}; },
+        {'n'});
+    setAttributeDescription("contrast", "Set the camera contrast");
+
+    addAttribute("saturation",
+        [&](const Values& args) {
+            _saturation = std::max(0.f, std::min(2.f, args[0].as<float>()));
+            return true;
+        },
+        [&]() -> Values { return {_saturation}; },
+        {'n'});
+    setAttributeDescription("saturation", "Set the camera saturation");
 
     addAttribute("frame",
         [&](const Values& args) {
