@@ -496,7 +496,7 @@ struct ShaderSources
                     for (int i = 0; i < 3; ++i)
                     {
                         vec2 distToCenter;
-                        vec4 middlePoint = (projectedVertices[i] + projectedVertices[(i + 1) % 3]) / 2.0;
+                        vec4 middlePoint = (tcs_in[i].vertex + tcs_in[(i + 1) % 3].vertex) / 2.0;
                         if (projectAndCheckVisibility(middlePoint, _mvp, 0.0, distToCenter))
                             anyVertexVisible = true;
                     }
@@ -1390,8 +1390,6 @@ struct ShaderSources
      * This shader has to be used after a pass of COMPUTE_SHADER_RESET_VISIBILITY
      */
     const std::string FRAGMENT_SHADER_PRIMITIVEID{R"(
-        #define PI 3.14159265359
-
         in VertexData
         {
             vec4 position;
@@ -1402,15 +1400,13 @@ struct ShaderSources
 
         out vec4 fragColor;
 
-        uniform vec4 _cameraAttributes = vec4(0.05, 1.0, 1.0, 1.0); // blendWidth, brightness, saturation, contrast
-        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
-
         void main(void)
         {
-            int index = int(round(vertexIn.annexe.w));
-            ivec2 components = ivec2(index) / ivec2(65025, 255);
-            components.y -= components.x * 255;
-            fragColor = vec4(float(components.x) / 255.0, float(components.y) / 255.0, float(index % 255) / 255.0, 1.0);
+            float index = round(vertexIn.annexe.w);
+            float thirdOrder = floor(index / 65025.0);
+            float secondOrder = floor(fma(thirdOrder, -65025.0, index) / 255.0);
+            float firstOrder = fma(secondOrder, -255.0, fma(thirdOrder, -65025.0, index));
+            fragColor = vec4(thirdOrder, secondOrder, firstOrder, 255.0) / 255.0;
         }
     )"};
 
