@@ -1068,7 +1068,7 @@ void World::parseArguments(int argc, char** argv)
         }
         case 'S':
         {
-            auto regInt = regex("[0-9]", regex_constants::extended);
+            auto regInt = regex("[0-9]+", regex_constants::extended);
             smatch match;
 
             _displayServer = string(optarg);
