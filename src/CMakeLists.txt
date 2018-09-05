@@ -133,7 +133,6 @@ target_sources(splash-${API_VERSION} PRIVATE
     controller/widget/widget_node_view.cpp
     controller/widget/widget_media.cpp
     controller/widget/widget_meshes.cpp
-    controller/widget/widget_template.cpp
     controller/widget/widget_text_box.cpp
     controller/widget/widget_textures_view.cpp
     controller/widget/widget_warp.cpp

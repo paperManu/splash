@@ -369,7 +369,7 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
         if (getenv("DISPLAY") != nullptr)
         {
             worldDisplay = getenv("DISPLAY");
-            if (worldDisplay.size() == 2) // Yes, we consider a maximum of 10 display servers. Because, really?
+            if (worldDisplay.find(".") == string::npos)
                 worldDisplay += ".0";
             if (_reloadingConfig)
                 worldDisplay = "none";

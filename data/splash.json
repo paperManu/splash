@@ -63,7 +63,6 @@
           }
         },
         "address" : "localhost",
-        "display" : 0,
         "spawn" : 1,
         "swapInterval" : 1,
         "links" : [

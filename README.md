@@ -162,7 +162,7 @@ sudo adduser $USER syslog
 
 Then log out and log back in.
 
-If you want to specify some defaults values for the objects, you can set the environment variable SPLASH_DEFAULTS with the path to a file defining default values for given types. An example of such a file can be found in [data/splashrc](data/splashrc)
+If you want to specify some defaults values for the objects, you can set the environment variable SPLASH_DEFAULTS with the path to a file defining default values for given types. An example of such a file can be found in [data/config/splashrc](data/config/splashrc)
 
 And that's it, you can move on the the [Walkthrough](https://github.com/paperManu/splash/wiki/Walkthrough) page.
 

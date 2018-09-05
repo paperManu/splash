@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Splash
+Exec=splash
+Type=Application
+Icon=/usr/local/share/icons/splash-icon-512.png
+Categories=AudioVideo;Video;Graphics;
