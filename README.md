@@ -4,7 +4,7 @@ Splash, a multi-projector video-mapping software
 [![Build status](https://gitlab.com/sat-metalab/splash/badges/develop/build.svg)](https://gitlab.com/sat-metalab/splash/commits/develop)
 [![Coverity Scan Build Status](https://img.shields.io/coverity/scan/3544.svg)](https://scan.coverity.com/projects/papermanu-splash)
 
-For a more complete documentation, go visit the [wiki](https://github.com/paperManu/splash/wiki).
+For a more complete documentation, go visit the [wiki](https://gitlab.com/sat-metalab/splash/wikis/home).
 
 Table of Contents
 -----------------
@@ -40,11 +40,11 @@ This program is free software; you can redistribute it and/or modify it under th
 * Jérémie Soria ([Github](https://github.com/eldaranne))
 
 ### Projet URL
-This project can be found either on the [SAT Metalab repository](http://code.sat.qc.ca/redmine/projects/splash) or on [Github](https://github.com/paperManu/splash).
+This project can be found either on the [SAT Metalab repository](https://gitlab.com/sat-metalab/splash) or on [Github](https://github.com/paperManu/splash).
 
 ### Sponsors
 This project is made possible thanks to the [Society for Arts and Technologies](http://www.sat.qc.ca) (also known as SAT).
-Thanks to the Ministère du Développement économique, de l'Innovation et de l'Exportation du Québec (MDEIE).
+Thanks to the Ministère de l'Économie, des Sciences et de l'Innovation (MESI).
 
 
 <a name="installation"/></a>
@@ -84,15 +84,31 @@ Also, the [Roboto](https://www.fontsquirrel.com/fonts/roboto) font is used and d
 
 By default Splash is built and linked against the libraries included as submodules, but it is possible to force it to use the libraries installed on the system. This is described in the next section.
 
-### Compilation and installation
+### Installation
 
 #### Linux
 
-The current release of Splash has currently only been compiled and tested on Ubuntu (version 16.04) and Mint 18 and higher. The easy way to install it is to get the Debian archive from the [release page](https://github.com/paperManu/splash/releases), and install it with :
+Splash can be installed from a pre-built package, or compiled by hand. Newcomers are advised to try the packaged version first, and try to compile it if necessary only.
+
+##### Packages
+
+The easiest way to install and test Splash is by using the [Flatpak](https://flatpak.org) archive, which is compatible with most Linux distributions. It can be downloaded from the [tags page](https://gitlab.com/sat-metalab/splash/tags), and installed as follows on Ubuntu:
+
+```bash
+sudo apt install flatpak
+sudo flatpak install flathub org.freedesktop.Platform//1.6
+sudo flatpak install splash.flatpak
+```
+
+Splash should now be available from your application menu (this may require to logout / log back in). A known limitation of the Flatpak package is that it has no access to Jack, and cannot use multiple GPUs.
+
+The current release of Splash is also packaged for Ubuntu (version 18.04) and derived. This is done through a Debian archive available on the [tags page](https://gitlab.com/sat-metalab/splash/tags), and install it with :
 
 ```bash
 sudo apt install <download path>/splash-<version>-Linux.deb
 ```
+
+##### Building
 
 You can also compile Splash by hand, especially if you are curious about its internals or want to tinker with the code (or even, who knows, contribute!). Note that although what follows compiles the develop branch, it is more likely to contain bugs alongside new features / optimizations so if you experience crash you can try with the master branch.
 
@@ -162,12 +178,12 @@ sudo adduser $USER syslog
 
 Then log out and log back in.
 
-If you want to specify some defaults values for the objects, you can set the environment variable SPLASH_DEFAULTS with the path to a file defining default values for given types. An example of such a file can be found in [data/splashrc](data/splashrc)
+If you want to specify some defaults values for the objects, you can set the environment variable SPLASH_DEFAULTS with the path to a file defining default values for given types. An example of such a file can be found in [data/config/splashrc](data/config/splashrc)
 
-And that's it, you can move on the the [Walkthrough](https://github.com/paperManu/splash/wiki/Walkthrough) page.
+And that's it, you can move on the the [Walkthrough](https://gitlab.com/sat-metalab/splash/wikis/Walkthrough) page.
 
 <a name="goingforward"/></a>
 Going forward
 -------------
 
-To learn how to configure and use Splash, the best resource currently is the Wiki page on [Github](https://github.com/paperManu/splash/wiki).
+To learn how to configure and use Splash, the best resource currently is the Wiki page on [Github](https://gitlab.com/sat-metalab/splash/wikis/home).

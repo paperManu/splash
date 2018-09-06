@@ -16,6 +16,9 @@
 /* Defined to 1 if portaudio-2.0 is detected */
 #cmakedefine01 HAVE_PORTAUDIO
 
+/* Defined to 1 if jack is detected */
+#cmakedefine01 HAVE_JACK
+
 /* Defined to 1 if shmdata-1.0 is detected */
 #cmakedefine01 HAVE_SHMDATA
 

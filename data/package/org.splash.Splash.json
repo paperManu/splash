@@ -1,0 +1,90 @@
+{
+    "app-id": "org.splash.Splash",
+    "runtime": "org.freedesktop.Platform",
+    "runtime-version": "1.6",
+    "sdk": "org.freedesktop.Sdk",
+    "command": "splash",
+    "rename-desktop-file": "splash.desktop",
+    "rename-icon": "splash",
+    "finish-args": [
+        "--socket=x11",
+        "--socket=pulseaudio",
+        "--share=ipc",
+        "--device=dri",
+        "--device=all",
+        "--filesystem=host"
+    ],
+    "modules": [
+        {
+            "name": "opencv",
+            "buildsystem": "cmake",
+            "builddir": true,
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/opencv/opencv.git",
+                    "tag": "3.4.3"
+                }
+            ]
+        },
+        {
+            "name": "portaudio",
+            "buildsystem": "cmake",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://git.assembla.com/portaudio.git",
+                    "tag": "pa_stable_v190600_20161030"
+                }
+            ]
+        },
+        {
+            "name": "glm",
+            "buildsystem": "cmake",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/g-truc/glm.git"
+                }
+            ]
+        },
+        {
+            "name": "gsl",
+            "config-opts": [
+                "--enable-shared",
+                "--disable-static"
+            ],
+            "sources": [
+                {
+                    "type": "archive",
+                    "url": "http://mirror.sergal.org/gnu/gsl/gsl-2.5.tar.gz",
+                    "sha256": "0460ad7c2542caaddc6729762952d345374784100223995eb14d614861f2258d"
+                }
+            ]
+        },
+        {
+            "name": "libzmq",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/zeromq/libzmq.git"
+                }
+            ]
+        },
+        {
+            "name": "splash",
+            "buildsystem": "cmake",
+            "builddir": true,
+            "config-opts": [
+                "-DBUILD_GENERIC_ARCH=ON"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://gitlab.com/sat-metalab/splash.git",
+                    "branch": "develop"
+                }
+            ]
+        }
+    ]
+}

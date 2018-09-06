@@ -1,4 +1,4 @@
-image: ubuntu:17.10
+image: ubuntu:18.04
 
 variables:
   DOCKER_DRIVER: overlay
@@ -9,7 +9,7 @@ stages:
 
 before_script:
   - apt update -qq
-  - DEBIAN_FRONTEND=noninteractive apt install -y curl wget build-essential git-core zip cmake automake libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev libopencv-dev python
+  - DEBIAN_FRONTEND=noninteractive apt install -y curl wget build-essential git-core zip cmake automake libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python
   - git submodule update --init
   - ./make_deps.sh
   - rm -rf build && mkdir build && cd build
@@ -18,9 +18,9 @@ before_script:
 #
 # Tests
 #
-test:17.10:
+test:16.04:
   stage: test
-  image: ubuntu:17.10
+  image: ubuntu:16.04
   script: 
     - make -j$(nproc)
     - make test
@@ -29,6 +29,7 @@ test:18.04:
   stage: test
   image: ubuntu:18.04
   script: 
+    - DEBIAN_FRONTEND=noninteractive apt install -y libopencv-dev
     - make -j$(nproc)
     - make test
 
@@ -65,7 +66,7 @@ test:archlinux:
 #
 # Package
 #
-package:
+package:debian:
   stage: package
   script:
     - make -j$(nproc)
@@ -77,8 +78,32 @@ package:
   artifacts:
     name: "splash_${CI_BUILD_REF_NAME}"
     paths:
-    - "*.deb"
-    - "*.tar.bz2"
+      - "*.deb"
+      - "*.tar.bz2"
+
+#
+# Flatpak
+#
+package:flatpak:
+  stage: package
+  image: ubuntu:18.04
+  before_script:
+    - apt update -qq
+    - DEBIAN_FRONTEND=noninteractive apt install -y flatpak-builder
+    - flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+    - flatpak install flathub org.freedesktop.Platform//1.6 org.freedesktop.Sdk//1.6
+  script:
+    - flatpak-builder --repo=flatpak_repo build --force-clean data/package/org.splash.Splash.json
+    - flatpak build-bundle flatpak_repo splash.flatpak org.splash.Splash
+  only:
+    - tags
+  artifacts:
+    name: "splash_flatpak_${CI_BUILD_REF_NAME}"
+    paths:
+      - "splash.flatpak"
+  cache:
+    paths:
+      - ".flatpak-builder/cache"
 
 #
 # Static analysis

@@ -10,7 +10,6 @@
 #include "./controller/widget/widget_media.h"
 #include "./controller/widget/widget_meshes.h"
 #include "./controller/widget/widget_node_view.h"
-#include "./controller/widget/widget_template.h"
 #include "./controller/widget/widget_text_box.h"
 #include "./controller/widget/widget_textures_view.h"
 #include "./controller/widget/widget_warp.h"
@@ -909,7 +908,7 @@ void Gui::initImGui(int width, int height)
     ImGuiIO& io = GetIO();
 
     string fontPath = "";
-    vector<string> fontPaths{string(DATADIR) + string("fonts/Roboto-Medium.ttf")};
+    vector<string> fontPaths{string(DATADIR) + string("../fonts/Roboto-Medium.ttf")};
     for (auto& path : fontPaths)
         if (ifstream(path, ios::in | ios::binary))
             fontPath = path;
@@ -1035,14 +1034,6 @@ void Gui::setClipboardText(void* userData, const char* text)
 /*************/
 void Gui::initImWidgets()
 {
-    // Template configurations
-    if (Log::get().getVerbosity() == Log::DEBUGGING)
-    {
-        auto templateBox = make_shared<GuiTemplate>(_scene, "Templates");
-        templateBox->setScene(_scene);
-        _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(templateBox));
-    }
-
     // Some help regarding keyboard shortcuts
     auto helpBox = make_shared<GuiTextBox>(_scene, "Shortcuts");
     helpBox->setTextFunc([]() {
