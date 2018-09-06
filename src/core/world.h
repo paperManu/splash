@@ -112,7 +112,6 @@ class World : public RootObject
     std::string _masterSceneName{""};   //!< Name of the master Scene
     std::string _displayServer{"0"};    //!< Display server.
     std::string _forcedDisplay{""};     //!< Set to force an output display
-    bool _reloadingConfig{false};       // TODO: workaround to allow for correct reloading when an inner scene was used
 
     std::string _configFilename;  //!< Configuration file path
     std::string _projectFilename; //!< Project configuration file path

@@ -371,8 +371,6 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
             worldDisplay = getenv("DISPLAY");
             if (worldDisplay.find(".") == string::npos)
                 worldDisplay += ".0";
-            if (_reloadingConfig)
-                worldDisplay = "none";
         }
 
         display = "DISPLAY=" + worldDisplay;
@@ -1437,7 +1435,6 @@ void World::registerAttributes()
                     _masterSceneName = "";
 
                     _config = config;
-                    _reloadingConfig = true;
                     applyConfig();
                 }
             });
