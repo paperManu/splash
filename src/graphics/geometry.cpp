@@ -331,6 +331,7 @@ void Geometry::update()
 
         swapBuffers();
         _buffersDirty = true;
+        _serializedMesh.resize(0);
     }
 
     GLFWwindow* context = glfwGetCurrentContext();
