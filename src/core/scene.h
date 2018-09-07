@@ -264,6 +264,10 @@ class Scene : public RootObject
     Spinlock _textureMutex; //!< Sync between texture and render loops
     GLsync _textureUploadFence{nullptr}, _cameraDrawnFence{nullptr};
 
+    std::atomic_bool _doUploadTextures{false};
+    std::condition_variable _doUploadTexturesCondition{};
+    std::mutex _doUploadTexturesMutex{};
+
     // NV Swap group specific
     GLuint _maxSwapGroups{0};
     GLuint _maxSwapBarriers{0};

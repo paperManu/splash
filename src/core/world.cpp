@@ -116,7 +116,8 @@ void World::run()
             Timer::get() >> "serialize";
 
             // Wait for previous buffers to be uploaded
-            _link->waitForBufferSending(chrono::milliseconds((unsigned long long)(1e3))); // Maximum time to wait for frames to arrive
+            _link->waitForBufferSending(chrono::milliseconds(50)); // Maximum time to wait for frames to arrive
+            sendMessage(SPLASH_ALL_PEERS, "uploadTextures", {});
             Timer::get() >> "upload";
 
             // Ask for the upload of the new buffers, during the next world loop
@@ -369,7 +370,7 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
         if (getenv("DISPLAY") != nullptr)
         {
             worldDisplay = getenv("DISPLAY");
-            if (worldDisplay.find(".") == string::npos)
+            if (!worldDisplay.empty() && worldDisplay.find(".") == string::npos)
                 worldDisplay += ".0";
         }
 

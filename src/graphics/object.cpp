@@ -160,10 +160,7 @@ glm::dmat4 Object::computeModelMatrix() const
 void Object::deactivate()
 {
     for (auto& t : _textures)
-    {
-        // t->flushPbo();
         t->unlock();
-    }
 
     _shader->deactivate();
     if (_geometries.size() > 0)
