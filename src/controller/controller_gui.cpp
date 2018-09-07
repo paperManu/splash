@@ -103,7 +103,7 @@ Gui::~Gui()
 void Gui::loadIcon()
 {
     auto imagePath = string(DATADIR);
-    string path{"splash-icon-512.png"};
+    string path{"splash.png"};
 
     auto image = make_shared<Image>(_scene);
     image->setName("splash_icon");

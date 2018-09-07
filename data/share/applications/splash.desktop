@@ -2,5 +2,5 @@
 Name=Splash
 Exec=splash
 Type=Application
-Icon=/usr/local/share/icons/splash-icon-512.png
+Icon=/usr/local/share/splash/splash.png
 Categories=AudioVideo;Video;Graphics;
