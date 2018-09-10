@@ -120,6 +120,13 @@ class Texture_Image : public Texture
     ImageBufferSpec getSpec() const { return _spec; }
 
     /**
+     * Grab the texture to the host memory, at the given mipmap level
+     * \param level Mipmap level to grab
+     * \return Return the image data in an ImageBuffer
+     */
+    ImageBuffer grabMipmap(unsigned int level = 0) const;
+
+    /**
      * \brief Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */

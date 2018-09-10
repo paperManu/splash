@@ -233,6 +233,11 @@ class Camera : public GraphObject
     glm::dvec4 _clearColor{0.6, 0.6, 0.6, 1.0};
     glm::dvec4 _wireframeColor{1.0, 1.0, 1.0, 1.0};
 
+    // Mipmap capture
+    int _grabMipmapLevel{-1};
+    Value _mipmapBuffer{};
+    Values _mipmapBufferSpec{};
+
     // Color correction
     Values _colorLUT{0};
     bool _isColorLUTActivated{false};

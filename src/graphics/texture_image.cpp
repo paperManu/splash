@@ -13,6 +13,8 @@ using namespace std;
 namespace Splash
 {
 
+constexpr int Texture_Image::_texLevels;
+
 /*************/
 Texture_Image::Texture_Image(RootObject* root)
     : Texture(root)
@@ -91,6 +93,23 @@ RgbValue Texture_Image::getMeanValue() const
     meanColor /= height;
 
     return meanColor;
+}
+
+/*************/
+ImageBuffer Texture_Image::grabMipmap(unsigned int level) const
+{
+    int mipmapLevel = std::min<int>(level, _texLevels);
+    GLint width, height;
+    glGetTextureLevelParameteriv(_glTex, level, GL_TEXTURE_WIDTH, &width);
+    glGetTextureLevelParameteriv(_glTex, level, GL_TEXTURE_HEIGHT, &height);
+
+    auto spec = _spec;
+    spec.width = width;
+    spec.height = height;
+
+    auto image = ImageBuffer(spec);
+    glGetTextureImage(_glTex, mipmapLevel, _texFormat, _texType, image.getSize(), image.data());
+    return image;
 }
 
 /*************/

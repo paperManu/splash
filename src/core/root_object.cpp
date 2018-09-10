@@ -310,8 +310,7 @@ void RootObject::propagateTree()
     auto objectsBranch = _tree.getBranchAt(objectsPath);
     assert(objectsBranch != nullptr);
 
-    auto objectLeafList = objectsBranch->getBranchList();
-    for (const auto& objectName : objectLeafList)
+    for (const auto& objectName : objectsBranch->getBranchList())
     {
         auto objectIt = _objects.find(objectName);
         if (objectIt == _objects.end())

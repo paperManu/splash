@@ -155,6 +155,11 @@ class Filter : public Texture
     std::string _shaderSource{""};     //!< User defined fragment shader filter
     std::string _shaderSourceFile{""}; //!< User defined fragment shader filter source file
 
+    // Mipmap capture
+    int _grabMipmapLevel{-1};
+    Value _mipmapBuffer{};
+    Values _mipmapBufferSpec{};
+
     /**
      * \brief Init function called in constructors
      */

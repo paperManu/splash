@@ -253,9 +253,6 @@ vector<glm::dmat4> GuiGlobalView::getCamerasRTMatrices()
 void GuiGlobalView::nextCamera()
 {
     vector<shared_ptr<Camera>> cameras;
-    auto listOfCameras = getObjectsOfType("camera");
-    for (auto& camera : listOfCameras)
-        cameras.push_back(dynamic_pointer_cast<Camera>(camera));
 
     // Empty previous camera parameters
     _previousCameraParameters.clear();
@@ -263,8 +260,7 @@ void GuiGlobalView::nextCamera()
     // Ensure that all cameras are shown
     _camerasHidden = false;
     _camerasColorized = false;
-    for (auto& cam : cameras)
-        setObjectAttribute(cam->getName(), "hide", {0});
+    setObjectsOfType("camera", "hide", {0});
 
     setObjectAttribute(_camera->getName(), "frame", {0});
     setObjectAttribute(_camera->getName(), "displayCalibration", {0});
@@ -379,7 +375,7 @@ void GuiGlobalView::hideOtherCameras(bool hide)
 
     auto cameras = getObjectsOfType("camera");
     for (auto& cam : cameras)
-        if (cam.get() != _camera.get())
+        if (cam != _camera)
             setObjectAttribute(cam->getName(), "hide", {(int)hide});
     _camerasHidden = hide;
 }

@@ -320,14 +320,18 @@ Values ControllerObject::getWorldAttribute(const string& attr) const
 /*************/
 void ControllerObject::setObjectAttribute(const string& name, const string& attr, const Values& values) const
 {
+    if (name.empty())
+        return;
+
     auto tree = _root->getTree();
     auto branchList = tree->getBranchList();
     for (const auto& branchName : branchList)
     {
         auto path = "/" + branchName + "/objects/" + name + "/attributes/" + attr;
-        if (!tree->hasLeafAt(path))
-            continue;
-        tree->setValueForLeafAt(path, values);
+        if (tree->hasLeafAt(path))
+            tree->setValueForLeafAt(path, values);
+        else
+            _root->addTreeCommand(branchName, RootObject::Command::callObject, {name, attr, values});
     }
 }
 

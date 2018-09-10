@@ -743,6 +743,15 @@ void Camera::render()
         _outFbo->unbindDraw();
     }
 
+    if (_grabMipmapLevel >= 0)
+    {
+        auto colorTexture = _outFbo->getColorTexture();
+        colorTexture->generateMipmap();
+        _mipmapBuffer = colorTexture->grabMipmap(_grabMipmapLevel).getRawBuffer();
+        auto spec = colorTexture->getSpec();
+        _mipmapBufferSpec = {spec.width, spec.height, spec.channels, spec.bpp, spec.format};
+    }
+
 #ifdef DEBUG
     GLenum error = glGetError();
     if (error)
@@ -1553,6 +1562,25 @@ void Camera::registerAttributes()
         },
         {'n'});
     setAttributeDescription("showCameraCount", "If set to 1, shows visually the camera count, encoded in binary in RGB (blending has to be activated)");
+
+    //
+    // Mipmap capture
+    addAttribute("grabMipmapLevel",
+        [&](const Values& args) {
+            _grabMipmapLevel = args[0].as<int>();
+            return true;
+        },
+        [&]() -> Values { return {_grabMipmapLevel}; },
+        {'n'});
+    setAttributeDescription("grabMipmapLevel", "If set to 0 or superior, sync the rendered texture to the 'buffer' attribute, at the given mipmap level");
+
+    addAttribute("buffer", [&](const Values&) { return true; }, [&]() -> Values { return {_mipmapBuffer}; }, {});
+    setAttributeDescription("buffer", "Getter attribute which gives access to the mipmap image, if grabMipmapLevel is greater or equal to 0");
+    setAttributeParameter("buffer", false, false);
+
+    addAttribute("bufferSpec", [&](const Values&) { return true; }, [&]() -> Values { return _mipmapBufferSpec; }, {});
+    setAttributeDescription("bufferSpec", "Getter attribute to the specs of the attribute buffer");
+    setAttributeParameter("bufferSpec", false, false);
 
     //
     // Various options

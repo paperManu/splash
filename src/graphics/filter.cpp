@@ -197,6 +197,13 @@ void Filter::render()
     _fbo->unbindDraw();
 
     _fbo->getColorTexture()->generateMipmap();
+    if (_grabMipmapLevel >= 0)
+    {
+        auto colorTexture = _fbo->getColorTexture();
+        _mipmapBuffer = colorTexture->grabMipmap(_grabMipmapLevel).getRawBuffer();
+        auto spec = colorTexture->getSpec();
+        _mipmapBufferSpec = {spec.width, spec.height, spec.channels, spec.bpp, spec.format};
+    }
 
     // Automatic black level stuff
     if (_autoBlackLevelTargetValue != 0.f)
@@ -604,6 +611,25 @@ void Filter::registerDefaultShaderAttributes()
         },
         {'n', 'n'});
     setAttributeDescription("sizeOverride", "Sets the filter output to a different resolution than its input");
+
+    //
+    // Mipmap capture
+    addAttribute("grabMipmapLevel",
+        [&](const Values& args) {
+            _grabMipmapLevel = args[0].as<int>();
+            return true;
+        },
+        [&]() -> Values { return {_grabMipmapLevel}; },
+        {'n'});
+    setAttributeDescription("grabMipmapLevel", "If set to 0 or superior, sync the rendered texture to the tree, at the given mipmap level");
+
+    addAttribute("buffer", [&](const Values&) { return true; }, [&]() -> Values { return {_mipmapBuffer}; }, {});
+    setAttributeDescription("buffer", "Getter attribute which gives access to the mipmap image, if grabMipmapLevel is greater or equal to 0");
+    setAttributeParameter("buffer", false, false);
+
+    addAttribute("bufferSpec", [&](const Values&) { return true; }, [&]() -> Values { return _mipmapBufferSpec; }, {});
+    setAttributeDescription("bufferSpec", "Getter attribute to the specs of the attribute buffer");
+    setAttributeParameter("bufferSpec", false, false);
 }
 
 } // end of namespace

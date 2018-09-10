@@ -178,6 +178,12 @@ class ImageBuffer
     uint8_t* data() const { return _buffer.data(); }
 
     /**
+     * Get a const reference to the inner buffer
+     * \return Return a const ref to the inner buffer
+     */
+    const ResizableArray<uint8_t>& getRawBuffer() const { return _buffer; }
+
+    /**
      * \brief Get the image spec
      * \return Return image spec
      */
