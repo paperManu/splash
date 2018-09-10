@@ -25,7 +25,7 @@
 #include "./utils/osutils.h"
 #include "./utils/timer.h"
 
-#if HAVE_GPHOTO
+#if HAVE_GPHOTO and HAVE_OPENCV
 #include "./controller/colorcalibrator.h"
 #endif
 
@@ -63,6 +63,7 @@ bool Scene::getHasNVSwapGroup()
 
 /*************/
 Scene::Scene(const string& name, const string& socketPrefix)
+    : _objectLibrary(dynamic_cast<RootObject*>(this))
 {
     Log::get() << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
 
@@ -241,12 +242,16 @@ Json::Value Scene::getConfigurationAsJson()
             continue;
 
         auto linkedObjects = obj.second->getLinkedObjects();
-        for (auto& linkedObj : linkedObjects)
+        for (auto& weakLinkedObject : linkedObjects)
         {
-            if (!linkedObj->getSavable() || obj.second->isGhost())
+            auto linkedObject = weakLinkedObject.lock();
+            if (!linkedObject)
                 continue;
 
-            links.push_back(Values({linkedObj->getName(), obj.second->getName()}));
+            if (!linkedObject->getSavable() || obj.second->isGhost())
+                continue;
+
+            links.push_back(Values({linkedObject->getName(), obj.second->getName()}));
         }
     }
 
@@ -537,6 +542,15 @@ void Scene::textureUploadRun()
                 _objectsCurrentlyUpdated.store(false, std::memory_order_release);
             }
 
+            // Wait for Scene's signal that the texture can be uploaded
+            expectedAtomicValue = true;
+            if (!_doUploadTextures.compare_exchange_strong(expectedAtomicValue, false, std::memory_order_acq_rel))
+            {
+                unique_lock<mutex> lockCondition(_doUploadTexturesMutex);
+                _doUploadTexturesCondition.wait_for(lockCondition, chrono::milliseconds(50));
+                _doUploadTextures = false;
+            }
+
             for (auto& texture : textures)
             {
 #ifdef PROFILE
@@ -598,7 +612,7 @@ void Scene::setAsMaster(const string& configFilePath)
     }
     if (_mouse)
     {
-        _mouse->setName("keyboard");
+        _mouse->setName("mouse");
         _objects["mouse"] = _mouse;
     }
     if (_joystick)
@@ -612,7 +626,7 @@ void Scene::setAsMaster(const string& configFilePath)
         _objects[_dragndrop->getName()] = _dragndrop;
     }
 
-#if HAVE_GPHOTO
+#if HAVE_GPHOTO and HAVE_OPENCV
     // Initialize the color calibration object
     _colorCalibrator = make_shared<ColorCalibrator>(this);
     _colorCalibrator->setName("colorCalibrator");
@@ -1130,6 +1144,14 @@ void Scene::registerAttributes()
     });
     setAttributeDescription("swapTestColor", "Set the swap test color");
 
+    addAttribute("uploadTextures", [&](const Values& /*args*/) {
+        unique_lock<mutex> lockCondition(_doUploadTexturesMutex);
+        _doUploadTextures = true;
+        _doUploadTexturesCondition.notify_all();
+        return true;
+    });
+    setAttributeDescription("uploadTextures", "Signal that textures should be uploaded right away");
+
     addAttribute("quit", [&](const Values&) {
         addTask([=]() {
             _started = false;
@@ -1166,7 +1188,7 @@ void Scene::registerAttributes()
         {'n'});
     setAttributeDescription("wireframe", "Show all meshes as wireframes if set to 1");
 
-#if HAVE_GPHOTO
+#if HAVE_GPHOTO and HAVE_OPENCV
     addAttribute("calibrateColor", [&](const Values&) {
         auto calibrator = dynamic_pointer_cast<ColorCalibrator>(_colorCalibrator);
         if (calibrator)

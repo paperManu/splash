@@ -33,7 +33,7 @@ namespace Splash
 {
 
 struct Value;
-typedef std::deque<Value> Values;
+using Values = std::deque<Value>;
 
 /*************/
 struct Value
@@ -41,78 +41,75 @@ struct Value
   public:
     enum Type
     {
-        i = 0,  // integer
-        f,      // float
-        s,      // string
-        v       // values
+        integer = 0, // integer
+        real,        // float
+        string,      // string
+        values       // values
     };
 
-    Value() {}
+    Value() = default;
 
     template <class T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
-    Value(T v, std::string name = "")
-        : _i(v)
-        , _type(Type::i)
-        , _name(name)
+    Value(const T& v, const std::string& name = "")
+        : _name(name)
+        , _type(Type::integer)
+        , _integer(v)
     {
     }
 
     template <class T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
-    Value(T v, std::string name = "")
-        : _f(v)
-        , _type(Type::f)
-        , _name(name)
+    Value(const T& v, const std::string& name = "")
+        : _name(name)
+        , _type(Type::real)
+        , _real(v)
     {
     }
 
     template <class T, typename std::enable_if<std::is_same<T, std::string>::value>::type* = nullptr>
-    Value(T v, std::string name = "")
-        : _s(v)
-        , _type(Type::s)
-        , _name(name)
+    Value(const T& v, const std::string& name = "")
+        : _name(name)
+        , _type(Type::string)
+        , _string(v)
     {
     }
 
     template <class T, typename std::enable_if<std::is_same<T, const char*>::value>::type* = nullptr>
-    Value(T c, std::string name = "")
-        : _s(std::string(c))
-        , _type(Type::s)
-        , _name(name)
+    Value(T c, const std::string& name = "")
+        : _name(name)
+        , _type(Type::string)
+        , _string(c)
     {
     }
 
     template <class T, typename std::enable_if<std::is_same<T, Values>::value>::type* = nullptr>
-    Value(T v, std::string name = "")
-        : _v(std::unique_ptr<Values>(new Values(v)))
-        , _type(Type::v)
-        , _name(name)
+    Value(const T& v, const std::string& name = "")
+        : _name(name)
+        , _type(Type::values)
+        , _values(std::make_unique<Values>(v))
     {
     }
 
     Value(const Value& v) { operator=(v); }
-
     Value& operator=(const Value& v)
     {
         if (this != &v)
         {
-            _type = v._type;
-            switch (_type)
-            {
-            case Type::i:
-                _i = v._i;
-                break;
-            case Type::f:
-                _f = v._f;
-                break;
-            case Type::s:
-            case Type::v:
-                break;
-            }
             _name = v._name;
-            _s = v._s;
-            _v = std::unique_ptr<Values>(new Values());
-            if (v._v)
-                *_v = *(v._v);
+            _type = v._type;
+            _integer = v._integer;
+            _real = v._real;
+            _string = v._string;
+
+            if (v._values)
+            {
+                _values = std::make_unique<Values>();
+                if (v._values)
+                    *_values = *(v._values);
+            }
+            else
+            {
+                _values.reset(nullptr);
+            }
         }
 
         return *this;
@@ -126,13 +123,13 @@ struct Value
 
     template <class InputIt>
     Value(InputIt first, InputIt last)
-        : _v(std::unique_ptr<Values>(new Values()))
-        , _type(Type::v)
+        : _values(std::make_unique<Values>())
+        , _type(Type::values)
     {
         auto it = first;
         while (it != last)
         {
-            _v->push_back(Value(*it));
+            _values->push_back(Value(*it));
             ++it;
         }
     }
@@ -149,18 +146,18 @@ struct Value
         {
         default:
             return false;
-        case Type::i:
-            return _i == v._i;
-        case Type::f:
-            return _f == v._f;
-        case Type::s:
-            return _s == v._s;
-        case Type::v:
-            if (_v->size() != v._v->size())
+        case Type::integer:
+            return _integer == v._integer;
+        case Type::real:
+            return _real == v._real;
+        case Type::string:
+            return _string == v._string;
+        case Type::values:
+            if (_values->size() != v._values->size())
                 return false;
             bool isEqual = true;
-            for (uint32_t i = 0; i < _v->size(); ++i)
-                isEqual &= (_v->at(i) == v._v->at(i));
+            for (uint32_t i = 0; i < _values->size(); ++i)
+                isEqual &= (_values->at(i) == v._values->at(i));
             return isEqual;
         }
     }
@@ -169,10 +166,10 @@ struct Value
 
     Value& operator[](int index)
     {
-        if (_type != Type::v)
+        if (_type != Type::values)
             return *this;
         else
-            return _v->at(index);
+            return _values->at(index);
     }
 
     template <class T, typename std::enable_if<std::is_same<T, std::string>::value>::type* = nullptr>
@@ -182,12 +179,12 @@ struct Value
         {
         default:
             return "";
-        case Type::i:
-            return std::to_string(_i);
-        case Type::f:
-            return std::to_string(_f);
-        case Type::s:
-            return _s;
+        case Type::integer:
+            return std::to_string(_integer);
+        case Type::real:
+            return std::to_string(_real);
+        case Type::string:
+            return _string;
         }
     }
 
@@ -198,14 +195,14 @@ struct Value
         {
         default:
             return 0;
-        case Type::i:
-            return _i;
-        case Type::f:
-            return _f;
-        case Type::s:
+        case Type::integer:
+            return _integer;
+        case Type::real:
+            return _real;
+        case Type::string:
             try
             {
-                return std::stof(_s);
+                return std::stof(_string);
             }
             catch (...)
             {
@@ -221,14 +218,14 @@ struct Value
         {
         default:
             return {};
-        case Type::i:
-            return {_i};
-        case Type::f:
-            return {_f};
-        case Type::s:
-            return {_s};
-        case Type::v:
-            return *_v;
+        case Type::integer:
+            return {_integer};
+        case Type::real:
+            return {_real};
+        case Type::string:
+            return {_string};
+        case Type::values:
+            return *_values;
         }
     }
 
@@ -238,12 +235,12 @@ struct Value
         {
         default:
             return nullptr;
-        case Type::i:
-            return (void*)&_i;
-        case Type::f:
-            return (void*)&_f;
-        case Type::s:
-            return (void*)_s.c_str();
+        case Type::integer:
+            return (void*)&_integer;
+        case Type::real:
+            return (void*)&_real;
+        case Type::string:
+            return (void*)_string.c_str();
         }
     }
 
@@ -258,13 +255,13 @@ struct Value
         {
         default:
             return ' ';
-        case Type::i:
+        case Type::integer:
             return 'n';
-        case Type::f:
+        case Type::real:
             return 'n';
-        case Type::s:
+        case Type::string:
             return 's';
-        case Type::v:
+        case Type::values:
             return 'v';
         }
     }
@@ -275,28 +272,26 @@ struct Value
         {
         default:
             return 0;
-        case Type::i:
-            return sizeof(_i);
-        case Type::f:
-            return sizeof(_f);
-        case Type::s:
-            return _s.size();
-        case Type::v:
-            return _v->size();
+        case Type::integer:
+            return sizeof(_integer);
+        case Type::real:
+            return sizeof(_real);
+        case Type::string:
+            return _string.size();
+        case Type::values:
+            return _values->size();
         }
     }
 
   private:
-    union {
-        int64_t _i{0};
-        double _f;
-    };
-    std::string _s{""};
-    std::unique_ptr<Values> _v{nullptr};
-    Type _type{Type::i};
     std::string _name{""};
+    Type _type{Type::integer};
+    int64_t _integer{0};
+    double _real{0.0};
+    std::string _string{""};
+    std::unique_ptr<Values> _values{nullptr};
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_VALUE_H

@@ -144,6 +144,27 @@ struct ShaderSources
                 yuv = pow(yuv, vec3(2.2));
                 return yuv;
             }
+        )"},
+        //
+        // Color correction: brightness, saturation and contrast
+        // hsv also needs to be included
+        {"correctColor", R"( 
+            vec4 correctColor(in vec4 color, in float brightness, in float saturation, in float contrast)
+            {
+                if (brightness != 1.f || saturation != 1.f || contrast != 1.f)
+                {
+                    vec3 hsv = rgb2hsv(color.rgb);
+                    // Brightness correction
+                    hsv.z *= brightness;
+                    // Saturation
+                    hsv.y = min(1.0, hsv.y * saturation);
+                    // Contrast correction
+                    hsv.z = (hsv.z - 0.5f) * contrast + 0.5f;
+                    hsv.z = min(1.0, hsv.z);
+                    color.rgb = hsv2rgb(hsv);
+                }
+                return color;
+            }
         )"}};
 
 /**
@@ -475,7 +496,7 @@ struct ShaderSources
                     for (int i = 0; i < 3; ++i)
                     {
                         vec2 distToCenter;
-                        vec4 middlePoint = (projectedVertices[i] + projectedVertices[(i + 1) % 3]) / 2.0;
+                        vec4 middlePoint = (tcs_in[i].vertex + tcs_in[(i + 1) % 3].vertex) / 2.0;
                         if (projectAndCheckVisibility(middlePoint, _mvp, 0.0, distToCenter))
                             anyVertexVisible = true;
                     }
@@ -761,7 +782,7 @@ struct ShaderSources
 
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
-        uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
+        uniform vec4 _cameraAttributes = vec4(0.05, 1.0, 1.0, 1.0); // blendWidth, brightness, saturation, contrast
 
         out VertexData
         {
@@ -802,6 +823,7 @@ struct ShaderSources
      */
     const std::string FRAGMENT_SHADER_FILTER{R"(
         #include hsv
+        #include correctColor
         #include yuv
 
         #define PI 3.14159265359
@@ -915,18 +937,7 @@ struct ShaderSources
             color.g *= 1.0 / maxBalanceRatio;
             color.b *= _colorBalance.g / maxBalanceRatio;
 
-            if (_brightness != 1.f || _saturation != 1.f || _contrast != 1.f)
-            {
-                vec3 hsv = rgb2hsv(color.rgb);
-                // Brightness correction
-                hsv.z *= _brightness;
-                // Saturation
-                hsv.y = min(1.0, hsv.y * _saturation);
-                // Contrast correction
-                hsv.z = (hsv.z - 0.5f) * _contrast + 0.5f;
-                hsv.z = min(1.0, hsv.z);
-                color.rgb = hsv2rgb(hsv);
-            }
+            color = correctColor(color, _brightness, _saturation, _contrast);
 
             // Black level
             if (_blackLevel != 0.0)
@@ -1156,7 +1167,7 @@ struct ShaderSources
 
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
-        uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
+        uniform vec4 _cameraAttributes = vec4(0.05, 1.0, 1.0, 1.0); // blendWidth, brightness, saturation, contrast
 
         out VertexData
         {
@@ -1191,6 +1202,9 @@ struct ShaderSources
      * Textured fragment shader
      */
     const std::string FRAGMENT_SHADER_TEXTURE{R"(
+        #include hsv
+        #include correctColor
+
         #define PI 3.14159265359
 
     #ifdef TEX_1
@@ -1210,8 +1224,7 @@ struct ShaderSources
 
         uniform int _showCameraCount = 0;
         uniform int _sideness = 0;
-        uniform int _textureNbr = 0;
-        uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
+        uniform vec4 _cameraAttributes = vec4(0.05, 1.0, 1.0, 1.0); // blendWidth, brightness, saturation, contrast
         uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
         uniform int _isColorLUT = 0;
         uniform vec4 _color = vec4(0.0, 0.0, 0.0, 1.0);
@@ -1236,6 +1249,8 @@ struct ShaderSources
         {
             float blendWidth = _cameraAttributes.x;
             float brightness = _cameraAttributes.y;
+            float saturation = _cameraAttributes.z;
+            float contrast = _cameraAttributes.w;
 
             vec4 position = vertexIn.position;
             vec2 texCoord = vertexIn.texCoord;
@@ -1272,7 +1287,7 @@ struct ShaderSources
         #endif
 
             // Brightness correction
-            color.rgb = color.rgb * brightness;
+            color = correctColor(color, brightness, saturation, contrast);
 
             // Color correction through a LUT
             if (_isColorLUT != 0)
@@ -1375,8 +1390,6 @@ struct ShaderSources
      * This shader has to be used after a pass of COMPUTE_SHADER_RESET_VISIBILITY
      */
     const std::string FRAGMENT_SHADER_PRIMITIVEID{R"(
-        #define PI 3.14159265359
-
         in VertexData
         {
             vec4 position;
@@ -1387,15 +1400,13 @@ struct ShaderSources
 
         out vec4 fragColor;
 
-        uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
-        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
-
         void main(void)
         {
-            int index = int(round(vertexIn.annexe.w));
-            ivec2 components = ivec2(index) / ivec2(65025, 255);
-            components.y -= components.x * 255;
-            fragColor = vec4(float(components.x) / 255.0, float(components.y) / 255.0, float(index % 255) / 255.0, 1.0);
+            float index = round(vertexIn.annexe.w);
+            float thirdOrder = floor(index / 65025.0);
+            float secondOrder = floor(fma(thirdOrder, -65025.0, index) / 255.0);
+            float firstOrder = fma(secondOrder, -255.0, fma(thirdOrder, -65025.0, index));
+            fragColor = vec4(thirdOrder, secondOrder, firstOrder, 255.0) / 255.0;
         }
     )"};
 
@@ -1687,7 +1698,6 @@ struct ShaderSources
     #endif
     #endif
     #endif
-        uniform int _textureNbr = 0;
         uniform ivec4 _layout = ivec4(0, 1, 2, 3);
         uniform vec2 _gamma = vec2(1.0, 2.2);
         in vec2 texCoord;
@@ -1695,11 +1705,11 @@ struct ShaderSources
 
         void main(void)
         {
-            float frames = float(_textureNbr);
-            for (int i = 0; i < _textureNbr; ++i)
+            float frames = float(TEXCOUNT);
+            for (int i = 0; i < TEXCOUNT; ++i)
             {
                 int value = _layout[i];
-                for (int j = i + 1; j < _textureNbr; ++j)
+                for (int j = i + 1; j < TEXCOUNT; ++j)
                 {
                     if (_layout[j] == value)
                     {
@@ -1711,26 +1721,26 @@ struct ShaderSources
 
             fragColor.rgba = vec4(0.0);
     #ifdef TEX_1
-            if (_textureNbr > 0 && texCoord.x > float(_layout[0]) / frames && texCoord.x < (float(_layout[0]) + 1.0) / frames)
+            if (texCoord.x > float(_layout[0]) / frames && texCoord.x < (float(_layout[0]) + 1.0) / frames)
             {
                 fragColor = texture(_tex0, vec2((texCoord.x - float(_layout[0]) / frames) * frames, texCoord.y));
             }
     #ifdef TEX_2
-            if (_textureNbr > 1 && texCoord.x > float(_layout[1]) / frames && texCoord.x < (float(_layout[1]) + 1.0) / frames)
+            if (texCoord.x > float(_layout[1]) / frames && texCoord.x < (float(_layout[1]) + 1.0) / frames)
             {
                 vec4 color = texture(_tex1, vec2((texCoord.x - float(_layout[1]) / frames) * frames, texCoord.y));
                 fragColor.rgb = mix(fragColor.rgb, color.rgb, color.a);
                 fragColor.a = max(fragColor.a, color.a);
             }
     #ifdef TEX_3
-            if (_textureNbr > 2 && texCoord.x > float(_layout[2]) / frames && texCoord.x < (float(_layout[2]) + 1.0) / frames)
+            if (texCoord.x > float(_layout[2]) / frames && texCoord.x < (float(_layout[2]) + 1.0) / frames)
             {
                 vec4 color = texture(_tex2, vec2((texCoord.x - float(_layout[2]) / frames) * frames, texCoord.y));
                 fragColor.rgb = mix(fragColor.rgb, color.rgb, color.a);
                 fragColor.a = max(fragColor.a, color.a);
             }
     #ifdef TEX_4
-            if (_textureNbr > 3 && texCoord.x > float(_layout[3]) / frames && texCoord.x < (float(_layout[3]) + 1.0) / frames)
+            if (texCoord.x > float(_layout[3]) / frames && texCoord.x < (float(_layout[3]) + 1.0) / frames)
             {
                 vec4 color = texture(_tex3, vec2((texCoord.x - float(_layout[3]) / frames) * frames, texCoord.y));
                 fragColor.rgb = mix(fragColor.rgb, color.rgb, color.a);
@@ -1748,6 +1758,6 @@ struct ShaderSources
 
 } ShaderSources;
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_SHADERSOURCES_H

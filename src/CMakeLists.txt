@@ -22,6 +22,7 @@
 #
 add_definitions(-Wall -Wextra -Werror)
 add_definitions(-Wno-unknown-pragmas)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLM_ENABLE_EXPERIMENTAL")
 
 # Disable warnings for some specific files
 set_source_files_properties(
@@ -38,7 +39,7 @@ set_source_files_properties(
     PROPERTIES COMPILE_FLAGS "-Wno-error=strict-aliasing -Wno-strict-aliasing"
 )
 
-if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.0)
+if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
   set_source_files_properties(
       image/image.cpp
       PROPERTIES COMPILE_FLAGS "-Wno-error=implicit-fallthrough= -Wno-implicit-fallthrough"
@@ -50,13 +51,15 @@ endif()
 #
 include_directories(./)
 
-include_directories(../external/cppzmq)
-include_directories(../external/glm)
+if (NOT USE_SYSTEM_LIBS)
+    include_directories(../external/cppzmq)
+    include_directories(../external/glm)
+endif()
+
 include_directories(../external/hap/source)
 include_directories(../external/imgui)
 include_directories(../external/jsoncpp)
 include_directories(../external/libltc/src)
-include_directories(../external/piccante/include)
 include_directories(../external/stb)
 include_directories(../external/syphon/build/Release/Syphon.framework/Headers)
 
@@ -130,7 +133,6 @@ target_sources(splash-${API_VERSION} PRIVATE
     controller/widget/widget_node_view.cpp
     controller/widget/widget_media.cpp
     controller/widget/widget_meshes.cpp
-    controller/widget/widget_template.cpp
     controller/widget/widget_text_box.cpp
     controller/widget/widget_textures_view.cpp
     controller/widget/widget_warp.cpp
@@ -140,6 +142,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/geometry.cpp
     graphics/gpu_buffer.cpp
     graphics/object.cpp
+    graphics/object_library.cpp
     graphics/shader.cpp
     graphics/texture.cpp
     graphics/texture_image.cpp
@@ -179,7 +182,7 @@ else()
     )
 endif()
 
-if (GPHOTO_FOUND)
+if (GPHOTO_FOUND AND OPENCV_FOUND)
     set_source_files_properties(
         controller/colorcalibrator.cpp 
         PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized -Wno-unused-result -Wno-int-in-bool-context -Wno-sign-compare -Wno-ignored-attributes -Wno-deprecated-declarations -Wno-delete-non-virtual-dtor -Wno-unused-parameter -Wno-strict-aliasing -Wno-format -Wno-unused-but-set-variable -Wno-misleading-indentation -Wno-switch"
@@ -223,7 +226,7 @@ if (PYTHONLIBS_FOUND)
     set_source_files_properties(
         controller/controller_pythonembedded.cpp
         controller/python/python_sink.cpp
-        PROPERTIES COMPILE_FLAGS -Wno-missing-field-initializers
+	PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-cast-function-type"
     )
 
     target_sources(splash-${API_VERSION} PRIVATE
@@ -233,10 +236,15 @@ if (PYTHONLIBS_FOUND)
 endif()
 
 # Distributed third parties first
-target_link_libraries(splash-${API_VERSION} ${FFMPEG_STATIC_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} snappy)
 target_link_libraries(splash-${API_VERSION} glfw)
-target_link_libraries(splash-${API_VERSION} zmq.a)
+if (USE_SYSTEM_LIBS)
+    target_link_libraries(splash-${API_VERSION} ${FFMPEG_LIBRARIES})
+    target_link_libraries(splash-${API_VERSION} zmq)
+else()
+    target_link_libraries(splash-${API_VERSION} ${FFMPEG_STATIC_LIBRARIES})
+    target_link_libraries(splash-${API_VERSION} zmq.a)
+endif()
 
 target_link_libraries(splash-${API_VERSION} pthread)
 target_link_libraries(splash-${API_VERSION} ${Boost_LIBRARIES})

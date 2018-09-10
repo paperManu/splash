@@ -908,7 +908,7 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* /*self*/, PyObject*
                 PyEval_ReleaseThread(that->_pythonGlobalThreadState);
             }
 
-            if (value.getType() == Value::Type::v)
+            if (value.getType() == Value::Type::values)
                 return value.as<Values>();
             else
                 return {value};
@@ -1333,13 +1333,13 @@ PyObject* PythonEmbedded::convertFromValue(const Value& value, bool toDict)
 
     parseValue = [&](const Value& v) -> PyObject* {
         PyObject* pyValue = nullptr;
-        if (v.getType() == Value::Type::i)
+        if (v.getType() == Value::Type::integer)
             pyValue = Py_BuildValue("i", v.as<long>());
-        else if (v.getType() == Value::Type::f)
+        else if (v.getType() == Value::Type::real)
             pyValue = Py_BuildValue("f", v.as<float>());
-        else if (v.getType() == Value::Type::s)
+        else if (v.getType() == Value::Type::string)
             pyValue = Py_BuildValue("s", v.as<string>().c_str());
-        else if (v.getType() == Value::Type::v)
+        else if (v.getType() == Value::Type::values)
         {
             auto values = v.as<Values>();
             if (toDict)
@@ -1388,7 +1388,7 @@ Value PythonEmbedded::convertToValue(PyObject* pyObject)
         else
         {
             value = "";
-            char* strPtr = PyUnicode_AsUTF8(obj);
+            const char* strPtr = PyUnicode_AsUTF8(obj);
             if (strPtr)
                 value = string(strPtr);
         }

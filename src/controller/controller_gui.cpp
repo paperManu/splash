@@ -10,7 +10,6 @@
 #include "./controller/widget/widget_media.h"
 #include "./controller/widget/widget_meshes.h"
 #include "./controller/widget/widget_node_view.h"
-#include "./controller/widget/widget_template.h"
 #include "./controller/widget/widget_text_box.h"
 #include "./controller/widget/widget_textures_view.h"
 #include "./controller/widget/widget_warp.h"
@@ -104,7 +103,7 @@ Gui::~Gui()
 void Gui::loadIcon()
 {
     auto imagePath = string(DATADIR);
-    string path{"splash-icon-512.png"};
+    string path{"splash.png"};
 
     auto image = make_shared<Image>(_scene);
     image->setName("splash_icon");
@@ -336,7 +335,7 @@ void Gui::key(int key, int action, int mods)
             computeBlending(false);
         break;
     }
-#if HAVE_GPHOTO
+#if HAVE_GPHOTO and HAVE_OPENCV
     case GLFW_KEY_L:
     {
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
@@ -578,7 +577,7 @@ void Gui::render()
         // Some global buttons
         if (ImGui::CollapsingHeader("General commands", nullptr, true, true))
         {
-#if HAVE_GPHOTO
+#if HAVE_GPHOTO and HAVE_OPENCV
             ImGui::Columns(2);
             ImGui::Text("General");
             ImGui::NextColumn();
@@ -604,7 +603,7 @@ void Gui::render()
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Switch objects between wireframe and textured (Ctrl+T and Ctrl+W)");
 
-#if HAVE_GPHOTO
+#if HAVE_GPHOTO and HAVE_OPENCV
             ImGui::NextColumn();
             if (ImGui::Button("Calibrate camera response"))
                 calibrateColorResponseFunction();
@@ -910,7 +909,7 @@ void Gui::initImGui(int width, int height)
     ImGuiIO& io = GetIO();
 
     string fontPath = "";
-    vector<string> fontPaths{string(DATADIR) + string("fonts/Roboto-Medium.ttf")};
+    vector<string> fontPaths{string(DATADIR) + string("../fonts/Roboto-Medium.ttf")};
     for (auto& path : fontPaths)
         if (ifstream(path, ios::in | ios::binary))
             fontPath = path;
@@ -1036,14 +1035,6 @@ void Gui::setClipboardText(void* userData, const char* text)
 /*************/
 void Gui::initImWidgets()
 {
-    // Template configurations
-    if (Log::get().getVerbosity() == Log::DEBUGGING)
-    {
-        auto templateBox = make_shared<GuiTemplate>(_scene, "Templates");
-        templateBox->setScene(_scene);
-        _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(templateBox));
-    }
-
     // Some help regarding keyboard shortcuts
     auto helpBox = make_shared<GuiTextBox>(_scene, "Shortcuts");
     helpBox->setTextFunc([]() {
@@ -1057,7 +1048,7 @@ void Gui::initImWidgets()
          Ctrl+T: textured draw mode
          Ctrl+W: wireframe draw mode
         )";
-#if HAVE_GPHOTO
+#if HAVE_GPHOTO and HAVE_OPENCV
         text += R"(
          Ctrl+O: launch camera color calibration
          Ctrl+P: launch projectors color calibration
@@ -1077,6 +1068,11 @@ void Gui::initImWidgets()
         Node view (inside Control panel):
          Shift + left click: link the clicked node to the selected one
          Ctrl + left click: unlink the clicked node from the selected one
+
+        Camera view (inside the Camera panel):
+         Middle click: rotate camera
+         Shift + middle click: pan camera
+         Control + middle click: zoom in / out
 
         Joystick controls (may vary with the controller):
          Directions: move the selected calibration point

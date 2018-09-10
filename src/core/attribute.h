@@ -109,7 +109,7 @@ class Attribute
      * \param getFunc Getter function. Can be nullptr
      * \param types Vector of char defining the parameters types the setter function expects.
      */
-    Attribute(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::function<const Values()>& getFunc = nullptr, const std::vector<char>& types = {});
+    Attribute(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::function<Values()>& getFunc = nullptr, const std::vector<char>& types = {});
 
     Attribute(const Attribute&) = delete;
     Attribute& operator=(const Attribute&) = delete;

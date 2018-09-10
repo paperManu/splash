@@ -325,9 +325,12 @@ void GuiMedia::replaceMedia(const string& previousMedia, const string& alias, co
         if (!object->getSavable())
             continue;
         auto linkedObjects = object->getLinkedObjects();
-        for (auto& linked : linkedObjects)
-            if (linked->getName() == previousMedia)
+        for (auto& weakLinkedObject : linkedObjects)
+        {
+            auto linked = weakLinkedObject.lock();
+            if (linked && linked->getName() == previousMedia)
                 targetObjects.push_back(object);
+        }
     }
 
     Values msg;
@@ -380,7 +383,7 @@ list<shared_ptr<GraphObject>> GuiMedia::getFiltersForImage(const shared_ptr<Grap
             continue;
 
         auto linkedImages = obj->getLinkedObjects();
-        auto matchingImage = find(linkedImages.begin(), linkedImages.end(), image);
+        auto matchingImage = find_if(linkedImages.begin(), linkedImages.end(), [&](const auto& weakLinkedImage) { return image == weakLinkedImage.lock(); });
 
         if (matchingImage != linkedImages.end())
             filterList.push_back(obj);

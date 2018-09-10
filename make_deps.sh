@@ -11,6 +11,7 @@ cd external
 
 # We use the same prefix for all built libs
 if [ ! -d third_parties ]; then
+    rm -rf third_parties
     mkdir third_parties
 fi
 

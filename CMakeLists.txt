@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.2)
 project(
     splash 
-    VERSION 0.7.18
+    VERSION 0.7.20
     LANGUAGES C CXX
 )
 
@@ -40,9 +40,21 @@ set(API_VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
 set(PACKAGE_VERSION ${PROJECT_VERSION})
 
 #
+# Build options
+#
+set(BUILD_GENERIC_ARCH OFF CACHE BOOL "Enable building without architecture-specitif optimization")
+set(DATAPATH_SDK_PATH "" CACHE PATH "Path to the Datapath SDK")
+set(DEBUG_OPENGL OFF CACHE BOOL "Enable OpenGL debugging")
+set(PROFILE_OPENGL OFF CACHE BOOL "Enable OpenGL profiling")
+set(USE_SYSTEM_LIBS OFF CACHE BOOL "Enable using system libraries instead of bundle ones")
+
+#
 # Find the various libraries
 #
-set(ENV{PKG_CONFIG_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/external/third_parties/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+if (NOT USE_SYSTEM_LIBS)
+  set(ENV{PKG_CONFIG_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/external/third_parties/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+endif()
+
 find_package(PkgConfig REQUIRED)
 
 # Mandatory dependencies
@@ -63,6 +75,7 @@ endif()
 find_package(Doxygen)
 pkg_search_module(GPHOTO libgphoto2)
 pkg_search_module(OPENCV opencv)
+pkg_search_module(JACK jack)
 pkg_search_module(PORTAUDIO portaudio-2.0)
 pkg_search_module(SHMDATA shmdata-1.3)
 
@@ -96,11 +109,11 @@ elseif(APPLE)
     set(HAVE_OSX 1)
 endif()
 
-if (DEBUG_OPENGL EQUAL 1)
+if (DEBUG_OPENGL)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUGGL")
 endif()
 
-if (PROFILE_OPENGL EQUAL 1)
+if (PROFILE_OPENGL)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPROFILE")
 endif()
 
@@ -112,11 +125,25 @@ if (DATAPATH_SDK_PATH)
         set(HAVE_DATAPATH 0)
     endif()
 else()
-    set(DATAPATH_SDK_PATH "")
     set(HAVE_DATAPATH 0)
 endif()
 
+if ("${JACK_LIBRARIES}" STREQUAL "")
+    set(HAVE_JACK 0)
+else()
+    set(HAVE_JACK 1)
+endif()
+
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.cmake" "${CMAKE_CURRENT_SOURCE_DIR}/src/config.h")
+
+#
+# Generic compilation flags
+#
+include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
+if(COMPILER_SUPPORTS_MARCH_NATIVE AND NOT BUILD_GENERIC_ARCH)
+    add_definitions(-march=native)
+endif()
 
 #
 # Sources
@@ -192,6 +219,7 @@ function(info_cfg_text
     set(_config_msg "${_config_msg}\n\n  ${_text}" PARENT_SCOPE)
 endfunction()
 
+info_cfg_option(USE_SYSTEM_LIBS)
 info_cfg_option(GPHOTO_VERSION)
 info_cfg_option(FFMPEG_libavformat_VERSION)
 info_cfg_option(FFMPEG_libavcodec_VERSION)
@@ -199,6 +227,9 @@ info_cfg_option(FFMPEG_libavutil_VERSION)
 info_cfg_option(FFMPEG_libswscale_VERSION)
 info_cfg_option(OPENCV_VERSION)
 info_cfg_option(PORTAUDIO_VERSION)
+info_cfg_option(JACK_VERSION)
+info_cfg_option(JACK_LIBRARIES)
+info_cfg_option(HAVE_JACK)
 info_cfg_option(PYTHONLIBS_VERSION_STRING)
 info_cfg_option(SHMDATA_VERSION)
 info_cfg_option(ZMQ_VERSION)

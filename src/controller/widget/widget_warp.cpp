@@ -31,9 +31,15 @@ void GuiWarp::render()
 
             // We need to update the underlying camera
             auto linkedObj = warp->getLinkedObjects();
-            for (auto& obj : linkedObj)
-                if (obj->getType() == "camera")
-                    dynamic_pointer_cast<Camera>(obj)->render();
+            for (auto& weakLinkedObject : linkedObj)
+            {
+                auto linkedObject = weakLinkedObject.lock();
+                if (!linkedObject)
+                    continue;
+
+                if (linkedObject->getType() == "camera")
+                    dynamic_pointer_cast<Camera>(linkedObject)->render();
+            }
 
             if (_currentWarp == i)
                 setObjectAttribute(warp->getName(), "showControlLattice", {1});

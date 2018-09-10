@@ -37,6 +37,8 @@ Texture_Image::~Texture_Image()
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Texture_Image::~Texture_Image - Destructor" << Log::endl;
 #endif
+
+    lock_guard<mutex> lock(_mutex);
     glDeleteTextures(1, &_glTex);
     glDeleteBuffers(2, _pbos);
 }
@@ -324,9 +326,6 @@ void Texture_Image::update()
     img->getAttribute("flip", flip);
     img->getAttribute("flop", flop);
 
-    if (!(bool)glIsTexture(_glTex))
-        glCreateTextures(GL_TEXTURE_2D, 1, &_glTex);
-
     // Store the image data size
     int imageDataSize = spec.rawSize();
     GLenum glChannelOrder = getChannelOrder(spec);
@@ -459,15 +458,16 @@ void Texture_Image::update()
             glCompressedTextureSubImage2D(_glTex, 0, 0, 0, spec.width, spec.height, internalFormat, imageDataSize, img->data());
             img->unlockWrite();
         }
-        updatePbos(spec.width, spec.height, spec.pixelBytes());
+
+        if (!updatePbos(spec.width, spec.height, spec.pixelBytes()))
+            return;
 
         // Fill one of the PBOs right now
-        GLubyte* pixels = (GLubyte*)glMapNamedBufferRange(_pbos[0], 0, imageDataSize, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+        auto pixels = _pbosPixels[0];
         if (pixels != NULL)
         {
             img->lockWrite();
             memcpy((void*)pixels, img->data(), imageDataSize);
-            glUnmapNamedBuffer(_pbos[0]);
             img->unlockWrite();
         }
 
@@ -479,17 +479,17 @@ void Texture_Image::update()
     else
     {
         // Copy the pixels from the current PBO to the texture
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboReadIndex]);
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboUploadIndex]);
         if (!isCompressed)
             glTextureSubImage2D(_glTex, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, 0);
         else
             glCompressedTextureSubImage2D(_glTex, 0, 0, 0, spec.width, spec.height, internalFormat, imageDataSize, 0);
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-        _pboReadIndex = (_pboReadIndex + 1) % 2;
+        _pboUploadIndex = (_pboUploadIndex + 1) % 2;
 
         // Fill the next PBO with the image pixels
-        GLubyte* pixels = (GLubyte*)glMapNamedBufferRange(_pbos[_pboReadIndex], 0, imageDataSize, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+        auto pixels = _pbosPixels[_pboUploadIndex];
         if (pixels != NULL)
         {
             img->lockWrite();
@@ -534,9 +534,6 @@ void Texture_Image::flushPbo()
     if (!_pboCopyThreads.empty())
     {
         _pboCopyThreads.clear(); // This waits for the threaded copies to finish
-
-        glUnmapNamedBuffer(_pbos[_pboReadIndex]);
-
         if (!_img.expired())
             _img.lock()->unlockWrite();
     }
@@ -553,15 +550,30 @@ void Texture_Image::init()
         return;
 
     _timestamp = Timer::getTime();
-
-    glCreateBuffers(2, _pbos);
 }
 
 /*************/
-void Texture_Image::updatePbos(int width, int height, int bytes)
+bool Texture_Image::updatePbos(int width, int height, int bytes)
 {
-    glNamedBufferData(_pbos[0], width * height * bytes, 0, GL_STREAM_DRAW);
-    glNamedBufferData(_pbos[1], width * height * bytes, 0, GL_STREAM_DRAW);
+    glDeleteBuffers(2, _pbos);
+
+    auto flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+    auto imageDataSize = width * height * bytes;
+
+    glCreateBuffers(2, _pbos);
+    glNamedBufferStorage(_pbos[0], imageDataSize, 0, flags);
+    glNamedBufferStorage(_pbos[1], imageDataSize, 0, flags);
+
+    _pbosPixels[0] = (GLubyte*)glMapNamedBufferRange(_pbos[0], 0, imageDataSize, flags);
+    _pbosPixels[1] = (GLubyte*)glMapNamedBufferRange(_pbos[1], 0, imageDataSize, flags);
+
+    if (!_pbosPixels[0] || !_pbosPixels[1])
+    {
+        Log::get() << Log::ERROR << "Texture_Image::" << __FUNCTION__ << " - Unable to initialize upload PBOs" << Log::endl;
+        return false;
+    }
+
+    return true;
 }
 
 /*************/

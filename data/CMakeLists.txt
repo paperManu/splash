@@ -18,14 +18,14 @@
 #
 
 add_custom_command(
-    OUTPUT splash-launcher.desktop
-    COMMAND sed -i 's/Version=.*/Version=${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}/g' ${CMAKE_CURRENT_SOURCE_DIR}/config/splash-launcher.desktop
-    COMMAND sed -i 's!Icon=.*!Icon=${CMAKE_INSTALL_PREFIX}/share/splash/splash-icon-512.png!g' ${CMAKE_CURRENT_SOURCE_DIR}/config/splash-launcher.desktop
+    OUTPUT splash.desktop
+    COMMAND sed -i 's/Version=.*/Version=${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}/g' ${CMAKE_CURRENT_SOURCE_DIR}/share/applications/splash.desktop
+    COMMAND sed -i 's!Icon=.*!Icon=${CMAKE_INSTALL_PREFIX}/share/icons/splash.png!g' ${CMAKE_CURRENT_SOURCE_DIR}/share/applications/splash.desktop
 )
 
 if(UNIX AND NOT APPLE)
-    add_custom_target(splash-launcher ALL DEPENDS splash-launcher.desktop)
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config/splash-launcher.desktop DESTINATION ${CMAKE_INSTALL_PREFIX}/share/applications)
+    add_custom_target(splash-launcher ALL DEPENDS splash.desktop)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/share DESTINATION ${CMAKE_INSTALL_PREFIX})
 endif()
 
 install(FILES 
@@ -34,27 +34,7 @@ install(FILES
     camera.obj
     color_map.png
     cubes.obj
-    plane.obj
     probe.obj
-    sphere.obj
     splash.json
-    splash-icon-512.png
-    templates.txt
+    share/icons/hicolor/512x512/apps/splash.png
     DESTINATION "share/splash/")
-
-install(FILES
-    fonts/Roboto-Medium.ttf
-    DESTINATION "share/splash/fonts")
-
-install(FILES 
-    templates/single_plane.json
-    templates/single_plane.png
-    templates/single_dome.json
-    templates/single_dome.png
-    templates/four_plane.json
-    templates/four_plane.png
-    templates/dual_dome.json
-    templates/dual_dome.png
-    templates/two_scenes_four_cameras.json
-    templates/two_scenes_four_cameras.png
-    DESTINATION "share/splash/templates")

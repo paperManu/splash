@@ -65,7 +65,7 @@
                "type" : "gui"
             },
             "image" : {
-               "file" : [ "color_map_3k.png" ],
+               "file" : [ "color_map.png" ],
                "flip" : [ 0 ],
                "flop" : [ 0 ],
                "pattern" : [ 0 ],
@@ -84,7 +84,7 @@
                "updateRate" : [ 100 ]
             },
             "mesh" : {
-               "file" : [ "sphere.obj" ],
+               "file" : [ "cubes.obj" ],
                "priorityShift" : [ 0 ],
                "type" : "mesh"
             },
@@ -207,7 +207,7 @@
                "weightedCalibrationPoints" : [ 1 ]
             },
             "image" : {
-               "file" : [ "color_map_3k.png" ],
+               "file" : [ "color_map.png" ],
                "flip" : [ 0 ],
                "flop" : [ 0 ],
                "pattern" : [ 0 ],
@@ -216,7 +216,7 @@
                "type" : "image"
             },
             "mesh" : {
-               "file" : [ "sphere.obj" ],
+               "file" : [ "cubes.obj" ],
                "priorityShift" : [ 0 ],
                "type" : "mesh"
             },

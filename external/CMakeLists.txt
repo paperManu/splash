@@ -23,14 +23,16 @@ add_definitions(-w)
 #
 # External sources
 #
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
-add_subdirectory(glfw EXCLUDE_FROM_ALL)
-
-set(SNAPPY_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-add_subdirectory(snappy EXCLUDE_FROM_ALL)
+if (NOT USE_SYSTEM_LIBS)
+  set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+  set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+  set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+  add_subdirectory(glfw EXCLUDE_FROM_ALL)
+  
+  set(SNAPPY_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  add_subdirectory(snappy EXCLUDE_FROM_ALL)
+endif()
 
 if(APPLE)
     add_custom_command(

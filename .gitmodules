@@ -1,10 +1,6 @@
 [submodule "external/hap"]
 	path = external/hap
 	url = https://github.com/Vidvox/hap.git
-[submodule "external/piccante"]
-	path = external/piccante
-	url = https://github.com/cnr-isti-vclab/piccante.git
-	branch = master
 [submodule "external/imgui"]
 	path = external/imgui
 	url = https://github.com/ocornut/imgui.git

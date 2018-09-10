@@ -8,7 +8,6 @@
 #define GLM_FORCE_SSE2
 #define GLM_FORCE_INLINE
 #include <glm/glm.hpp>
-#include <glm/gtx/simd_vec4.hpp>
 #else
 #define GLM_FORCE_INLINE
 #include <glm/glm.hpp>

@@ -2,9 +2,9 @@
 
 #include <algorithm>
 
+#include "./core/world.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
-#include "./core/world.h"
 
 #define DISTANT_NAME_SUFFIX "_source"
 
@@ -307,7 +307,7 @@ void Queue::registerAttributes()
             {
                 auto src = it.as<Values>();
 
-                if (src.size() >= 5) // We need at least type, name, start and stop for each input
+                if (src.size() == 6) // We need at least type, name, start and stop for each input
                 {
                     Source source;
                     source.type = src[0].as<string>();
@@ -318,6 +318,10 @@ void Queue::registerAttributes()
                     source.args = src[5].as<Values>();
 
                     _playlist.push_back(source);
+                }
+                else
+                {
+                    Log::get() << Log::WARNING << "Queue~~playlist - Wrong number of arguments given for one of the sources" << Log::endl;
                 }
             }
 
@@ -381,7 +385,7 @@ QueueSurrogate::QueueSurrogate(RootObject* root)
     : Texture(root)
     , _filter(make_shared<Filter>(root))
 {
-    _filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", "queueFilter_" + _name + to_string(_filterIndex++)));
+    _filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", "queueFilter_" + _name + to_string(_filterIndex++)).lock());
     _filter->_savable = false;
 
     registerAttributes();
@@ -443,7 +447,7 @@ void QueueSurrogate::registerAttributes()
 
             if (type.find("image") != string::npos)
             {
-                auto image = dynamic_pointer_cast<Image>(_root->createObject("image", _name + "_source"));
+                auto image = dynamic_pointer_cast<Image>(_root->createObject("image", _name + "_source").lock());
                 image->zero();
                 image->setRemoteType(type);
                 object = image;

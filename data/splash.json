@@ -39,10 +39,6 @@
              "srgb" : [ 1 ],
              "type" : "image"
           },
-          "local" : {
-             "blendingResolution" : [ 2048 ],
-             "type" : "scene"
-          },
           "mesh" : {
              "benchmark" : 0,
              "file" : [ "./cubes.obj" ],
@@ -67,7 +63,6 @@
           }
         },
         "address" : "localhost",
-        "display" : 0,
         "spawn" : 1,
         "swapInterval" : 1,
         "links" : [

@@ -1,8 +1,8 @@
-FROM ubuntu:artful
+FROM ubuntu:18.04
 MAINTAINER Emmanuel Durand <emmanueldurand@protonmail.com>
 
 RUN apt update && apt upgrade -y
-RUN apt install --assume-yes \
+RUN DEBIAN_FRONTEND=noninterative apt install --assume-yes \
     zip \
     build-essential \
     git-core \

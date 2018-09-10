@@ -43,7 +43,7 @@ class GuiMedia : public GuiWidget
     std::map<std::string, std::string> _mediaTypes;
     std::map<std::string, std::string> _mediaTypesReversed{}; // Created from the previous map
 
-    Values _newMedia{"", "", 0.f, 0.f, 0};
+    Values _newMedia{"", "", 0.f, 0.f, 0, {}};
     int _newMediaTypeIndex{0};
     float _newMediaStart{0.f};
     float _newMediaStop{0.f};

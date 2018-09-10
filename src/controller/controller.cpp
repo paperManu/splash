@@ -110,8 +110,12 @@ unordered_map<string, vector<string>> ControllerObject::getObjectLinks() const
             continue;
         links[o.first] = vector<string>();
         auto linkedObjects = o.second->getLinkedObjects();
-        for (auto& link : linkedObjects)
-            links[o.first].push_back(link->getName());
+        for (auto& weakObject : linkedObjects)
+        {
+            auto object = weakObject.lock();
+            if (object)
+                links[o.first].push_back(object->getName());
+        }
     }
 
     return links;

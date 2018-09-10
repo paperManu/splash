@@ -1,21 +1,21 @@
-# 
+#
 # Copyright (C) 2015 Emmanuel Durand
-# 
+#
 # This file is part of Splash (http://github.com/paperManu/splash)
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # Splash is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
-# 
+#
 
 import bpy
 import bmesh
@@ -24,29 +24,27 @@ import time
 import os
 import numpy
 from bpy.types import Operator
-from bpy.props import (StringProperty,
-                       BoolProperty,
-                       IntProperty,
-                       FloatProperty,
-                       PointerProperty,
-                       )
+from bpy.props import StringProperty, BoolProperty
 from math import floor
-from mathutils import Vector, Matrix
+from mathutils import Vector
+
 
 class Target:
-    _object = None
-    _meshWriter = None
-    _updatePeriodObject = 1.0
-    _updatePeriodEdit = 1.0
-    _startTime = 0.0
-    _frameTimeMesh = 0.0
+    def __init__(self):
+        self._object = None
+        self._meshWriter = None
+        self._updatePeriodObject = 1.0
+        self._updatePeriodEdit = 1.0
+        self._startTime = 0.0
+        self._frameTimeMesh = 0.0
 
-    _texture = None
-    _texWriterPath = ""
-    _texWriter = None
-    _texSize = [0, 0]
-    _updatePeriodTexture = 1.0
-    _frameTimeTex = 0.0
+        self._texture = None
+        self._texWriterPath = ""
+        self._texWriter = None
+        self._texSize = [0, 0]
+        self._updatePeriodTexture = 1.0
+        self._frameTimeTex = 0.0
+
 
 class Splash:
     _targets = {}
@@ -59,33 +57,33 @@ class Splash:
             currentObject = context.edit_object.name
         else:
             currentObject = context.active_object.name
-    
+
         for name, target in Splash._targets.items():
             currentTime = time.clock_gettime(time.CLOCK_REALTIME) - target._startTime
-            worldMatrix = target._object.matrix_world;
+            worldMatrix = target._object.matrix_world
 
             normalMatrix = worldMatrix.copy()
             normalMatrix.invert()
             normalMatrix.transpose()
-    
+
             if currentObject == name and bpy.context.edit_object is not None:
                 if currentTime - target._frameTimeMesh < target._updatePeriodEdit:
                     continue
                 target._frameTimeMesh = currentTime
-    
+
                 mesh = bmesh.from_edit_mesh(target._object.data)
                 bufferVert = bytearray()
                 bufferPoly = bytearray()
                 buffer = bytearray()
-    
+
                 vertNbr = 0
                 polyNbr = 0
-    
+
                 uv_layer = mesh.loops.layers.uv.active
                 if uv_layer is None:
                     bpy.ops.uv.smart_project()
                     uv_layer = mesh.loops.layers.uv.active
-    
+
                 for face in mesh.faces:
                     polyNbr += 1
                     bufferPoly += struct.pack("i", len(face.verts))
@@ -94,12 +92,12 @@ class Splash:
 
                         v = loop.vert.co
                         tmpVector = Vector((v[0], v[1], v[2], 1.0))
-                        tmpVector = worldMatrix * tmpVector;
+                        tmpVector = worldMatrix * tmpVector
                         v = Vector((tmpVector[0], tmpVector[1], tmpVector[2]))
 
                         n = loop.vert.normal
                         tmpVector = Vector((n[0], n[1], n[2], 0.0))
-                        tmpVector = normalMatrix * tmpVector;
+                        tmpVector = normalMatrix * tmpVector
                         n = Vector((tmpVector[0], tmpVector[1], tmpVector[2]))
 
                         if uv_layer is None:
@@ -108,7 +106,7 @@ class Splash:
                             uv = loop[uv_layer].uv
                         bufferVert += struct.pack("ffffffff", v[0], v[1], v[2], uv[0], uv[1], n[0], n[1], n[2])
                         vertNbr += 1
-                
+
                 buffer += struct.pack("ii", vertNbr, polyNbr)
                 buffer += bufferVert
                 buffer += bufferPoly
@@ -117,7 +115,7 @@ class Splash:
                 if currentTime - target._frameTimeMesh < target._updatePeriodObject:
                     continue
                 target._frameTimeMesh = currentTime
-    
+
                 if type(target._object.data) is bpy.types.Mesh:
 
                     # Look for UV coords, create them if needed
@@ -125,17 +123,17 @@ class Splash:
                         bpy.ops.object.editmode_toggle()
                         bpy.ops.uv.smart_project()
                         bpy.ops.object.editmode_toggle()
-    
+
                     # Apply the modifiers to the object
                     mesh = target._object.to_mesh(context.scene, True, 'PREVIEW')
-    
+
                     bufferVert = bytearray()
                     bufferPoly = bytearray()
                     buffer = bytearray()
-                    
+
                     vertNbr = 0
                     polyNbr = 0
-                        
+
                     for poly in mesh.polygons:
                         polyNbr += 1
                         bufferPoly += struct.pack("i", len(poly.loop_indices))
@@ -144,12 +142,12 @@ class Splash:
 
                             v = mesh.vertices[mesh.loops[idx].vertex_index].co
                             tmpVector = Vector((v[0], v[1], v[2], 1.0))
-                            tmpVector = worldMatrix * tmpVector;
+                            tmpVector = worldMatrix * tmpVector
                             v = Vector((tmpVector[0], tmpVector[1], tmpVector[2]))
 
                             n = mesh.vertices[mesh.loops[idx].vertex_index].normal
                             tmpVector = Vector((n[0], n[1], n[2], 0.0))
-                            tmpVector = normalMatrix * tmpVector;
+                            tmpVector = normalMatrix * tmpVector
                             n = Vector((tmpVector[0], tmpVector[1], tmpVector[2]))
 
                             if len(mesh.uv_layers) != 0:
@@ -158,21 +156,20 @@ class Splash:
                                 uv = Vector((0, 0))
                             bufferVert += struct.pack("ffffffff", v[0], v[1], v[2], uv[0], uv[1], n[0], n[1], n[2])
                             vertNbr += 1
-                            
+
                     buffer += struct.pack("ii", vertNbr, polyNbr)
                     buffer += bufferVert
                     buffer += bufferPoly
                     target._meshWriter.push(buffer, floor(currentTime * 1e9))
 
                     bpy.data.meshes.remove(mesh)
-    
 
     @staticmethod
     def sendTexture(scene):
         for name, target in Splash._targets.items():
             if target._texture is None or target._texWriterPath is None:
                 return
-    
+
             buffer = bytearray()
             pixels = [pix for pix in target._texture.pixels]
             pixels = numpy.array(pixels)
@@ -184,12 +181,12 @@ class Splash:
                 try:
                     from pyshmdata import Writer
                     os.remove(target._texWriterPath)
-                except:
+                except os.error as e:
                     pass
-    
+
                 if target._texWriter is not None:
                     del target._texWriter
-    
+
                 target._texSize[0] = target._texture.size[0]
                 target._texSize[1] = target._texture.size[1]
                 target._texWriter = Writer(path=target._texWriterPath, datatype="video/x-raw, format=(string)RGBA, width=(int){0}, height=(int){1}, framerate=(fraction)1/1".format(target._texSize[0], target._texSize[1]), framesize=len(buffer))
@@ -198,7 +195,7 @@ class Splash:
             # We send twice to pass through the Splash input buffer
             time.sleep(0.1)
             currentTime = time.clock_gettime(time.CLOCK_REALTIME) - target._startTime
-            target._texWriter.push(buffer, floor(currentTime * 1e9)) 
+            target._texWriter.push(buffer, floor(currentTime * 1e9))
 
 
 class SplashActivateSendMesh(Operator):
@@ -209,10 +206,10 @@ class SplashActivateSendMesh(Operator):
     def execute(self, context):
         try:
             from pyshmdata import Writer
-        except:
+        except os.error as e:
             print("Module pyshmdata was not found")
             return {'FINISHED'}
-            
+
         scene = bpy.context.scene
         splash = scene.splash
 
@@ -237,7 +234,7 @@ class SplashActivateSendMesh(Operator):
             path = splash.outputPathPrefix + "_mesh_" + splash.targetObject
             try:
                 os.remove(path)
-            except:
+            except os.error as e:
                 pass
 
             splashTarget._meshWriter = Writer(path=path, datatype="application/x-polymesh")
@@ -301,12 +298,8 @@ class SplashExportNodeTree(Operator):
     bl_idname = "splash.export_node_tree"
     bl_label = "Exports the node tree"
 
-
     filepath = bpy.props.StringProperty(subtype='FILE_PATH')
-    filter_glob = bpy.props.StringProperty(
-        default="*.json",
-        options={'HIDDEN'},
-        )
+    filter_glob = bpy.props.StringProperty(default="*.json", options={'HIDDEN'})
 
     node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
     export_project = BoolProperty(name='export_project', description='If True, the tree will contain only meshes and images data', default=False)
@@ -372,7 +365,7 @@ class SplashExportNodeTree(Operator):
                     self.node_links[masterSceneName].append(link)
 
             self.scene_order = [self.scene_order[0]]
-            self.scene_lists = {masterSceneName : self.scene_lists[masterSceneName]}
+            self.scene_lists = {masterSceneName: self.scene_lists[masterSceneName]}
 
         self.export(self.export_project)
         return {'FINISHED'}
@@ -400,7 +393,7 @@ class SplashExportNodeTree(Operator):
         file = open(self.filepath, "w", encoding="utf8", newline="\n")
         fw = file.write
 
-        worldArgs =  self.world_node.exportProperties(self.filepath)
+        worldArgs = self.world_node.exportProperties(self.filepath)
         fw("// Splash configuration file\n"
            "// Exported with Blender Splash add-on\n"
            "{\n")
@@ -440,7 +433,7 @@ class SplashExportNodeTree(Operator):
                             fw("\n")
                         sceneIndex = sceneIndex + 1
             fw("    ],\n")
-           
+
         # Scenes information
         sceneIndex = 0
         for scene in self.scene_order:

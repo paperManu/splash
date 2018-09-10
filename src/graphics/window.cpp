@@ -190,7 +190,7 @@ bool Window::linkTo(const shared_ptr<GraphObject>& obj)
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
-        auto tex = dynamic_pointer_cast<Texture_Image>(_root->createObject("texture_image", getName() + "_" + obj->getName() + "_tex"));
+        auto tex = dynamic_pointer_cast<Texture_Image>(_root->createObject("texture_image", getName() + "_" + obj->getName() + "_tex").lock());
         tex->setResizable(0);
         if (tex->linkTo(obj))
             return linkTo(tex);

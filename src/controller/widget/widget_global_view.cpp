@@ -558,7 +558,7 @@ void GuiGlobalView::processMouseEvents()
         }
 
         // Calibration point set
-        if (io.MouseClicked[1])
+        if (io.MouseClicked[2])
         {
             float fragDepth = 0.f;
             _newTarget = _camera->pickFragment(mousePos.x, mousePos.y, fragDepth);
@@ -587,7 +587,7 @@ void GuiGlobalView::processMouseEvents()
 
     // This handles the mouse capture even when the mouse goes outside the view widget, which controls are defined next
     static bool viewCaptured = false;
-    if (io.MouseDownDuration[1] > 0.0)
+    if (io.MouseDownDuration[2] > 0.0)
     {
         if (ImGui::IsItemHovered())
             viewCaptured = true;

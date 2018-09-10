@@ -38,6 +38,7 @@
 #include "./core/factory.h"
 #include "./core/root_object.h"
 #include "./core/spinlock.h"
+#include "./graphics/object_library.h"
 
 namespace Splash
 {
@@ -128,6 +129,12 @@ class Scene : public RootObject
      * \return Return true if they are
      */
     static bool getHasNVSwapGroup();
+
+    /**
+     * Get a reference to the object library
+     * \return Return a reference to the object library
+     */
+    ObjectLibrary& getObjectLibrary() { return _objectLibrary; }
 
     /**
      * \brief Get the status of the scene
@@ -230,11 +237,13 @@ class Scene : public RootObject
     std::shared_ptr<GraphObject> _blender{nullptr};
 
 // Objects in charge of calibration
-#if HAVE_GPHOTO
+#if HAVE_GPHOTO and HAVE_OPENCV
     std::shared_ptr<GraphObject> _colorCalibrator{nullptr};
 #endif
 
   private:
+    ObjectLibrary _objectLibrary; //!< Library of 3D objects used by multiple GraphObjects
+
     static bool _hasNVSwapGroup; //!< If true, NV swap groups have been detected and are used
     static std::vector<int> _glVersion;
 
@@ -254,6 +263,10 @@ class Scene : public RootObject
     std::atomic_bool _textureUploadDone{false};
     Spinlock _textureMutex; //!< Sync between texture and render loops
     GLsync _textureUploadFence{nullptr}, _cameraDrawnFence{nullptr};
+
+    std::atomic_bool _doUploadTextures{false};
+    std::condition_variable _doUploadTexturesCondition{};
+    std::mutex _doUploadTexturesMutex{};
 
     // NV Swap group specific
     GLuint _maxSwapGroups{0};
@@ -311,6 +324,6 @@ class Scene : public RootObject
     void updateInputs();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_SCENE_H

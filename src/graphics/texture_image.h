@@ -28,16 +28,16 @@
 #include <chrono>
 #include <future>
 #include <glm/glm.hpp>
+#include <list>
 #include <memory>
-#include <vector>
 
 #include "./config.h"
 
 #include "./core/attribute.h"
-#include "./utils/cgutils.h"
 #include "./core/coretypes.h"
-#include "./image/image.h"
 #include "./graphics/texture.h"
+#include "./image/image.h"
+#include "./utils/cgutils.h"
 
 namespace Splash
 {
@@ -173,10 +173,12 @@ class Texture_Image : public Texture
   private:
     GLuint _glTex{0};
     GLuint _pbos[2];
+    GLubyte* _pbosPixels[2];
+
     int _multisample{0};
     bool _cubemap{false};
-    int _pboReadIndex{0};
-    std::vector<std::future<void>> _pboCopyThreads;
+    int _pboUploadIndex{0};
+    std::list<std::future<void>> _pboCopyThreads;
 
     // Store some texture parameters
     static constexpr int _texLevels{4};
@@ -211,8 +213,9 @@ class Texture_Image : public Texture
      * \param width Width
      * \param height Height
      * \param bytes Bytes per pixel
+     * \return Return true if all went well
      */
-    void updatePbos(int width, int height, int bytes);
+    bool updatePbos(int width, int height, int bytes);
 
     /**
      * \brief Register new functors to modify attributes

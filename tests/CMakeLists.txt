@@ -26,7 +26,6 @@ include_directories(../external/hap/source)
 include_directories(../external/imgui)
 include_directories(../external/jsoncpp)
 include_directories(../external/libltc/src)
-include_directories(../external/piccante/include)
 include_directories(../external/stb)
 include_directories(../external/syphon/build/Release/Syphon.framework/Headers)
 
@@ -60,13 +59,6 @@ link_directories(${PORTAUDIO_LIBRARY_DIRS})
 link_directories(${OPENCV_LIBRARY_DIRS})
 link_directories(${PYTHON_LIBRARY_DIRS})
 
-# Unit tests (executed through 'make check')
-add_custom_command(OUTPUT update_assets
-    COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/data
-    COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/data/*.json ${CMAKE_CURRENT_BINARY_DIR}/data/
-    )
-add_custom_target(assets DEPENDS update_assets)
-
 add_executable(unitTests unitTests.cpp)
 target_sources(unitTests PRIVATE
     check_attributefunctor.cpp
@@ -75,7 +67,18 @@ target_sources(unitTests PRIVATE
     check_value.cpp
     check_upgrade_configuration.cpp
 )
-add_dependencies(unitTests assets)
+
+# Unit tests (executed through 'make check')
+if (NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
+    add_custom_command(OUTPUT update_assets
+        COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/data
+        COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/data/*.json ${CMAKE_CURRENT_BINARY_DIR}/data/
+    
+        )
+    add_custom_target(assets DEPENDS update_assets)
+    add_dependencies(unitTests assets)
+endif()
+
 target_link_libraries(unitTests splash-${API_VERSION})
 
 add_test(NAME unitTests COMMAND unitTests)

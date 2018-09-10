@@ -24,7 +24,7 @@ if [ -d "build" ]; then
 fi
 mkdir build && cd build
 
-cmake ..
+cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
 make -j$(nproc) && make package
 
 if [ ! -f splash-*.deb ]; then

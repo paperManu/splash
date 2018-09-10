@@ -238,10 +238,6 @@ class Camera : public GraphObject
     bool _isColorLUTActivated{false};
     glm::mat3 _colorMixMatrix;
 
-    // Some default models use in various situations
-    std::list<std::shared_ptr<Mesh>> _modelMeshes;
-    std::unordered_map<std::string, std::shared_ptr<Object>> _models;
-
     // Camera parameters
     float _fov{35.f};                      //!< Vertical FOV
     float _width{512.f}, _height{512.f};   //!< Current width and height
@@ -254,6 +250,8 @@ class Camera : public GraphObject
     float _blendWidth{0.05f};              //!< Width of the blending, as a fraction of the width and height
     float _blendPrecision{0.1f};           //!< Controls the tessellation level for the blending
     float _brightness{1.f};                //!< Brightness correction
+    float _contrast{1.f};                  //!< Contrast correction
+    float _saturation{1.f};                //!< Saturation correction
     float _colorTemperature{6500.f};       //!< Color temperature correction
     bool _weightedCalibrationPoints{true}; //!< If true, calibration points closer to the borders have a higher influence on the calibration
 

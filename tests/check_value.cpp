@@ -44,9 +44,13 @@ bool compareIntToValues(const vector<int>& a, const Values& b)
     if (a.size() != b.size())
         return false;
 
-    for (int i = 0; i < a.size(); ++i)
-        if (a[i] != b[i].as<int>())
+    int index = 0;
+    for (const auto& value : b)
+    {
+        if (a[index] != value.as<int>())
             return false;
+        ++index;
+    }
 
     return true;
 }
@@ -62,6 +66,7 @@ TEST_CASE("Testing initialization from iterators")
 
     auto values = Value(buffer.begin(), buffer.end());
     CHECK(compareIntToValues(buffer, values.as<Values>()));
+    CHECK(values.size() == buffer.size());
 }
 
 /*************/

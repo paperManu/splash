@@ -25,11 +25,7 @@
 #ifndef SPLASH_TIMER_H
 #define SPLASH_TIMER_H
 
-#include <atomic>
 #include <chrono>
-#include <ctime>
-#include <iostream>
-#include <mutex>
 #include <string>
 #include <thread>
 #include <unordered_map>
@@ -280,6 +276,16 @@ class Timer
     }
 
     /**
+     * Set master clock pause status
+     * \param paused True if paused
+     */
+    void setMasterClockPaused(bool paused)
+    {
+        std::lock_guard<Spinlock> lockClock(_clockMutex);
+        _clock.paused = paused;
+    }
+
+    /**
      * \brief Get the master clock time
      * \param clock Master clock value
      * \return Return true if the master clock is set
@@ -330,8 +336,7 @@ class Timer
 
         if (_looseClock && paused)
         {
-            time =
-                time + std::chrono::duration_cast<T>(std::chrono::steady_clock::now().time_since_epoch()).count() - std::chrono::duration_cast<T>(_lastMasterClockUpdate).count();
+            time += std::chrono::duration_cast<T>(std::chrono::steady_clock::now().time_since_epoch() - lastMasterClockUpdate).count();
             paused = false;
         }
 
@@ -366,6 +371,6 @@ class Timer
     bool _clockSet{false};
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_TIMER_H

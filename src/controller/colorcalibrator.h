@@ -26,10 +26,11 @@
 #define SPLASH_COLORCALIBRATOR_H
 
 #include <mutex>
-#include <thread>
+#include <future>
 #include <utility>
 
 #include <glm/glm.hpp>
+#include <opencv2/photo.hpp>
 
 #include "./config.h"
 
@@ -38,12 +39,6 @@
 #include "./core/coretypes.h"
 #include "./image/image_gphoto.h"
 #include "./utils/cgutils.h"
-
-namespace pic
-{
-class Image;
-class CameraResponseFunction;
-}
 
 namespace Splash
 {
@@ -56,12 +51,12 @@ class ColorCalibrator : public ControllerObject
      * \brief Constructor
      * \param root Root object
      */
-    ColorCalibrator(RootObject* root);
+    explicit ColorCalibrator(RootObject* root);
 
     /**
      * \brief Destructor
      */
-    ~ColorCalibrator() final;
+    ~ColorCalibrator() final = default;
 
     /**
      * \brief Update the color calibration of all cameras
@@ -97,8 +92,8 @@ class ColorCalibrator : public ControllerObject
     //
     // Attributes
     //
-    std::shared_ptr<Image_GPhoto> _gcamera;
-    std::shared_ptr<pic::CameraResponseFunction> _crf{nullptr};
+    std::shared_ptr<Image_GPhoto> _gcamera{nullptr};
+    cv::Mat _crf{};
 
     unsigned int _colorCurveSamples{5};     //!< Number of samples for each channels to create the color curves
     double _displayDetectionThreshold{1.f}; //!< Coefficient applied while detecting displays / projectors, increase to get rid of ambiant lights
@@ -107,17 +102,19 @@ class ColorCalibrator : public ControllerObject
     double _hdrStep{1.0};                   //!< Stops between images taken for color-measuring HDR
     int _equalizationMethod{2};
 
-    std::vector<CalibrationParams> _calibrationParams;
+    std::vector<CalibrationParams> _calibrationParams{};
 
-    std::thread _calibrationThread{};
+    std::future<void> _calibrationThread{};
     std::mutex _calibrationMutex{};
 
     /**
      * \brief Capture an HDR image from the gcamera
      * \param nbrLDR Low dynamic ranger images count to use to create the HDR
      * \param step Stops between successive LDR images
+     * \param computeResponseOnly If true, stop after the computation of the camera response function
+     * \return Return the HDR image
      */
-    std::shared_ptr<pic::Image> captureHDR(unsigned int nbrLDR = 3, double step = 1.0);
+    cv::Mat3f captureHDR(unsigned int nbrLDR = 3, double step = 1.0, bool computeResponseOnly = false);
 
     /**
      * \brief Compute the inverse projection transformation function, typically correcting the projector non linearity for all three channels
@@ -136,14 +133,14 @@ class ColorCalibrator : public ControllerObject
      * \brief Find the center of region with max values
      * \return Return a vector<float> containing the coordinates (x, y) of the ROI as well as the side length
      */
-    std::vector<int> getMaxRegionROI(std::shared_ptr<pic::Image> image);
+    std::vector<int> getMaxRegionROI(const cv::Mat3f& image);
 
     /**
      * \brief Get a mask of the projectors surface
      * \param image The image to compute the mask for
      * \return Return a vector<bool> the same size as image
      */
-    std::vector<bool> getMaskROI(std::shared_ptr<pic::Image> image);
+    std::vector<bool> getMaskROI(const cv::Mat3f& image);
 
     /**
      * \brief Get the mean value of the area around the given coords
@@ -152,7 +149,7 @@ class ColorCalibrator : public ControllerObject
      * \param boxSize Box size
      * \return Return the mean value for each channel
      */
-    std::vector<float> getMeanValue(std::shared_ptr<pic::Image> image, std::vector<int> coords = std::vector<int>(), int boxSize = 32);
+    std::vector<float> getMeanValue(const cv::Mat3f& image, std::vector<int> coords = std::vector<int>(), int boxSize = 32);
 
     /*
      * \brief Get the mean value of the area defined by the mask
@@ -160,7 +157,7 @@ class ColorCalibrator : public ControllerObject
      * \param mask Vector holding the coordinates (x, y) and the side length
      * \return Return the mean value for each channel
      */
-    std::vector<float> getMeanValue(std::shared_ptr<pic::Image> image, std::vector<bool> mask);
+    std::vector<float> getMeanValue(const cv::Mat3f& image, std::vector<bool> mask);
 
     /**
      * \brief White balance equalization strategies

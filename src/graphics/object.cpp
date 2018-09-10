@@ -78,6 +78,7 @@ void Object::activate()
     Values shaderParameters{};
     for (uint32_t i = 0; i < _textures.size(); ++i)
         shaderParameters.push_back("TEX_" + to_string(i + 1));
+    shaderParameters.push_back("TEXCOUNT " + to_string(_textures.size()));
 
     for (auto& p : _fillParameters)
         shaderParameters.push_back(p);
@@ -159,10 +160,7 @@ glm::dmat4 Object::computeModelMatrix() const
 void Object::deactivate()
 {
     for (auto& t : _textures)
-    {
-        // t->flushPbo();
         t->unlock();
-    }
 
     _shader->deactivate();
     if (_geometries.size() > 0)
@@ -221,7 +219,7 @@ bool Object::linkTo(const shared_ptr<GraphObject>& obj)
 
     if (obj->getType().find("texture") != string::npos)
     {
-        auto filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", getName() + "_" + obj->getName() + "_filter"));
+        auto filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", getName() + "_" + obj->getName() + "_filter").lock());
         if (filter->linkTo(obj))
             return linkTo(filter);
         else
@@ -247,7 +245,7 @@ bool Object::linkTo(const shared_ptr<GraphObject>& obj)
     }
     else if (obj->getType().find("image") != string::npos)
     {
-        auto filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", getName() + "_" + obj->getName() + "_filter"));
+        auto filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", getName() + "_" + obj->getName() + "_filter").lock());
         if (filter->linkTo(obj))
             return linkTo(filter);
         else
@@ -255,7 +253,7 @@ bool Object::linkTo(const shared_ptr<GraphObject>& obj)
     }
     else if (obj->getType().find("mesh") != string::npos)
     {
-        auto geom = dynamic_pointer_cast<Geometry>(_root->createObject("geometry", getName() + "_" + obj->getName() + "_geom"));
+        auto geom = dynamic_pointer_cast<Geometry>(_root->createObject("geometry", getName() + "_" + obj->getName() + "_geom").lock());
         if (geom->linkTo(obj))
             return linkTo(geom);
         else

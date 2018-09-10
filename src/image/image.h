@@ -144,11 +144,13 @@ class Image : public BufferObject
     bool write(const std::string& filename);
 
   protected:
-    Values _mediaInfo{};
+    std::unique_ptr<ImageBuffer> _image{nullptr};
+    std::unique_ptr<ImageBuffer> _bufferImage{nullptr};
+    std::string _filepath{""};
 
-    std::unique_ptr<ImageBuffer> _image;
-    std::unique_ptr<ImageBuffer> _bufferImage;
-    std::string _filepath;
+    Values _mediaInfo{};
+    std::mutex _mediaInfoMutex{};
+
     bool _flip{false};
     bool _flop{false};
     bool _imageUpdated{false};

@@ -1,6 +1,6 @@
 #include "./sound/sound_engine.h"
 
-#if not HAVE_OSX
+#if HAVE_JACK
 #include <pa_jack.h>
 #endif
 
@@ -17,7 +17,7 @@ mutex Sound_Engine::_engineMutex;
 Sound_Engine::Sound_Engine()
 {
     lock_guard<mutex> lock(_engineMutex);
-#if not HAVE_OSX
+#if HAVE_JACK
     PaJack_SetClientName("splash");
 #endif
     auto error = Pa_Initialize();
@@ -47,14 +47,18 @@ Sound_Engine::~Sound_Engine()
 }
 
 /*************/
+#if HAVE_JACK
 bool Sound_Engine::getDevice(bool inputDevice, const string& name)
+#else
+bool Sound_Engine::getDevice(bool inputDevice, const string& /*name*/)
+#endif
 {
     lock_guard<mutex> lock(_engineMutex);
 
     _inputDevice = inputDevice;
     _streamParameters = PaStreamParameters();
     _streamParameters.device = -1;
-#if not HAVE_OSX
+#if HAVE_JACK
     // If a JACK device name is set, we try to connect to it
     if (name != "")
     {
