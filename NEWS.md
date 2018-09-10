@@ -1,6 +1,41 @@
 Splash release notes
 ===================
 
+Splash 0.7.20 (2018-09-10)
+--------------------------
+New features:
+- Added Flatpak generation in the CI
+- Camera controls are now identical to Blender and Godot: we now use middle mouse button instead of right button
+- Added the possibility to disable bundled third party libraries
+
+Improvements:
+- Fixed cross-gpu tearing
+- Improved cross gpu tearing a bit more, by adding texture upload sync
+- Removed a workaround for loading a configuration which is not useful anymore
+- Fixed same-dir build (which is evil BTW)
+- Added contrast and saturation controls to Camera
+- Added an object library, storing 3D objects used in multiple GraphObjects
+- Fixed various compilation issue, regarding GCC 8 and OpenCV
+- Fixed type inconsistancy between speaker.h and speaker.cpp
+- Removed Piccante, replaced it with HDR capabilities from OpenCV
+- Textures are now uploaded via persistent PBOs
+
+Bugs fixed:
+- Fixed blending computation. Also improved triangles visibility check shader
+- Fixed an issue with `Root::disposeObject`
+- Fixed compilation issue on Archlinux
+- Fixed LTC clock pause signaling
+- Added architecture-specific optimization flags unless deactivated through the BUILD_GENERIC_ARCH flag
+- Fixed Blender memory sharing with Splash
+- Fixed seeking in a video file after it finished playing
+- Fixed trimmed video looping endlessly
+- Fixed loose clock behavior when LTC paused
+- Fixed an issue with device setting in Image_V4L2
+- Fixed random issue while setting playlist in Queue
+- Fixed V4L2 input not restarting when changing input index, added BGR support
+- Fixed crash in Image when reading/writing mediaInfo
+
+
 Splash 0.7.18 (2018-05-28)
 --------------------------
 New features:

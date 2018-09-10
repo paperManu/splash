@@ -54,7 +54,7 @@ test:archlinux:
     - archlinux
   before_script:
     - pacman -Syyu --noconfirm
-    - pacman -Sy --noconfirm git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcursor mesa gsl libgphoto2 opencv python3 portaudio zip zlib
+    - pacman -Sy --noconfirm git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcursor mesa gsl libgphoto2 opencv gtk3 hdf5 python3 portaudio zip zlib
     - git submodule update --init
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build

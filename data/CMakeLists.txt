@@ -20,7 +20,7 @@
 add_custom_command(
     OUTPUT splash.desktop
     COMMAND sed -i 's/Version=.*/Version=${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}/g' ${CMAKE_CURRENT_SOURCE_DIR}/share/applications/splash.desktop
-    COMMAND sed -i 's!Icon=.*!Icon=${CMAKE_INSTALL_PREFIX}/share/icons/splash-icon-512.png!g' ${CMAKE_CURRENT_SOURCE_DIR}/share/applications/splash.desktop
+    COMMAND sed -i 's!Icon=.*!Icon=${CMAKE_INSTALL_PREFIX}/share/icons/splash.png!g' ${CMAKE_CURRENT_SOURCE_DIR}/share/applications/splash.desktop
 )
 
 if(UNIX AND NOT APPLE)
@@ -36,4 +36,5 @@ install(FILES
     cubes.obj
     probe.obj
     splash.json
+    share/icons/hicolor/512x512/apps/splash.png
     DESTINATION "share/splash/")

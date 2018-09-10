@@ -505,6 +505,15 @@ void Scene::textureUploadRun()
                 _objectsCurrentlyUpdated.store(false, std::memory_order_release);
             }
 
+            // Wait for Scene's signal that the texture can be uploaded
+            expectedAtomicValue = true;
+            if (!_doUploadTextures.compare_exchange_strong(expectedAtomicValue, false, std::memory_order_acq_rel))
+            {
+                unique_lock<mutex> lockCondition(_doUploadTexturesMutex);
+                _doUploadTexturesCondition.wait_for(lockCondition, chrono::milliseconds(50));
+                _doUploadTextures = false;
+            }
+
             for (auto& texture : textures)
             {
 #ifdef PROFILE
@@ -1085,6 +1094,14 @@ void Scene::registerAttributes()
         return true;
     });
     setAttributeDescription("swapTestColor", "Set the swap test color");
+
+    addAttribute("uploadTextures", [&](const Values& /*args*/) {
+        unique_lock<mutex> lockCondition(_doUploadTexturesMutex);
+        _doUploadTextures = true;
+        _doUploadTexturesCondition.notify_all();
+        return true;
+    });
+    setAttributeDescription("uploadTextures", "Signal that textures should be uploaded right away");
 
     addAttribute("quit", [&](const Values&) {
         addTask([=]() {

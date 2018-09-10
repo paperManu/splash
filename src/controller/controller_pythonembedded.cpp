@@ -1388,7 +1388,7 @@ Value PythonEmbedded::convertToValue(PyObject* pyObject)
         else
         {
             value = "";
-            char* strPtr = PyUnicode_AsUTF8(obj);
+            const char* strPtr = PyUnicode_AsUTF8(obj);
             if (strPtr)
                 value = string(strPtr);
         }
