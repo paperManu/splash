@@ -242,7 +242,7 @@ PyObject* PythonEmbedded::pythonGetObjectList(PyObject* /*self*/, PyObject* /*ar
         return PyList_New(0);
     }
 
-    auto objects = that->getObjectNames();
+    auto objects = that->getAllObjects();
     PyObject* pythonObjectList = PyList_New(objects.size());
     for (uint32_t i = 0; i < objects.size(); ++i)
         PyList_SetItem(pythonObjectList, i, Py_BuildValue("s", objects[i].c_str()));
@@ -400,7 +400,7 @@ PyObject* PythonEmbedded::pythonGetObjectType(PyObject* /*self*/, PyObject* args
         return PyList_New(0);
     }
 
-    return convertFromValue(that->getObject(string(strName))->getType());
+    return convertFromValue(that->getObjectPtr(string(strName))->getType());
 }
 
 /*************/
@@ -436,7 +436,7 @@ PyObject* PythonEmbedded::pythonGetObjectsOfType(PyObject* /*self*/, PyObject* a
         return PyList_New(0);
     }
 
-    auto objects = that->getObjectsOfType(strType);
+    auto objects = that->getObjectsPtr(that->getObjectsOfType(strType));
     PyObject* pythonObjectList = PyList_New(objects.size());
 
     int i = 0;
@@ -966,7 +966,7 @@ PyObject* PythonEmbedded::pythonRegisterAttributeCallback(PyObject* /*self*/, Py
         return Py_BuildValue("I", 0);
     }
 
-    auto splashObject = that->getObject(objectName);
+    auto splashObject = that->getObjectPtr(objectName);
     if (!splashObject)
     {
         PyErr_Warn(PyExc_Warning, "There is no Splash object with the given name");

@@ -36,16 +36,16 @@ void Blender::update()
     auto getObjLinkedToCameras = [&]() -> vector<shared_ptr<GraphObject>> {
         vector<shared_ptr<GraphObject>> objLinkedToCameras{};
 
-        auto cameras = getObjectsOfType("camera");
+        auto cameras = getObjectsPtr(getObjectsOfType("camera"));
         auto links = getObjectLinks();
         for (auto& camera : cameras)
         {
             auto cameraLinks = links[camera->getName()];
             for (auto& linked : cameraLinks)
             {
-                auto object = dynamic_pointer_cast<Object>(getObject(linked));
+                auto object = dynamic_pointer_cast<Object>(getObjectPtr(linked));
                 if (object)
-                    objLinkedToCameras.push_back(getObject(linked));
+                    objLinkedToCameras.push_back(getObjectPtr(linked));
             }
         }
 
@@ -59,7 +59,7 @@ void Blender::update()
         // Only the master scene computes the blending
         if (isMaster)
         {
-            auto cameras = getObjectsOfType("camera");
+            auto cameras = getObjectsPtr(getObjectsOfType("camera"));
             auto objects = getObjLinkedToCameras();
 
             if (cameras.size() != 0)
@@ -95,7 +95,7 @@ void Blender::update()
                 object->setAttribute("activateVertexBlending", {1});
 
             // If there are some other scenes, send them the blending
-            auto geometries = getObjectsOfType("geometry");
+            auto geometries = getObjectsPtr(getObjectsOfType("geometry"));
             for (auto& geometry : geometries)
             {
                 auto serializedGeometry = dynamic_pointer_cast<Geometry>(geometry)->serialize();
@@ -131,7 +131,7 @@ void Blender::update()
     {
         _blendingComputed = false;
 
-        auto cameras = getObjectsOfType("camera");
+        auto cameras = getObjectsPtr(getObjectsOfType("camera"));
         auto objects = getObjLinkedToCameras();
 
         if (isMaster && cameras.size() != 0)

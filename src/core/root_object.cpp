@@ -3,8 +3,8 @@
 #include <stdexcept>
 
 #include "./core/buffer_object.h"
-#include "./core/serialize/serialize_value.h"
 #include "./core/serialize/serialize_uuid.h"
+#include "./core/serialize/serialize_value.h"
 #include "./core/serializer.h"
 
 using namespace std;
@@ -276,7 +276,7 @@ void RootObject::propagateTree()
             logIndex++;
         path = path + "_" + to_string(logIndex);
         _tree.createLeafAt(path);
-        _tree.setValueForLeafAt(path, {std::get<1>(log), static_cast<int>(std::get<2>(log))});
+        _tree.setValueForLeafAt(path, Values({std::get<1>(log), static_cast<int>(std::get<2>(log))}));
     }
 
     // Update durations
@@ -287,7 +287,7 @@ void RootObject::propagateTree()
         if (!_tree.hasLeafAt(path))
             if (!_tree.createLeafAt(path))
                 continue;
-        _tree.setValueForLeafAt(path, {static_cast<int>(d.second)});
+        _tree.setValueForLeafAt(path, Values({static_cast<int>(d.second)}));
     }
 
     // Update the Root object attributes
@@ -405,6 +405,48 @@ void RootObject::initializeTree()
             });
         }
     });
+}
+
+/*************/
+Json::Value RootObject::getObjectConfigurationAsJson(const string& objectName)
+{
+    assert(!objectName.empty());
+
+    Json::Value root;
+    for (const auto& rootName : list<string>({"world", _name}))
+    {
+        auto attrPath = "/" + rootName + "/objects/" + objectName + "/attributes";
+        if (!_tree.hasBranchAt(attrPath))
+            continue;
+
+        for (const auto& attrName : _tree.getBranchAt(attrPath)->getLeafList())
+        {
+            Value attrValue;
+            if (!_tree.getValueForLeafAt(attrPath + "/" + attrName, attrValue))
+                continue;
+
+            if (attrValue.size() == 0)
+                continue;
+
+            Json::Value jsValue;
+            if (attrValue.getType() == Value::Type::values)
+                jsValue = getValuesAsJson(attrValue.as<Values>());
+            else
+                jsValue = getValuesAsJson({attrValue});
+            root[attrName] = jsValue;
+        }
+
+        // Type is handled separately
+        auto typePath = "/" + _name + "/objects/" + objectName + "/type";
+        if (_tree.hasLeafAt(typePath))
+        {
+            Value typeValue;
+            if (_tree.getValueForLeafAt(typePath, typeValue))
+                root["type"] = typeValue.as<string>();
+        }
+    }
+
+    return root;
 }
 
 /*************/

@@ -14,14 +14,14 @@ void GuiFilters::render()
 {
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
-        auto filterList = getObjectsOfType("filter");
+        auto filterList = getObjectsPtr(getObjectsOfType("filter"));
         for (auto& filterObj : filterList)
         {
             auto filterName = filterObj->getName();
             if (ImGui::TreeNode(filterObj->getAlias().c_str()))
             {
                 ImGui::Text("Parameters:");
-                auto attributes = filterObj->getAttributes(true);
+                auto attributes = getObjectAttributes(filterObj->getName());
                 drawAttributes(filterName, attributes);
 
                 // If RGB curves are present, special treatment for them

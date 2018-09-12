@@ -155,7 +155,7 @@ void Gui::computeBlending(bool once)
 /*************/
 void Gui::activateLUT()
 {
-    auto cameras = getObjectsOfType("camera");
+    auto cameras = getObjectsPtr(getObjectsOfType("camera"));
     for (auto& cam : cameras)
     {
         setObjectAttribute(cam->getName(), "activateColorLUT", {2});

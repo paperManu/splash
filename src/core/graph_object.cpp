@@ -163,25 +163,6 @@ Json::Value GraphObject::getConfigurationAsJson() const
 }
 
 /*************/
-unordered_map<string, Values> GraphObject::getDistantAttributes() const
-{
-    unordered_map<string, Values> attribs;
-    for (auto& attr : _attribFunctions)
-    {
-        if (!attr.second.doUpdateDistant())
-            continue;
-
-        Values values;
-        if (getAttribute(attr.first, values, false, true) == false || values.size() == 0)
-            continue;
-
-        attribs[attr.first] = values;
-    }
-
-    return attribs;
-}
-
-/*************/
 void GraphObject::setName(const string& name)
 {
     if (name.empty())
@@ -294,7 +275,7 @@ void GraphObject::initializeTree()
     }
     if (!tree->hasLeafAt(path + "/type"))
         tree->createLeafAt(path + "/type");
-    tree->setValueForLeafAt(path + "/type", {_type});
+    tree->setValueForLeafAt(path + "/type", _type);
 
     // Create the leaves for the attributes in the tree
     {
@@ -341,7 +322,7 @@ void GraphObject::initializeTree()
 
             auto description = d[1].as<string>();
             auto arguments = d[2].as<Values>();
-            tree->setValueForLeafAt(attrPath + "/description", {description});
+            tree->setValueForLeafAt(attrPath + "/description", description);
             tree->setValueForLeafAt(attrPath + "/arguments", arguments);
         }
     }

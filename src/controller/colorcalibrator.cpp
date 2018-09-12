@@ -73,7 +73,7 @@ void ColorCalibrator::update()
         }
 
         // Get the Camera list
-        auto cameras = getObjectsOfType("camera");
+        auto cameras = getObjectsPtr(getObjectsOfType("camera"));
 
         _calibrationParams.clear();
         for (const auto& camera : cameras)

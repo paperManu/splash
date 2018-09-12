@@ -635,7 +635,7 @@ void Image_V4L2::registerAttributes()
         },
         [&]() -> Values { return {(int)_autosetResolution}; },
         {'n'});
-    setAttributeParameter("autosetResolution", true, true);
+    setAttributeParameter("autosetResolution", true);
 
     addAttribute("doCapture",
         [&](const Values& args) {
@@ -648,7 +648,7 @@ void Image_V4L2::registerAttributes()
         },
         [&]() -> Values { return {(int)_capturing}; },
         {'n'});
-    setAttributeParameter("doCapture", true, true);
+    setAttributeParameter("doCapture", true);
 
     addAttribute("captureSize",
         [&](const Values& args) {
@@ -668,7 +668,7 @@ void Image_V4L2::registerAttributes()
             return {_outputWidth, _outputHeight};
         },
         {'n', 'n'});
-    setAttributeParameter("captureSize", true, true);
+    setAttributeParameter("captureSize", true);
 
     addAttribute("device",
         [&](const Values& args) {
@@ -709,7 +709,7 @@ void Image_V4L2::registerAttributes()
         },
         [&]() -> Values { return {_devicePath}; },
         {'s'});
-    setAttributeParameter("device", true, true);
+    setAttributeParameter("device", true);
 
     addAttribute("index",
         [&](const Values& args) {
@@ -723,11 +723,11 @@ void Image_V4L2::registerAttributes()
         },
         [&]() -> Values { return {_v4l2Index}; },
         {'n'});
-    setAttributeParameter("index", true, true);
+    setAttributeParameter("index", true);
     setAttributeDescription("index", "Set the input index for the selected V4L2 capture device");
 
     addAttribute("sourceFormat", [&](const Values&) { return true; }, [&]() -> Values { return {_sourceFormatAsString}; }, {});
-    setAttributeParameter("sourceFormat", true, true);
+    setAttributeParameter("sourceFormat", true);
 
     addAttribute("pixelFormat",
         [&](const Values& args) {
@@ -770,7 +770,7 @@ void Image_V4L2::registerAttributes()
             return {format};
         },
         {'s'});
-    setAttributeParameter("pixelFormat", true, true);
+    setAttributeParameter("pixelFormat", true);
     setAttributeDescription("pixelFormat", "Set the desired output format, either RGB or YUYV");
 }
 

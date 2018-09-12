@@ -394,7 +394,7 @@ bool Root::hasLeafAt(const string& path) const
 }
 
 /*************/
-bool Root::setValueForLeafAt(const string& path, const Values& value, int64_t timestamp, bool silent)
+bool Root::setValueForLeafAt(const string& path, const Value& value, int64_t timestamp, bool silent)
 {
     chrono::system_clock::time_point timePoint;
     if (timestamp)
@@ -406,14 +406,14 @@ bool Root::setValueForLeafAt(const string& path, const Values& value, int64_t ti
 }
 
 /*************/
-bool Root::setValueForLeafAt(const string& path, const Values& value, chrono::system_clock::time_point timestamp, bool silent)
+bool Root::setValueForLeafAt(const string& path, const Value& value, chrono::system_clock::time_point timestamp, bool silent)
 {
     lock_guard<recursive_mutex> lockTree(_treeMutex);
     auto leaf = getLeafAt(processPath(path));
     if (!leaf)
         return false;
 
-    if (Value(value) == leaf->get())
+    if (value == leaf->get())
         return true;
 
     if (!leaf->set(value, timestamp))
@@ -592,8 +592,8 @@ bool Root::processQueue(bool propagate)
                 throw runtime_error(errorStr);
             }
             auto leafPath = args[0].as<string>();
-            auto values = args[1].as<Values>();
-            if (!setValueForLeafAt(leafPath, values, timestamp, true))
+            auto& value = args[1];
+            if (!setValueForLeafAt(leafPath, value, timestamp, true))
             {
                 _hasError = true;
                 _errorMsg = "Error while setting leaf at path " + leafPath;

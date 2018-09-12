@@ -180,12 +180,13 @@ Json::Value Scene::getConfigurationAsJson()
     Json::Value root;
     auto sceneConfiguration = BaseObject::getConfigurationAsJson();
     for (const auto& attr : sceneConfiguration.getMemberNames())
-        root[attr] = sceneConfiguration[attr];
+        root[attr] = sceneConfiguration[attr][0];
 
     // Save objects attributes
+    root["objects"] = Json::Value();
     for (auto& obj : _objects)
         if (obj.second->getSavable() && !obj.second->isGhost())
-            root["objects"][obj.first] = obj.second->getConfigurationAsJson();
+            root["objects"][obj.first] = getObjectConfigurationAsJson(obj.first);
 
     // Save links
     Values links;

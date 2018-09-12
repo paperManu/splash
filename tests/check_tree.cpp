@@ -38,7 +38,7 @@ TEST_CASE("Testing the basic functionnalities of the Tree")
     tree.getValueForLeafAt("/some_object/another_leaf", leafValue);
     CHECK(leafValue == value);
 
-    value = Values({"No you don't"});
+    value = {"No you don't"};
     CHECK(tree.setValueForLeafAt("/some_object/another_leaf", value, chrono::system_clock::now()));
     tree.getValueForLeafAt("/some_object/another_leaf", leafValue);
     CHECK(leafValue == value);
@@ -138,7 +138,7 @@ TEST_CASE("Testing adding and cutting existing branches and leaves")
     oak.createLeafAt("/a_branch/some_leaf");
     oak.setValueForLeafAt("/a_branch/some_leaf", {"This is not a pie", 3.14159f});
     oak.createLeafAt("/a_leaf");
-    oak.setValueForLeafAt("/a_leaf", {"Some oak's leaf"});
+    oak.setValueForLeafAt("/a_leaf", "Some oak's leaf");
 
     auto oakSeeds = oak.getSeedList();
     beech.addSeedsToQueue(oakSeeds);
@@ -175,8 +175,8 @@ TEST_CASE("Testing the chronology handling of updates")
     oak.createBranchAt("/a_branch");
     maple.createLeafAt("/a_branch/a_leaf");
     oak.createLeafAt("/a_branch/a_leaf");
-    oak.setValueForLeafAt("/a_branch/a_leaf", {"Fresh meat!"});
-    maple.setValueForLeafAt("/a_branch/a_leaf", {"Stop clicking on me!"});
+    oak.setValueForLeafAt("/a_branch/a_leaf", "Fresh meat!");
+    maple.setValueForLeafAt("/a_branch/a_leaf", "Stop clicking on me!");
 
     beech.addSeedsToQueue(maple.getSeedList());
     beech.addSeedsToQueue(oak.getSeedList());
@@ -184,7 +184,7 @@ TEST_CASE("Testing the chronology handling of updates")
     Value leafValue;
     CHECK_NOTHROW(beech.processQueue());
     CHECK(beech.getValueForLeafAt("/a_branch/a_leaf", leafValue) == true);
-    CHECK(leafValue == Values({"Stop clicking on me!"}));
+    CHECK(leafValue == Value("Stop clicking on me!"));
     CHECK(beech.hasError());
 }
 
@@ -221,13 +221,13 @@ TEST_CASE("Testing the Leaf's callbacks")
 
     Value extValue{""};
     auto callbackID = leaf->addCallback([&extValue](Value value, chrono::system_clock::time_point timestamp) { extValue = value; });
-    maple.setValueForLeafAt("/a_leaf", {"Ceci n'est pas un test"});
+    maple.setValueForLeafAt("/a_leaf", "Ceci n'est pas un test");
 
-    CHECK(extValue == Values({"Ceci n'est pas un test"}));
+    CHECK(extValue == Value("Ceci n'est pas un test"));
     CHECK(leaf->removeCallback(callbackID));
 
-    maple.setValueForLeafAt("/a_leaf", {"Ceci non plus"});
-    CHECK(extValue == Values({"Ceci n'est pas un test"}));
+    maple.setValueForLeafAt("/a_leaf", "Ceci non plus");
+    CHECK(extValue == Value("Ceci n'est pas un test"));
 }
 
 /*************/

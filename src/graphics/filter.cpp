@@ -625,11 +625,11 @@ void Filter::registerDefaultShaderAttributes()
 
     addAttribute("buffer", [&](const Values&) { return true; }, [&]() -> Values { return {_mipmapBuffer}; }, {});
     setAttributeDescription("buffer", "Getter attribute which gives access to the mipmap image, if grabMipmapLevel is greater or equal to 0");
-    setAttributeParameter("buffer", false, false);
+    setAttributeParameter("buffer", false);
 
     addAttribute("bufferSpec", [&](const Values&) { return true; }, [&]() -> Values { return _mipmapBufferSpec; }, {});
     setAttributeDescription("bufferSpec", "Getter attribute to the specs of the attribute buffer");
-    setAttributeParameter("bufferSpec", false, false);
+    setAttributeParameter("bufferSpec", false);
 }
 
 } // end of namespace

@@ -133,16 +133,6 @@ void World::run()
                     _link->sendBuffer(o.first, std::move(o.second));
         }
 
-        // Update the distant attributes
-        for (auto& o : _objects)
-        {
-            auto attribs = o.second->getDistantAttributes();
-            for (auto& attrib : attribs)
-            {
-                sendMessage(o.second->getName(), attrib.first, attrib.second);
-            }
-        }
-
         if (_quit)
         {
             for (auto& s : _scenes)
@@ -167,7 +157,7 @@ void World::run()
 /*************/
 void World::addToWorld(const string& type, const string& name)
 {
-    // Images and Meshes have a counterpart on this side
+    // BufferObject derived types have a counterpart on this side
     if (!_factory->isSubtype<BufferObject>(type))
         return;
 

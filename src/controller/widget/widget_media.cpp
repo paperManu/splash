@@ -55,7 +55,7 @@ void GuiMedia::render()
                 ImGui::Text("Current media type: %s", _mediaTypesReversed[media->getRemoteType()].c_str());
 
                 ImGui::Text("Parameters:");
-                auto attributes = media->getAttributes(true);
+                auto attributes = getObjectAttributes(media->getName());
                 drawAttributes(mediaName, attributes);
 
                 // TODO: specific part for Queues. Need better Attributes definition to remove this
@@ -254,7 +254,7 @@ void GuiMedia::render()
                     auto filterName = filter->getName();
                     if (ImGui::TreeNode(("Filter: " + filterName).c_str()))
                     {
-                        auto filterAttributes = filter->getAttributes(true);
+                        auto filterAttributes = getObjectAttributes(filter->getName());
                         drawAttributes(filterName, filterAttributes);
                         ImGui::TreePop();
                     }
@@ -282,7 +282,7 @@ void GuiMedia::render()
                         auto filterName = filterAsObj->getName();
                         if (ImGui::TreeNode(("Filter: " + filterName).c_str()))
                         {
-                            auto filterAttributes = filterAsObj->getAttributes(true);
+                            auto filterAttributes = getObjectAttributes(filterAsObj->getName());
                             drawAttributes(filterName, filterAttributes);
                             ImGui::TreePop();
                         }
@@ -319,7 +319,7 @@ void GuiMedia::replaceMedia(const string& previousMedia, const string& alias, co
 {
     // We get the list of all objects linked to previousMedia
     auto targetObjects = list<weak_ptr<GraphObject>>();
-    auto objects = getObjectsOfType("");
+    auto objects = getObjectsPtr(getAllObjects());
     for (auto& object : objects)
     {
         if (!object->getSavable())
@@ -363,7 +363,7 @@ list<shared_ptr<GraphObject>> GuiMedia::getSceneMedia()
 
     for (auto& type : mediaTypes)
     {
-        auto objects = getObjectsOfType(type);
+        auto objects = getObjectsPtr(getObjectsOfType(type));
         for (auto& object : objects)
             if (object->getSavable())
                 mediaList.push_back(object);
@@ -376,7 +376,7 @@ list<shared_ptr<GraphObject>> GuiMedia::getSceneMedia()
 list<shared_ptr<GraphObject>> GuiMedia::getFiltersForImage(const shared_ptr<GraphObject>& image)
 {
     auto filterList = list<shared_ptr<GraphObject>>();
-    auto allFilters = getObjectsOfType("filter");
+    auto allFilters = getObjectsPtr(getObjectsOfType("filter"));
     for (auto& obj : allFilters)
     {
         if (obj->getType() != "filter")

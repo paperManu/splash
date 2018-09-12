@@ -39,7 +39,7 @@ bool BaseObject::setAttribute(const string& attrib, const Values& args)
 }
 
 /*************/
-bool BaseObject::getAttribute(const string& attrib, Values& args, bool includeDistant, bool includeNonSavable) const
+bool BaseObject::getAttribute(const string& attrib, Values& args) const
 {
     auto attribFunction = _attribFunctions.find(attrib);
     if (attribFunction == _attribFunctions.end())
@@ -50,25 +50,7 @@ bool BaseObject::getAttribute(const string& attrib, Values& args, bool includeDi
 
     args = attribFunction->second();
 
-    if ((!attribFunction->second.savable() && !includeNonSavable) || (attribFunction->second.isDefault() && !includeDistant))
-        return false;
-
     return true;
-}
-
-/*************/
-unordered_map<string, Values> BaseObject::getAttributes(bool includeDistant) const
-{
-    unordered_map<string, Values> attribs;
-    for (auto& attr : _attribFunctions)
-    {
-        Values values;
-        if (getAttribute(attr.first, values, includeDistant, true) == false || values.size() == 0)
-            continue;
-        attribs[attr.first] = values;
-    }
-
-    return attribs;
 }
 
 /*************/
@@ -234,14 +216,11 @@ void BaseObject::removeAttribute(const string& name)
 }
 
 /*************/
-void BaseObject::setAttributeParameter(const string& name, bool savable, bool updateDistant)
+void BaseObject::setAttributeParameter(const string& name, bool savable)
 {
     auto attr = _attribFunctions.find(name);
     if (attr != _attribFunctions.end())
-    {
         attr->second.savable(savable);
-        attr->second.doUpdateDistant(updateDistant);
-    }
 }
 
 /*************/

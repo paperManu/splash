@@ -51,7 +51,7 @@ void GuiMeshes::render()
                 ImGui::Text("Current mesh type: %s", _meshTypeReversed[mesh->getRemoteType()].c_str());
 
                 ImGui::Text("Parameters:");
-                auto attributes = mesh->getAttributes(true);
+                auto attributes = getObjectAttributes(mesh->getName());
                 drawAttributes(meshName, attributes);
 
                 ImGui::TreePop();
@@ -65,7 +65,7 @@ void GuiMeshes::replaceMesh(const string& previousMedia, const string& alias, co
 {
     // We get the list of all objects linked to previousMedia
     auto targetObjects = list<weak_ptr<GraphObject>>();
-    auto objects = getObjectsOfType("");
+    auto objects = getObjectsPtr(getAllObjects());
     for (auto& object : objects)
     {
         if (!object->getSavable())
@@ -110,7 +110,7 @@ list<shared_ptr<GraphObject>> GuiMeshes::getSceneMeshes()
 
     for (auto& type : meshTypes)
     {
-        auto objects = getObjectsOfType(type);
+        auto objects = getObjectsPtr(getObjectsOfType(type));
         for (auto& object : objects)
             if (object->getSavable())
                 meshList.push_back(object);

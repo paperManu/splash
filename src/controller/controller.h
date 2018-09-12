@@ -60,7 +60,13 @@ class ControllerObject : public GraphObject
      * Get a ptr to the named object
      * \return The object
      */
-    shared_ptr<GraphObject> getObject(const std::string& name) const;
+    std::shared_ptr<GraphObject> getObjectPtr(const std::string& name) const;
+
+    /**
+     * Get a list of pointers to the given objects, if they exist
+     * \return The list of pointers
+     */
+    std::vector<std::shared_ptr<GraphObject>> getObjectsPtr(const std::vector<std::string>& names) const;
 
     /**
      * Get the alias for the given object
@@ -78,7 +84,7 @@ class ControllerObject : public GraphObject
      * \brief Get a list of the object names
      * \return Return a vector of all the objects
      */
-    std::vector<std::string> getObjectNames() const;
+    std::vector<std::string> getAllObjects() const;
 
     /**
      * \brief Get the description for the given attribute
@@ -147,14 +153,14 @@ class ControllerObject : public GraphObject
      * \param type Type to look for
      * \return Return a list of all objects of the given type
      */
-    std::list<std::shared_ptr<GraphObject>> getObjectsOfType(const std::string& type) const;
+    std::vector<std::string> getObjectsOfType(const std::string& type) const;
 
     /**
      * Get all objects of the given base type, including derived types
      * \return Return a list of objects of the given type
      */
     template<typename T>
-    std::list<std::shared_ptr<T>> getObjectsOfBaseType() const;
+    std::vector<std::shared_ptr<T>> getObjectsOfBaseType() const;
 
     /**
      * \brief Send a serialized buffer to the given BufferObject
@@ -216,13 +222,13 @@ class ControllerObject : public GraphObject
 
 /*************/
 template<typename T>
-std::list<std::shared_ptr<T>> ControllerObject::getObjectsOfBaseType() const
+std::vector<std::shared_ptr<T>> ControllerObject::getObjectsOfBaseType() const
 {
     auto scene = dynamic_cast<Scene*>(_root);
     if (!scene)
         return {};
 
-    auto objects = std::list<std::shared_ptr<T>>();
+    auto objects = std::vector<std::shared_ptr<T>>();
     for (auto& obj : scene->_objects)
     {
         auto objAsTexture = std::dynamic_pointer_cast<T>(obj.second);

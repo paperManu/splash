@@ -14,7 +14,7 @@ void GuiWarp::render()
 {
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
-        auto objects = getObjectsOfType("warp");
+        auto objects = getObjectsPtr(getObjectsOfType("warp"));
         auto warps = vector<shared_ptr<Warp>>();
         for (auto& object : objects)
             warps.push_back(dynamic_pointer_cast<Warp>(object));

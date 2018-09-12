@@ -79,18 +79,9 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      * \brief Get the specified attribute
      * \param attrib Attribute name
      * \param args Values object which will hold the attribute values
-     * \param includeDistant Return true even if the attribute is distant
-     * \param includeNonSavable Return true even if the attribute is not savable
      * \return Return true if the parameter exists and is savable
      */
-    bool getAttribute(const std::string& attrib, Values& args, bool includeDistant = false, bool includeNonSavable = false) const;
-
-    /**
-     * \brief Get all the savable attributes as a map
-     * \param includeDistant Also include the distant attributes
-     * \return Return the map of all the attributes
-     */
-    std::unordered_map<std::string, Values> getAttributes(bool includeDistant = false) const;
+    bool getAttribute(const std::string& attrib, Values& args) const;
 
     /**
      * \brief Converts a Value as a Json object
@@ -211,9 +202,8 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      * \brief Set additional parameters for a given attribute
      * \param name Attribute name
      * \param savable Savability
-     * \param updateDistant If true and the object has a World as root, updates the attribute of the corresponding Scene object
      */
-    void setAttributeParameter(const std::string& name, bool savable, bool updateDistant);
+    void setAttributeParameter(const std::string& name, bool savable);
 
     /**
      * \brief Register new attributes

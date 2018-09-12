@@ -11,13 +11,31 @@ namespace Splash
 {
 
 /*************/
-shared_ptr<GraphObject> ControllerObject::getObject(const string& name) const
+shared_ptr<GraphObject> ControllerObject::getObjectPtr(const string& name) const
 {
     auto scene = dynamic_cast<Scene*>(_root);
     if (!scene)
         return {nullptr};
 
     return scene->getObject(name);
+}
+
+/*************/
+vector<shared_ptr<GraphObject>> ControllerObject::getObjectsPtr(const vector<string>& names) const
+{
+    auto scene = dynamic_cast<Scene*>(_root);
+    if (!scene)
+        return {};
+
+    vector<shared_ptr<GraphObject>> objectList;
+    for (const auto& name : names)
+    {
+        auto object = scene->getObject(name);
+        if (object)
+            objectList.push_back(object);
+    }
+
+    return objectList;
 }
 
 /*************/
@@ -64,7 +82,7 @@ unordered_map<string, string> ControllerObject::getObjectAliases() const
 }
 
 /*************/
-vector<string> ControllerObject::getObjectNames() const
+vector<string> ControllerObject::getAllObjects() const
 {
     auto names = vector<string>();
     auto tree = _root->getTree();
@@ -242,7 +260,7 @@ map<string, string> ControllerObject::getObjectTypes() const
             assert(tree->hasLeafAt(typePath));
             Value value;
             tree->getValueForLeafAt(typePath, value);
-            assert(value.size() == 1 && value.getType() == Value::values);
+            assert(value.getType() == Value::string);
             auto type = value[0].as<string>();
             types[objectName] = type;
         }
@@ -263,18 +281,32 @@ map<string, string> ControllerObject::getObjectTypes() const
 }
 
 /*************/
-list<shared_ptr<GraphObject>> ControllerObject::getObjectsOfType(const string& type) const
+vector<string> ControllerObject::getObjectsOfType(const string& type) const
 {
-    auto scene = dynamic_cast<Scene*>(_root);
-    if (!scene)
-        return {};
+    vector<string> objectList;
 
-    auto objects = list<shared_ptr<GraphObject>>();
-    for (auto& obj : scene->_objects)
-        if (obj.second->getType() == type || type == "")
-            objects.push_back(obj.second);
+    auto tree = _root->getTree();
+    for (const auto& rootName : tree->getBranchList())
+    {
+        auto objectsPath = "/" + rootName + "/objects";
+        for (const auto& objectName : tree->getBranchAt(objectsPath)->getBranchList())
+        {
+            if (type.empty())
+                objectList.push_back(objectName);
 
-    return objects;
+            auto typePath = objectsPath + "/" + objectName + "/type";
+            assert(tree->hasLeafAt(typePath));
+            Value typeValue;
+            tree->getValueForLeafAt(typePath, typeValue);
+            if (typeValue[0].as<string>() == type)
+                objectList.push_back(objectName);
+        }
+    }
+
+    std::sort(objectList.begin(), objectList.end());
+    objectList.erase(std::unique(objectList.begin(), objectList.end()), objectList.end());
+
+    return objectList;
 }
 
 /*************/

@@ -172,13 +172,6 @@ class GraphObject : public BaseObject
     virtual void unlinkFrom(const std::shared_ptr<GraphObject>& obj);
 
     /**
-     * \brief Get the map of the attributes which should be updated from World to Scene
-     * \brief This is the case when the distant object is different from the World one
-     * \return Returns a map of the distant attributes
-     */
-    std::unordered_map<std::string, Values> getDistantAttributes() const;
-
-    /**
      * \brief Return a vector of the linked objects
      * \return Returns a vector of the linked objects
      */

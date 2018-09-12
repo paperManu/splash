@@ -133,18 +133,6 @@ class Attribute
     bool isDefault() const { return _defaultSetAndGet; }
 
     /**
-     * \brief Ask whether to update the Scene object (if this attribute is hosted by a World object).
-     * \return Returns true if the World should update this attribute in the distant Scene object.
-     */
-    bool doUpdateDistant() const { return _doUpdateDistant; }
-
-    /**
-     * \brief Set whether to update the Scene object (if this attribute is hosted by a World object).
-     * \return Returns true if the World should update this attribute in the distant Scene object.
-     */
-    void doUpdateDistant(bool update) { _doUpdateDistant = update; }
-
-    /**
      * \brief Get the types of the wanted arguments.
      * \return Returns the expected types in a Values.
      */
@@ -239,7 +227,6 @@ class Attribute
     std::function<const Values()> _getFunc{};
 
     bool _defaultSetAndGet{true};
-    bool _doUpdateDistant{false}; // True if the World should send this attr values to Scenes
     bool _savable{true};          // True if this attribute should be saved
 
     std::string _objectName{};        // Name of the object holding this attribute

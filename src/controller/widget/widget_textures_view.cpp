@@ -16,7 +16,7 @@ void GuiTexturesView::render()
 {
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
-        auto cameras = getObjectsOfType("camera");
+        auto cameras = getObjectsPtr(getObjectsOfType("camera"));
         auto odd = true;
         double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
 

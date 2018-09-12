@@ -242,7 +242,7 @@ void GuiGlobalView::setJoystick(const vector<float>& axes, const vector<uint8_t>
 vector<glm::dmat4> GuiGlobalView::getCamerasRTMatrices()
 {
     auto rtMatrices = vector<glm::dmat4>();
-    auto cameras = getObjectsOfType("camera");
+    auto cameras = getObjectsPtr(getObjectsOfType("camera"));
     for (auto& camera : cameras)
         rtMatrices.push_back(dynamic_pointer_cast<Camera>(camera)->computeViewMatrix());
 
@@ -373,7 +373,7 @@ void GuiGlobalView::hideOtherCameras(bool hide)
     if (hide == _camerasHidden)
         return;
 
-    auto cameras = getObjectsOfType("camera");
+    auto cameras = getObjectsPtr(getObjectsOfType("camera"));
     for (auto& cam : cameras)
         if (cam != _camera)
             setObjectAttribute(cam->getName(), "hide", {(int)hide});
@@ -653,7 +653,7 @@ vector<shared_ptr<Camera>> GuiGlobalView::getCameras()
         _guiCamera->drawModelOnce("camera", matrix);
     cameras.push_back(_guiCamera);
 
-    auto listOfCameras = getObjectsOfType("camera");
+    auto listOfCameras = getObjectsPtr(getObjectsOfType("camera"));
     for (auto& camera : listOfCameras)
         cameras.push_back(dynamic_pointer_cast<Camera>(camera));
 
@@ -664,7 +664,7 @@ vector<shared_ptr<Camera>> GuiGlobalView::getCameras()
 void GuiGlobalView::drawVirtualProbes()
 {
     auto rtMatrices = vector<glm::dmat4>();
-    auto probes = getObjectsOfType("virtual_probe");
+    auto probes = getObjectsPtr(getObjectsOfType("virtual_probe"));
     for (auto& probe : probes)
         _guiCamera->drawModelOnce("probe", dynamic_pointer_cast<VirtualProbe>(probe)->computeViewMatrix());
 }

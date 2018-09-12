@@ -284,8 +284,14 @@ class Root
      * \param silent do not add this action to the update list
      * \return Return true if all went well
      */
-    bool setValueForLeafAt(const std::string& path, const Values& value, int64_t timestamp = 0, bool silent = false);
-    bool setValueForLeafAt(const std::string& path, const Values& value, std::chrono::system_clock::time_point timestamp, bool silent = false);
+    bool setValueForLeafAt(const std::string& path, const Value& value, int64_t timestamp = 0, bool silent = false);
+    bool setValueForLeafAt(const std::string& path, const Value& value, std::chrono::system_clock::time_point timestamp, bool silent = false);
+    // The following overloads handle conversion from Values to Value (second argument)
+    bool setValueForLeafAt(const std::string& path, const Values& value, int64_t timestamp = 0, bool silent = false) { return setValueForLeafAt(path, Value(value), timestamp, silent); }
+    bool setValueForLeafAt(const std::string& path, const Values& value, std::chrono::system_clock::time_point timestamp, bool silent = false)
+    {
+        return setValueForLeafAt(path, Value(value), timestamp, silent);
+    }
 
     /**
      * Get the Seeds generated while modifying the tree

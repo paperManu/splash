@@ -80,7 +80,7 @@ TEST_CASE("Testing GraphObject class")
     CHECK(!value.empty());
     CHECK(value[0].as<string>() == string_value);
 
-    CHECK(object->getAttribute("newAttribute", value) == false);
+    CHECK(object->getAttribute("newAttribute", value) == true);
     CHECK(!value.empty());
     CHECK(value == array_value);
 

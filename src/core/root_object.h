@@ -248,6 +248,13 @@ class RootObject : public BaseObject
     void initializeTree();
 
     /**
+     * Save the given objects tree in a Json::Value
+     * \param objectName Object name
+     * \return Return the configuration as a Json::Value
+     */
+    Json::Value getObjectConfigurationAsJson(const std::string& objectName);
+
+    /**
      * \brief Send a message to another root object
      * \param name Root object name
      * \param attribute Attribute name
