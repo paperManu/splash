@@ -83,24 +83,11 @@ class Scene : public RootObject
     void addGhost(const std::string& type, const std::string& name = "");
 
     /**
-     * \brief Get the current configuration of the scene as a json object
-     * \return Return a Json object holding the configuration
-     */
-    Json::Value getConfigurationAsJson();
-
-    /**
      * \brief Get a glfw window sharing the same context as _mainWindow
      * \param name Window name
      * \return Return a shared pointer to the new window
      */
     std::shared_ptr<GlWindow> getNewSharedWindow(const std::string& name = "");
-
-    /**
-     * \brief Get the list of objects by their type
-     * \param type Object type
-     * \return Return the list of objects of the given type
-     */
-    Values getObjectsNameByType(const std::string& type);
 
     /**
      * Get the found OpenGL version

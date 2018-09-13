@@ -171,11 +171,11 @@ class World : public RootObject
     void saveProject();
 
     /**
-     * \brief Get the list of objects by their type
-     * \param type Object type
-     * \return Return a Values holding all the objects of the given type
+     * \brief Get all object of given type.
+     * \param type Type to look for. If empty, get all objects.
+     * \return Return a list of all objects of the given type
      */
-    Values getObjectsNameByType(const std::string& type);
+    std::vector<std::string> getObjectsOfType(const std::string& type) const;
 
     /**
      * \brief Redefinition of a method from RootObject. Send the input buffers back to all pairs

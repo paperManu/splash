@@ -522,64 +522,31 @@ void World::saveConfig()
 {
     setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
 
-    Json::Value distantScenes;
-    distantScenes["scenes"] = Json::Value();
-
-    // Get the configuration from the different scenes
-    for (auto& s : _scenes)
-    {
-        Json::Value scene;
-        scene["name"] = s.first;
-        scene["address"] = "localhost"; // Distant scenes are not yet supported
-        distantScenes["scenes"].append(scene);
-
-        // Get this scene's configuration
-        Values answer = sendMessageWithAnswer(s.first, "config");
-
-        // Parse the string to get a json
-        Json::Value config;
-        Json::Reader reader;
-        reader.parse(answer[2].as<string>(), config);
-        distantScenes[s.first] = config;
-    }
-
     // Local objects configuration can differ from the scenes objects,
     // as their type is not necessarily identical
     for (const auto& sceneName : _config["scenes"].getMemberNames())
     {
-        //_config["scenes"][sceneName] = Json::Value();
-        if (distantScenes.isMember(sceneName))
+        if (!_tree.hasBranchAt("/" + sceneName))
+            continue;
+
+        // Set the scene configuration from what was received in the previous loop
+        auto scene = getRootConfigurationAsJson(sceneName);
+        for (const auto& attr : scene.getMemberNames())
         {
-            // Set the scene configuration from what was received in the previous loop
-            Json::Value& scene = distantScenes[sceneName];
-            for (const auto& attr : distantScenes[sceneName].getMemberNames())
+            if (attr != "objects")
             {
-                if (attr != "objects")
-                {
-                    _config["scenes"][sceneName][attr] = scene[attr];
-                }
-                else
-                {
-                    Json::Value::Members objectNames = scene["objects"].getMemberNames();
+                _config["scenes"][sceneName][attr] = scene[attr];
+            }
+            else
+            {
+                Json::Value::Members objectNames = scene["objects"].getMemberNames();
 
-                    _config["scenes"][sceneName][attr] = Json::Value();
-                    Json::Value& objects = _config["scenes"][sceneName]["objects"];
+                _config["scenes"][sceneName][attr] = Json::Value();
+                Json::Value& objects = _config["scenes"][sceneName]["objects"];
 
-                    for (auto& m : objectNames)
-                    {
-                        for (const auto& a : scene["objects"][m].getMemberNames())
-                            objects[m][a] = scene["objects"][m][a];
-
-                        const auto& obj = getObject(m);
-                        if (obj)
-                        {
-                            Json::Value worldObjValue = obj->getConfigurationAsJson();
-                            auto attributes = worldObjValue.getMemberNames();
-                            for (const auto& a : attributes)
-                                objects[m][a] = worldObjValue[a];
-                        }
-                    }
-                }
+                for (auto& m : objectNames)
+                    for (const auto& a : scene["objects"][m].getMemberNames())
+                        objects[m][a] = scene["objects"][m][a];
             }
         }
     }
@@ -587,7 +554,7 @@ void World::saveConfig()
     // Configuration from the world
     _config["description"] = SPLASH_FILE_CONFIGURATION;
     _config["version"] = string(PACKAGE_VERSION);
-    auto worldConfiguration = BaseObject::getConfigurationAsJson();
+    auto worldConfiguration = getRootConfigurationAsJson("world");
     for (const auto& attr : worldConfiguration.getMemberNames())
     {
         _config["world"][attr] = worldConfiguration[attr];
@@ -616,13 +583,7 @@ void World::saveProject()
         std::set<std::pair<string, string>> existingLinks{}; // We keep a list of already existing links
         for (auto& s : _scenes)
         {
-            // Get this scene's configuration
-            Values answer = sendMessageWithAnswer(s.first, "config");
-
-            // Parse the string to get a json
-            Json::Value config;
-            Json::Reader reader;
-            reader.parse(answer[2].as<string>(), config);
+            auto config = getRootConfigurationAsJson(s.first);
 
             for (auto& v : config["links"])
             {
@@ -653,15 +614,6 @@ void World::saveProject()
 
                 for (const auto& attr : config["objects"][member].getMemberNames())
                     root["objects"][member][attr] = config["objects"][member][attr];
-
-                // Check for configuration of this object held in the World context
-                const auto& obj = getObject(member);
-                if (obj)
-                {
-                    Json::Value worldObjValue = obj->getConfigurationAsJson();
-                    for (const auto& attr : worldObjValue.getMemberNames())
-                        root["objects"][member][attr] = worldObjValue[attr];
-                }
             }
         }
 
@@ -676,10 +628,31 @@ void World::saveProject()
 }
 
 /*************/
-Values World::getObjectsNameByType(const string& type)
+vector<string> World::getObjectsOfType(const string& type) const
 {
-    Values answer = sendMessageWithAnswer(_masterSceneName, "getObjectsNameByType", {type});
-    return answer[2].as<Values>();
+    vector<string> objectList;
+
+    for (const auto& rootName : _tree.getBranchList())
+    {
+        auto objectsPath = "/" + rootName + "/objects";
+        for (const auto& objectName : _tree.getBranchAt(objectsPath)->getBranchList())
+        {
+            if (type.empty())
+                objectList.push_back(objectName);
+
+            auto typePath = objectsPath + "/" + objectName + "/type";
+            assert(_tree.hasLeafAt(typePath));
+            Value typeValue;
+            _tree.getValueForLeafAt(typePath, typeValue);
+            if (typeValue[0].as<string>() == type)
+                objectList.push_back(objectName);
+        }
+    }
+
+    std::sort(objectList.begin(), objectList.end());
+    objectList.erase(std::unique(objectList.begin(), objectList.end()), objectList.end());
+
+    return objectList;
 }
 
 /*************/
@@ -773,7 +746,7 @@ bool World::copyCameraParameters(const std::string& filename)
                 auto values = jsonToValues(attr);
 
                 // Send the new values for this attribute
-                sendMessage(name, attrName, values);
+                _tree.setValueForLeafAt("/" + s + "/objects/" + name + "/attributes/" + attrName, values);
             }
         }
     }
@@ -904,7 +877,7 @@ bool World::loadProject(const string& filename)
                 }
                 else
                 {
-                    auto cameraNames = getObjectsNameByType("camera");
+                    auto cameraNames = getObjectsOfType("camera");
                     for (const auto& camera : cameraNames)
                         sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), camera});
                 }
@@ -1102,7 +1075,7 @@ void World::parseArguments(int argc, char** argv)
                 if (!_nameRegistry.registerName(pythonObjectName))
                     pythonObjectName = _nameRegistry.generateName("_pythonArgScript");
                 sendMessage(SPLASH_ALL_PEERS, "addObject", {"python", pythonObjectName, _masterSceneName});
-                sendMessage(pythonObjectName, "setSavable", {false});
+                sendMessage(pythonObjectName, "savable", {false});
                 sendMessage(pythonObjectName, "args", {pythonArgs});
                 sendMessage(pythonObjectName, "file", {pythonScriptPath});
             });

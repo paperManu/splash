@@ -320,7 +320,7 @@ list<string> Root::getLeafListAt(const string& path) const
 }
 
 /*************/
-bool Root::getValueForLeafAt(const string& path, Value& value)
+bool Root::getValueForLeafAt(const string& path, Value& value) const
 {
     auto parts = processPath(path);
     if (parts.empty())

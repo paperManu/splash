@@ -274,7 +274,7 @@ class Root
      * \param value The value of the leaf, or an empty value
      * \return Return true if the leaf was found
      */
-    bool getValueForLeafAt(const std::string& path, Value& value);
+    bool getValueForLeafAt(const std::string& path, Value& value) const;
 
     /**
      * Set the value for the leaf at the given path

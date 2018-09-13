@@ -84,20 +84,6 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     bool getAttribute(const std::string& attrib, Values& args) const;
 
     /**
-     * \brief Converts a Value as a Json object
-     * \param values Value to convert
-     * \param asObject If true, return a Json object
-     * \return Returns a Json object
-     */
-    Json::Value getValuesAsJson(const Values& values, bool asObject = false) const;
-
-    /**
-     * \brief Get the object's configuration as a Json object
-     * \return Returns a Json object
-     */
-    virtual Json::Value getConfigurationAsJson() const;
-
-    /**
      * \brief Get the description for the given attribute, if it exists
      * \param name Name of the attribute
      * \return Returns the description for the attribute

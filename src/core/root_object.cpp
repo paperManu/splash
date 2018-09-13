@@ -408,14 +408,87 @@ void RootObject::initializeTree()
 }
 
 /*************/
-Json::Value RootObject::getObjectConfigurationAsJson(const string& objectName)
+Json::Value RootObject::getValuesAsJson(const Values& values, bool asObject) const
 {
-    assert(!objectName.empty());
+    Json::Value jsValue;
+    if (asObject)
+    {
+        for (auto& v : values)
+        {
+            switch (v.getType())
+            {
+            default:
+                continue;
+            case Value::integer:
+                jsValue[v.getName()] = v.as<int>();
+                break;
+            case Value::real:
+                jsValue[v.getName()] = v.as<float>();
+                break;
+            case Value::string:
+                jsValue[v.getName()] = v.as<string>();
+                break;
+            case Value::values:
+            {
+                auto vv = v.as<Values>();
+                // If the first value is named, we treat it as a Json object
+                if (!vv.empty() && vv[0].isNamed())
+                    jsValue[v.getName()] = getValuesAsJson(vv, true);
+                else
+                    jsValue[v.getName()] = getValuesAsJson(vv, false);
+                break;
+            }
+            }
+        }
+    }
+    else
+    {
+        for (auto& v : values)
+        {
+            switch (v.getType())
+            {
+            default:
+                continue;
+            case Value::integer:
+                jsValue.append(v.as<int>());
+                break;
+            case Value::real:
+                jsValue.append(v.as<float>());
+                break;
+            case Value::string:
+                jsValue.append(v.as<string>());
+                break;
+            case Value::values:
+            {
+                auto vv = v.as<Values>();
+                // If the first value is named, we treat it as a Json object
+                if (!vv.empty() && vv[0].isNamed())
+                    jsValue.append(getValuesAsJson(vv, true));
+                else
+                    jsValue.append(getValuesAsJson(vv, false));
+                break;
+            }
+            }
+        }
+    }
+    return jsValue;
+}
+
+/*************/
+Json::Value RootObject::getObjectConfigurationAsJson(const string& object, const string& rootObject)
+{
+    assert(!object.empty());
+
+    list<string> rootList = {"world"};
+    if (!rootObject.empty() && rootObject != "world")
+        rootList.push_back(rootObject);
+    else if (rootObject.empty() && _name != "world")
+        rootList.push_back(_name);
 
     Json::Value root;
-    for (const auto& rootName : list<string>({"world", _name}))
+    for (const auto& rootName : rootList)
     {
-        auto attrPath = "/" + rootName + "/objects/" + objectName + "/attributes";
+        auto attrPath = "/" + rootName + "/objects/" + object + "/attributes";
         if (!_tree.hasBranchAt(attrPath))
             continue;
 
@@ -437,12 +510,73 @@ Json::Value RootObject::getObjectConfigurationAsJson(const string& objectName)
         }
 
         // Type is handled separately
-        auto typePath = "/" + _name + "/objects/" + objectName + "/type";
+        auto typePath = "/" + rootName + "/objects/" + object + "/type";
         if (_tree.hasLeafAt(typePath))
         {
             Value typeValue;
             if (_tree.getValueForLeafAt(typePath, typeValue))
                 root["type"] = typeValue.as<string>();
+        }
+    }
+
+    return root;
+}
+
+/*************/
+Json::Value RootObject::getRootConfigurationAsJson(const string& rootName)
+{
+    if (!_tree.hasBranchAt("/" + rootName))
+        return {};
+
+    Json::Value root;
+    auto attrPath = "/" + rootName + "/attributes";
+    assert(_tree.hasBranchAt(attrPath));
+
+    for (const auto& attrName : _tree.getLeafListAt(attrPath))
+    {
+        Value attrValue;
+        if (!_tree.getValueForLeafAt(attrPath + "/" + attrName, attrValue))
+            continue;
+
+        if (attrValue.size() == 0)
+            continue;
+
+        Json::Value jsValue;
+        if (attrValue.getType() == Value::Type::values)
+            jsValue = getValuesAsJson(attrValue.as<Values>());
+        else
+            jsValue = getValuesAsJson({attrValue});
+
+        root[attrName] = jsValue;
+    }
+
+    // The world's objects are created as surrogates for the scene's ones
+    if (rootName == "world")
+        return root;
+
+    // Save objects attributes and links
+    root["objects"] = Json::Value();
+    root["links"] = Json::Value();
+
+    auto objectsPath = "/" + rootName + "/objects";
+    assert(_tree.hasBranchAt(objectsPath));
+    for (const auto& objectName : _tree.getBranchListAt(objectsPath))
+    {
+        Value confValue;
+        if (_tree.getValueForLeafAt(objectsPath + "/" + objectName + "/attributes/savable", confValue) && confValue[0].as<bool>() == false)
+            continue;
+        if (_tree.getValueForLeafAt(objectsPath + "/" + objectName + "/ghost", confValue) && confValue.as<bool>() == true)
+            continue;
+        root["objects"][objectName] = getObjectConfigurationAsJson(objectName, rootName);
+
+        assert(_tree.hasBranchAt(objectsPath + "/" + objectName + "/links/children"));
+        for (const auto& linkName : _tree.getLeafListAt(objectsPath + "/" + objectName + "/links/children"))
+        {
+            if (_tree.getValueForLeafAt(objectsPath + "/" + linkName + "/attributes/savable", confValue) && confValue[0].as<bool>() == false)
+                continue;
+            if (_tree.getValueForLeafAt(objectsPath + "/" + linkName + "/ghost", confValue) && confValue.as<bool>() == true)
+                continue;
+            root["links"].append(getValuesAsJson({linkName, objectName}));
         }
     }
 

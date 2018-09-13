@@ -161,57 +161,13 @@ void Scene::addGhost(const string& type, const string& name)
         return;
 
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating ghost object of type " << type << Log::endl;
-
-    // Add the object for real ...
     auto obj = addObject(type, name);
     if (obj)
     {
-        // And move it to _objects
-        lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-        obj->setGhost(true);
+        auto ghostPath = "/" + _name + "/objects/" + name + "/ghost";
+        _tree.createLeafAt(ghostPath);
+        _tree.setValueForLeafAt(ghostPath, true);
     }
-}
-
-/*************/
-Json::Value Scene::getConfigurationAsJson()
-{
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-
-    Json::Value root;
-    auto sceneConfiguration = BaseObject::getConfigurationAsJson();
-    for (const auto& attr : sceneConfiguration.getMemberNames())
-        root[attr] = sceneConfiguration[attr][0];
-
-    // Save objects attributes
-    root["objects"] = Json::Value();
-    for (auto& obj : _objects)
-        if (obj.second->getSavable() && !obj.second->isGhost())
-            root["objects"][obj.first] = getObjectConfigurationAsJson(obj.first);
-
-    // Save links
-    Values links;
-    for (auto& obj : _objects)
-    {
-        if (!obj.second->getSavable() || obj.second->isGhost())
-            continue;
-
-        auto linkedObjects = obj.second->getLinkedObjects();
-        for (auto& weakLinkedObject : linkedObjects)
-        {
-            auto linkedObject = weakLinkedObject.lock();
-            if (!linkedObject)
-                continue;
-
-            if (!linkedObject->getSavable() || obj.second->isGhost())
-                continue;
-
-            links.push_back(Values({linkedObject->getName(), obj.second->getName()}));
-        }
-    }
-
-    root["links"] = getValuesAsJson(links);
-
-    return root;
 }
 
 /*************/
@@ -273,10 +229,6 @@ void Scene::render()
             {
                 // We also run all pending tasks for every object
                 obj.second->runTasks();
-
-                // Ghosts are not updated in the render loop
-                if (obj.second->isGhost())
-                    continue;
 
                 auto priority = obj.second->getRenderingPriority();
                 if (priority == GraphObject::Priority::NO_RENDER)
@@ -671,17 +623,6 @@ shared_ptr<GlWindow> Scene::getNewSharedWindow(const string& name)
 }
 
 /*************/
-Values Scene::getObjectsNameByType(const string& type)
-{
-    lock_guard<recursive_mutex> lock(_objectsMutex);
-    Values list;
-    for (auto& obj : _objects)
-        if (obj.second->getType() == type)
-            list.push_back(obj.second->getName());
-    return list;
-}
-
-/*************/
 vector<int> Scene::findGLVersion()
 {
     vector<vector<int>> glVersionList{{4, 5}};
@@ -905,17 +846,6 @@ void Scene::registerAttributes()
         {'s', 's'});
     setAttributeDescription("addObject", "Add an object of the given name, type, and optionally the target scene");
 
-    addAttribute("config", [&](const Values&) {
-        addTask([&]() -> void {
-            setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
-            Json::Value config = getConfigurationAsJson();
-            string configStr = config.toStyledString();
-            sendMessageToWorld("answerMessage", {"config", _name, configStr});
-        });
-        return true;
-    });
-    setAttributeDescription("config", "Ask the Scene for a JSON describing its configuration");
-
     addAttribute("deleteObject",
         [&](const Values& args) {
             addTask([=]() -> void {
@@ -966,19 +896,6 @@ void Scene::registerAttributes()
         },
         {'n', 'n', 'n', 'n', 'n', 'n', 'n'});
     setAttributeDescription("masterClock", "Set the timing of the master clock");
-
-    addAttribute("getObjectsNameByType",
-        [&](const Values& args) {
-            addTask([=]() {
-                string type = args[0].as<string>();
-                Values list = getObjectsNameByType(type);
-                sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
-            });
-
-            return true;
-        },
-        {'s'});
-    setAttributeDescription("getObjectsNameByType", "Get a list of the objects having the given type");
 
     addAttribute("link",
         [&](const Values& args) {

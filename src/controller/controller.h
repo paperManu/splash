@@ -149,8 +149,8 @@ class ControllerObject : public GraphObject
     std::vector<std::string> getTypesFromCategory(const GraphObject::Category& category) const;
 
     /**
-     * \brief Get all object of given type. If empty, get all objects.
-     * \param type Type to look for
+     * \brief Get all object of given type.
+     * \param type Type to look for. If empty, get all objects.
      * \return Return a list of all objects of the given type
      */
     std::vector<std::string> getObjectsOfType(const std::string& type) const;

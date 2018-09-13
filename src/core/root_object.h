@@ -248,11 +248,27 @@ class RootObject : public BaseObject
     void initializeTree();
 
     /**
+     * \brief Converts a Value as a Json object
+     * \param values Value to convert
+     * \param asObject If true, return a Json object
+     * \return Returns a Json object
+     */
+    Json::Value getValuesAsJson(const Values& values, bool asObject = false) const;
+
+    /**
      * Save the given objects tree in a Json::Value
-     * \param objectName Object name
+     * \param object Object name
+     * \param rootObject Root name
      * \return Return the configuration as a Json::Value
      */
-    Json::Value getObjectConfigurationAsJson(const std::string& objectName);
+    Json::Value getObjectConfigurationAsJson(const std::string& object, const std::string& rootObject = "");
+
+    /**
+     * Save the given root object tree in a Json::Value
+     * \param rootName Root name
+     * \return Return the configuration as a Json::Value
+     */
+    Json::Value getRootConfigurationAsJson(const std::string& rootName);
 
     /**
      * \brief Send a message to another root object

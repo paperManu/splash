@@ -141,28 +141,6 @@ void GraphObject::unlinkFrom(const shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-Json::Value GraphObject::getConfigurationAsJson() const
-{
-    Json::Value root;
-    if (_remoteType == "")
-        root["type"] = _type;
-    else
-        root["type"] = _remoteType;
-
-    for (auto& attr : _attribFunctions)
-    {
-        Values values;
-        if (getAttribute(attr.first, values) == false || values.size() == 0)
-            continue;
-
-        Json::Value jsValue;
-        jsValue = getValuesAsJson(values);
-        root[attr.first] = jsValue;
-    }
-    return root;
-}
-
-/*************/
 void GraphObject::setName(const string& name)
 {
     if (name.empty())
@@ -208,12 +186,13 @@ void GraphObject::registerAttributes()
         {'s'});
     setAttributeDescription("alias", "Alias name");
 
-    addAttribute("setSavable",
+    addAttribute("savable",
         [&](const Values& args) {
             auto savable = args[0].as<bool>();
             setSavable(savable);
             return true;
         },
+        [&]() -> Values { return {_savable}; },
         {'n'});
 
     addAttribute("priorityShift",
@@ -273,6 +252,7 @@ void GraphObject::initializeTree()
         tree->createBranchAt(path + "/links/children");
         tree->createBranchAt(path + "/links/parents");
     }
+
     if (!tree->hasLeafAt(path + "/type"))
         tree->createLeafAt(path + "/type");
     tree->setValueForLeafAt(path + "/type", _type);

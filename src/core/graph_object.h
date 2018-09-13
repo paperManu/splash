@@ -201,18 +201,6 @@ class GraphObject : public BaseObject
     inline virtual void setSavable(bool savable) { _savable = savable; }
 
     /**
-     * Set the object as a ghost, meaning it mimics an object in another scene
-     * \param ghost If true, set as ghost
-     */
-    inline void setGhost(bool ghost) { _ghost = ghost; }
-
-    /**
-     * Get whether the object ghosts an object in another scene
-     * \return Return true if this object is a ghost
-     */
-    inline bool isGhost() const { return _ghost; }
-
-    /**
      * \brief Update the content of the object
      */
     virtual void update() {}
@@ -242,12 +230,6 @@ class GraphObject : public BaseObject
     Category getCategory() const { return _category; }
 
     /**
-     * \brief Get the object's configuration as a Json object
-     * \return Returns a Json object
-     */
-    Json::Value getConfigurationAsJson() const override;
-
-    /**
      * \brief Set the rendering priority for this object
      * Set GraphObject::getRenderingPriority() for precision about priority
      * \param int Desired priority
@@ -273,7 +255,6 @@ class GraphObject : public BaseObject
 
     Priority _renderingPriority{Priority::NO_RENDER}; //!< Rendering priority, if negative the object won't be rendered
     int _priorityShift{0};                            //!< Shift applied to rendering priority
-    bool _ghost{false};                               //!< True if the object ghosts an object in another scene
 
     bool _isConnectedToRemote{false}; //!< True if the object gets data from a World object
 
