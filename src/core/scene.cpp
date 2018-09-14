@@ -429,22 +429,6 @@ void Scene::textureUploadRun()
             break;
 
         {
-#ifdef PROFILE
-            PROFILEGL("Texture upload loop");
-#endif
-
-            unique_lock<Spinlock> lockTexture(_textureMutex);
-
-            if (glIsSync(_cameraDrawnFence) == GL_TRUE)
-            {
-#ifdef PROFILE
-                PROFILEGL("texture sync");
-#endif
-                glWaitSync(_cameraDrawnFence, 0, GL_TIMEOUT_IGNORED);
-                glDeleteSync(_cameraDrawnFence);
-            }
-
-            Timer::get() << "textureUpload";
 
             vector<shared_ptr<Texture>> textures;
             bool expectedAtomicValue = false;
@@ -467,6 +451,23 @@ void Scene::textureUploadRun()
                 _doUploadTexturesCondition.wait_for(lockCondition, chrono::milliseconds(50));
                 _doUploadTextures = false;
             }
+
+            unique_lock<Spinlock> lockTexture(_textureMutex);
+
+#ifdef PROFILE
+            PROFILEGL("Texture upload loop");
+#endif
+
+            if (glIsSync(_cameraDrawnFence) == GL_TRUE)
+            {
+#ifdef PROFILE
+                PROFILEGL("texture sync");
+#endif
+                glWaitSync(_cameraDrawnFence, 0, GL_TIMEOUT_IGNORED);
+                glDeleteSync(_cameraDrawnFence);
+            }
+
+            Timer::get() << "textureUpload";
 
             for (auto& texture : textures)
             {
