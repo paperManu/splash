@@ -307,7 +307,7 @@ bool Root::getError(string& error)
 list<string> Root::getBranchListAt(const string& path) const
 {
     auto parts = processPath(path);
-    if (parts.empty())
+    if (path != "/" && parts.empty())
     {
         Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
         return {};
@@ -325,7 +325,7 @@ list<string> Root::getBranchListAt(const string& path) const
 list<string> Root::getLeafListAt(const string& path) const
 {
     auto parts = processPath(path);
-    if (parts.empty())
+    if (path != "/" && parts.empty())
     {
         Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
         return {};

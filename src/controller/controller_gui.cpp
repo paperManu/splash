@@ -12,6 +12,7 @@
 #include "./controller/widget/widget_node_view.h"
 #include "./controller/widget/widget_text_box.h"
 #include "./controller/widget/widget_textures_view.h"
+#include "./controller/widget/widget_tree.h"
 #include "./controller/widget/widget_warp.h"
 #include "./core/scene.h"
 #include "./graphics/camera.h"
@@ -1224,6 +1225,13 @@ void Gui::initImWidgets()
 
         auto texturesView = make_shared<GuiTexturesView>(_scene, "Textures");
         _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(texturesView));
+    }
+
+    // Tree view
+    if (Log::get().getVerbosity() == Log::DEBUGGING)
+    {
+        auto treeView = make_shared<GuiTree>(_scene, "Tree view");
+        _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(treeView));
     }
 }
 
