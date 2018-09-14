@@ -635,7 +635,7 @@ vector<string> World::getObjectsOfType(const string& type) const
     for (const auto& rootName : _tree.getBranchList())
     {
         auto objectsPath = "/" + rootName + "/objects";
-        for (const auto& objectName : _tree.getBranchAt(objectsPath)->getBranchList())
+        for (const auto& objectName : _tree.getBranchListAt(objectsPath))
         {
             if (type.empty())
                 objectList.push_back(objectName);

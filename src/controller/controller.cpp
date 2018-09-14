@@ -150,7 +150,7 @@ unordered_map<string, Values> ControllerObject::getObjectAttributes(const string
         if (!tree->hasBranchAt(objectPath))
             continue;
         auto attrPath = objectPath + "/attributes";
-        auto attrList = tree->getBranchAt(attrPath)->getLeafList();
+        auto attrList = tree->getLeafListAt(attrPath);
         for (const auto& attrName : attrList)
         {
             Value value;
@@ -180,7 +180,7 @@ unordered_map<string, vector<string>> ControllerObject::getObjectLinks() const
                 links.emplace(make_pair(objectName, vector<string>()));
 
             auto childrenPath = objectPath + "/" + objectName + "/links/children";
-            auto children = tree->getBranchAt(childrenPath)->getLeafList();
+            auto children = tree->getLeafListAt(childrenPath);
             for (const auto& child : children)
             {
                 auto& childList = links[objectName];
@@ -211,7 +211,7 @@ unordered_map<string, vector<string>> ControllerObject::getObjectReversedLinks()
                 links.emplace(make_pair(objectName, vector<string>()));
 
             auto childrenPath = objectPath + "/" + objectName + "/links/parents";
-            auto children = tree->getBranchAt(childrenPath)->getLeafList();
+            auto children = tree->getLeafListAt(childrenPath);
             for (const auto& child : children)
             {
                 auto& childList = links[objectName];
@@ -289,7 +289,7 @@ vector<string> ControllerObject::getObjectsOfType(const string& type) const
     for (const auto& rootName : tree->getBranchList())
     {
         auto objectsPath = "/" + rootName + "/objects";
-        for (const auto& objectName : tree->getBranchAt(objectsPath)->getBranchList())
+        for (const auto& objectName : tree->getBranchListAt(objectsPath))
         {
             if (type.empty())
                 objectList.push_back(objectName);

@@ -270,8 +270,7 @@ void GraphObject::initializeTree()
                 continue;
 
             tree->createLeafAt(leafPath);
-            auto leaf = tree->getLeafAt(leafPath);
-            _treeCallbackIds[attributeName] = leaf->addCallback([=](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
+            _treeCallbackIds[attributeName] = tree->addCallbackToLeafAt(leafPath, [=](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
                 auto attribIt = _attribFunctions.find(attributeName);
                 if (attribIt == _attribFunctions.end())
                     return;
@@ -308,7 +307,7 @@ void GraphObject::initializeTree()
     }
 
     // Remove leaves for attributes which do not exist anymore
-    auto leafList = tree->getBranchAt(path)->getLeafList();
+    auto leafList = tree->getLeafListAt(path);
     for (const auto& leafName : leafList)
     {
         if (_attribFunctions.find(leafName) != _attribFunctions.end())

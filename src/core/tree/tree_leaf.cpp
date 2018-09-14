@@ -26,7 +26,7 @@ bool Leaf::operator==(const Leaf& rhs) const
 }
 
 /*************/
-int Leaf::addCallback(const UpdateCallback& callback)
+Leaf::UpdateCallbackID Leaf::addCallback(const UpdateCallback& callback)
 {
     lock_guard<mutex> lock(_callbackMutex);
     auto id = ++_currentCallbackID;

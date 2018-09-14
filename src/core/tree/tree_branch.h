@@ -58,6 +58,8 @@ class Branch
 
   public:
     using UpdateCallback = std::function<void(Branch&, std::string)>;
+    using UpdateCallbackID = int;
+
 
     /**
      * Targets for callbacks
@@ -104,7 +106,7 @@ class Branch
      * \param callback Callback to add
      * \return Return an ID number for the callback
      */
-    int addCallback(Task target, const UpdateCallback& callback);
+    UpdateCallbackID addCallback(Task target, const UpdateCallback& callback);
 
     /**
      * Remove a callback given its ID

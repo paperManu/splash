@@ -19,14 +19,12 @@ void GuiGraph::render()
         {
             if (ImGui::TreeNode(branchName.c_str()))
             {
-                auto branch = tree->getBranchAt("/" + branchName + "/durations");
-                if (!branch)
-                    continue;
-
-                for (const auto& leafName : branch->getLeafList())
+                auto branchPath = "/" + branchName + "/durations";
+                for (const auto& leafName : tree->getLeafListAt(branchPath))
                 {
                     auto durationName = branchName + "_" + leafName;
-                    auto value = branch->getLeaf(leafName)->get();
+                    Value value;
+                    tree->getValueForLeafAt(branchPath + "/" + leafName, value);
                     assert(value.size() == 1);
                     if (_durationGraph.find(durationName) == _durationGraph.end())
                     {

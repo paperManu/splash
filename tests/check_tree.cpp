@@ -216,15 +216,15 @@ TEST_CASE("Testing the Leaf's callbacks")
 {
     Tree::Root maple;
     maple.createLeafAt("/a_leaf");
-    auto leaf = maple.getLeafAt("/a_leaf");
-    CHECK(leaf != nullptr);
+    CHECK(maple.hasLeafAt("/a_leaf"));
 
     Value extValue{""};
-    auto callbackID = leaf->addCallback([&extValue](Value value, chrono::system_clock::time_point timestamp) { extValue = value; });
+    auto callbackID = maple.addCallbackToLeafAt("/a_leaf", [&extValue](Value value, chrono::system_clock::time_point timestamp) { extValue = value; });
+    CHECK(callbackID > 0);
     maple.setValueForLeafAt("/a_leaf", "Ceci n'est pas un test");
 
     CHECK(extValue == Value("Ceci n'est pas un test"));
-    CHECK(leaf->removeCallback(callbackID));
+    CHECK(maple.removeCallbackFromLeafAt("/a_leaf", callbackID));
 
     maple.setValueForLeafAt("/a_leaf", "Ceci non plus");
     CHECK(extValue == Value("Ceci n'est pas un test"));

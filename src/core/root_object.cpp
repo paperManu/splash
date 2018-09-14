@@ -86,7 +86,7 @@ void RootObject::executeTreeCommands()
 {
     const std::string path = "/" + _name + "/commands";
 
-    auto commandIds = _tree.getBranchAt(path)->getLeafList();
+    auto commandIds = _tree.getLeafListAt(path);
     commandIds.sort(); // We want the commands by timing order
     for (const auto& commandId : commandIds)
     {
@@ -292,11 +292,9 @@ void RootObject::propagateTree()
 
     // Update the Root object attributes
     auto attributePath = string("/" + _name + "/attributes");
-    auto attributesBranch = _tree.getBranchAt(attributePath);
-    assert(attributesBranch != nullptr);
+    assert(_tree.hasBranchAt(attributePath));
 
-    auto leafList = attributesBranch->getLeafList();
-    for (const auto& leafName : leafList)
+    for (const auto& leafName : _tree.getLeafListAt(attributePath))
     {
         auto attribIt = _attribFunctions.find(leafName);
         if (attribIt == _attribFunctions.end())
@@ -307,10 +305,9 @@ void RootObject::propagateTree()
 
     // Update the GraphObjects attributes
     auto objectsPath = string("/" + _name + "/objects");
-    auto objectsBranch = _tree.getBranchAt(objectsPath);
-    assert(objectsBranch != nullptr);
+    assert(_tree.hasBranchAt(objectsPath));
 
-    for (const auto& objectName : objectsBranch->getBranchList())
+    for (const auto& objectName : _tree.getBranchListAt(objectsPath))
     {
         auto objectIt = _objects.find(objectName);
         if (objectIt == _objects.end())
@@ -318,12 +315,9 @@ void RootObject::propagateTree()
         auto object = objectIt->second;
 
         attributePath = string("/" + _name + "/objects/" + objectName + "/attributes");
-        attributesBranch = _tree.getBranchAt(attributePath);
-        if (!attributesBranch)
-            continue;
+        assert(_tree.hasBranchAt(attributePath));
 
-        leafList = attributesBranch->getLeafList();
-        for (const auto& leafName : leafList)
+        for (const auto& leafName : _tree.getLeafListAt(attributePath))
         {
             Values attribValue;
             object->getAttribute(leafName, attribValue);
@@ -394,8 +388,7 @@ void RootObject::initializeTree()
             if (!_tree.createLeafAt(leafPath))
                 throw runtime_error("Error while adding a leaf at path " + leafPath);
 
-            auto leaf = _tree.getLeafAt(leafPath);
-            _treeCallbackIds[attributeName] = leaf->addCallback([=](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
+            _treeCallbackIds[attributeName] = _tree.addCallbackToLeafAt(leafPath, [=](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
                 auto attribIt = _attribFunctions.find(attributeName);
                 if (attribIt == _attribFunctions.end())
                     return;
@@ -492,7 +485,7 @@ Json::Value RootObject::getObjectConfigurationAsJson(const string& object, const
         if (!_tree.hasBranchAt(attrPath))
             continue;
 
-        for (const auto& attrName : _tree.getBranchAt(attrPath)->getLeafList())
+        for (const auto& attrName : _tree.getLeafListAt(attrPath))
         {
             Value attrValue;
             if (!_tree.getValueForLeafAt(attrPath + "/" + attrName, attrValue))

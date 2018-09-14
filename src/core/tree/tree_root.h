@@ -63,6 +63,8 @@ enum class Task : uint8_t
     SetLeaf
 };
 
+using CallbackID = int;
+
 /**
  * A seed represents a change with given parameters applied at a given timepoint to a Tree of a given name
  * Seeds are automatically generated every time the Tree is modified,
@@ -134,18 +136,18 @@ class Root
      * \param target Targeted event for the callback
      * \param cb Callback
      * \param pending If true, the callback will be added once the branch appears
-     * \return Return true if the callback has been added, or if pending is true
+     * \return Return the ID of the callback if it has been successfully added, 0 if not, and -1 if it is pending
      */
-    bool addCallbackToBranchAt(const std::string& path, Branch::Task target, const Branch::UpdateCallback& cb, bool pending = false);
+    Branch::UpdateCallbackID addCallbackToBranchAt(const std::string& path, Branch::Task target, const Branch::UpdateCallback& cb, bool pending = false);
 
     /**
      * Add a callback to the given leaf
      * \param path Path to the leaf
      * \param cb Callback
      * \param pending If true, the callback will be added once the leaf appears
-     * \return Return true if the callback has been added, or if pending is true
+     * \return Return the ID of the callback if it has been successfully added, 0 if not, and -1 if it is pending
      */
-    bool addCallbackToLeafAt(const std::string& path, const Leaf::UpdateCallback& cb, bool pending = false);
+    Leaf::UpdateCallbackID addCallbackToLeafAt(const std::string& path, const Leaf::UpdateCallback& cb, bool pending = false);
 
     /**
      * Add a seed to the queue of changes to apply to the tree.
@@ -243,24 +245,10 @@ class Root
     std::list<std::string> getLeafListAt(const std::string& path) const;
 
     /**
-     * Get a pointer to the branch at the given path
-     * \param path Path to the branch
-     * \return Return the branch, or nullptr
-     */
-    Branch* getBranchAt(const std::string& path) const;
-
-    /**
      * Get a handle over this root
      * \param Returned handle
      */
     Tree::RootHandle getHandle() { return Tree::RootHandle(this); }
-
-    /**
-     * Get a pointer to the leaf at the given path
-     * \param path Path to the leaf
-     * \return Return the leaf, or nullptr
-     */
-    Leaf* getLeafAt(const std::string& path) const;
 
     /**
      * Get the root name
@@ -322,6 +310,22 @@ class Root
      * \return Return true if the leaf was removed successfully
      */
     bool removeLeafAt(const std::string& path, bool silent = false);
+
+    /**
+     * Remove callback from a branch given its path and ID
+     * \param path Branch path
+     * \param id Callback ID
+     * \return Return true if the callback has been successfully removed
+     */
+    bool removeCallbackFromBranchAt(const std::string& path, int id);
+
+    /**
+     * Remove callback from a leaf given its path and ID
+     * \param path Leaf path
+     * \param id Callback ID
+     * \return Return true if the callback has been successfully removed
+     */
+    bool removeCallbackFromLeafAt(const std::string& path, int id);
 
     /**
      * Rename the branch at the given path to the given name
@@ -387,10 +391,24 @@ class Root
 
     /**
      * Get a pointer to the branch at the given path
+     * \param path Path to the branch
+     * \return Return the branch, or nullptr
+     */
+    Branch* getBranchAt(const std::string& path) const;
+
+    /**
+     * Get a pointer to the branch at the given path
      * \param path Path as a list of strings
      * \return Return the branch, or nullptr
      */
     Branch* getBranchAt(const std::list<std::string>& path) const;
+
+    /**
+     * Get a pointer to the leaf at the given path
+     * \param path Path to the leaf
+     * \return Return the leaf, or nullptr
+     */
+    Leaf* getLeafAt(const std::string& path) const;
 
     /**
      * Get a pointer to the leaf at the given path

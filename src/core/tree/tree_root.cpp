@@ -76,31 +76,51 @@ bool Root::addLeafAt(const string& path, unique_ptr<Leaf>&& leaf, bool silent)
 }
 
 /*************/
-bool Root::addCallbackToBranchAt(const string& path, Branch::Task target, const Branch::UpdateCallback& cb, bool pending)
+Branch::UpdateCallbackID Root::addCallbackToBranchAt(const string& path, Branch::Task target, const Branch::UpdateCallback& cb, bool pending)
 {
     auto branch = getBranchAt(path);
     if (!branch && !pending)
-        return false;
+        return 0;
 
     if (branch)
         return branch->addCallback(target, cb);
 
     _branchCallbacksToRegister.push_back(make_tuple(path, target, cb));
-    return true;
+    return -1;
 }
 
 /*************/
-bool Root::addCallbackToLeafAt(const string& path, const Leaf::UpdateCallback& cb, bool pending)
+Leaf::UpdateCallbackID Root::addCallbackToLeafAt(const string& path, const Leaf::UpdateCallback& cb, bool pending)
 {
     auto leaf = getLeafAt(path);
     if (!leaf && !pending)
-        return false;
+        return 0;
 
     if (leaf)
         return leaf->addCallback(cb);
 
     _leafCallbacksToRegister.push_back(make_pair(path, cb));
-    return true;
+    return -1;
+}
+
+/*************/
+bool Root::removeCallbackFromBranchAt(const string& path, int id)
+{
+    auto branch = getBranchAt(path);
+    if (!branch)
+        return false;
+
+    return branch->removeCallback(id);
+}
+
+/*************/
+bool Root::removeCallbackFromLeafAt(const string& path, int id)
+{
+    auto leaf = getLeafAt(path);
+    if (!leaf)
+        return false;
+
+    return leaf->removeCallback(id);
 }
 
 /*************/

@@ -60,6 +60,7 @@ class Leaf
 
   public:
     using UpdateCallback = std::function<void(Value, std::chrono::system_clock::time_point)>;
+    using UpdateCallbackID = int;
 
   public:
     explicit Leaf(const std::string& name, Value value = {}, Branch* branch = nullptr);
@@ -77,7 +78,7 @@ class Leaf
      * \param callback Callback to add
      * \return Return an ID number for the callback
      */
-    int addCallback(const UpdateCallback& callback);
+    UpdateCallbackID addCallback(const UpdateCallback& callback);
 
     /**
      * Remove a callback given its ID

@@ -88,7 +88,7 @@ bool Branch::addLeaf(unique_ptr<Leaf>&& leaf)
 }
 
 /*************/
-int Branch::addCallback(Task target, const UpdateCallback& callback)
+Branch::UpdateCallbackID Branch::addCallback(Task target, const UpdateCallback& callback)
 {
     lock_guard<mutex> lock(_callbackMutex);
     auto id = ++_currentCallbackID;

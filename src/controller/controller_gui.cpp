@@ -1097,10 +1097,9 @@ void Gui::initImWidgets()
 
         // Master clock
         {
-            auto leaf = tree->getLeafAt("/world/attributes/masterClock");
-            if (leaf)
+            Value clock;
+            if (tree->getValueForLeafAt("/world/attributes/masterClock", clock))
             {
-                auto clock = leaf->get();
                 if (clock.size() == 8)
                 {
                     stream << "Master clock:\n";
@@ -1115,21 +1114,20 @@ void Gui::initImWidgets()
         }
 
         auto runningAverage = [](float a, float b) { return a * 0.9 + 0.001 * b * 0.1; };
-        auto getLeafValue = [](Tree::Branch* branch, const string& name) {
-            auto leaf = branch->getLeaf(name);
-            if (!leaf)
+        auto getLeafValue = [&](const string& path) {
+            Value value;
+            if (!tree->getValueForLeafAt(path, value))
                 return 0.f;
-            return leaf->get()[0].as<float>();
+            return value[0].as<float>();
         };
 
         // We process the world before the scenes
         {
-            auto branch = tree->getBranchAt("/world/durations");
-            assert(branch != nullptr);
+            assert(tree->hasBranchAt("/world/durations"));
 
-            stats["world_loop_world"] = runningAverage(stats["world_loop_world"], getLeafValue(branch, "loop_world"));
+            stats["world_loop_world"] = runningAverage(stats["world_loop_world"], getLeafValue("/world/durations/loop_world"));
             stats["world_loop_world_fps"] = 1e3 / std::max(1.f, stats["world_loop_world"]);
-            stats["world_upload"] = runningAverage(stats["world_upload"], getLeafValue(branch, "upload"));
+            stats["world_upload"] = runningAverage(stats["world_upload"], getLeafValue("/world/durations/upload"));
 
             stream << "World:\n";
             stream << "  World framerate: " << setprecision(4) << stats["world_loop_world_fps"] << " fps\n";
@@ -1143,22 +1141,19 @@ void Gui::initImWidgets()
         {
             if (branchName == "world")
                 continue;
+            auto durationPath = "/" + branchName + "/durations";
 
-            auto branch = tree->getBranchAt("/" + branchName + "/durations");
-            if (!branch)
-                continue;
-
-            stats[branchName + "_loop_scene"] = runningAverage(stats[branchName + "_loop_scene"], branch->getLeaf("loop_scene")->get()[0].as<float>());
+            stats[branchName + "_loop_scene"] = runningAverage(stats[branchName + "_loop_scene"], getLeafValue(durationPath + "/loop_scene"));
             stats[branchName + "_loop_scene_fps"] = 1e3 / std::max(1.f, stats[branchName + "_loop_scene"]);
-            stats[branchName + "_textureUpload"] = runningAverage(stats[branchName + "_textureUpload"], branch->getLeaf("textureUpload")->get()[0].as<float>());
-            stats[branchName + "_blender"] = runningAverage(stats[branchName + "_blender"], branch->getLeaf("blender")->get()[0].as<float>());
-            stats[branchName + "_filter"] = runningAverage(stats[branchName + "_filter"], branch->getLeaf("filter")->get()[0].as<float>());
-            stats[branchName + "_camera"] = runningAverage(stats[branchName + "_camera"], branch->getLeaf("camera")->get()[0].as<float>());
-            stats[branchName + "_warp"] = runningAverage(stats[branchName + "_warp"], branch->getLeaf("warp")->get()[0].as<float>());
-            stats[branchName + "_window"] = runningAverage(stats[branchName + "_window"], branch->getLeaf("window")->get()[0].as<float>());
-            stats[branchName + "_swap"] = runningAverage(stats[branchName + "_swap"], branch->getLeaf("swap")->get()[0].as<float>());
-            if (branch->hasLeaf("gui"))
-                stats[branchName + "_gui"] = runningAverage(stats[branchName + "_gui"], branch->getLeaf("gui")->get()[0].as<float>());
+            stats[branchName + "_textureUpload"] = runningAverage(stats[branchName + "_textureUpload"], getLeafValue(durationPath + "/textureUpload"));
+            stats[branchName + "_blender"] = runningAverage(stats[branchName + "_blender"], getLeafValue(durationPath + "/blender"));
+            stats[branchName + "_filter"] = runningAverage(stats[branchName + "_filter"], getLeafValue(durationPath + "/filter"));
+            stats[branchName + "_camera"] = runningAverage(stats[branchName + "_camera"], getLeafValue(durationPath + "/camera"));
+            stats[branchName + "_warp"] = runningAverage(stats[branchName + "_warp"], getLeafValue(durationPath + "/warp"));
+            stats[branchName + "_window"] = runningAverage(stats[branchName + "_window"], getLeafValue(durationPath + "/window"));
+            stats[branchName + "_swap"] = runningAverage(stats[branchName + "_swap"], getLeafValue(durationPath + "/swap"));
+            if (tree->hasLeafAt(durationPath + "/gui"))
+                stats[branchName + "_gui"] = runningAverage(stats[branchName + "_gui"], getLeafValue(durationPath + "/gui"));
 
             stream << "- " + branchName + ":\n";
             stream << "    Rendering framerate: " << setprecision(4) << stats[branchName + "_loop_scene_fps"] << " fps\n";
@@ -1170,7 +1165,7 @@ void Gui::initImWidgets()
             stream << "    Warps: " << setprecision(4) << stats[branchName + "_warp"] << " ms\n";
             stream << "    Windows rendering: " << setprecision(4) << stats[branchName + "_window"] << " ms\n";
             stream << "    Swapping: " << setprecision(4) << stats[branchName + "_swap"] << " ms\n";
-            if (branch->hasLeaf("gui"))
+            if (tree->hasLeafAt(durationPath + "/gui"))
                 stream << "    GUI rendering: " << setprecision(4) << stats[branchName + "_gui"] << " ms\n";
         }
 
