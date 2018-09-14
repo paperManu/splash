@@ -112,9 +112,11 @@ class World : public RootObject
     std::string _displayServer{"0"};    //!< Display server.
     std::string _forcedDisplay{""};     //!< Set to force an output display
 
-    std::string _configFilename;  //!< Configuration file path
-    std::string _projectFilename; //!< Project configuration file path
-    Json::Value _config;          //!< Configuration as JSon
+    std::string _configurationPath{""}; //!< Path to the configuration file
+    std::string _mediaPath{""};         //!< Default path to the medias
+    std::string _configFilename;        //!< Configuration file path
+    std::string _projectFilename;       //!< Project configuration file path
+    Json::Value _config;                //!< Configuration as JSon
 
     NameRegistry _nameRegistry{}; //!< Object name registry
     bool _sceneLaunched{false};
@@ -240,6 +242,6 @@ class World : public RootObject
     void initializeTree();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_WORLD_H

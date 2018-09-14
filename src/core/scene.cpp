@@ -1059,22 +1059,6 @@ void Scene::registerAttributes()
     setAttributeDescription("calibrateColorResponseFunction", "Launch the camera color calibration");
 #endif
 
-    addAttribute("configurationPath",
-        [&](const Values& args) {
-            _configurationPath = args[0].as<string>();
-            return true;
-        },
-        {'s'});
-    setAttributeDescription("configurationPath", "Path to the configuration files");
-
-    addAttribute("mediaPath",
-        [&](const Values& args) {
-            _mediaPath = args[0].as<string>();
-            return true;
-        },
-        {'s'});
-    setAttributeDescription("mediaPath", "Path to the media files");
-
     addAttribute("runInBackground",
         [&](const Values& args) {
             _runInBackground = args[0].as<bool>();

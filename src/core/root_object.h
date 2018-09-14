@@ -117,13 +117,27 @@ class RootObject : public BaseObject
      * \brief Get the configuration path
      * \return Return the configuration path
      */
-    std::string getConfigurationPath() const { return _configurationPath; }
+    std::string getConfigurationPath() const
+    {
+        Value value;
+        _tree.getValueForLeafAt("/world/attributes/configurationPath", value);
+        if (value.size() > 0 && value.getType() == Value::Type::values)
+            return value[0].as<std::string>();
+        return "";
+    }
 
     /**
      * \brief Get the media path
      * \return Return the media path
      */
-    std::string getMediaPath() const { return _mediaPath; }
+    std::string getMediaPath() const
+    {
+        Value value;
+        _tree.getValueForLeafAt("/world/attributes/mediaPath", value);
+        if (value.size() > 0 && value.getType() == Value::Type::values)
+            return value[0].as<std::string>();
+        return "";
+    }
 
     /**
      * Get a reference to the root tree
@@ -170,9 +184,6 @@ class RootObject : public BaseObject
     Tree::Root _tree{}; //!< Configuration / status tree, shared between all root objects
     std::unordered_map<std::string, int> _treeCallbackIds{};
     std::unordered_map<std::string, CallbackHandle> _attributeCallbackHandles{};
-
-    std::string _configurationPath{""}; //!< Path to the configuration file
-    std::string _mediaPath{""};         //!< Default path to the medias
 
     std::unique_ptr<Factory> _factory; //!< Object factory
     std::shared_ptr<Link> _link;       //!< Link object for communicatin between World and Scene

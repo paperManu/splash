@@ -229,9 +229,6 @@ void World::applyConfig()
                 setAttribute("addObject", {objects[objectName]["type"].asString(), objectName, scene.first, false});
             }
 
-            // Set some default directories
-            sendMessage(SPLASH_ALL_PEERS, "configurationPath", {_configurationPath});
-            sendMessage(SPLASH_ALL_PEERS, "mediaPath", {_configurationPath});
             sendMessage(SPLASH_ALL_PEERS, "runInBackground", {_runInBackground});
         }
 
@@ -834,7 +831,6 @@ bool World::loadProject(const string& filename)
         _projectFilename = filename;
         // The configuration path is overriden with the project file path
         _configurationPath = Utils::getPathFromFilePath(_projectFilename);
-        sendMessage(SPLASH_ALL_PEERS, "configurationPath", {_configurationPath});
 
         // Now, we apply the configuration depending on the current state
         // Meaning, we replace objects with the same name, create objects with non-existing name,
@@ -1507,16 +1503,6 @@ void World::registerAttributes()
         {'n'});
     setAttributeDescription("wireframe", "Show all meshes as wireframes if set to 1");
 
-    addAttribute("configurationPath",
-        [&](const Values& args) {
-            _configurationPath = args[0].as<string>();
-            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "configurationPath", {_configurationPath}); });
-            return true;
-        },
-        [&]() -> Values { return {_configurationPath}; },
-        {'s'});
-    setAttributeDescription("configurationPath", "Path to the configuration files");
-
 #if HAVE_LINUX
     addAttribute("forceRealtime",
         [&](const Values& args) {
@@ -1568,6 +1554,20 @@ void World::registerAttributes()
     setAttributeDescription("clockDeviceName", "Set the audio device name from which to read the LTC clock signal");
 #endif
 
+    addAttribute("configurationPath", [&](const Values& /*args*/) { return true; }, [&]() -> Values { return {_configurationPath}; }, {'s'});
+    setAttributeDescription("configurationPath", "Path to the configuration files");
+
+    addAttribute("mediaPath",
+        [&](const Values& args) {
+            auto path = args[0].as<string>();
+            if (Utils::isDir(path))
+                _mediaPath = args[0].as<string>();
+            return true;
+        },
+        [&]() -> Values { return {_mediaPath}; },
+        {'s'});
+    setAttributeDescription("mediaPath", "Path to the media files");
+
     addAttribute("looseClock",
         [&](const Values& args) {
             Timer::get().setLoose(args[0].as<bool>());
@@ -1575,16 +1575,6 @@ void World::registerAttributes()
         },
         [&]() -> Values { return {static_cast<int>(Timer::get().isLoose())}; },
         {'n'});
-
-    addAttribute("mediaPath",
-        [&](const Values& args) {
-            _mediaPath = args[0].as<string>();
-            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "mediaPath", {_mediaPath}); });
-            return true;
-        },
-        [&]() -> Values { return {_mediaPath}; },
-        {'s'});
-    setAttributeDescription("mediaPath", "Path to the media files");
 
     addAttribute("clock", [&](const Values& /*args*/) { return true; }, [&]() -> Values { return {Timer::getTime()}; }, {});
     setAttributeDescription("clock", "Current World clock (not settable)");
