@@ -474,9 +474,9 @@ Json::Value RootObject::getObjectConfigurationAsJson(const string& object, const
 
     list<string> rootList = {"world"};
     if (!rootObject.empty() && rootObject != "world")
-        rootList.push_back(rootObject);
+        rootList.push_front(rootObject);
     else if (rootObject.empty() && _name != "world")
-        rootList.push_back(_name);
+        rootList.push_front(_name);
 
     Json::Value root;
     for (const auto& rootName : rootList)
