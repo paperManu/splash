@@ -1174,24 +1174,6 @@ void Gui::initImWidgets()
     });
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(timingBox));
 
-    // Log display
-    if (Log::get().getVerbosity() == Log::DEBUGGING)
-    {
-        auto logBox = make_shared<GuiTextBox>(_scene, "Logs");
-        logBox->setTextFunc([]() {
-            int nbrLines = 10;
-            // Convert the last lines of the text log
-            vector<string> logs = Log::get().getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
-            string text;
-            uint32_t start = std::max(0, static_cast<int>(logs.size()) - nbrLines);
-            for (uint32_t i = start; i < logs.size(); ++i)
-                text += logs[i] + string("\n");
-
-            return text;
-        });
-        _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(logBox));
-    }
-
     // Control
     auto controlView = make_shared<GuiControl>(_scene, "Controls");
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(controlView));
@@ -1217,19 +1199,31 @@ void Gui::initImWidgets()
     auto warpControl = make_shared<GuiWarp>(_scene, "Warp");
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWarp>(warpControl));
 
-    // Performance graph
     if (Log::get().getVerbosity() == Log::DEBUGGING)
     {
+        // Log display
+        auto logBox = make_shared<GuiTextBox>(_scene, "Logs");
+        logBox->setTextFunc([]() {
+            int nbrLines = 10;
+            // Convert the last lines of the text log
+            vector<string> logs = Log::get().getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
+            string text;
+            uint32_t start = std::max(0, static_cast<int>(logs.size()) - nbrLines);
+            for (uint32_t i = start; i < logs.size(); ++i)
+                text += logs[i] + string("\n");
+
+            return text;
+        });
+        _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(logBox));
+
+        // Performance graph
         auto perfGraph = make_shared<GuiGraph>(_scene, "Performance Graph");
         _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(perfGraph));
 
         auto texturesView = make_shared<GuiTexturesView>(_scene, "Textures");
         _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(texturesView));
-    }
 
-    // Tree view
-    if (Log::get().getVerbosity() == Log::DEBUGGING)
-    {
+        // Tree view
         auto treeView = make_shared<GuiTree>(_scene, "Tree view");
         _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(treeView));
     }

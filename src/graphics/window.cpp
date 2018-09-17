@@ -408,8 +408,10 @@ void Window::setupFBOs()
     GLenum _status = glCheckNamedFramebufferStatus(_renderFbo, GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing render framebuffer object: " << _status << Log::endl;
+#ifdef DEBUG
     else
         Log::get() << Log::DEBUGGING << "Window::" << __FUNCTION__ << " - Render framebuffer object successfully initialized" << Log::endl;
+#endif
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
     glClearColor(0.0, 0.0, 0.0, 0.0);
@@ -426,8 +428,10 @@ void Window::setupFBOs()
     _status = glCheckNamedFramebufferStatus(_readFbo, GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing read framebuffer object: " << _status << Log::endl;
+#ifdef DEBUG
     else
         Log::get() << Log::DEBUGGING << "Window::" << __FUNCTION__ << " - Read framebuffer object successfully initialized" << Log::endl;
+#endif
 }
 
 /*************/

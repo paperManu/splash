@@ -232,6 +232,12 @@ class RootObject : public BaseObject
     void addRecurringTask(const std::string& name, const std::function<void()>& task);
 
     /**
+     * Force the propagation of a specific path
+     * \param path Path to propagate
+     */
+    void propagatePath(const std::string& path);
+
+    /**
      * Propagate the Tree to peers
      */
     void propagateTree();

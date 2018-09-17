@@ -66,7 +66,9 @@ bool Scene::getHasNVSwapGroup()
 Scene::Scene(const string& name, const string& socketPrefix)
     : _objectLibrary(dynamic_cast<RootObject*>(this))
 {
+#ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
+#endif
 
     _isRunning = true;
     _name = name;
@@ -105,13 +107,17 @@ Scene::~Scene()
 
     _link->disconnectFrom("world");
 
+#ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
+#endif
 }
 
 /*************/
 std::shared_ptr<GraphObject> Scene::addObject(const string& type, const string& name)
 {
+#ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
+#endif
 
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
@@ -122,7 +128,9 @@ std::shared_ptr<GraphObject> Scene::addObject(const string& type, const string& 
     // Check whether an object of this name already exists
     if (getObject(name))
     {
+#ifdef DEBUG
         Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - An object named " << name << " already exists" << Log::endl;
+#endif
         return {};
     }
 
@@ -160,7 +168,9 @@ void Scene::addGhost(const string& type, const string& name)
     if (find(_ghostableTypes.begin(), _ghostableTypes.end(), type) == _ghostableTypes.end())
         return;
 
+#ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating ghost object of type " << type << Log::endl;
+#endif
     auto obj = addObject(type, name);
     if (obj)
     {
@@ -383,6 +393,10 @@ void Scene::run()
 
     signalBufferObjectUpdated();
     _textureUploadFuture.wait();
+
+    // Clean the tree from anything related to this Scene
+    _tree.cutBranchAt("/" + _name);
+    propagateTree();
 
 #ifdef PROFILE
     ProfilerGL::get().processTimings();

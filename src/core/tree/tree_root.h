@@ -169,6 +169,11 @@ class Root
     void clearSeedList();
 
     /**
+     * Clear the tree to start anew
+     */
+    void cutdown();
+
+    /**
      * Add a branch at the given path
      * \param path Path of the branch
      * \param silent do not add this action to the update list
@@ -200,6 +205,13 @@ class Root
      * \return Return a pointer to the leaf, which may be nullptr if it failed
      */
     std::unique_ptr<Leaf> cutLeafAt(const std::string& path, bool silent = false);
+
+    /**
+     * Get the seeds for the given path
+     * \param path Path to generate the seed for
+     * \return Return the seeds list
+     */
+    std::list<Seed> getSeedsForPath(const std::string& path);
 
     /**
      * Get whether an error is set

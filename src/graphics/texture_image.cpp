@@ -143,7 +143,9 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
 {
     if (width == 0 || height == 0)
     {
+#ifdef DEBUG
         Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Texture size is null" << Log::endl;
+#endif
         return;
     }
 

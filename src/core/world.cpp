@@ -207,6 +207,9 @@ void World::applyConfig()
             }
         }
 
+        // Reseeds the world branch into the Scene's trees
+        propagatePath("/world");
+
         // Configure each scenes
         // The first scene is the master one, and also receives some ghost objects
         // First, set the master scene

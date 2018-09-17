@@ -333,6 +333,19 @@ void RootObject::propagateTree()
 }
 
 /*************/
+void RootObject::propagatePath(const string& path)
+{
+    auto seeds = _tree.getSeedsForPath(path);
+    if (seeds.empty())
+        return;
+
+    vector<uint8_t> serializedSeeds;
+    Serial::serialize(seeds, serializedSeeds);
+    auto dataPtr = reinterpret_cast<uint8_t*>(serializedSeeds.data());
+    _link->sendBuffer("_tree", make_shared<SerializedObject>(dataPtr, dataPtr + serializedSeeds.size()));
+}
+
+/*************/
 void RootObject::removeRecurringTask(const string& name)
 {
     unique_lock<mutex> lock(_recurringTaskMutex, std::try_to_lock);

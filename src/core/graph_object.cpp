@@ -307,12 +307,11 @@ void GraphObject::initializeTree()
     }
 
     // Remove leaves for attributes which do not exist anymore
-    auto leafList = tree->getLeafListAt(path);
-    for (const auto& leafName : leafList)
+    for (const auto& leafName : tree->getLeafListAt(path + "/attributes"))
     {
         if (_attribFunctions.find(leafName) != _attribFunctions.end())
             continue;
-        tree->removeLeafAt(path + leafName);
+        tree->removeLeafAt(path + "/attributes/" + leafName);
     }
 }
 

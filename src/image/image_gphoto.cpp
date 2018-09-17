@@ -145,16 +145,18 @@ bool Image_GPhoto::capture()
             if (handle != -1)
             {
                 gp_file_new_from_fd(&destination, handle);
-                if (gp_camera_file_get(camera.cam, filePath.folder, filePath.name, GP_FILE_TYPE_NORMAL, destination, _gpContext) == GP_OK)
-                {
-                    Log::get() << Log::DEBUGGING << "Image_GPhoto::" << __FUNCTION__ << " - Sucessfully downloaded file " << string(filePath.folder) << "/" << string(filePath.name)
-                               << Log::endl;
-                }
-                else
+                if (!gp_camera_file_get(camera.cam, filePath.folder, filePath.name, GP_FILE_TYPE_NORMAL, destination, _gpContext) == GP_OK)
                 {
                     Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Unable to download file " << string(filePath.folder) << "/" << string(filePath.name)
                                << Log::endl;
                 }
+#ifdef DEBUG
+                else
+                {
+                    Log::get() << Log::DEBUGGING << "Image_GPhoto::" << __FUNCTION__ << " - Sucessfully downloaded file " << string(filePath.folder) << "/" << string(filePath.name)
+                               << Log::endl;
+                }
+#endif
                 close(handle);
             }
 

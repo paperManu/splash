@@ -840,8 +840,10 @@ RgbValue ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum()
 
         delta = std::abs(newMinLum - previousMinLum);
 
+#ifdef DEBUG
         Log::get() << Log::DEBUGGING << "ColorCalibrator::" << __FUNCTION__ << " - White balance at iteration " << iteration << ": " << whiteBalance[0] << " / " << whiteBalance[1]
                    << " / " << whiteBalance[2] << " with a delta of " << delta * 100.f / newMinLum << "%" << Log::endl;
+#endif
         iteration++;
     }
 
