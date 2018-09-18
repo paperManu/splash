@@ -263,7 +263,7 @@ void RootObject::addRecurringTask(const string& name, const function<void()>& ta
 }
 
 /*************/
-void RootObject::propagateTree()
+void RootObject::updateTreeFromObjects()
 {
     // Update logs
     auto logs = Log::get().getNewLogs();
@@ -324,7 +324,11 @@ void RootObject::propagateTree()
             _tree.setValueForLeafAt(attributePath + "/" + leafName, attribValue);
         }
     }
+}
 
+/*************/
+void RootObject::propagateTree()
+{
     auto treeSeeds = _tree.getSeedList();
     vector<uint8_t> serializedSeeds;
     Serial::serialize(treeSeeds, serializedSeeds);

@@ -386,6 +386,7 @@ void Scene::run()
         }
 
         Timer::get() << "tree_propagate";
+        updateTreeFromObjects();
         propagateTree();
         Timer::get() >> "tree_propagate";
     }

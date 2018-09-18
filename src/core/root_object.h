@@ -260,6 +260,11 @@ class RootObject : public BaseObject
     void registerAttributes();
 
     /**
+     * Update the tree from the root Objects
+     */
+    void updateTreeFromObjects();
+
+    /**
      * Initialize the tree
      */
     void initializeTree();
