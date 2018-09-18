@@ -1,12 +1,14 @@
 #include "./core/imagebuffer.h"
 
+#include <assert.h>
+
 using namespace std;
 
 namespace Splash
 {
 
 /*************/
-string ImageBufferSpec::to_string()
+string ImageBufferSpec::to_string() const
 {
     string spec;
     spec += std::to_string(width);
@@ -101,28 +103,30 @@ void ImageBufferSpec::from_string(const string& spec)
 }
 
 /*************/
-ImageBuffer::ImageBuffer(const ImageBufferSpec& spec)
+ImageBuffer::ImageBuffer(const ImageBufferSpec& spec, char* data, bool map)
 {
-    init(spec);
-}
-
-/*************/
-ImageBuffer::~ImageBuffer()
-{
-}
-
-/*************/
-void ImageBuffer::init(const ImageBufferSpec& spec)
-{
+    assert(data || (!data && !map));
     _spec = spec;
 
-    uint32_t size = spec.width * spec.height * spec.pixelBytes();
-    _buffer.resize(size);
+    if (data && map)
+    {
+        _mappedBuffer = data;
+    }
+    else if (!map)
+    {
+        auto size = spec.width * spec.height * spec.pixelBytes();
+        if (data)
+            _buffer = ResizableArray<char>(data, data + size);
+        else
+            _buffer.resize(size);
+    }
 }
 
 /*************/
 void ImageBuffer::zero()
 {
+    if (_mappedBuffer)
+        return;
     if (_buffer.size())
         memset(_buffer.data(), 0, _buffer.size());
 }
