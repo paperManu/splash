@@ -105,7 +105,7 @@ void Image::set(unsigned int w, unsigned int h, unsigned int channels, ImageBuff
 
     lock_guard<Spinlock> lock(_readMutex);
     if (!_image)
-        _image = unique_ptr<ImageBuffer>(new ImageBuffer());
+        _image = make_unique<ImageBuffer>();
     std::swap(*_image, img);
     updateTimestamp();
 }
@@ -192,7 +192,7 @@ bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
         _bufferDeserialize.setRawBuffer(std::move(rawBuffer));
 
         if (!_bufferImage)
-            _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
+            _bufferImage = make_unique<ImageBuffer>();
         std::swap(*_bufferImage, _bufferDeserialize);
         _imageUpdated = true;
 
@@ -247,7 +247,7 @@ bool Image::readFile(const string& filename)
 
     lock_guard<shared_timed_mutex> lock(_writeMutex);
     if (!_bufferImage)
-        _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
+        _bufferImage = make_unique<ImageBuffer>();
     std::swap(*_bufferImage, img);
     _imageUpdated = true;
 
@@ -343,7 +343,7 @@ void Image::createDefaultImage()
 
     lock_guard<Spinlock> lock(_readMutex);
     if (!_image)
-        _image = unique_ptr<ImageBuffer>(new ImageBuffer());
+        _image = make_unique<ImageBuffer>();
     std::swap(*_image, img);
     updateTimestamp();
 }
@@ -369,7 +369,7 @@ void Image::createPattern()
 
     lock_guard<Spinlock> lock(_readMutex);
     if (!_image)
-        _image = unique_ptr<ImageBuffer>(new ImageBuffer());
+        _image = make_unique<ImageBuffer>();
     std::swap(*_image, img);
     updateTimestamp();
 }

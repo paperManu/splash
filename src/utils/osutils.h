@@ -34,6 +34,7 @@
 #endif
 #include <pwd.h>
 #include <sched.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -109,6 +110,24 @@ inline bool setRealTime()
 #else
     return false;
 #endif
+}
+
+/**
+ * Utils function to handle ioctl being interrupted
+ * See SA_RESTART here: http://pubs.opengroup.org/onlinepubs/009695399/functions/sigaction.html
+ * \param fd File descriptor
+ * \param request Request
+ * \param arg Arguments
+ * \return Return 0 if all went well, see manpage for ioctl otherwise
+ */
+inline int xioctl(int fd, int request, void* arg)
+{
+    int res;
+    do {
+        res = ioctl(fd, request, arg);
+    } while(res == -1 && errno == EINTR);
+
+    return res;
 }
 
 /**

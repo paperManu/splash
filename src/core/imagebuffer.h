@@ -31,7 +31,6 @@
 
 #include "./config.h"
 
-#include "./core/attribute.h"
 #include "./core/coretypes.h"
 
 namespace Splash
@@ -125,7 +124,7 @@ class ImageBufferSpec
      * \brief Convert the spec to a string
      * \return Return a string representation of the spec
      */
-    std::string to_string();
+    std::string to_string() const;
 
     /**
      * \brief Update from a spec string
@@ -158,13 +157,15 @@ class ImageBuffer
     /**
      * \brief Constructor
      * \param spec Image spec
+     * \param data Pointer to initial data
+     * \param map Use the data pointer as the buffer for this ImageBuffer
      */
-    ImageBuffer(const ImageBufferSpec& spec);
+    ImageBuffer(const ImageBufferSpec& spec, uint8_t* data = nullptr, bool map = false);
 
     /**
      * \brief Destructor
      */
-    ~ImageBuffer();
+    ~ImageBuffer() = default;
 
     ImageBuffer(const ImageBuffer& i) = default;
     ImageBuffer(ImageBuffer&& i) = default;
@@ -175,7 +176,7 @@ class ImageBuffer
      * \brief Return a pointer to the image data
      * \return Return a pointer to the data
      */
-    uint8_t* data() const { return _buffer.data(); }
+    uint8_t* data() const { return _mappedBuffer ? _mappedBuffer : _buffer.data(); }
 
     /**
      * Get a const reference to the inner buffer
@@ -193,7 +194,7 @@ class ImageBuffer
      * \brief Get the image buffer size
      * \return Return the size
      */
-    size_t getSize() const { return _buffer.size(); }
+    size_t getSize() const { return _mappedBuffer ? _spec.width * _spec.height * _spec.pixelBytes() : _buffer.size(); }
 
     /**
      * \brief Fill all channels with the given value
@@ -205,18 +206,18 @@ class ImageBuffer
      * \brief Set the inner raw buffer, to use with caution, its size must match the spec
      * \param buffer Buffer to use as inner buffer
      */
-    void setRawBuffer(ResizableArray<uint8_t>&& buffer) { _buffer = std::move(buffer); }
+    void setRawBuffer(ResizableArray<uint8_t>&& buffer)
+    {
+        if (!_mappedBuffer)
+            _buffer = buffer;
+    }
 
   private:
     ImageBufferSpec _spec{};
     ResizableArray<uint8_t> _buffer;
-
-    /**
-     * \brief Initialization
-     */
-    void init(const ImageBufferSpec& spec);
+    uint8_t* _mappedBuffer{nullptr};
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_IMAGEBUFFER_H

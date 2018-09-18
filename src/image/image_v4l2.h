@@ -66,6 +66,8 @@ class Image_V4L2 : public Image
     // Parameters to send to the shader
     std::unordered_map<std::string, Values> _shaderUniforms;
 
+    uint32_t _ioMethod{0};
+
     // File descriptors
     int _controlFd{-1};
     int _deviceFd{-1};
@@ -74,16 +76,12 @@ class Image_V4L2 : public Image
     bool _capabilitiesEnumerated{false}; // Only enumerate capabilities once for each device
     bool _hasStreamingIO{false};
     struct v4l2_capability _v4l2Capability; //!< The video4linux capabilities structure
-
     int _v4l2InputCount{0};
     std::vector<struct v4l2_input> _v4l2Inputs{};
-
     int _v4l2StandardCount{0};
     std::vector<struct v4l2_standard> _v4l2Standards{};
-
     int _v4l2FormatCount{0};
     std::vector<struct v4l2_fmtdesc> _v4l2Formats{};
-
     struct v4l2_format _v4l2Format;
     struct v4l2_format _v4l2SourceFormat;
     struct v4l2_streamparm _v4l2StreamParams;
@@ -96,11 +94,12 @@ class Image_V4L2 : public Image
     int _v4l2Index{0};
     uint32_t _outputWidth{1920};
     uint32_t _outputHeight{1080};
-    uint32_t _outputPixelFormat{V4L2_PIX_FMT_RGB24};
+    uint32_t _outputPixelFormat{V4L2_PIX_FMT_YUYV};
     std::string _sourceFormatAsString{""};
 
+    // Capture buffers;
     struct v4l2_requestbuffers _v4l2RequestBuffers;
-    uint32_t _bufferCount{3};
+    static const uint32_t _bufferCount{4};
     std::deque<std::unique_ptr<ImageBuffer>> _imageBuffers{};
 
     bool _capturing{false};        //!< True if currently capturing frames
@@ -125,10 +124,23 @@ class Image_V4L2 : public Image
     void init();
 
     /**
+     * Initialize V4L2 capture mode
+     * Tries first with mmap, then with userptr
+     * \return Return true if all went well
+     */
+    bool initializeIOMethod();
+
+    /**
      * Initialize V4L2 userptr capture mode
      * \return Return true if all went well
      */
-    bool initializeUserPtrCapture();
+    bool initializeMemoryMap();
+
+    /**
+     * Initialize V4L2 userptr capture mode
+     * \return Return true if all went well
+     */
+    bool initializeUserPtr();
 
     /**
      * Initialize the capture
