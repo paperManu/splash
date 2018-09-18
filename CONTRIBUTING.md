@@ -1,12 +1,10 @@
-CONTRIBUTING
+Contributing
 ============
 
 Repositories
 ------------
 
-Two repositories are used to host Splash source code:
-* [A Gitlab repository](https://gitlab.com/sat-metalab/splash) which is our working place, used internally at the SAT-Metalab,
-* [A Github repository](https://github.com/sat-metalab/splash) which is used as a public repository, and is a mirror of the Gitlab one.
+The main repository for Splash is located on [Gitlab](https://gitlab.com/sat-metalab/splash). Another repository exists on [Github](https://github.com/papermanu/splash) on the account of the lead developer.
 
 
 Coding style
@@ -24,12 +22,12 @@ rm -rf hooks && ln -s ../.hooks hooks
 Contributing
 ------------
 
-Please send your pull request at the [SAT-Metalab's Github account](https://github.com/sat-metalab/splash). If you do not know how to make a pull request, Github provides some [help about collaborating on projects using issues and pull requests](https://help.github.com/categories/collaborating-on-projects-using-issues-and-pull-requests/).
+Please send your pull request at the [SAT-Metalab's Gitlab repository](https://gitlab.com/sat-metalab/splash). If you do not know how to make a pull request, Gitlab provides some [help about collaborating on projects using issues and pull requests](https://docs.gitlab.com/ee/gitlab-basics/add-merge-request.html).
 
 Branching strategy with git
 ---------------------------
 
-The [master](https://gitlab.com/sat-metalab/splash/tree/master) branch contains Splash releases. Validated new developments are into the [develop](https://github.com/sat-metalab/splash/tree/develop) branch.
+The [master](https://gitlab.com/sat-metalab/splash/tree/master) branch contains Splash releases. Validated new developments are into the [develop](https://gitlab.com/sat-metalab/splash/tree/develop) branch.
 
 Modifications are made into a dedicated branch that needs to be merged into the develop branch through a Gitlab merge request. When you modification is ready, you need to prepare your merge request as follow:
 

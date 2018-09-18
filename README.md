@@ -186,4 +186,4 @@ And that's it, you can move on the the [Walkthrough](https://gitlab.com/sat-meta
 Going forward
 -------------
 
-To learn how to configure and use Splash, the best resource currently is the Wiki page on [Github](https://gitlab.com/sat-metalab/splash/wikis/home).
+To learn how to configure and use Splash, the best resource currently is the Wiki page on [Gitlab](https://gitlab.com/sat-metalab/splash/wikis/home).
