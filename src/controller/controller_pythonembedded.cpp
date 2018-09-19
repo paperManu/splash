@@ -1334,11 +1334,22 @@ PyObject* PythonEmbedded::convertFromValue(const Value& value, bool toDict)
     parseValue = [&](const Value& v) -> PyObject* {
         PyObject* pyValue = nullptr;
         if (v.getType() == Value::Type::integer)
+        {
             pyValue = Py_BuildValue("i", v.as<long>());
+        }
         else if (v.getType() == Value::Type::real)
+        {
             pyValue = Py_BuildValue("f", v.as<float>());
+        }
         else if (v.getType() == Value::Type::string)
+        {
             pyValue = Py_BuildValue("s", v.as<string>().c_str());
+        }
+        else if (v.getType() == Value::Type::buffer)
+        {
+            auto buffer = v.as<Value::Buffer>();
+            pyValue = Py_BuildValue("y#", reinterpret_cast<char*>(buffer.data()), buffer.size());
+        }
         else if (v.getType() == Value::Type::values)
         {
             auto values = v.as<Values>();
@@ -1384,6 +1395,13 @@ Value PythonEmbedded::convertToValue(PyObject* pyObject)
         else if (PyFloat_Check(obj))
         {
             value = PyFloat_AsDouble(obj);
+        }
+        else if (PyBytes_Check(obj))
+        {
+            uint8_t* bytes;
+            Py_ssize_t size;
+            if (PyBytes_AsStringAndSize(obj, reinterpret_cast<char**>(&bytes), &size) != -1)
+                value = Value::Buffer(bytes, bytes + size);
         }
         else
         {
