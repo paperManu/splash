@@ -45,7 +45,7 @@ struct ShaderSources
                 projected /= projected.w;
                 p = projected;
 
-                if (projected.z >= 0.0)
+                if (projected.z >= -1.0)
                 {
                     projected = abs(projected);
                     distToCenter = projected.xy;
