@@ -369,6 +369,9 @@ list<shared_ptr<GraphObject>> GuiMedia::getSceneMedia()
                 mediaList.push_back(object);
     }
 
+    mediaList.sort();
+    mediaList.unique();
+
     return mediaList;
 }
 
