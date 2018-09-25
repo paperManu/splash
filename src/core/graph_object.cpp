@@ -56,10 +56,16 @@ void GraphObject::linkToParent(GraphObject* obj)
         auto rootName = _root->getName();
         auto tree = _root->getTree();
         auto path = "/" + rootName + "/objects/" + _name + "/links/parents";
-        assert(tree->hasBranchAt(path));
-        auto leafPath = path + "/" + obj->getName();
-        if (!tree->hasLeafAt(leafPath))
-            tree->createLeafAt(leafPath);
+        assert(tree->hasLeafAt(path));
+
+        Value value;
+        tree->getValueForLeafAt(path, value);
+        auto parents = value.as<Values>();
+        if (find_if(parents.begin(), parents.end(), [&](const Value& a) { return a.as<string>() == obj->getName(); }) == parents.end())
+        {
+            parents.emplace_back(obj->getName());
+            tree->setValueForLeafAt(path, parents);
+        }
     }
 }
 
@@ -74,9 +80,14 @@ void GraphObject::unlinkFromParent(GraphObject* obj)
     {
         auto rootName = _root->getName();
         auto tree = _root->getTree();
-        auto path = "/" + rootName + "/objects/" + _name + "/links/parents/" + obj->getName();
+        auto path = "/" + rootName + "/objects/" + _name + "/links/parents";
         assert(tree->hasLeafAt(path));
-        tree->removeLeafAt(path);
+
+        Value value;
+        tree->getValueForLeafAt(path, value);
+        auto parents = value.as<Values>();
+        parents.erase(remove_if(parents.begin(), parents.end(), [&](const Value& a) { return a.as<string>() == obj->getName(); }), parents.end());
+        tree->setValueForLeafAt(path, parents);
     }
 }
 
@@ -103,10 +114,16 @@ bool GraphObject::linkTo(const shared_ptr<GraphObject>& obj)
         auto rootName = _root->getName();
         auto tree = _root->getTree();
         auto path = "/" + rootName + "/objects/" + _name + "/links/children";
-        assert(tree->hasBranchAt(path));
-        auto leafPath = path + "/" + obj->getName();
-        if (!tree->hasLeafAt(leafPath))
-            tree->createLeafAt(leafPath);
+        assert(tree->hasLeafAt(path));
+
+        Value value;
+        tree->getValueForLeafAt(path, value);
+        auto children = value.as<Values>();
+        if (find_if(children.begin(), children.end(), [&](const Value& a) { return a.as<string>() == obj->getName(); }) == children.end())
+        {
+            children.emplace_back(obj->getName());
+            tree->setValueForLeafAt(path, children);
+        }
     }
 
     return true;
@@ -134,9 +151,14 @@ void GraphObject::unlinkFrom(const shared_ptr<GraphObject>& obj)
     {
         auto rootName = _root->getName();
         auto tree = _root->getTree();
-        auto path = "/" + rootName + "/objects/" + _name + "/links/children/" + obj->getName();
+        auto path = "/" + rootName + "/objects/" + _name + "/links/children";
         assert(tree->hasLeafAt(path));
-        tree->removeLeafAt(path);
+
+        Value value;
+        tree->getValueForLeafAt(path, value);
+        auto children = value.as<Values>();
+        children.erase(remove_if(children.begin(), children.end(), [&](const Value& a) { return a.as<string>() == obj->getName(); }), children.end());
+        tree->setValueForLeafAt(path, children);
     }
 }
 
@@ -249,8 +271,8 @@ void GraphObject::initializeTree()
     if (!tree->hasBranchAt(path + "/links"))
     {
         tree->createBranchAt(path + "/links");
-        tree->createBranchAt(path + "/links/children");
-        tree->createBranchAt(path + "/links/parents");
+        tree->createLeafAt(path + "/links/children");
+        tree->createLeafAt(path + "/links/parents");
     }
 
     if (!tree->hasLeafAt(path + "/type"))

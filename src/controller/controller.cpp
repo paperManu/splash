@@ -180,12 +180,16 @@ unordered_map<string, vector<string>> ControllerObject::getObjectLinks() const
                 links.emplace(make_pair(objectName, vector<string>()));
 
             auto childrenPath = objectPath + "/" + objectName + "/links/children";
-            auto children = tree->getLeafListAt(childrenPath);
+
+            Value value;
+            tree->getValueForLeafAt(childrenPath, value);
+            auto children = value.as<Values>();
             for (const auto& child : children)
             {
                 auto& childList = links[objectName];
-                if (std::find(childList.begin(), childList.end(), child) == childList.end())
-                    childList.push_back(child);
+                auto childName = child.as<string>();
+                if (std::find(childList.begin(), childList.end(), childName) == childList.end())
+                    childList.push_back(childName);
             }
         }
     }
@@ -210,13 +214,17 @@ unordered_map<string, vector<string>> ControllerObject::getObjectReversedLinks()
             if (linksIt == links.end())
                 links.emplace(make_pair(objectName, vector<string>()));
 
-            auto childrenPath = objectPath + "/" + objectName + "/links/parents";
-            auto children = tree->getLeafListAt(childrenPath);
-            for (const auto& child : children)
+            auto parentsPath = objectPath + "/" + objectName + "/links/parents";
+
+            Value value;
+            tree->getValueForLeafAt(parentsPath, value);
+            auto parents = value.as<Values>();
+            for (const auto& parent : parents)
             {
-                auto& childList = links[objectName];
-                if (std::find(childList.begin(), childList.end(), child) == childList.end())
-                    childList.push_back(child);
+                auto& parentList = links[objectName];
+                auto parentName = parent.as<string>();
+                if (std::find(parentList.begin(), parentList.end(), parentName) == parentList.end())
+                    parentList.push_back(parentName);
             }
         }
     }

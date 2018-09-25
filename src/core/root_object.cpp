@@ -579,9 +579,12 @@ Json::Value RootObject::getRootConfigurationAsJson(const string& rootName)
             continue;
         root["objects"][objectName] = getObjectConfigurationAsJson(objectName, rootName);
 
-        assert(_tree.hasBranchAt(objectsPath + "/" + objectName + "/links/children"));
-        for (const auto& linkName : _tree.getLeafListAt(objectsPath + "/" + objectName + "/links/children"))
+        assert(_tree.hasLeafAt(objectsPath + "/" + objectName + "/links/children"));
+        Value value;
+        _tree.getValueForLeafAt(objectsPath + "/" + objectName + "/links/children", value);
+        for (const auto& parent : value.as<Values>())
         {
+            auto linkName = parent.as<string>();
             if (_tree.getValueForLeafAt(objectsPath + "/" + linkName + "/attributes/savable", confValue) && confValue[0].as<bool>() == false)
                 continue;
             if (_tree.getValueForLeafAt(objectsPath + "/" + linkName + "/ghost", confValue) && confValue.as<bool>() == true)
