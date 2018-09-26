@@ -647,7 +647,7 @@ void Window::setWindowDecoration(bool hasDecoration)
         return;
     }
 
-    _window = move(make_shared<GlWindow>(window, _window->getMainWindow()));
+    _window = make_shared<GlWindow>(window, _window->getMainWindow());
     updateSwapInterval(_swapInterval);
     _resized = true;
 

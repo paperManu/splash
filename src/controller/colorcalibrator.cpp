@@ -24,7 +24,7 @@ namespace Splash
 {
 
 /*************/
-void gslErrorHandler(const char* reason, const char* file, int line, int gsl_errno)
+void gslErrorHandler(const char* reason, const char* /*file*/, int /*line*/, int /*gsl_errno*/)
 {
     string errorString = string(reason);
     Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - An error in a GSL function has be caught: " << errorString << Log::endl;
@@ -139,8 +139,8 @@ void ColorCalibrator::update()
                 return;
 
             cv::Mat diffHdr = hdr.clone();
-            for (uint32_t y = 0; y < diffHdr.rows; ++y)
-                for (uint32_t x = 0; x < diffHdr.cols; ++x)
+            for (int y = 0; y < diffHdr.rows; ++y)
+                for (int x = 0; x < diffHdr.cols; ++x)
                 {
                     auto pixelValue = diffHdr.at<cv::Vec3f>(y, x) - othersHdr.at<cv::Vec3f>(y, x) * _displayDetectionThreshold;
                     diffHdr.at<cv::Vec3f>(y, x)[0] = max(0.f, pixelValue[0]);
@@ -429,8 +429,8 @@ cv::Mat3f ColorCalibrator::captureHDR(unsigned int nbrLDR, double step, bool com
     cv::Ptr<cv::MergeDebevec> mergeDebevec = cv::createMergeDebevec();
     mergeDebevec->process(ldr, hdr, expositionDurations, _crf);
 
-    for (uint32_t y = 0; y < hdr.rows; ++y)
-        for (uint32_t x = 0; x < hdr.cols; ++x)
+    for (int y = 0; y < hdr.rows; ++y)
+        for (int x = 0; x < hdr.cols; ++x)
         {
             auto pixelValue = hdr.at<cv::Vec3f>(y, x);
             pixelValue[0] = max(0.f, pixelValue[0]);
@@ -550,8 +550,8 @@ float ColorCalibrator::findCorrectExposure()
         unsigned long sum = 0;
 
         uint8_t* pixel = reinterpret_cast<uint8_t*>(img.data());
-        for (int y = spec.height / 2 - roiSize / 2; y < spec.height / 2 + roiSize / 2; ++y)
-            for (int x = spec.width / 2 - roiSize / 2; x < spec.width / 2 + roiSize / 2; ++x)
+        for (uint32_t y = spec.height / 2 - roiSize / 2; y < spec.height / 2 + roiSize / 2; ++y)
+            for (uint32_t x = spec.width / 2 - roiSize / 2; x < spec.width / 2 + roiSize / 2; ++x)
             {
                 auto index = (x + y * spec.width) * spec.channels;
                 sum += static_cast<unsigned long>(0.2126 * pixel[index] + 0.7152 * pixel[index + 1] + 0.0722 * pixel[index + 2]);
@@ -705,8 +705,8 @@ vector<float> ColorCalibrator::getMeanValue(const cv::Mat3f& image, vector<int> 
     if (coords.size() >= 2)
     {
         cv::Mat1b mask = cv::Mat1b::zeros(image.rows, image.cols);
-        for (uint32_t y = coords[1] - boxSize / 2; y < coords[1] + boxSize / 2; ++y)
-            for (uint32_t x = coords[0] - boxSize / 2; y < coords[0] + boxSize / 2; ++x)
+        for (int y = coords[1] - boxSize / 2; y < coords[1] + boxSize / 2; ++y)
+            for (int x = coords[0] - boxSize / 2; y < coords[0] + boxSize / 2; ++x)
                 mask(y, x) = 255;
 
         meanMaxValue = cv::mean(image, mask);
@@ -817,7 +817,7 @@ RgbValue ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum()
         // Get the current minimum luminance
         float previousMinLum = numeric_limits<float>::max();
         int minIndex = 0;
-        for (int i = 0; i < _calibrationParams.size(); ++i)
+        for (uint32_t i = 0; i < _calibrationParams.size(); ++i)
         {
             CalibrationParams& params = _calibrationParams[i];
             RgbValue whiteBalanced = params.whitePoint * (params.whiteBalance / whiteBalance).normalize();

@@ -13,7 +13,6 @@ before_script:
   - git submodule update --init
   - ./make_deps.sh
   - rm -rf build && mkdir build && cd build
-  - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
 
 #
 # Tests
@@ -22,6 +21,7 @@ test:16.04:
   stage: test
   image: ubuntu:16.04
   script: 
+    - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make test
 
@@ -30,6 +30,21 @@ test:18.04:
   image: ubuntu:18.04
   script: 
     - DEBIAN_FRONTEND=noninteractive apt install -y libopencv-dev
+    - cmake ..
+    - make -j$(nproc)
+    - make test
+
+test:18.04-clang:
+  stage: test
+  image: ubuntu:18.04
+  before_script:
+    - apt update -qq
+    - DEBIAN_FRONTEND=noninteractive apt install -y curl wget build-essential git-core zip cmake automake libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python clang libopencv-dev
+    - git submodule update --init
+    - ./make_deps.sh
+    - rm -rf build && mkdir build && cd build
+  script: 
+    - CC=clang CXX=clang++ cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make test
 
@@ -42,8 +57,8 @@ test:18.04-syslibs:
     - DEBIAN_FRONTEND=noninteractive apt install -y libglfw3-dev libglm-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev
     - git submodule update --init
     - rm -rf build && mkdir build && cd build
-    - cmake -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON ..
   script:
+    - cmake -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON ..
     - make -j$(nproc)
     - make test
 
@@ -58,8 +73,8 @@ test:archlinux:
     - git submodule update --init
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build
-    - cmake -DCMAKE_INSTALL_PREFIX=/usr ..
   script:
+    - cmake -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make test
 

@@ -290,7 +290,7 @@ PyObject* PythonSink::pythonSinkGrab(PythonSinkObject* self)
 
     // The Sink wrapper can be opened although its Splash counterpart has not
     // received the order yet. We wait for that
-    Values opened({false});
+    Values opened({Value(false)});
     while (!opened[0].as<bool>())
     {
         self->sink->getAttribute("opened", opened);
@@ -610,7 +610,7 @@ PyMethodDef PythonSink::SinkMethods[] = {
     {(const char*)"get_caps", (PyCFunction)PythonSink::pythonSinkGetCaps, METH_VARARGS | METH_KEYWORDS, pythonSinkGetCaps_doc__},
     {(const char*)"link_to", (PyCFunction)PythonSink::pythonSinkLink, METH_VARARGS | METH_KEYWORDS, pythonSinkLink_doc__},
     {(const char*)"unlink", (PyCFunction)PythonSink::pythonSinkUnlink, METH_NOARGS, pythonSinkUnlink_doc__},
-    {nullptr}
+    {nullptr, nullptr, 0, nullptr}
 };
 
 /*************/
@@ -652,7 +652,17 @@ PyTypeObject PythonSink::pythonSinkType = {
     0,                                                   /* tp_dictoffset */
     (initproc)PythonSink::pythonSinkInit,                /* tp_init */
     0,                                                   /* tp_alloc */
-    PythonSink::pythonSinkNew                            /* tp_new */
+    PythonSink::pythonSinkNew,                           /* tp_new */
+    0,                                                   /* tp_free */
+    0,                                                   /* tp_is_gc */
+    0,                                                   /* tp_bases */
+    0,                                                   /* tp_mro */
+    0,                                                   /* tp_cache */
+    0,                                                   /* tp_subclasses */
+    0,                                                   /* tp_weaklist */
+    0,                                                   /* tp_del */
+    0,                                                   /* tp_version_tag */
+    0                                                    /* tp_finalize */
 };
 // clang-format on
 

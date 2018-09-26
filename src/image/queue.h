@@ -75,7 +75,7 @@ class Queue : public BufferObject
      * \brief Return the name of the distant buffer object
      * \return Return the distant name
      */
-    std::string getDistantName() const;
+    std::string getDistantName() const override;
 
     /**
      * \brief Serialize the underlying source
@@ -87,12 +87,12 @@ class Queue : public BufferObject
      * \brief Returns always true, the Queue object handles update itself
      * \return Return true if the queue was updated
      */
-    bool wasUpdated() const { return true; }
+    bool wasUpdated() const override { return true; }
 
     /**
      * \brief Update the current texture
      */
-    void update();
+    void update() override;
 
   private:
     std::unique_ptr<Factory> _factory;
@@ -113,7 +113,6 @@ class Queue : public BufferObject
     bool _paused{false};
 
     std::shared_ptr<BufferObject> _currentSource; // The source being played
-    bool _defaultSource{false};
 
     int32_t _currentSourceIndex{-1};
     bool _playing{false};

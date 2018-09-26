@@ -143,7 +143,7 @@ Branch* Branch::getBranch(const string& path)
 {
     auto branchIt = _branches.find(path);
     if (branchIt == _branches.end())
-        return {nullptr};
+        return nullptr;
 
     return branchIt->second.get();
 }
@@ -162,7 +162,7 @@ Leaf* Branch::getLeaf(const string& path)
 {
     auto leafIt = _leaves.find(path);
     if (leafIt == _leaves.end())
-        return {nullptr};
+        return nullptr;
 
     return leafIt->second.get();
 }

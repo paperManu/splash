@@ -287,7 +287,7 @@ void RootObject::updateTreeFromObjects()
         if (!_tree.hasLeafAt(path))
             if (!_tree.createLeafAt(path))
                 continue;
-        _tree.setValueForLeafAt(path, Values({static_cast<int>(d.second)}));
+        _tree.setValueForLeafAt(path, Values({Value(static_cast<int>(d.second))}));
     }
 
     // Update the Root object attributes

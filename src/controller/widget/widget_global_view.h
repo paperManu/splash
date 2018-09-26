@@ -49,7 +49,6 @@ class GuiGlobalView : public GuiWidget
     std::shared_ptr<Camera> _camera{nullptr};
     std::shared_ptr<Camera> _guiCamera{nullptr};
     bool _camerasHidden{false};
-    bool _beginDrag{true};
     bool _noMove{false};
 
     bool _hideCameras{false};

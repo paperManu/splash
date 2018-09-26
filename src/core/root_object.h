@@ -173,7 +173,7 @@ class RootObject : public BaseObject
      * \brief Return a lock object list modifications (addition, deletion)
      * \return Return a lock object which unlocks the mutex upon deletion
      */
-    std::unique_lock<std::recursive_mutex> getLockOnObjects() { return std::move(std::unique_lock<std::recursive_mutex>(_objectsMutex)); }
+    std::unique_lock<std::recursive_mutex> getLockOnObjects() { return std::unique_lock<std::recursive_mutex>(_objectsMutex); }
 
     /**
      * \brief Signals that a BufferObject has been updated

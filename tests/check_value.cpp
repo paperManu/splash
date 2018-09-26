@@ -119,7 +119,7 @@ TEST_CASE("Testing buffer in Value")
 /*************/
 TEST_CASE("Testing Value serialization")
 {
-    string testString({"One to rule them all"});
+    string testString("One to rule them all");
 
     CHECK(Serial::getSize(Value(42)) == sizeof(Value::Type) + sizeof(int64_t));
     CHECK(Serial::getSize(Value(2.71828f)) == sizeof(Value::Type) + sizeof(double));

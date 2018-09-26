@@ -173,7 +173,6 @@ class Geometry : public BufferObject
 
     // Transform feedback
     GLuint _feedbackQuery;
-    bool _feedbackQueryRunning{false};
     int _feedbackMaxNbrPrimitives{0};
 
     /**

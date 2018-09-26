@@ -75,13 +75,13 @@ class VirtualProbe : public Texture
      * \brief Get the shader parameters related to this warp. Texture should be locked first.
      * \return Return the shader uniforms
      */
-    std::unordered_map<std::string, Values> getShaderUniforms() const;
+    std::unordered_map<std::string, Values> getShaderUniforms() const override;
 
     /**
      * \brief Get spec of the texture
      * \return Return the spec
      */
-    ImageBufferSpec getSpec() const { return _outFbo->getColorTexture()->getSpec(); }
+    ImageBufferSpec getSpec() const override { return _outFbo->getColorTexture()->getSpec(); }
 
     /**
      * \brief Try to link the given GraphObject to this object
@@ -126,7 +126,7 @@ class VirtualProbe : public Texture
      * \brief Get the id of the gl texture
      * \return Return the texture id
      */
-    GLuint getTexId() const { return _outFbo->getColorTexture()->getTexId(); }
+    GLuint getTexId() const override { return _outFbo->getColorTexture()->getTexId(); }
 
     /**
      * \brief Update for a VirtualProbe does nothing, it is the render() job

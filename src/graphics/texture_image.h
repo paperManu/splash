@@ -105,19 +105,19 @@ class Texture_Image : public Texture
      * \brief Get the id of the gl texture
      * \return Return the texture id
      */
-    GLuint getTexId() const { return _glTex; }
+    GLuint getTexId() const final { return _glTex; }
 
     /**
      * \brief Get the shader parameters related to this texture. Texture should be locked first.
      * \return Return the shader uniforms
      */
-    std::unordered_map<std::string, Values> getShaderUniforms() const { return _shaderUniforms; }
+    std::unordered_map<std::string, Values> getShaderUniforms() const final { return _shaderUniforms; }
 
     /**
      * \brief Get spec of the texture
      * \return Return the spec
      */
-    ImageBufferSpec getSpec() const { return _spec; }
+    ImageBufferSpec getSpec() const override { return _spec; }
 
     /**
      * Grab the texture to the host memory, at the given mipmap level

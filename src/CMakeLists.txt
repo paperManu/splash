@@ -188,10 +188,12 @@ else()
 endif()
 
 if (GPHOTO_FOUND AND OPENCV_FOUND)
-    set_source_files_properties(
-        controller/colorcalibrator.cpp 
-        PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized -Wno-unused-result -Wno-int-in-bool-context -Wno-sign-compare -Wno-ignored-attributes -Wno-deprecated-declarations -Wno-delete-non-virtual-dtor -Wno-unused-parameter -Wno-strict-aliasing -Wno-format -Wno-unused-but-set-variable -Wno-misleading-indentation -Wno-switch"
-    )
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        set_source_files_properties(
+            controller/colorcalibrator.cpp 
+            PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized -Wno-unused-result -Wno-int-in-bool-context -Wno-sign-compare -Wno-ignored-attributes -Wno-deprecated-declarations -Wno-delete-non-virtual-dtor -Wno-unused-parameter -Wno-strict-aliasing -Wno-format -Wno-unused-but-set-variable -Wno-misleading-indentation -Wno-switch"
+        )
+    endif()
 
     target_sources(splash-${API_VERSION} PRIVATE
         controller/colorcalibrator.cpp 
@@ -228,11 +230,13 @@ if (SHMDATA_FOUND)
 endif()
 
 if (PYTHONLIBS_FOUND)
-    set_source_files_properties(
-        controller/controller_pythonembedded.cpp
-        controller/python/python_sink.cpp
-	PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-cast-function-type"
-    )
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        set_source_files_properties(
+            controller/controller_pythonembedded.cpp
+            controller/python/python_sink.cpp
+	    PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-cast-function-type"
+        )
+    endif()
 
     target_sources(splash-${API_VERSION} PRIVATE
         controller/controller_pythonembedded.cpp

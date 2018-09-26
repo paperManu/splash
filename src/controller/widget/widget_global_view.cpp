@@ -6,6 +6,9 @@
 
 #include "./graphics/virtual_probe.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wchar-subscripts"
+
 using namespace std;
 
 namespace Splash
@@ -668,5 +671,7 @@ void GuiGlobalView::drawVirtualProbes()
     for (auto& probe : probes)
         _guiCamera->drawModelOnce("probe", dynamic_pointer_cast<VirtualProbe>(probe)->computeViewMatrix());
 }
+
+#pragma clang diagnostic pop
 
 } // end of namespace

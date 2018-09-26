@@ -134,7 +134,7 @@ class Image : public BufferObject
     /**
      * \brief Update the content of the image
      */
-    virtual void update();
+    virtual void update() override;
 
     /**
      * \brief Write the current buffer to the specified file

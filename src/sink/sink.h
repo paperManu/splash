@@ -69,13 +69,13 @@ class Sink : public GraphObject
      * Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj);
+    bool linkTo(const std::shared_ptr<GraphObject>& obj) override;
 
     /**
      * Try to unlink the given GraphObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(const std::shared_ptr<GraphObject>& obj);
+    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) override;
 
     /**
      * Update the inner buffer of the sink

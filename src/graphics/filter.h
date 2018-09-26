@@ -68,12 +68,12 @@ class Filter : public Texture
     /**
      * \brief Bind the filter
      */
-    void bind();
+    void bind() override;
 
     /**
      * \brief Unbind the filter
      */
-    void unbind();
+    void unbind() override;
 
     /**
      * Get the output texture
@@ -85,19 +85,19 @@ class Filter : public Texture
      * Get the shader parameters related to this texture
      * Texture should be locked first
      */
-    std::unordered_map<std::string, Values> getShaderUniforms() const;
+    std::unordered_map<std::string, Values> getShaderUniforms() const override;
 
     /**
      * \brief Get specs of the texture
      * \return Return the texture specs
      */
-    ImageBufferSpec getSpec() const { return _fbo->getColorTexture()->getSpec(); }
+    ImageBufferSpec getSpec() const override { return _fbo->getColorTexture()->getSpec(); }
 
     /**
      * \brief Get the id of the gl texture
      * \return Return the texture id
      */
-    GLuint getTexId() const { return _fbo->getColorTexture()->getTexId(); }
+    GLuint getTexId() const override { return _fbo->getColorTexture()->getTexId(); }
 
     /**
      * \brief Try to link the given GraphObject to this object
@@ -144,7 +144,6 @@ class Filter : public Texture
     int _sizeOverride[2]{-1, -1}; //!< If set to positive values, overrides the size given by input textures
     bool _keepRatio{false};
     std::unordered_map<std::string, Values> _filterUniforms; //!< Contains all filter uniforms
-    bool _render16bits{false};                               //!< Set to true for the filter to be rendered in 16bits
     Values _colorCurves{};                                   //!< RGB points for the color curves, active if at least 3 points are set
 
     float _autoBlackLevelTargetValue{0.f}; //!< If not zero, defines the target luminance value

@@ -115,7 +115,7 @@ class Mesh : public BufferObject
     /**
      * \brief Update the content of the mesh
      */
-    virtual void update();
+    virtual void update() override;
 
   protected:
     struct MeshContainer

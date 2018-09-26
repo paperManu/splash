@@ -69,7 +69,6 @@ class Image_V4L2 : public Image
     uint32_t _ioMethod{0};
 
     // File descriptors
-    int _controlFd{-1};
     int _deviceFd{-1};
 
     // V4L2 stuff
@@ -83,11 +82,8 @@ class Image_V4L2 : public Image
     int _v4l2FormatCount{0};
     std::vector<struct v4l2_fmtdesc> _v4l2Formats{};
     struct v4l2_format _v4l2Format;
-    struct v4l2_format _v4l2SourceFormat;
-    struct v4l2_streamparm _v4l2StreamParams;
 
     // Datapath specific variables
-    bool _isDatapath{false};
     bool _autosetResolution{true};
 
     // Capture parameters
@@ -104,8 +100,6 @@ class Image_V4L2 : public Image
 
     bool _capturing{false};        //!< True if currently capturing frames
     bool _captureThreadRun{false}; //!< Set to false to stop the capture thread
-    bool _startCapturing{false};
-    bool _stopCapturing{false};
     std::mutex _startStopMutex{};
     std::atomic_bool _automaticResizing{false};
 

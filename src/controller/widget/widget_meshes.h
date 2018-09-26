@@ -44,9 +44,6 @@ class GuiMeshes : public GuiWidget
     std::map<std::string, std::string> _meshTypeReversed{}; // Created from the previous map
 
     Values _newMedia{"image", "", 0.f, 0.f};
-    int _newMediaTypeIndex{0};
-    float _newMediaStart{0.f};
-    float _newMediaStop{0.f};
 
     std::list<std::shared_ptr<GraphObject>> getSceneMeshes();
     void replaceMesh(const std::string& previousMedia, const std::string& media, const std::string& type);
