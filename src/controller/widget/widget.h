@@ -75,6 +75,7 @@ class GuiWidget : public ControllerObject
     std::string _name{""};
     Scene* _scene;
     std::string _fileSelectorTarget{""};
+    std::list<std::string> _hiddenAttributes{"savable"};
 
     /**
      * Draws the widgets for the attributes of the given object

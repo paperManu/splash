@@ -238,6 +238,9 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
 
     for (auto& attrName : attributeNames)
     {
+        if (find(_hiddenAttributes.begin(), _hiddenAttributes.end(), attrName) != _hiddenAttributes.end())
+            continue;
+
         const auto& attribute = attributes.find(attrName)->second;
         if (attribute.empty() || attribute.size() > 4)
             continue;

@@ -216,6 +216,7 @@ void GraphObject::registerAttributes()
         },
         [&]() -> Values { return {_savable}; },
         {'n'});
+    setAttributeDescription("savable", "If true, the object will be saved in the configuration file. This should NOT be modified by hand");
 
     addAttribute("priorityShift",
         [&](const Values& args) {
