@@ -1,5 +1,3 @@
-image: ubuntu:18.04
-
 variables:
   DOCKER_DRIVER: overlay
 
@@ -12,6 +10,10 @@ before_script:
   - DEBIAN_FRONTEND=noninteractive apt install -y curl wget build-essential git-core zip cmake automake libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python
   - git submodule update --init
   - ./make_deps.sh
+  - mkdir -p Datapath && cd Datapath
+  - wget -q --show-progress http://downloads.datapath.co.uk/Linux/VisionInstall-7.17.14.304.tar.gz
+  - tar xvzf VisionInstall-7.17.14.304.tar.gz
+  - cd ..
   - rm -rf build && mkdir build && cd build
 
 #
@@ -21,7 +23,7 @@ test:16.04:
   stage: test
   image: ubuntu:16.04
   script: 
-    - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
+    - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DDATAPATH_SDK_PATH=../Datapath ..
     - make -j$(nproc)
     - make test
 
@@ -30,21 +32,16 @@ test:18.04:
   image: ubuntu:18.04
   script: 
     - DEBIAN_FRONTEND=noninteractive apt install -y libopencv-dev
-    - cmake ..
+    - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DDATAPATH_SDK_PATH=../Datapath ..
     - make -j$(nproc)
     - make test
 
 test:18.04-clang:
   stage: test
   image: ubuntu:18.04
-  before_script:
-    - apt update -qq
-    - DEBIAN_FRONTEND=noninteractive apt install -y curl wget build-essential git-core zip cmake automake libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python clang libopencv-dev
-    - git submodule update --init
-    - ./make_deps.sh
-    - rm -rf build && mkdir build && cd build
   script: 
-    - CC=clang CXX=clang++ cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
+    - DEBIAN_FRONTEND=noninteractive apt install -y libopencv-dev clang
+    - CC=clang CXX=clang++ cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DDATAPATH_SDK_PATH=../Datapath ..
     - make -j$(nproc)
     - make test
 
@@ -58,7 +55,7 @@ test:18.04-syslibs:
     - git submodule update --init
     - rm -rf build && mkdir build && cd build
   script:
-    - cmake -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON ..
+    - cmake -DBUILD_GENERIC_ARCH=ON -DUSE_SYSTEM_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr -DDATAPATH_SDK_PATH=../Datapath ..
     - make -j$(nproc)
     - make test
 
@@ -83,7 +80,9 @@ test:archlinux:
 #
 package:debian:
   stage: package
+  image: ubuntu:18.04
   script:
+    - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DDATAPATH_SDK_PATH=../Datapath ..
     - make -j$(nproc)
     - make package
     - mv *.deb ../

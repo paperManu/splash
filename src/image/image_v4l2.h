@@ -85,6 +85,11 @@ class Image_V4L2 : public Image
 
     // Datapath specific variables
     bool _autosetResolution{true};
+#if HAVE_DATAPATH
+    bool _isDatapath{false};
+    int _controlFd{-1};
+    struct v4l2_format _v4l2SourceFormat;
+#endif
 
     // Capture parameters
     int _v4l2Index{0};
