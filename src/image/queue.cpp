@@ -27,9 +27,7 @@ Queue::Queue(RootObject* root)
 }
 
 /*************/
-Queue::~Queue()
-{
-}
+Queue::~Queue() {}
 
 /*************/
 shared_ptr<SerializedObject> Queue::serialize() const
@@ -350,14 +348,17 @@ void Queue::registerAttributes()
     setAttributeParameter("playlist", true);
     setAttributeDescription("playlist", "Set the playlist as an array of [type, filename, start, end, (args)]");
 
+    addAttribute("elapsed", [&](const Values& /*args*/) { return true; }, [&]() -> Values { return {static_cast<float>(_currentTime / 1e6)}; }, {'n'});
+    setAttributeDescription("elapsed", "Time elapsed since the beginning of the queue");
+
     addAttribute("seek",
         [&](const Values& args) {
-            int64_t seekTime = args[0].as<float>() * 1e6;
-            _startTime = Timer::getTime() - seekTime;
+            _seekTime = args[0].as<float>();
+            _startTime = Timer::getTime() - static_cast<int64_t>(_seekTime * 1e6);
             _seeked = true;
             return true;
         },
-        [&]() -> Values { return {(float)_currentTime / 1e6}; },
+        [&]() -> Values { return {_seekTime}; },
         {'n'});
     setAttributeParameter("seek", false);
     setAttributeDescription("seek", "Seek through the playlist");
@@ -470,4 +471,4 @@ void QueueSurrogate::registerAttributes()
     });
 }
 
-} // end of namespace
+} // namespace Splash

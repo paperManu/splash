@@ -831,16 +831,17 @@ void Image_FFmpeg::registerAttributes()
         {'n'});
     setAttributeParameter("loop", true);
 
-    addAttribute("remaining",
+    addAttribute("elapsed",
         [&](const Values&) { return false; },
         [&]() -> Values {
             if (_avContext == nullptr)
                 return {0.f};
 
-            float duration = std::max(0.f, getMediaDuration() - static_cast<float>(_elapsedTime) / 1e6f);
+            float duration = std::max(0.f, static_cast<float>(_elapsedTime) / 1e6f);
             return {duration};
         });
-    setAttributeParameter("remaining", false);
+    setAttributeParameter("elapsed", false);
+    setAttributeDescription("elapsed", "Time elapsed since the beginning of the video");
 
     addAttribute("pause",
         [&](const Values& args) {

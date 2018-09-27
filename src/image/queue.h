@@ -119,6 +119,7 @@ class Queue : public BufferObject
 
     bool _loop{false};
     bool _seeked{false};
+    float _seekTime{0};
     int64_t _startTime{-1};   // Beginning of the current loop, in us
     int64_t _currentTime{-1}; // Elapsed time since _startTime
 
