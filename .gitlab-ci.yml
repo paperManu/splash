@@ -5,16 +5,25 @@ stages:
   - test
   - package
 
+cache:
+  paths:
+    - ccache/
+
 before_script:
   - apt update -qq
-  - DEBIAN_FRONTEND=noninteractive apt install -y curl wget build-essential git-core zip cmake automake libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python
-  - git submodule update --init
-  - ./make_deps.sh
+  - DEBIAN_FRONTEND=noninteractive apt install -y curl wget build-essential ccache git-core zip cmake automake libtool
+    libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev libxinerama-dev libxcursor-dev
+    python3-dev portaudio19-dev yasm libgl1-mesa-dev python libglfw3-dev libglm-dev libavcodec-dev libavformat-dev
+    libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev clang
+  # CCache stuff
+  - mkdir -p ccache
+  - export CCACHE_BASEDIR=${PWD}
+  - export CCACHE_DIR=${PWD}/ccache
+  - export PATH="/usr/lib/ccache:${PATH}"
+  # Datapath driver download
   - mkdir -p Datapath && cd Datapath
   - wget -q --show-progress http://downloads.datapath.co.uk/Linux/VisionInstall-7.17.14.304.tar.gz
-  - tar xvzf VisionInstall-7.17.14.304.tar.gz
-  - cd ..
-  - rm -rf build && mkdir build && cd build
+  - tar xvzf VisionInstall-7.17.14.304.tar.gz && cd ..
 
 #
 # Tests
@@ -23,6 +32,9 @@ test:16.04:
   stage: test
   image: ubuntu:16.04
   script: 
+    - git submodule update --init
+    - ./make_deps.sh
+    - rm -rf build && mkdir build && cd build
     - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DDATAPATH_SDK_PATH=../Datapath ..
     - make -j$(nproc)
     - make test
@@ -32,6 +44,9 @@ test:18.04:
   image: ubuntu:18.04
   script: 
     - DEBIAN_FRONTEND=noninteractive apt install -y libopencv-dev
+    - git submodule update --init
+    - ./make_deps.sh
+    - rm -rf build && mkdir build && cd build
     - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DDATAPATH_SDK_PATH=../Datapath ..
     - make -j$(nproc)
     - make test
@@ -40,7 +55,10 @@ test:18.04-clang:
   stage: test
   image: ubuntu:18.04
   script: 
-    - DEBIAN_FRONTEND=noninteractive apt install -y libopencv-dev clang
+    - DEBIAN_FRONTEND=noninteractive apt install -y libopencv-dev
+    - git submodule update --init
+    - ./make_deps.sh
+    - rm -rf build && mkdir build && cd build
     - CC=clang CXX=clang++ cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DDATAPATH_SDK_PATH=../Datapath ..
     - make -j$(nproc)
     - make test
@@ -48,13 +66,10 @@ test:18.04-clang:
 test:18.04-syslibs:
   stage: test
   image: ubuntu:18.04
-  before_script:
-    - apt update -qq
-    - DEBIAN_FRONTEND=noninteractive apt install -y curl wget build-essential git-core zip cmake automake libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev libopencv-dev python
-    - DEBIAN_FRONTEND=noninteractive apt install -y libglfw3-dev libglm-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev
+  script:
+    - DEBIAN_FRONTEND=noninteractive apt install -y libopencv-dev
     - git submodule update --init
     - rm -rf build && mkdir build && cd build
-  script:
     - cmake -DBUILD_GENERIC_ARCH=ON -DUSE_SYSTEM_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr -DDATAPATH_SDK_PATH=../Datapath ..
     - make -j$(nproc)
     - make test
@@ -66,7 +81,12 @@ test:archlinux:
     - archlinux
   before_script:
     - pacman -Syyu --noconfirm
-    - pacman -Sy --noconfirm git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcursor mesa gsl libgphoto2 opencv gtk3 hdf5 python3 portaudio zip zlib
+    - pacman -Sy --noconfirm git cmake make gcc yasm ccache pkgconfig libxi libxinerama libxrandr libxcursor mesa
+      gsl libgphoto2 opencv gtk3 hdf5 python3 portaudio zip zlib
+    - mkdir -p ccache
+    - export CCACHE_BASEDIR=${PWD}
+    - export CCACHE_DIR=${PWD}/ccache
+    - export PATH="/usr/lib/ccache:${PATH}"
     - git submodule update --init
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build
@@ -82,6 +102,7 @@ package:debian:
   stage: package
   image: ubuntu:18.04
   script:
+    - DEBIAN_FRONTEND=noninteractive apt install -y libopencv-dev
     - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DDATAPATH_SDK_PATH=../Datapath ..
     - make -j$(nproc)
     - make package
@@ -102,7 +123,6 @@ package:flatpak:
   stage: package
   image: ubuntu:18.04
   before_script:
-    - apt update -qq
     - DEBIAN_FRONTEND=noninteractive apt install -y flatpak-builder
     - flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
     - flatpak install flathub org.freedesktop.Platform//1.6 org.freedesktop.Sdk//1.6
@@ -125,11 +145,13 @@ package:flatpak:
 static_analysis:
   stage: test
   script:
-    - wget https://scan.coverity.com/download/linux64 --post-data "token=zkRfEWYxyAeJDlYYg9Hkkg&project=paperManu%2Fsplash" -O coverity_tool.tgz
+    - wget https://scan.coverity.com/download/linux64 --post-data "token=zkRfEWYxyAeJDlYYg9Hkkg&project=paperManu%2Fsplash"
+      -O coverity_tool.tgz
     - tar xvzf coverity_tool.tgz
     - $(ls | grep cov-analysis)/bin/cov-build --dir cov-int make -j$(nproc)
     - tar caf splash-cov.bz2 cov-int
-    - curl --form token=zkRfEWYxyAeJDlYYg9Hkkg --form email=emmanueldurand@gmail.com --form file=@splash-cov.bz2 --form description="Splash" https://scan.coverity.com/builds?project=paperManu%2Fsplash
+    - curl --form token=zkRfEWYxyAeJDlYYg9Hkkg --form email=emmanueldurand@gmail.com --form file=@splash-cov.bz2
+      --form description="Splash" https://scan.coverity.com/builds?project=paperManu%2Fsplash
     - apt install -y libpcre3-dev
     - make static_analysis
     - mv tests/static_analysis_result.txt ../
