@@ -1,0 +1,17 @@
+FROM ubuntu:18.04
+MAINTAINER Emmanuel Durand <emmanueldurand@gmail.com>
+
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt update -qq
+
+# Mandatory dependencies for all tests
+RUN apt install -y --no-install-recommends curl build-essential git-core \
+    zip cmake automake libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev \
+    libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python clang
+
+# Dependencies for compiling against system libraries
+RUN apt install -y --no-install-recommends libopencv-dev libglfw3-dev libglm-dev \
+    libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev
+
+RUN apt clean && apt autoclean && apt autoremove -y && rm -rf /var/lib/{apt,dpkg,cache,log}/
