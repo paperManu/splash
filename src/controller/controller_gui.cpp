@@ -116,7 +116,6 @@ void Gui::loadIcon()
     _splashLogo = make_shared<Texture_Image>(_scene);
     _splashLogo->linkTo(image);
     _splashLogo->update();
-    _splashLogo->flushPbo();
 }
 
 /*************/

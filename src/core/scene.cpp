@@ -487,7 +487,7 @@ void Scene::textureUploadRun()
             for (auto& texture : textures)
             {
 #ifdef PROFILE
-                PROFILEGL("start " + texture->getName());
+                PROFILEGL("update " + texture->getName());
 #endif
                 texture->update();
             }
@@ -496,16 +496,6 @@ void Scene::textureUploadRun()
                 glDeleteSync(_textureUploadFence);
             _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
             lockTexture.unlock();
-
-            for (auto& texture : textures)
-            {
-#ifdef PROFILE
-                PROFILEGL("end " + texture->getName());
-#endif
-                auto texImage = dynamic_pointer_cast<Texture_Image>(texture);
-                if (texImage)
-                    texImage->flushPbo();
-            }
 
             Timer::get() >> "textureUpload";
         }

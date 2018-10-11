@@ -86,11 +86,6 @@ class Texture_Image : public Texture
     void unbind() override;
 
     /**
-     * \brief Flush the PBO copy which may still be happening. Do this before closing the current context!
-     */
-    void flushPbo();
-
-    /**
      * \brief Generate the mipmaps for the texture
      */
     void generateMipmap() const;

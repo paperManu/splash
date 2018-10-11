@@ -6,7 +6,7 @@
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
-#define SPLASH_TEXTURE_COPY_THREADS 2
+#define SPLASH_TEXTURE_COPY_THREADS 4
 
 using namespace std;
 
@@ -517,13 +517,20 @@ void Texture_Image::update()
 
             int stride = SPLASH_TEXTURE_COPY_THREADS;
             int size = imageDataSize;
+            vector<future<void>> pboCopyThreads;
             for (int i = 0; i < stride - 1; ++i)
             {
-                _pboCopyThreads.push_back(
-                    async(launch::async, [=]() { copy((char*)img->data() + size / stride * i, (char*)img->data() + size / stride * (i + 1), (char*)pixels + size / stride * i); }));
+                auto dataIn = reinterpret_cast<const char*>(img->data()) + size / stride * i;
+                auto dataOut = reinterpret_cast<char*>(pixels) + size / stride * i;
+                memcpy(dataOut, dataIn, size / stride);
             }
-            _pboCopyThreads.push_back(
-                async(launch::async, [=]() { copy((char*)img->data() + size / stride * (stride - 1), (char*)img->data() + size, (char*)pixels + size / stride * (stride - 1)); }));
+
+            auto dataIn = reinterpret_cast<const char*>(img->data()) + size / stride * (stride - 1);
+            auto dataOut = reinterpret_cast<char*>(pixels) + size / stride * (stride - 1);
+            memcpy(dataOut, dataIn, size / stride);
+
+            pboCopyThreads.clear();
+            img->unlockWrite();
         }
     }
 
@@ -547,17 +554,6 @@ void Texture_Image::update()
 
     if (_filtering && !isCompressed)
         generateMipmap();
-}
-
-/*************/
-void Texture_Image::flushPbo()
-{
-    if (!_pboCopyThreads.empty())
-    {
-        _pboCopyThreads.clear(); // This waits for the threaded copies to finish
-        if (!_img.expired())
-            _img.lock()->unlockWrite();
-    }
 }
 
 /*************/
@@ -628,4 +624,4 @@ void Texture_Image::registerAttributes()
     setAttributeDescription("size", "Change the texture size");
 }
 
-} // end of namespace
+} // namespace Splash

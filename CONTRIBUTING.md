@@ -14,9 +14,9 @@ We use LLVM style, with a few exceptions. See the [clang-format configuration](.
 
 It is possible to let git ensure that you are conforming to the standards by using pre-commit hooks and clang-format:
 ```
-sudo apt-get install clang-format
-# Then in Splash's .git folder:
-rm -rf hooks && ln -s ../.hooks hooks
+sudo apt-get install clang-format exuberant-ctags
+# Then in Splash's home folder:
+rm -rf hooks && ln -s $(pwd)/.hooks $(pwd)/.git/hooks
 ```
 
 Contributing
