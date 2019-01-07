@@ -185,13 +185,6 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     void removeAttribute(const std::string& name);
 
     /**
-     * \brief Set additional parameters for a given attribute
-     * \param name Attribute name
-     * \param savable Savability
-     */
-    void setAttributeParameter(const std::string& name, bool savable);
-
-    /**
      * \brief Register new attributes
      */
     void registerAttributes() {}

@@ -793,7 +793,6 @@ void Image_FFmpeg::registerAttributes()
         },
         [&]() -> Values { return {_maximumBufferSize / (int64_t)1048576}; },
         {'n'});
-    setAttributeParameter("bufferSize", true);
     setAttributeDescription("bufferSize", "Set the maximum buffer size for the video (in MB)");
 
     addAttribute("duration",
@@ -804,7 +803,6 @@ void Image_FFmpeg::registerAttributes()
 
             return {getMediaDuration()};
         });
-    setAttributeParameter("duration", false);
 
 #if HAVE_PORTAUDIO
     addAttribute("audioDeviceOutput",
@@ -815,7 +813,6 @@ void Image_FFmpeg::registerAttributes()
         },
         [&]() -> Values { return {_audioDeviceOutput}; },
         {'s'});
-    setAttributeParameter("audioDeviceOutput", true);
     setAttributeDescription("audioDeviceOutput", "Name of the audio device to send the audio to (i.e. Jack writable client)");
 #endif
 
@@ -829,7 +826,6 @@ void Image_FFmpeg::registerAttributes()
             return {loop};
         },
         {'n'});
-    setAttributeParameter("loop", true);
 
     addAttribute("elapsed",
         [&](const Values&) { return false; },
@@ -840,7 +836,6 @@ void Image_FFmpeg::registerAttributes()
             float duration = std::max(0.f, static_cast<float>(_elapsedTime) / 1e6f);
             return {duration};
         });
-    setAttributeParameter("elapsed", false);
     setAttributeDescription("elapsed", "Time elapsed since the beginning of the video");
 
     addAttribute("pause",
@@ -850,7 +845,6 @@ void Image_FFmpeg::registerAttributes()
         },
         [&]() -> Values { return {_paused}; },
         {'n'});
-    setAttributeParameter("pause", false);
 
     addAttribute("seek",
         [&](const Values& args) {
@@ -861,7 +855,6 @@ void Image_FFmpeg::registerAttributes()
         },
         [&]() -> Values { return {_seekTime}; },
         {'n'});
-    setAttributeParameter("seek", false);
     setAttributeDescription("seek", "Change the read position in the video file");
 
     addAttribute("trim",
@@ -888,7 +881,6 @@ void Image_FFmpeg::registerAttributes()
             return {static_cast<double>(_trimStart) / 1e6, static_cast<double>(_trimEnd / 1e6)};
         },
         {'n', 'n'});
-    setAttributeParameter("trim", true);
     setAttributeDescription("trim", "Trim the video by setting the start and end times");
 
     addAttribute("useClock",
@@ -903,7 +895,6 @@ void Image_FFmpeg::registerAttributes()
         },
         [&]() -> Values { return {(int)_useClock}; },
         {'n'});
-    setAttributeParameter("useClock", true);
 
     addAttribute("videoFormat",
         [&](const Values&) {
@@ -912,7 +903,6 @@ void Image_FFmpeg::registerAttributes()
         },
         [&]() -> Values { return {_videoFormat}; },
         {'s'});
-    setAttributeParameter("videoFormat", false);
 
     addAttribute("timeShift",
         [&](const Values& args) {

@@ -281,7 +281,6 @@ void Queue::registerAttributes()
         },
         [&]() -> Values { return {_loop}; },
         {'n'});
-    setAttributeParameter("loop", true);
     setAttributeDescription("loop", "Set whether to loop through the queue or not");
 
     addAttribute("pause",
@@ -292,7 +291,6 @@ void Queue::registerAttributes()
         },
         [&]() -> Values { return {_paused}; },
         {'n'});
-    setAttributeParameter("pause", false);
     setAttributeDescription("pause", "Pause the queue if set to 1");
 
     addAttribute("playlist",
@@ -349,7 +347,6 @@ void Queue::registerAttributes()
 
             return playlist;
         });
-    setAttributeParameter("playlist", true);
     setAttributeDescription("playlist", "Set the playlist as an array of [type, filename, start, end, (args)]");
 
     addAttribute("elapsed", [&](const Values& /*args*/) { return true; }, [&]() -> Values { return {static_cast<float>(_currentTime / 1e6)}; }, {'n'});
@@ -364,7 +361,6 @@ void Queue::registerAttributes()
         },
         [&]() -> Values { return {_seekTime}; },
         {'n'});
-    setAttributeParameter("seek", false);
     setAttributeDescription("seek", "Seek through the playlist");
 
     addAttribute("useClock",
@@ -377,7 +373,6 @@ void Queue::registerAttributes()
         },
         [&]() -> Values { return {(int)_useClock}; },
         {'n'});
-    setAttributeParameter("useClock", true);
     setAttributeDescription("useClock", "Use the master clock if set to 1");
 }
 

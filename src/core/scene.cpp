@@ -385,8 +385,10 @@ void Scene::run()
             this_thread::sleep_for(chrono::milliseconds(50));
         }
 
-        Timer::get() << "tree_propagate";
+        Timer::get() << "tree_update";
         updateTreeFromObjects();
+        Timer::get() >> "tree_update";
+        Timer::get() << "tree_propagate";
         propagateTree();
         Timer::get() >> "tree_propagate";
     }

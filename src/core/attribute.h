@@ -163,18 +163,6 @@ class Attribute
     void unlock() { _isLocked = false; }
 
     /**
-     * \brief Ask whether the attribute should be saved.
-     * \return Returns true if the attribute should be saved.
-     */
-    bool savable() const { return _savable; }
-
-    /**
-     * \brief Set whether the attribute should be saved.
-     * \param save If true, the attribute will be save.
-     */
-    void savable(bool save) { _savable = save; }
-
-    /**
      * Register a callback to any call to the setter
      * \param caller Weak pointer to the caller BaseObject
      * \param cb Callback function
@@ -227,7 +215,6 @@ class Attribute
     std::function<const Values()> _getFunc{};
 
     bool _defaultSetAndGet{true};
-    bool _savable{true};          // True if this attribute should be saved
 
     std::string _objectName{};        // Name of the object holding this attribute
     std::string _description{};       // Attribute description

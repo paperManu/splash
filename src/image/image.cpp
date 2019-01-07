@@ -449,7 +449,6 @@ void Image::registerAttributes()
             return _mediaInfo;
         },
         {});
-    setAttributeParameter("mediaInfo", false);
     setAttributeDescription("mediaInfo", "Media information (size, duration, etc.)");
 }
 

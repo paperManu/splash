@@ -132,14 +132,6 @@ void BaseObject::removeAttribute(const string& name)
 }
 
 /*************/
-void BaseObject::setAttributeParameter(const string& name, bool savable)
-{
-    auto attr = _attribFunctions.find(name);
-    if (attr != _attribFunctions.end())
-        attr->second.savable(savable);
-}
-
-/*************/
 CallbackHandle BaseObject::registerCallback(const string& attr, Attribute::Callback cb)
 {
     auto attribute = _attribFunctions.find(attr);

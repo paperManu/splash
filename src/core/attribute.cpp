@@ -41,7 +41,6 @@ Attribute& Attribute::operator=(Attribute&& a)
         _values = move(a._values);
         _valuesTypes = move(a._valuesTypes);
         _defaultSetAndGet = a._defaultSetAndGet;
-        _savable = a._savable;
     }
 
     return *this;
