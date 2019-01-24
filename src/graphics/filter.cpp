@@ -585,6 +585,22 @@ void Filter::registerDefaultShaderAttributes()
         {'n'});
     setAttributeDescription("saturation", "Set the saturation for the linked texture");
 
+    addAttribute("scale",
+        [&](const Values& args) {
+            auto scale_x = args[0].as<float>();
+            auto scale_y = args[1].as<float>();
+            _filterUniforms["_scale"] = {scale_x, scale_y};
+            return true;
+        },
+        [&]() -> Values {
+            auto it = _filterUniforms.find("_scale");
+            if (it == _filterUniforms.end())
+                _filterUniforms["_scale"] = {1.0, 1.0}; // Default value
+            return _filterUniforms["_scale"];
+        },
+        {'n', 'n'});
+    setAttributeDescription("scale", "Set the scaling of the texture along both axes");
+
     addAttribute("size",
         [&](const Values&) { return true; },
         [&]() -> Values {

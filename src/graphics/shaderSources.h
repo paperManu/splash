@@ -856,6 +856,7 @@ struct ShaderSources
         uniform float _saturation = 1.f;
         uniform int _invertChannels = 0;
         uniform vec2 _colorBalance = vec2(1.f, 1.f);
+        uniform vec2 _scale = vec2(1.f, 1.f);
 
     #ifdef COLOR_CURVE_COUNT
         // This is set if Filter::_colorCurves is not empty, by Filter::updateShaderParameters
@@ -891,6 +892,8 @@ struct ShaderSources
                 realCoords = vec2(1.0 - texCoord.x, 1.0 - texCoord.y);
             else
                 realCoords = texCoord;
+
+            realCoords = fma((realCoords - vec2(0.5)), vec2(1.0) / _scale, vec2(0.5));
 
     #ifdef TEXTURE_RECT
             vec4 color = texture(_tex0, realCoords * _tex0_size);
