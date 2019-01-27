@@ -53,7 +53,7 @@ void GuiGlobalView::render()
 
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
-        captureJoystick();
+        // captureJoystick();
         if (ImGui::Button("Calibrate camera"))
             doCalibration();
         if (ImGui::IsItemHovered())
@@ -200,11 +200,11 @@ void GuiGlobalView::render()
         colorizeCameraWireframes(_camerasColorized);
 
         // Joystick can be updated independently from the mouse position
-        processJoystickState();
+        // processJoystickState();
     }
     else
     {
-        releaseJoystick();
+        // releaseJoystick();
     }
 }
 
