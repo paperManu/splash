@@ -14,4 +14,9 @@ RUN apt install -y --no-install-recommends curl build-essential git-core \
 RUN apt install -y --no-install-recommends libopencv-dev libglfw3-dev libglm-dev \
     libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev
 
+# Installing GCC8 and setting it as default                                                                  
+RUN apt install -y gcc-8 g++-8 && \
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 700 --slave /usr/bin/g++ g++ /usr/bin/g++-7 && \
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
+
 RUN apt clean && apt autoclean && apt autoremove -y && rm -rf /var/lib/{apt,dpkg,cache,log}/

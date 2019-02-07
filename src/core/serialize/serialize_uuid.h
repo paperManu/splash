@@ -63,7 +63,7 @@ struct deserializeHelper<T, typename std::enable_if<std::is_same<T, UUID>::value
     static T apply(std::vector<uint8_t>::const_iterator& it)
     {
         constexpr size_t size = sizeof(T);
-        T obj;
+        UUID obj(false);
         std::copy(it, it + size, reinterpret_cast<uint8_t*>(&obj));
         it += size;
         return obj;

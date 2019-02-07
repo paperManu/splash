@@ -119,7 +119,7 @@ The packages necessary to compile Splash are the following:
 sudo apt install build-essential git-core cmake libxrandr-dev libxi-dev \
     mesa-common-dev libgsl0-dev libatlas3-base libgphoto2-dev libz-dev \
     libxinerama-dev libxcursor-dev python3-dev yasm portaudio19-dev \
-    python3-numpy libopencv-dev
+    python3-numpy libopencv-dev gcc-8 g++-8
 
 # Non mandatory libraries needed to link against system libraries only
 sudo apt install libglfw3-dev libglm-dev libavcodec-dev libavformat-dev \
@@ -141,7 +141,7 @@ cd splash
 git submodule update --init
 ./make_deps.sh
 mkdir -p build && cd build
-cmake ..
+CC=gcc-8 CXX=g++-8 cmake ..
 make && sudo make install
 ```
 

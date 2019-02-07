@@ -70,7 +70,7 @@ void Joystick::updateCallbacks()
         int joystickIndex = -1;
         string joystickAction = "";
 
-        regex regexAction("joystick_([0-9]+)_(.+)");
+        static regex regexAction("joystick_([0-9]+)_(.+)");
         smatch match;
         try
         {

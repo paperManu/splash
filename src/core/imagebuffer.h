@@ -176,7 +176,8 @@ class ImageBuffer
      * \brief Return a pointer to the image data
      * \return Return a pointer to the data
      */
-    uint8_t* data() const { return _mappedBuffer ? _mappedBuffer : _buffer.data(); }
+    uint8_t* data() { return _mappedBuffer ? _mappedBuffer : _buffer.data(); }
+    const uint8_t* data() const { return _mappedBuffer ? _mappedBuffer : _buffer.data(); }
 
     /**
      * Get a const reference to the inner buffer

@@ -207,13 +207,11 @@ int Warp::pickControlPoint(glm::vec2 p, glm::vec2& v)
         float dist = glm::length(p - vertices[i]);
         if (dist < distance)
         {
-            closestVertex = vertices[i];
+            v = vertices[i];
             distance = dist;
             index = i;
         }
     }
-
-    v = closestVertex;
 
     _screenMesh->switchMeshes(false);
 

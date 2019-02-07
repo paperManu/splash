@@ -43,20 +43,6 @@ before_script:
 #
 # Tests
 #
-test:16.04:
-  stage: test
-  image: ubuntu:16.04
-  script: 
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends curl build-essential git-core 
-      zip cmake automake libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev
-      libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python clang
-    - git submodule update --init
-    - ./make_deps.sh
-    - rm -rf build && mkdir build && cd build
-    - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DDATAPATH_SDK_PATH=../Datapath ..
-    - make -j$(nproc)
-    - make test
-
 test:18.04:
   stage: test
   image: $CI_REGISTRY_IMAGE:ci_18.04

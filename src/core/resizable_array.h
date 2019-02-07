@@ -25,6 +25,7 @@
 #ifndef SPLASH_RESIZABLE_ARRAY_H
 #define SPLASH_RESIZABLE_ARRAY_H
 
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 
@@ -53,7 +54,7 @@ class ResizableArray
         {
             _size = 0;
             _shift = 0;
-            _buffer.reset();
+            _buffer.reset(nullptr);
 
             return;
         }
@@ -61,7 +62,7 @@ class ResizableArray
         _size = static_cast<size_t>(end - start);
         _shift = 0;
         _buffer = std::unique_ptr<T[]>(new T[_size]);
-        memcpy(_buffer.get(), start, _size * sizeof(T));
+        memcpy(data(), start, _size * sizeof(T));
     }
 
     /**
@@ -125,13 +126,15 @@ class ResizableArray
      * \param i Index
      * \return Return value at i
      */
-    T& operator[](unsigned int i) const { return *(data() + i); }
+    T& operator[](unsigned int i) { return *(data() + i); }
+    const T& operator[](unsigned int i) const { return *(data() + i); }
 
     /**
      * \brief Get a pointer to the data
      * \return Return a pointer to the data
      */
-    inline T* data() const { return _buffer.get() + _shift; }
+    inline T* data() { return _buffer.get() + _shift; }
+    inline const T* data() const { return _buffer.get() + _shift; }
 
     /**
      * \brief Shift the data, for example to get rid of a header without copying

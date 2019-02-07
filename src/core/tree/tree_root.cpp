@@ -888,7 +888,7 @@ list<Seed> Root::getSeedsForPath(const string& path)
 }
 
 /*************/
-Branch* Root::getBranchAt(const list<string>& path) const
+Branch* Root::getBranchAt(const vector<string>& path) const
 {
     Branch* branch = _rootBranch.get();
     for (const auto& part : path)
@@ -932,7 +932,7 @@ Leaf* Root::getLeafAt(const string& path) const
 }
 
 /*************/
-Leaf* Root::getLeafAt(const list<string>& path) const
+Leaf* Root::getLeafAt(const vector<string>& path) const
 {
     Branch* branch = _rootBranch.get();
     auto leafName = path.back();
@@ -967,31 +967,30 @@ Leaf* Root::getLeafAt(const list<string>& path) const
 }
 
 /*************/
-list<string> Root::processPath(const string& path)
+vector<string> Root::processPath(const string& path)
 {
     if (path[0] != '/')
         throw invalid_argument("Tree path should start with a '/'");
 
-    auto subpath = path;
-    if (subpath[subpath.size() - 1] == '/')
-        subpath = subpath.substr(1, subpath.size() - 1);
-    else
-        subpath = path.substr(1);
-
-    list<string> parts;
+    size_t start = 1;
+    vector<string> parts;
+    parts.reserve(8);
     while (true)
     {
-        auto pos = subpath.find("/");
-        if (pos != string::npos)
+        size_t end = path.find('/', start);
+        if (end - start == 0)
         {
-            parts.push_back(subpath.substr(0, pos));
-            subpath = subpath.substr(pos + 1);
+            start++;
+        }
+        else if (end != string::npos)
+        {
+            parts.push_back(path.substr(start, end - start));
+            start = end + 1;
         }
         else
         {
-            subpath = subpath.substr(0, pos);
-            if (!subpath.empty())
-                parts.push_back(subpath);
+            if (start != path.size())
+                parts.push_back(path.substr(start, path.size()));
             break;
         }
     }

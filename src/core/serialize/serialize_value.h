@@ -49,7 +49,7 @@ struct serializeHelper<T, typename std::enable_if<std::is_same<T, Value::Buffer>
     {
         auto size = obj.size();
         serializer(size, it);
-        auto data = reinterpret_cast<uint8_t*>(obj.data());
+        auto data = reinterpret_cast<const uint8_t*>(obj.data());
         std::copy(data, data + size, it);
         it += size;
     }
@@ -112,7 +112,7 @@ struct serializeHelper<T, typename std::enable_if<std::is_same<T, Value>::value>
         }
         else
         {
-            auto ptr = reinterpret_cast<uint8_t*>(obj.data());
+            auto ptr = reinterpret_cast<const uint8_t*>(obj.data());
             std::copy(ptr, ptr + obj.size(), it);
             it += obj.size();
         }

@@ -373,7 +373,7 @@ class Root
     mutable std::recursive_mutex _treeMutex{};
 
   private:
-    UUID _uuid{};
+    UUID _uuid{true};
     std::string _name{"root"};
     std::unique_ptr<Branch> _rootBranch{nullptr};
     mutable std::mutex _taskMutex{};
@@ -413,7 +413,7 @@ class Root
      * \param path Path as a list of strings
      * \return Return the branch, or nullptr
      */
-    Branch* getBranchAt(const std::list<std::string>& path) const;
+    Branch* getBranchAt(const std::vector<std::string>& path) const;
 
     /**
      * Get a pointer to the leaf at the given path
@@ -427,14 +427,14 @@ class Root
      * \param path Path as a list of strings
      * \return Return the leaf, or nullptr
      */
-    Leaf* getLeafAt(const std::list<std::string>& path) const;
+    Leaf* getLeafAt(const std::vector<std::string>& path) const;
 
     /**
      * Extract the multiple parts of the given path
      * \param path Path
      * \return Return a list of strings describing the path
      */
-    static std::list<std::string> processPath(const std::string& path);
+    static std::vector<std::string> processPath(const std::string& path);
 
     /**
      * Register the pending callbacks

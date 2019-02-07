@@ -6,8 +6,6 @@
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
-#define SPLASH_TEXTURE_COPY_THREADS 4
-
 using namespace std;
 
 namespace Splash
@@ -511,25 +509,10 @@ void Texture_Image::update()
 
         // Fill the next PBO with the image pixels
         auto pixels = _pbosPixels[_pboUploadIndex];
-        if (pixels != NULL)
+        if (pixels != nullptr)
         {
             img->lockWrite();
-
-            int stride = SPLASH_TEXTURE_COPY_THREADS;
-            int size = imageDataSize;
-            vector<future<void>> pboCopyThreads;
-            for (int i = 0; i < stride - 1; ++i)
-            {
-                auto dataIn = reinterpret_cast<const char*>(img->data()) + size / stride * i;
-                auto dataOut = reinterpret_cast<char*>(pixels) + size / stride * i;
-                memcpy(dataOut, dataIn, size / stride);
-            }
-
-            auto dataIn = reinterpret_cast<const char*>(img->data()) + size / stride * (stride - 1);
-            auto dataOut = reinterpret_cast<char*>(pixels) + size / stride * (stride - 1);
-            memcpy(dataOut, dataIn, size / stride);
-
-            pboCopyThreads.clear();
+            memcpy(pixels, img->data(), imageDataSize);
             img->unlockWrite();
         }
     }

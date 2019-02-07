@@ -40,7 +40,7 @@ class UUID
     /**
      * Constructor
      */
-    UUID() { uuid_generate(_uuid); }
+    UUID() { UUID(false); }
     explicit UUID(bool generate)
     {
         if (generate)
