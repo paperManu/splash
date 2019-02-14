@@ -121,7 +121,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     /**
      * Run the tasks waiting in the object's queue
      */
-    virtual void runTasks();
+    void runTasks();
 
   protected:
     std::string _name{""};                                       //!< Object name
@@ -134,11 +134,21 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     std::list<std::function<void()>> _taskQueue;
     std::recursive_mutex _taskMutex;
 
+    std::map<std::string, std::function<void()>> _recurringTasks{};
+    std::mutex _recurringTaskMutex{};
+
     /**
      * Add a new task to the queue
      * \param task Task function
      */
     void addTask(const std::function<void()>& task);
+
+    /**
+     * Add a task repeated at each frame
+     * \param name Task name
+     * \param task Task function
+     */
+    void addRecurringTask(const std::string& name, const std::function<void()>& task);
 
     /**
      * \brief Add a new attribute to this object
@@ -183,6 +193,12 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      * \param name Attribute name
      */
     void removeAttribute(const std::string& name);
+
+    /**
+     * Remove a recurring task
+     * \param name Task name
+     */
+    void removeRecurringTask(const std::string& name);
 
     /**
      * \brief Register new attributes

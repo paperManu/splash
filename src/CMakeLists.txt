@@ -244,7 +244,9 @@ if (PYTHONLIBS_FOUND)
     )
 endif()
 
-# Distributed third parties first
+# Stdlib 
+target_link_libraries(splash-${API_VERSION} stdc++fs)
+# Distributed third parties
 target_link_libraries(splash-${API_VERSION} snappy)
 target_link_libraries(splash-${API_VERSION} glfw)
 if (USE_SYSTEM_LIBS)
@@ -254,7 +256,7 @@ else()
     target_link_libraries(splash-${API_VERSION} ${FFMPEG_STATIC_LIBRARIES})
     target_link_libraries(splash-${API_VERSION} zmq.a)
 endif()
-
+# System libs
 target_link_libraries(splash-${API_VERSION} pthread)
 target_link_libraries(splash-${API_VERSION} ${Boost_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GSL_LIBRARIES})

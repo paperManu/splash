@@ -201,10 +201,6 @@ class RootObject : public BaseObject
     Spinlock _bufferObjectSingleMutex{};
     bool _bufferObjectUpdated = ATOMIC_FLAG_INIT;
 
-    // Tasks queue
-    std::mutex _recurringTaskMutex{};
-    std::map<std::string, std::function<void()>> _recurringTasks{};
-
     mutable std::recursive_mutex _objectsMutex{};                             //!< Used in registration and unregistration of objects
     std::atomic_bool _objectsCurrentlyUpdated{false};                         //!< Prevents modification of objects from multiple places at the same time
     std::unordered_map<std::string, std::shared_ptr<GraphObject>> _objects{}; //!< Map of all the objects
@@ -225,13 +221,6 @@ class RootObject : public BaseObject
     virtual bool handleSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj);
 
     /**
-     * Add a task repeated at each frame
-     * \param name Task name
-     * \param task Task function
-     */
-    void addRecurringTask(const std::string& name, const std::function<void()>& task);
-
-    /**
      * Force the propagation of a specific path
      * \param path Path to propagate
      */
@@ -241,18 +230,6 @@ class RootObject : public BaseObject
      * Propagate the Tree to peers
      */
     void propagateTree();
-
-    /**
-     * Remove a recurring task
-     * \param name Task name
-     */
-    void removeRecurringTask(const std::string& name);
-
-    /**
-     * Execute all the tasks in the queue
-     * Root objects can have recursive tasks, so they get their own version of this method
-     */
-    void runTasks() final;
 
     /**
      * \brief Register new functors to modify attributes

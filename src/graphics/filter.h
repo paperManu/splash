@@ -25,10 +25,12 @@
 #ifndef SPLASH_FILTER_H
 #define SPLASH_FILTER_H
 
-#include <glm/glm.hpp>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
+
+#include <glm/glm.hpp>
 
 #include "./config.h"
 
@@ -147,12 +149,14 @@ class Filter : public Texture
     Values _colorCurves{};                                   //!< RGB points for the color curves, active if at least 3 points are set
 
     float _autoBlackLevelTargetValue{0.f}; //!< If not zero, defines the target luminance value
-    float _autoBlackLevelSpeed{1.f};     //!< Time to match the black level target value
+    float _autoBlackLevelSpeed{1.f};       //!< Time to match the black level target value
     float _autoBlackLevel{0.f};
     int64_t _previousTime{0}; //!< Used for computing the current black value regarding black value speed
 
-    std::string _shaderSource{""};     //!< User defined fragment shader filter
-    std::string _shaderSourceFile{""}; //!< User defined fragment shader filter source file
+    std::string _shaderSource{""};                            //!< User defined fragment shader filter
+    std::string _shaderSourceFile{""};                        //!< User defined fragment shader filter source file
+    bool _watchShaderFile{false};                             //!< If true, updates shader automatically if source file changes
+    std::filesystem::file_time_type _lastShaderSourceWrite{}; //!< Last time the shader source has been updated
 
     // Mipmap capture
     int _grabMipmapLevel{-1};
@@ -202,6 +206,6 @@ class Filter : public Texture
     void registerDefaultShaderAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_FILTER_H

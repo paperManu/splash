@@ -17,6 +17,25 @@ void BaseObject::addTask(const function<void()>& task)
 }
 
 /*************/
+void BaseObject::addRecurringTask(const string& name, const function<void()>& task)
+{
+    unique_lock<mutex> lock(_recurringTaskMutex, std::try_to_lock);
+    if (!lock.owns_lock())
+    {
+        Log::get() << Log::WARNING << "RootObject::" << __FUNCTION__ << " - A recurring task cannot add another recurring task" << Log::endl;
+        return;
+    }
+
+    auto recurringTask = _recurringTasks.find(name);
+    if (recurringTask == _recurringTasks.end())
+        _recurringTasks.emplace(make_pair(name, task));
+    else
+        recurringTask->second = task;
+
+    return;
+}
+
+/*************/
 bool BaseObject::setAttribute(const string& attrib, const Values& args)
 {
     auto attribFunction = _attribFunctions.find(attrib);
@@ -33,7 +52,7 @@ bool BaseObject::setAttribute(const string& attrib, const Values& args)
 
     if (!attribFunction->second.isDefault())
         _updatedParams = true;
-    bool attribResult = attribFunction->second(forward<const Values&>(args));
+    bool attribResult = attribFunction->second(args);
 
     return attribResult && attribNotPresent;
 }
@@ -132,6 +151,21 @@ void BaseObject::removeAttribute(const string& name)
 }
 
 /*************/
+void BaseObject::removeRecurringTask(const string& name)
+{
+    unique_lock<mutex> lock(_recurringTaskMutex, std::try_to_lock);
+    if (!lock.owns_lock())
+    {
+        Log::get() << Log::WARNING << "RootObject::" << __FUNCTION__ << " - A recurring task cannot remove a recurring task" << Log::endl;
+        return;
+    }
+
+    auto recurringTask = _recurringTasks.find(name);
+    if (recurringTask != _recurringTasks.end())
+        _recurringTasks.erase(recurringTask);
+}
+
+/*************/
 CallbackHandle BaseObject::registerCallback(const string& attr, Attribute::Callback cb)
 {
     auto attribute = _attribFunctions.find(attr);
@@ -157,9 +191,17 @@ bool BaseObject::unregisterCallback(const CallbackHandle& handle)
 /*************/
 void BaseObject::runTasks()
 {
-    lock_guard<recursive_mutex> lock(_taskMutex);
-    for (auto& task : _taskQueue)
-        task();
+    unique_lock<recursive_mutex> lock(_taskMutex);
+    decltype(_taskQueue) tasks;
+    std::swap(tasks, _taskQueue);
     _taskQueue.clear();
+    lock.unlock();
+
+    for (const auto& task : tasks)
+        task();
+
+    unique_lock<mutex> lockRecurrsiveTasks(_recurringTaskMutex);
+    for (const auto& task : _recurringTasks)
+        task.second();
 }
 } // namespace Splash

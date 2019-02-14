@@ -234,6 +234,11 @@ void Filter::updateUniforms()
     // Built-in uniforms
     _filterUniforms["_time"] = {static_cast<int>(Timer::getTime() / 1000)};
 
+    int64_t masterClock;
+    bool paused;
+    if (Timer::get().getMasterClock<chrono::milliseconds>(masterClock, paused))
+        _filterUniforms["_clock"] = {static_cast<int>(masterClock)};
+
     if (!_colorCurves.empty())
     {
         Values tmpCurves;
@@ -249,18 +254,18 @@ void Filter::updateUniforms()
     for (auto& weakObject : _linkedObjects)
     {
         auto obj = weakObject.lock();
-        if (obj)
+        if (!obj)
+            continue;
+
+        if (obj->getType() == "image")
         {
-            if (obj->getType() == "image")
-            {
-                Values remainingTime, duration;
-                obj->getAttribute("duration", duration);
-                obj->getAttribute("remaining", remainingTime);
-                if (remainingTime.size() == 1)
-                    shader->setAttribute("uniform", {"_filmRemaining", remainingTime[0].as<float>()});
-                if (duration.size() == 1)
-                    shader->setAttribute("uniform", {"_filmDuration", duration[0].as<float>()});
-            }
+            Values remainingTime, duration;
+            obj->getAttribute("duration", duration);
+            obj->getAttribute("remaining", remainingTime);
+            if (remainingTime.size() == 1)
+                shader->setAttribute("uniform", {"_filmRemaining", remainingTime[0].as<float>()});
+            if (duration.size() == 1)
+                shader->setAttribute("uniform", {"_filmDuration", duration[0].as<float>()});
         }
     }
 
@@ -313,6 +318,9 @@ bool Filter::setFilterSource(const string& source)
     _screen->setAttribute("fill", {"userDefined"});
 
     auto shader = _screen->getShader();
+    // Save the value for all existing uniforms
+    auto uniformValues = shader->getUniforms();
+
     map<Shader::ShaderType, string> shaderSources;
     shaderSources[Shader::ShaderType::fragment] = source;
     if (!shader->setSource(shaderSources))
@@ -332,7 +340,7 @@ bool Filter::setFilterSource(const string& source)
     // Register the attributes corresponding to the shader uniforms
     auto uniforms = shader->getUniforms();
     auto uniformsDocumentation = shader->getUniformsDocumentation();
-    for (auto& u : uniforms)
+    for (const auto& u : uniforms)
     {
         // Uniforms starting with a underscore are kept hidden
         if (u.first.empty() || u.first[0] == '_')
@@ -354,6 +362,11 @@ bool Filter::setFilterSource(const string& source)
         auto documentation = uniformsDocumentation.find(u.first);
         if (documentation != uniformsDocumentation.end())
             setAttributeDescription(u.first, documentation->second);
+
+        // Reset the value if this uniform already existed
+        auto uniformValueIt = uniformValues.find(u.first);
+        if (uniformValueIt != uniformValues.end())
+            setAttribute(u.first, uniformValueIt->second);
     }
 
     return true;
@@ -408,6 +421,42 @@ void Filter::registerAttributes()
         [&]() -> Values { return {_shaderSourceFile}; },
         {'s'});
     setAttributeDescription("fileFilterSource", "Set the fragment shader source for the filter from a file");
+
+    addAttribute("watchShaderFile",
+        [&](const Values& args) {
+            _watchShaderFile = args[0].as<bool>();
+
+            if (_watchShaderFile)
+            {
+                addRecurringTask("watchShader", [=]() {
+                    if (_shaderSourceFile.empty())
+                        return;
+
+                    std::filesystem::path sourcePath(_shaderSourceFile);
+                    try
+                    {
+                        auto lastWriteTime = std::filesystem::last_write_time(sourcePath);
+                        if (lastWriteTime != _lastShaderSourceWrite)
+                        {
+                            _lastShaderSourceWrite = lastWriteTime;
+                            setAttribute("fileFilterSource", {_shaderSourceFile});
+                        }
+                    }
+                    catch (...)
+                    {
+                    }
+                });
+            }
+            else
+            {
+                removeRecurringTask("watchShader");
+            }
+
+            return true;
+        },
+        [&]() -> Values { return {_watchShaderFile}; },
+        {'n'});
+    setAttributeDescription("watchShaderFile", "If true, automatically updates the shader from the source file");
 }
 
 /*************/
@@ -647,4 +696,4 @@ void Filter::registerDefaultShaderAttributes()
     setAttributeDescription("bufferSpec", "Getter attribute to the specs of the attribute buffer");
 }
 
-} // end of namespace
+} // namespace Splash

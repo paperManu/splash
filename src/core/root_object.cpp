@@ -244,25 +244,6 @@ bool RootObject::handleSerializedObject(const string& name, shared_ptr<Serialize
 }
 
 /*************/
-void RootObject::addRecurringTask(const string& name, const function<void()>& task)
-{
-    unique_lock<mutex> lock(_recurringTaskMutex, std::try_to_lock);
-    if (!lock.owns_lock())
-    {
-        Log::get() << Log::WARNING << "RootObject::" << __FUNCTION__ << " - A recurring task cannot add another recurring task" << Log::endl;
-        return;
-    }
-
-    auto recurringTask = _recurringTasks.find(name);
-    if (recurringTask == _recurringTasks.end())
-        _recurringTasks.emplace(make_pair(name, task));
-    else
-        recurringTask->second = task;
-
-    return;
-}
-
-/*************/
 void RootObject::updateTreeFromObjects()
 {
     // Update logs
@@ -347,21 +328,6 @@ void RootObject::propagatePath(const string& path)
     Serial::serialize(seeds, serializedSeeds);
     auto dataPtr = reinterpret_cast<uint8_t*>(serializedSeeds.data());
     _link->sendBuffer("_tree", make_shared<SerializedObject>(dataPtr, dataPtr + serializedSeeds.size()));
-}
-
-/*************/
-void RootObject::removeRecurringTask(const string& name)
-{
-    unique_lock<mutex> lock(_recurringTaskMutex, std::try_to_lock);
-    if (!lock.owns_lock())
-    {
-        Log::get() << Log::WARNING << "RootObject::" << __FUNCTION__ << " - A recurring task cannot remove a recurring task" << Log::endl;
-        return;
-    }
-
-    auto recurringTask = _recurringTasks.find(name);
-    if (recurringTask != _recurringTasks.end())
-        _recurringTasks.erase(recurringTask);
 }
 
 /*************/
@@ -594,21 +560,6 @@ Json::Value RootObject::getRootConfigurationAsJson(const string& rootName)
     }
 
     return root;
-}
-
-/*************/
-void RootObject::runTasks()
-{
-    unique_lock<recursive_mutex> lockTasks(_taskMutex);
-    decltype(_taskQueue) tasks;
-    std::swap(tasks, _taskQueue);
-    lockTasks.unlock();
-    for (auto& task : tasks)
-        task();
-
-    unique_lock<mutex> lockRecurrsiveTasks(_recurringTaskMutex);
-    for (auto& task : _recurringTasks)
-        task.second();
 }
 
 /*************/
