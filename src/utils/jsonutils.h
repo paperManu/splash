@@ -77,7 +77,6 @@ bool checkAndUpgradeConfiguration(Json::Value& configuration)
         Json::Value newConfig;
 
         newConfig["description"] = SPLASH_FILE_CONFIGURATION;
-        newConfig["version"] = std::string(PACKAGE_VERSION);
         newConfig["world"] = configuration["world"];
 
         std::vector<std::string> sceneNames = {};
@@ -118,6 +117,32 @@ bool checkAndUpgradeConfiguration(Json::Value& configuration)
 
         configuration = newConfig;
     }
+
+    if (versionMajor == 0 && versionMinor <= 7 && versionMaintainance < 21)
+    {
+        Json::Value newConfig = configuration;
+        for (auto& scene : newConfig["scenes"])
+        {
+            if (!scene.isMember("objects"))
+                continue;
+
+            for (auto& object : scene["objects"])
+            {
+                if (object["type"] != "window")
+                    continue;
+                
+                object["layout"] = Json::Value(Json::arrayValue);
+                object["layout"].append(0);
+                object["layout"].append(1);
+                object["layout"].append(2);
+                object["layout"].append(3);
+            }
+        }
+
+        configuration = newConfig;
+    }
+
+    configuration["version"] = std::string(PACKAGE_VERSION);
 
     return true;
 }

@@ -187,7 +187,7 @@ class Window : public GraphObject
     bool _resized{true};
     bool _srgb{true};
     float _gammaCorrection{2.2f};
-    Values _layout{0, 0, 0, 0};
+    Values _layout{0, 1, 2, 3};
     int _swapInterval{1};
 
     // Swap synchronization test

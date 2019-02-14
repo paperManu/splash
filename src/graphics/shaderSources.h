@@ -1706,53 +1706,35 @@ struct ShaderSources
         in vec2 texCoord;
         out vec4 fragColor;
 
+        const float texcount = float(TEXCOUNT);
+        const float width = 1.0 / float(TEXCOUNT);
+
         void main(void)
         {
-            float frames = float(TEXCOUNT);
+            fragColor = vec4(0.0);
+
             for (int i = 0; i < TEXCOUNT; ++i)
             {
-                int value = _layout[i];
-                for (int j = i + 1; j < TEXCOUNT; ++j)
-                {
-                    if (_layout[j] == value)
-                    {
-                        frames--;
-                        break;
-                    }
-                }
+                vec2 tc = vec2((texCoord.x - width * float(i)) * texcount, texCoord.y);
+                if (tc.x < 0.0)
+                    continue;
+                #ifdef TEX_1
+                if (_layout[i] == 0)
+                    fragColor = texture(_tex0, tc);
+                #ifdef TEX_2
+                else if (_layout[i] == 1)
+                    fragColor = texture(_tex1, tc);
+                #ifdef TEX_3
+                else if (_layout[i] == 2)
+                    fragColor = texture(_tex2, tc);
+                #ifdef TEX_4
+                else if (_layout[i] == 3)
+                    fragColor = texture(_tex3, tc);
+                #endif
+                #endif
+                #endif
+                #endif
             }
-
-            fragColor.rgba = vec4(0.0);
-    #ifdef TEX_1
-            if (texCoord.x > float(_layout[0]) / frames && texCoord.x < (float(_layout[0]) + 1.0) / frames)
-            {
-                fragColor = texture(_tex0, vec2((texCoord.x - float(_layout[0]) / frames) * frames, texCoord.y));
-            }
-    #ifdef TEX_2
-            if (texCoord.x > float(_layout[1]) / frames && texCoord.x < (float(_layout[1]) + 1.0) / frames)
-            {
-                vec4 color = texture(_tex1, vec2((texCoord.x - float(_layout[1]) / frames) * frames, texCoord.y));
-                fragColor.rgb = mix(fragColor.rgb, color.rgb, color.a);
-                fragColor.a = max(fragColor.a, color.a);
-            }
-    #ifdef TEX_3
-            if (texCoord.x > float(_layout[2]) / frames && texCoord.x < (float(_layout[2]) + 1.0) / frames)
-            {
-                vec4 color = texture(_tex2, vec2((texCoord.x - float(_layout[2]) / frames) * frames, texCoord.y));
-                fragColor.rgb = mix(fragColor.rgb, color.rgb, color.a);
-                fragColor.a = max(fragColor.a, color.a);
-            }
-    #ifdef TEX_4
-            if (texCoord.x > float(_layout[3]) / frames && texCoord.x < (float(_layout[3]) + 1.0) / frames)
-            {
-                vec4 color = texture(_tex3, vec2((texCoord.x - float(_layout[3]) / frames) * frames, texCoord.y));
-                fragColor.rgb = mix(fragColor.rgb, color.rgb, color.a);
-                fragColor.a = max(fragColor.a, color.a);
-            }
-    #endif
-    #endif
-    #endif
-    #endif
 
             if (_gamma.x != 1.0)
                 fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / _gamma.y));

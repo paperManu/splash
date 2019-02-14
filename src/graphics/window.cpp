@@ -330,7 +330,7 @@ void Window::render()
         glClear(GL_COLOR_BUFFER_BIT);
 
         auto layout = _layout;
-        layout.push_front("layout");
+        layout.push_front("_layout");
         _screen->getShader()->setAttribute("uniform", layout);
         _screen->getShader()->setAttribute("uniform", {"_gamma", (float)_srgb, _gammaCorrection});
         _screen->activate();
