@@ -17,20 +17,24 @@ void BaseObject::addTask(const function<void()>& task)
 }
 
 /*************/
-void BaseObject::addRecurringTask(const string& name, const function<void()>& task)
+void BaseObject::addPeriodicTask(const string& name, const function<void()>& task, uint32_t period)
 {
-    unique_lock<mutex> lock(_recurringTaskMutex, std::try_to_lock);
+    unique_lock<mutex> lock(_periodicTaskMutex, std::try_to_lock);
     if (!lock.owns_lock())
     {
-        Log::get() << Log::WARNING << "RootObject::" << __FUNCTION__ << " - A recurring task cannot add another recurring task" << Log::endl;
+        Log::get() << Log::WARNING << "RootObject::" << __FUNCTION__ << " - A periodic task cannot add another periodic task" << Log::endl;
         return;
     }
 
-    auto recurringTask = _recurringTasks.find(name);
-    if (recurringTask == _recurringTasks.end())
-        _recurringTasks.emplace(make_pair(name, task));
+    auto periodicTask = _periodicTasks.find(name);
+    if (periodicTask == _periodicTasks.end())
+    {
+        _periodicTasks.emplace(make_pair(name, PeriodicTask(task, period)));
+    }
     else
-        recurringTask->second = task;
+    {
+        periodicTask->second = {task, period};
+    }
 
     return;
 }
@@ -151,18 +155,18 @@ void BaseObject::removeAttribute(const string& name)
 }
 
 /*************/
-void BaseObject::removeRecurringTask(const string& name)
+void BaseObject::removePeriodicTask(const string& name)
 {
-    unique_lock<mutex> lock(_recurringTaskMutex, std::try_to_lock);
+    unique_lock<mutex> lock(_periodicTaskMutex, std::try_to_lock);
     if (!lock.owns_lock())
     {
-        Log::get() << Log::WARNING << "RootObject::" << __FUNCTION__ << " - A recurring task cannot remove a recurring task" << Log::endl;
+        Log::get() << Log::WARNING << "RootObject::" << __FUNCTION__ << " - A periodic task cannot remove a periodic task" << Log::endl;
         return;
     }
 
-    auto recurringTask = _recurringTasks.find(name);
-    if (recurringTask != _recurringTasks.end())
-        _recurringTasks.erase(recurringTask);
+    auto periodicTask = _periodicTasks.find(name);
+    if (periodicTask != _periodicTasks.end())
+        _periodicTasks.erase(periodicTask);
 }
 
 /*************/
@@ -200,8 +204,15 @@ void BaseObject::runTasks()
     for (const auto& task : tasks)
         task();
 
-    unique_lock<mutex> lockRecurrsiveTasks(_recurringTaskMutex);
-    for (const auto& task : _recurringTasks)
-        task.second();
+    unique_lock<mutex> lockRecurrsiveTasks(_periodicTaskMutex);
+    auto currentTime = Timer::getTime() / 1000;
+    for (auto& task : _periodicTasks)
+    {
+        if (task.second.period == 0 || currentTime - task.second.lastCall > task.second.period)
+        {
+            task.second.task();
+            task.second.lastCall = currentTime;
+        }
+    }
 }
 } // namespace Splash

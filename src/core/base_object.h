@@ -134,8 +134,19 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     std::list<std::function<void()>> _taskQueue;
     std::recursive_mutex _taskMutex;
 
-    std::map<std::string, std::function<void()>> _recurringTasks{};
-    std::mutex _recurringTaskMutex{};
+    struct PeriodicTask
+    {
+        PeriodicTask(std::function<void()> func, uint32_t period)
+            : task(func)
+            , period(period)
+        {
+        }
+        std::function<void()> task{};
+        uint32_t period{0};
+        int64_t lastCall{0};
+    };
+    std::map<std::string, PeriodicTask> _periodicTasks{};
+    std::mutex _periodicTaskMutex{};
 
     /**
      * Add a new task to the queue
@@ -145,10 +156,12 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
 
     /**
      * Add a task repeated at each frame
+     * Note that the period is not a hard constraint, and depends on the framerate
      * \param name Task name
      * \param task Task function
+     * \param period Delay (in ms) between each call. If 0, it will be called at each frame
      */
-    void addRecurringTask(const std::string& name, const std::function<void()>& task);
+    void addPeriodicTask(const std::string& name, const std::function<void()>& task, uint32_t period = 0);
 
     /**
      * \brief Add a new attribute to this object
@@ -167,7 +180,8 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      * \param types Vector of char holding the expected parameters for the set function
      * \return Return a reference to the created attribute
      */
-    virtual Attribute& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types = {});
+    virtual Attribute& addAttribute(
+        const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types = {});
 
     /**
      * Run a task asynchronously, one task at a time
@@ -195,10 +209,10 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     void removeAttribute(const std::string& name);
 
     /**
-     * Remove a recurring task
+     * Remove a periodic task
      * \param name Task name
      */
-    void removeRecurringTask(const std::string& name);
+    void removePeriodicTask(const std::string& name);
 
     /**
      * \brief Register new attributes

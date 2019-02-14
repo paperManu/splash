@@ -1437,7 +1437,7 @@ void World::registerAttributes()
             auto doPing = args[0].as<int>();
             if (doPing)
             {
-                addRecurringTask("pingTest", [&]() {
+                addPeriodicTask("pingTest", [&]() {
                     static auto frameIndex = 0;
                     if (frameIndex == 0)
                     {
@@ -1452,7 +1452,7 @@ void World::registerAttributes()
             }
             else
             {
-                removeRecurringTask("pingTest");
+                removePeriodicTask("pingTest");
             }
 
             return true;
@@ -1465,7 +1465,7 @@ void World::registerAttributes()
             _swapSynchronizationTesting = args[0].as<int>();
             if (_swapSynchronizationTesting)
             {
-                addRecurringTask("swapTest", [&]() {
+                addPeriodicTask("swapTest", [&]() {
                     sendMessage(SPLASH_ALL_PEERS, "swapTest", {1});
                     static auto frameNbr = 0;
                     static auto frameStatus = 0;
@@ -1490,7 +1490,7 @@ void World::registerAttributes()
             }
             else
             {
-                removeRecurringTask("swapTest");
+                removePeriodicTask("swapTest");
                 addTask([&]() { sendMessage(SPLASH_ALL_PEERS, "swapTest", {0}); });
             }
             return true;

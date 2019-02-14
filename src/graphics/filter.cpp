@@ -428,28 +428,30 @@ void Filter::registerAttributes()
 
             if (_watchShaderFile)
             {
-                addRecurringTask("watchShader", [=]() {
-                    if (_shaderSourceFile.empty())
-                        return;
+                addPeriodicTask("watchShader",
+                    [=]() {
+                        if (_shaderSourceFile.empty())
+                            return;
 
-                    std::filesystem::path sourcePath(_shaderSourceFile);
-                    try
-                    {
-                        auto lastWriteTime = std::filesystem::last_write_time(sourcePath);
-                        if (lastWriteTime != _lastShaderSourceWrite)
+                        std::filesystem::path sourcePath(_shaderSourceFile);
+                        try
                         {
-                            _lastShaderSourceWrite = lastWriteTime;
-                            setAttribute("fileFilterSource", {_shaderSourceFile});
+                            auto lastWriteTime = std::filesystem::last_write_time(sourcePath);
+                            if (lastWriteTime != _lastShaderSourceWrite)
+                            {
+                                _lastShaderSourceWrite = lastWriteTime;
+                                setAttribute("fileFilterSource", {_shaderSourceFile});
+                            }
                         }
-                    }
-                    catch (...)
-                    {
-                    }
-                });
+                        catch (...)
+                        {
+                        }
+                    },
+                    500);
             }
             else
             {
-                removeRecurringTask("watchShader");
+                removePeriodicTask("watchShader");
             }
 
             return true;
