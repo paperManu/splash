@@ -99,6 +99,7 @@ class ImageBufferSpec
     ImageBufferSpec::Type type{Type::UINT8};
     std::string format{};
     bool videoFrame{true};
+    int64_t timestamp{-1};
 
     inline bool operator==(const ImageBufferSpec& spec) const
     {
@@ -114,11 +115,13 @@ class ImageBufferSpec
             return false;
         if (format != spec.format)
             return false;
+        if (timestamp != spec.timestamp)
+            return false;
 
         return true;
     }
 
-    inline bool operator!=(const ImageBufferSpec& spec) const { return !(*this == spec); }
+    inline bool operator!=(const ImageBufferSpec& spec) const { return !operator==(spec); }
 
     /**
      * \brief Convert the spec to a string
@@ -189,7 +192,8 @@ class ImageBuffer
      * \brief Get the image spec
      * \return Return image spec
      */
-    ImageBufferSpec getSpec() const { return _spec; }
+    ImageBufferSpec& getSpec() { return _spec; }
+    const ImageBufferSpec& getSpec() const { return _spec; }
 
     /**
      * \brief Get the image buffer size

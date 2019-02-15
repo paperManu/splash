@@ -178,7 +178,7 @@ bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
         char xmlSpecChar[nbrChar];
         ptr = reinterpret_cast<char*>(xmlSpecChar);
         copy(currentObjPtr, currentObjPtr + nbrChar, ptr);
-        string xmlSpec(xmlSpecChar);
+        string xmlSpec(xmlSpecChar, nbrChar);
 
         ImageBufferSpec spec;
         spec.from_string(xmlSpec.c_str());
@@ -196,7 +196,7 @@ bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
         std::swap(*_bufferImage, _bufferDeserialize);
         _imageUpdated = true;
 
-        updateTimestamp();
+        updateTimestamp(_bufferImage->getSpec().timestamp);
     }
     catch (...)
     {

@@ -460,6 +460,7 @@ void Image_FFmpeg::readLoop()
 
                         _timedFrames.emplace_back();
                         std::swap(_timedFrames[_timedFrames.size() - 1].frame, img);
+                        _timedFrames[_timedFrames.size() - 1].frame->getSpec().timestamp = timing;
                         _timedFrames[_timedFrames.size() - 1].timing = timing;
                     }
 
@@ -765,7 +766,7 @@ void Image_FFmpeg::videoDisplayLoop()
                     _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
                 std::swap(_bufferImage, timedFrame.frame);
                 _imageUpdated = true;
-                updateTimestamp();
+                updateTimestamp(_bufferImage->getSpec().timestamp);
             }
 
             localQueue.pop_front();

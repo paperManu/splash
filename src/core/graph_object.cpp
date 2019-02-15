@@ -312,8 +312,6 @@ void GraphObject::initializeTree()
         {
             if (d[1].size() == 0)
                 continue;
-            if (d[2].size() == 0)
-                continue;
             auto attrName = d[0].as<string>();
             auto attrPath = docPath + attrName;
             if (tree->hasBranchAt(attrPath))

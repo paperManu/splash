@@ -45,12 +45,24 @@ void BufferObject::setSerializedObject(shared_ptr<SerializedObject> obj)
 }
 
 /*************/
-void BufferObject::updateTimestamp()
+void BufferObject::updateTimestamp(int64_t timestamp)
 {
-    _timestamp = Timer::getTime();
+    if (timestamp != -1)
+        _timestamp = timestamp;
+    else
+        _timestamp = Timer::getTime();
     _updatedBuffer = true;
     if (_root)
         _root->signalBufferObjectUpdated();
 }
 
-} // end of namespace
+/*************/
+void BufferObject::registerAttributes()
+{
+    GraphObject::registerAttributes();
+
+    addAttribute("timestamp", [](const Values&) { return true; }, [&]() -> Values { return {_timestamp}; });
+    setAttributeDescription("timestamp", "Timestamp (in µs) for the current buffer, can be creation time or frame timing");
+}
+
+} // namespace Splash

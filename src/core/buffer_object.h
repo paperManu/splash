@@ -132,13 +132,14 @@ class BufferObject : public GraphObject
 
     /**
      * \brief Updates the timestamp of the object. Also, set the update flag to true.
+     * \param timestamp Value to set the timestamp to, -1 to set to the current time
      */
-    void updateTimestamp();
+    void updateTimestamp(int64_t timestamp = -1);
 
     /**
      * \brief Register new attributes
      */
-    void registerAttributes() { GraphObject::registerAttributes(); }
+    void registerAttributes();
 };
 
 } // end of namespace

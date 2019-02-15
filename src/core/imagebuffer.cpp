@@ -11,32 +11,29 @@ namespace Splash
 string ImageBufferSpec::to_string() const
 {
     string spec;
-    spec += std::to_string(width);
-    spec += ";";
-    spec += std::to_string(height);
-    spec += ";";
-    spec += std::to_string(channels);
-    spec += ";";
-    spec += std::to_string(bpp);
-    spec += ";";
+    spec += std::to_string(width) + ";";
+    spec += std::to_string(height) + ";";
+    spec += std::to_string(channels) + ";";
+    spec += std::to_string(bpp) + ";";
 
     switch (type)
     {
+    default:
+        assert(false);
+        break;
     case Type::UINT8:
-        spec += "0";
+        spec += "0;";
         break;
     case Type::UINT16:
-        spec += "1";
+        spec += "1;";
         break;
     case Type::FLOAT:
-        spec += "2";
+        spec += "2;";
         break;
     }
-    spec += ";";
-    spec += format;
-    spec += ";";
-    spec += std::to_string(static_cast<int>(videoFrame));
-    spec += ";";
+    spec += format + ";";
+    spec += std::to_string(static_cast<int>(videoFrame)) + ";";
+    spec += std::to_string(timestamp) + ";";
 
     return spec;
 }
@@ -44,42 +41,27 @@ string ImageBufferSpec::to_string() const
 /*************/
 void ImageBufferSpec::from_string(const string& spec)
 {
-    auto prev = 0;
+    std::vector<std::string> parts;
 
-    // Width
-    auto curr = spec.find(";");
-    if (curr == string::npos)
-        return;
-    width = stoi(spec.substr(prev, curr));
-
-    // Height
-    auto roi = spec.substr(curr + 1);
-    curr = roi.find(";");
-    if (curr == string::npos)
-        return;
-    height = stoi(roi.substr(0, curr));
-
-    // Channels
-    roi = roi.substr(curr + 1);
-    curr = roi.find(";");
-    if (curr == string::npos)
-        return;
-    channels = stoi(roi.substr(0, curr));
-
-    // Bits per pixel
-    roi = roi.substr(curr + 1);
-    curr = roi.find(";");
-    if (curr == string::npos)
-        return;
-    bpp = stoi(roi.substr(0, curr));
-
-    // Type
-    roi = roi.substr(curr + 1);
-    curr = roi.find(";");
-    if (curr == string::npos)
-        return;
-    switch (stoi(roi.substr(prev, curr)))
+    size_t prev = 0;
+    size_t curr = spec.find(";");
+    while (curr != std::string::npos)
     {
+        parts.push_back(spec.substr(prev, curr - prev));
+        prev = curr + 1;
+        curr = spec.find(";", prev);
+    }
+    assert(parts.size() == 8);
+
+    width = stoi(parts[0]);
+    height = stoi(parts[1]);
+    channels = stoi(parts[2]);
+    bpp = stoi(parts[3]);
+    switch (stoi(parts[4]))
+    {
+    default:
+        assert(false);
+        break;
     case 0:
         type = Type::UINT8;
         break;
@@ -90,16 +72,9 @@ void ImageBufferSpec::from_string(const string& spec)
         type = Type::FLOAT;
         break;
     }
-
-    // Format
-    roi = roi.substr(curr + 1);
-    curr = roi.find(";");
-    format = roi.substr(0, curr);
-
-    // Video frame
-    roi = roi.substr(curr + 1);
-    curr = roi.find(";");
-    videoFrame = static_cast<bool>(stoi(roi.substr(0, curr)));
+    format = parts[5];
+    videoFrame = static_cast<bool>(stoi(parts[6]));
+    timestamp = stoll(parts[7]);
 }
 
 /*************/
