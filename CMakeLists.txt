@@ -65,6 +65,7 @@ endif()
 find_package(PkgConfig REQUIRED)
 
 # Mandatory dependencies
+pkg_search_module(JSONCPP REQUIRED jsoncpp)
 pkg_search_module(GSL REQUIRED gsl)
 pkg_search_module(ZMQ REQUIRED libzmq)
 pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswscale)
@@ -86,6 +87,7 @@ pkg_search_module(OPENCV opencv)
 pkg_search_module(JACK jack)
 pkg_search_module(PORTAUDIO portaudio-2.0)
 pkg_search_module(SHMDATA shmdata-1.3)
+pkg_search_module(SLAPS slaps-0.0)
 
 #
 # Configuration
@@ -103,6 +105,7 @@ set(HAVE_OPENCV ${OPENCV_FOUND})
 set(HAVE_PORTAUDIO ${PORTAUDIO_FOUND})
 set(HAVE_SHMDATA ${SHMDATA_FOUND})
 set(HAVE_PYTHON ${PYTHONLIBS_FOUND})
+set(HAVE_SLAPS ${SLAPS_FOUND})
 
 if (FFMPEG_libavformat_VERSION LESS 57)
     message(WARNING "FFmpeg version is older than 3.1, support disabled")
@@ -237,6 +240,7 @@ info_cfg_option(OPENCV_VERSION)
 info_cfg_option(PORTAUDIO_VERSION)
 info_cfg_option(JACK_VERSION)
 info_cfg_option(PYTHONLIBS_VERSION_STRING)
+info_cfg_option(JSONCPP_VERSION)
 info_cfg_option(SHMDATA_VERSION)
 info_cfg_option(ZMQ_VERSION)
 info_cfg_option(DATAPATH_SDK_PATH)

@@ -211,6 +211,9 @@ class Scene : public RootObject
 #if HAVE_GPHOTO and HAVE_OPENCV
     std::shared_ptr<GraphObject> _colorCalibrator{nullptr};
 #endif
+#if HAVE_SLAPS
+    std::shared_ptr<GraphObject> _geometricCalibrator{nullptr};
+#endif
 
   private:
     ObjectLibrary _objectLibrary; //!< Library of 3D objects used by multiple GraphObjects

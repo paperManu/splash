@@ -99,7 +99,7 @@ void Blender::update()
             for (auto& geometry : geometries)
             {
                 auto serializedGeometry = dynamic_pointer_cast<Geometry>(geometry)->serialize();
-                sendBuffer(geometry->getName(), std::move(serializedGeometry));
+                sendBuffer(geometry->getName(), serializedGeometry);
             }
 
             setObjectAttribute(_name, "blendingUpdated", {});

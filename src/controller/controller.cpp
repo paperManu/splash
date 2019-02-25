@@ -82,7 +82,7 @@ unordered_map<string, string> ControllerObject::getObjectAliases() const
 }
 
 /*************/
-vector<string> ControllerObject::getAllObjects() const
+vector<string> ControllerObject::getObjectList() const
 {
     auto names = vector<string>();
     auto tree = _root->getTree();

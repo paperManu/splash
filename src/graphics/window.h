@@ -27,7 +27,6 @@
 
 #include <atomic>
 #include <deque>
-#include <list>
 #include <memory>
 #include <mutex>
 #include <utility>
@@ -206,7 +205,7 @@ class Window : public GraphObject
     std::shared_ptr<Object> _screen;
     std::shared_ptr<Object> _screenGui;
     glm::dmat4 _viewProjectionMatrix;
-    std::list<std::weak_ptr<Texture>> _inTextures;
+    std::vector<std::weak_ptr<Texture>> _inTextures;
     std::shared_ptr<Texture> _guiTexture{nullptr}; // The gui has its own texture
 
     static std::mutex _callbackMutex;

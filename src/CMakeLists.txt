@@ -29,7 +29,6 @@ set_source_files_properties(
     ../external/imgui/imgui_demo.cpp
     ../external/imgui/imgui_draw.cpp
     ../external/imgui/imgui.cpp
-	../external/jsoncpp/jsoncpp.cpp
 	../external/hap/source/hap.c
     PROPERTIES COMPILE_FLAGS "-Wno-error -Wno-all -Wno-extra -Wno-sign-compare -Wno-deprecated-declarations"
 )
@@ -58,7 +57,6 @@ endif()
 
 include_directories(../external/hap/source)
 include_directories(../external/imgui)
-include_directories(../external/jsoncpp)
 include_directories(../external/libltc/src)
 include_directories(../external/stb)
 include_directories(../external/syphon/build/Release/Syphon.framework/Headers)
@@ -77,6 +75,7 @@ endif()
 include_directories(${GLFW_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIRS})
 include_directories(${ZMQ_INCLUDE_DIRS})
+include_directories(${JSONCPP_INCLUDE_DIRS})
 include_directories(${SHMDATA_INCLUDE_DIRS})
 include_directories(${GPHOTO_INCLUDE_DIRS})
 include_directories(${FFMPEG_INCLUDE_DIRS})
@@ -84,6 +83,7 @@ include_directories(${PORTAUDIO_INCLUDE_DIRS})
 include_directories(${OPENCV_INCLUDE_DIRS})
 include_directories(${SNAPPY_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
+include_directories(${SLAPS_INCLUDE_DIRS})
 
 # Distributed third parties first
 link_directories(${FFMPEG_LIBRARY_DIRS})
@@ -91,6 +91,7 @@ link_directories(${SNAPPY_LIBRARY_DIRS})
 link_directories(${ZMQ_LIBRARY_DIRS})
 link_directories(${GLFW_LIBRARY_DIRS})
 
+link_directories(${JSONCPP_LIBRARY_DIRS})
 link_directories(${GSL_LIBRARY_DIRS})
 link_directories(${SHMDATA_LIBRARY_DIRS})
 link_directories(${GPHOTO_LIBRARY_DIRS})
@@ -98,6 +99,7 @@ link_directories(${PORTAUDIO_LIBRARY_DIRS})
 link_directories(${OPENCV_LIBRARY_DIRS})
 link_directories(${PYTHON_LIBRARY_DIRS})
 link_directories(${UUID_LIBRARY_DIRS})
+link_directories(${SLAPS_LIBRARY_DIRS})
 
 #
 # Targets
@@ -169,7 +171,6 @@ target_sources(splash-${API_VERSION} PRIVATE
     ../external/imgui/imgui_demo.cpp
     ../external/imgui/imgui_draw.cpp
     ../external/imgui/imgui.cpp
-	../external/jsoncpp/jsoncpp.cpp
 	../external/hap/source/hap.c
 )
 
@@ -220,6 +221,12 @@ if (PORTAUDIO_FOUND)
     )
 endif()
 
+if (SLAPS_FOUND)
+    target_sources(splash-${API_VERSION} PRIVATE
+        controller/geometriccalibrator.cpp
+    )
+endif()
+
 if (SHMDATA_FOUND)
     target_sources(splash-${API_VERSION} PRIVATE
         image/image_shmdata.cpp
@@ -258,7 +265,7 @@ else()
 endif()
 # System libs
 target_link_libraries(splash-${API_VERSION} pthread)
-target_link_libraries(splash-${API_VERSION} ${Boost_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} ${JSONCPP_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GSL_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${SHMDATA_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GPHOTO_LIBRARIES})
@@ -266,6 +273,7 @@ target_link_libraries(splash-${API_VERSION} ${PORTAUDIO_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${OPENCV_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${PYTHON_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${UUID_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} ${SLAPS_LIBRARIES})
 
 #
 # splash executable

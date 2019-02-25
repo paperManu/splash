@@ -65,7 +65,7 @@ void GuiMeshes::replaceMesh(const string& previousMedia, const string& alias, co
 {
     // We get the list of all objects linked to previousMedia
     auto targetObjects = list<weak_ptr<GraphObject>>();
-    auto objects = getObjectsPtr(getAllObjects());
+    auto objects = getObjectsPtr(getObjectList());
     for (auto& object : objects)
     {
         if (!object->getSavable())

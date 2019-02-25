@@ -41,6 +41,10 @@
 // clang-format on
 #endif
 
+#if HAVE_SLAPS
+#include "./controller/geometriccalibrator.h"
+#endif
+
 using namespace std;
 
 namespace Splash
@@ -557,6 +561,12 @@ void Scene::setAsMaster(const string& configFilePath)
     _colorCalibrator->setName("colorCalibrator");
     _objects["colorCalibrator"] = _colorCalibrator;
 #endif
+
+#if HAVE_SLAPS
+    _geometricCalibrator = make_shared<GeometricCalibrator>(this);
+    _geometricCalibrator->setName("geometricCalibrator");
+    _objects["geometricCalibrator"] = _geometricCalibrator;
+#endif
 }
 
 /*************/
@@ -1065,6 +1075,15 @@ void Scene::registerAttributes()
         return true;
     });
     setAttributeDescription("calibrateColorResponseFunction", "Launch the camera color calibration");
+#endif
+
+#if HAVE_SLAPS
+    addAttribute("calibrateGeometry", [&](const Values&) {
+        auto calibrator = dynamic_pointer_cast<GeometricCalibrator>(_geometricCalibrator);
+        if (calibrator)
+            calibrator->calibrate();
+        return true;
+    });
 #endif
 
     addAttribute("runInBackground",

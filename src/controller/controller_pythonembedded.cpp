@@ -242,7 +242,7 @@ PyObject* PythonEmbedded::pythonGetObjectList(PyObject* /*self*/, PyObject* /*ar
         return PyList_New(0);
     }
 
-    auto objects = that->getAllObjects();
+    auto objects = that->getObjectList();
     PyObject* pythonObjectList = PyList_New(objects.size());
     for (uint32_t i = 0; i < objects.size(); ++i)
         PyList_SetItem(pythonObjectList, i, Py_BuildValue("s", objects[i].c_str()));

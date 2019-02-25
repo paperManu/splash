@@ -54,7 +54,7 @@ Texture_Image& Texture_Image::operator=(const shared_ptr<Image>& img)
 void Texture_Image::bind()
 {
     glGetIntegerv(GL_ACTIVE_TEXTURE, &_activeTexture);
-    _activeTexture = _activeTexture - GL_TEXTURE0; // TODO: handle texture units in a modern fashion
+    _activeTexture = _activeTexture - GL_TEXTURE0;
     glBindTextureUnit(_activeTexture, _glTex);
 }
 
@@ -286,6 +286,7 @@ void Texture_Image::unbind()
 #ifdef DEBUG
     glBindTextureUnit(_activeTexture, 0);
 #endif
+    _lastDrawnTimestamp = Timer::getTime();
 }
 
 /*************/
@@ -605,6 +606,9 @@ void Texture_Image::registerAttributes()
         },
         {'n', 'n'});
     setAttributeDescription("size", "Change the texture size");
+
+    addAttribute("lastDrawnTimestamp", [](const Values&) { return true; }, [&]() -> Values { return {_lastDrawnTimestamp}; });
+    setAttributeDescription("lastDrawnTimestamp", "Timestamp (in µs) of the last image drawn");
 }
 
 } // namespace Splash

@@ -180,7 +180,7 @@ class Texture_Image : public Texture
     int _multisample{0};
     bool _cubemap{false};
     int _pboUploadIndex{0};
-    std::list<std::future<void>> _pboCopyThreads;
+    int64_t _lastDrawnTimestamp{0};
 
     // Store some texture parameters
     static constexpr int _texLevels{4};

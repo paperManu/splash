@@ -63,7 +63,7 @@ check_command() {
 check_command $CLANG_FORMAT
 check_command $CLANG_FORMAT_DIFF
 
-cpp_files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.cpp$\|\.hpp$')
+cpp_files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.cpp$\|\.hpp$\|\.h$')
 
 # Nothing to test if no file was added, changed or modified.
 [ -z "$cpp_files" ] && exit 0

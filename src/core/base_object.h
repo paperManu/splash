@@ -31,6 +31,7 @@
 #include <json/json.h>
 #include <list>
 #include <map>
+#include <optional>
 #include <unordered_map>
 
 #include "./core/attribute.h"
@@ -79,9 +80,10 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      * \brief Get the specified attribute
      * \param attrib Attribute name
      * \param args Values object which will hold the attribute values
-     * \return Return true if the parameter exists and is savable
+     * \return Return true if the parameter exists
      */
     bool getAttribute(const std::string& attrib, Values& args) const;
+    std::optional<Values> getAttribute(const std::string& attrib) const;
 
     /**
      * \brief Get the description for the given attribute, if it exists

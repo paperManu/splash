@@ -95,6 +95,7 @@ void Image::set(const ImageBuffer& img)
     lock_guard<Spinlock> lockRead(_readMutex);
     if (_image)
         *_image = img;
+    updateTimestamp();
 }
 
 /*************/

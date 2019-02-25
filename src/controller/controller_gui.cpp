@@ -1305,6 +1305,18 @@ void Gui::registerAttributes()
         },
         {'n', 'n'});
     setAttributeDescription("size", "Set the GUI render resolution");
+
+    addAttribute("hide", [&](const Values&) {
+        _isVisible = false;
+        return true;
+    });
+    setAttributeDescription("hide", "Hide the GUI");
+
+    addAttribute("show", [&](const Values&) {
+        _isVisible = true;
+        return true;
+    });
+    setAttributeDescription("show", "Show the GUI");
 }
 
 } // namespace Splash

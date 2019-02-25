@@ -77,6 +77,15 @@ bool BaseObject::getAttribute(const string& attrib, Values& args) const
 }
 
 /*************/
+optional<Values> BaseObject::getAttribute(const string& attrib) const
+{
+    Values value;
+    if (!getAttribute(attrib, value))
+        return {};
+    return value;
+}
+
+/*************/
 string BaseObject::getAttributeDescription(const string& name)
 {
     auto attr = _attribFunctions.find(name);

@@ -248,8 +248,7 @@ void Window::unlinkFrom(const shared_ptr<GraphObject>& obj)
         if (tex != nullptr)
         {
             tex->unlinkFrom(obj);
-            unsetTexture(tex);
-            tex.reset();
+            unlinkFrom(tex);
             _root->disposeObject(texName);
         }
     }
@@ -261,12 +260,8 @@ void Window::unlinkFrom(const shared_ptr<GraphObject>& obj)
         {
             warp->unlinkFrom(obj);
             unlinkFrom(warp);
+            _root->disposeObject(warpName);
         }
-
-        _root->disposeObject(warpName);
-
-        auto cam = dynamic_pointer_cast<Camera>(obj);
-        unsetTexture(cam->getTexture());
     }
     else if (dynamic_pointer_cast<Gui>(obj).get() != nullptr)
     {
@@ -792,6 +787,28 @@ void Window::registerAttributes()
         },
         {'n', 'n', 'n', 'n'});
     setAttributeDescription("swapTestColor", "Set the swap test color");
+
+    addAttribute("textureList",
+        [](const Values&) { return true; },
+        [&]() -> Values {
+            Values textureList;
+            for (const auto& layout_index : _layout)
+            {
+                auto index = layout_index.as<size_t>();
+                if (index >= _inTextures.size())
+                    continue;
+
+                auto texture = _inTextures[index].lock();
+                if (!texture)
+                {
+                    textureList.push_back("");
+                    continue;
+                }
+
+                textureList.push_back(texture->getName());
+            }
+            return textureList;
+        });
 }
 
 } // end of namespace

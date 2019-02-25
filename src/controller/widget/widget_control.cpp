@@ -86,7 +86,7 @@ void GuiControl::render()
 
         // Node configuration
         ImGui::Text("Objects configuration");
-        auto objectNames = getAllObjects();
+        auto objectNames = getObjectList();
         auto objectAliases = getObjectAliases();
         // Select the object the control
         vector<const char*> items;

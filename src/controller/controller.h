@@ -84,7 +84,7 @@ class ControllerObject : public GraphObject
      * \brief Get a list of the object names
      * \return Return a vector of all the objects
      */
-    std::vector<std::string> getAllObjects() const;
+    std::vector<std::string> getObjectList() const;
 
     /**
      * \brief Get the description for the given attribute

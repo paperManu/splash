@@ -319,7 +319,7 @@ bool Filter::setFilterSource(const string& source)
 
     auto shader = _screen->getShader();
     // Save the value for all existing uniforms
-    auto uniformValues = shader->getUniforms();
+    auto uniformValues = _filterUniforms;
 
     map<Shader::ShaderType, string> shaderSources;
     shaderSources[Shader::ShaderType::fragment] = source;
@@ -334,8 +334,8 @@ bool Filter::setFilterSource(const string& source)
     _screen->deactivate();
 
     // Unregister previous automatically added uniforms
-    _attribFunctions.clear();
-    registerAttributes();
+    for (const auto& uniform : _filterUniforms)
+        _attribFunctions.erase(uniform.first);
 
     // Register the attributes corresponding to the shader uniforms
     auto uniforms = shader->getUniforms();

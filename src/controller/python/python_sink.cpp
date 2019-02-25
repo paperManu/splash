@@ -165,7 +165,7 @@ PyObject* PythonSink::pythonSinkLink(PythonSinkObject* self, PyObject* args, PyO
         return Py_False;
     }
 
-    auto objects = that->getAllObjects();
+    auto objects = that->getObjectList();
     auto objectIt = std::find(objects.begin(), objects.end(), self->sourceName);
     if (objectIt == objects.end())
     {
@@ -247,11 +247,11 @@ PyObject* PythonSink::pythonSinkUnlink(PythonSinkObject* self)
 
     // Wait for the filter to be truly deleted. We do not try to get a shared_ptr
     // of the object, because we want it to be deleted. So we get the object list
-    auto objectList = that->getAllObjects();
+    auto objectList = that->getObjectList();
     while (std::find(objectList.begin(), objectList.end(), self->filterName) != objectList.end())
     {
         this_thread::sleep_for(chrono::milliseconds(5));
-        objectList = that->getAllObjects();
+        objectList = that->getObjectList();
     }
 
     self->linked = false;
