@@ -14,7 +14,7 @@ void main(void)
     float subdivs_f = float(subdivs);
     float width = 1.0 / subdivs_f;
 
-    fragColor = vec4(0.0, 1.0, 0.0, 1.0);
+    fragColor = vec4(0.0, 0.0, 0.0, 1.0);
     for (int i = 0; i < subdivs; ++i)
     {
         vec2 tc = vec2((texCoord.x - width * float(i)) * subdivs_f, texCoord.y);

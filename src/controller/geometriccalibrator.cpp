@@ -1,7 +1,6 @@
 #include "./controller/geometriccalibrator.h"
 
 #include <algorithm>
-#include <chrono>
 #include <thread>
 
 #include <opencv2/opencv.hpp>
@@ -9,6 +8,7 @@
 
 #include "./image/image.h"
 #include "./image/image_gphoto.h"
+#include "./image/image_opencv.h"
 
 namespace Splash
 {
@@ -23,22 +23,59 @@ GeometricCalibrator::GeometricCalibrator(RootObject* root)
 }
 
 /*************/
-void GeometricCalibrator::update()
+GeometricCalibrator::~GeometricCalibrator()
 {
-    if (!_runCalibration)
+    _abortCalibration = true;
+    _finalizeCalibration = true;
+}
+
+/*************/
+void GeometricCalibrator::calibrate()
+{
+    if (!_grabber)
+    {
+        Log::get() << Log::WARNING << "GeometricCalibrator::" << __FUNCTION__ << " - No grabber linked to the geometric calibrator" << Log::endl;
+        return;
+    }
+
+    if (_running)
+    {
+        Log::get() << Log::WARNING << "GeometricCalibrator::" << __FUNCTION__ << " - Geometric calibration is already running" << Log::endl;
+        return;
+    }
+
+    _running = true;
+    _calibrationFuture = std::async(std::launch::async, [=]() { return calibrationFunc(); });
+}
+
+/*************/
+bool GeometricCalibrator::linkTo(const shared_ptr<GraphObject>& obj)
+{
+    if (!GraphObject::linkTo(obj))
+        return false;
+
+    if (_grabber)
+        return false;
+
+    auto image = dynamic_pointer_cast<Image>(obj);
+    if (!image)
+        return false;
+
+    _grabber = image;
+    return true;
+}
+
+/*************/
+void GeometricCalibrator::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
+{
+    auto image = dynamic_pointer_cast<Image>(obj);
+    if (!image)
         return;
 
-    if (!_running)
-    {
-        _running = true;
-        _calibrationFuture = std::async(std::launch::async, [=]() { return calibrationFunc(); });
-    }
+    if (_grabber == image)
+        _grabber.reset();
 
-    if (_finished)
-    {
-        _calibrationFuture = std::future<bool>();
-        _runCalibration = false;
-    }
+    GraphObject::unlinkFrom(obj);
 }
 
 /*************/
@@ -65,9 +102,6 @@ bool GeometricCalibrator::calibrationFunc()
         }
     }
 
-    // Hide the GUI
-    setObjectAttribute("gui", "hide");
-
     // Create the patterns display pipeline
     // Camera output is overridden with filters mimicking the windows layout
     Image imageObject(_root);
@@ -79,6 +113,10 @@ bool GeometricCalibrator::calibrationFunc()
 
     for (size_t index = 0; index < windowList.size(); ++index)
     {
+        // Don't create a filter for a window with only a GUI
+        if (windowTextureCount[index] == 0)
+            continue;
+
         auto filterName = worldFilterPrefix + std::to_string(index);
         setWorldAttribute("addObject", {"filter", filterName});
 
@@ -91,6 +129,10 @@ bool GeometricCalibrator::calibrationFunc()
     // Set the parameters for the filter
     for (size_t index = 0; index < windowList.size(); ++index)
     {
+        // No filter will be created for a window with only a GUI
+        if (windowTextureCount[index] == 0)
+            continue;
+
         auto filterName = worldFilterPrefix + std::to_string(index);
         for (auto objects = getObjectList(); std::find(objects.cbegin(), objects.cend(), filterName) == objects.cend(); objects = getObjectList())
             std::this_thread::sleep_for(15ms);
@@ -104,18 +146,9 @@ bool GeometricCalibrator::calibrationFunc()
         setObjectAttribute(filterName, "sizeOverride", windowSize);
     }
 
-    // Get the name of the object generated for linking the pattern image to the filter
-    std::map<std::string, std::string> patternTextureNames;
-    for (size_t index = 0; index < windowList.size(); ++index)
-    {
-        auto filterName = worldFilterPrefix + std::to_string(index);
-        auto filterLinks = getObjectLinks()[filterName];
-        auto patternTextureIt =
-            std::find_if(filterLinks.cbegin(), filterLinks.cend(), [&](const auto& v) { return v != worldImageName && v.find(worldImageName) != std::string::npos; });
-        if (patternTextureIt == filterLinks.end())
-            return false;
-        patternTextureNames[filterName] = *patternTextureIt;
-    }
+    // Begin calibration
+    slaps::Workspace workspace;
+    slaps::Structured_Light structuredLight(_structuredLightScale);
 
     // Whenever we exit this function, cleanup our mess
     OnScopeExit
@@ -142,30 +175,20 @@ bool GeometricCalibrator::calibrationFunc()
                 setWorldAttribute("link", {objectName, windowName});
         }
 
-        _finished = true;
-
-        // Show the GUI
-        setObjectAttribute("gui", "show");
+        _running = false;
     };
 
-    // Begin calibration
-    slaps::Workspace workspace;
-    slaps::Structured_Light structuredLight(_structuredLightScale);
-
+    _finalizeCalibration = false;
     size_t positionIndex = 0;
     while (!_finalizeCalibration)
     {
-        _nextPosition = false;
-        // Camera capture
-        auto captureCam = Image_GPhoto(_root, "");
-        auto camStatus = captureCam.getAttribute("ready");
-        if (!camStatus || !camStatus.value()[0].as<bool>())
+        if (!_nextPosition)
         {
-            Log::get() << Log::WARNING << "GeometricCalibrator::" << __FUNCTION__ << " - Unable to connect to the camera, please retry" << Log::endl;
-            while (!_nextPosition && !_finalizeCalibration)
-                std::this_thread::sleep_for(50ms);
+            std::this_thread::sleep_for(50ms);
             continue;
         }
+        _nextPosition = false;
+        setObjectAttribute("gui", "hide", {1});
 
         // If an error happens while capturing this position, this flag will be set to true
         bool abortCurrentPosition = false;
@@ -214,7 +237,6 @@ bool GeometricCalibrator::calibrationFunc()
             }
             if (targetFilterName.empty())
                 continue;
-            auto& patternTextureName = patternTextureNames[targetFilterName];
 
             Values layout({0, 0, 0, 0});
             layout[targetLayoutIndex] = 1; // This index will display the second texture, named worldImageName
@@ -234,27 +256,32 @@ bool GeometricCalibrator::calibrationFunc()
                 auto serializedImage = imageObject.serialize();
 
                 // Send the buffer, and make sure it has been received and displayed
-                auto currentTimestamp = getObjectAttribute(patternTextureName, "lastDrawnTimestamp");
+                auto currentTimestamp = getObjectAttribute(targetFilterName, "timestamp");
                 sendBuffer(worldImageName, serializedImage);
 
-                for (auto updatedTimestamp = currentTimestamp; updatedTimestamp == currentTimestamp;
-                     updatedTimestamp = getObjectAttribute(patternTextureName, "lastDrawnTimestamp"))
+                for (auto updatedTimestamp = currentTimestamp; updatedTimestamp == currentTimestamp; updatedTimestamp = getObjectAttribute(targetFilterName, "timestamp"))
                     std::this_thread::sleep_for(15ms);
 
-                if (!captureCam.capture())
+                // Wait for a few more frames to be drawn, to account for double buffering,
+                // and exposure time of the input grabber
+                std::this_thread::sleep_for(_captureDelay);
+
+                const auto updateTime = Timer::getTime();
+                // Some grabber need to be asked to capture a frame
+                setObjectAttribute(_grabber->getName(), "capture", {1});
+                while (updateTime > imageBuffer.getSpec().timestamp)
                 {
-                    Log::get() << Log::WARNING << "GeometricCalibrator::" << __FUNCTION__ << " - Error while capturing frame, aborting captures for current position" << Log::endl;
-                    abortCurrentPosition = true;
-                    break;
+                    imageBuffer = _grabber->get();
+                    std::this_thread::sleep_for(5ms);
                 }
 
-                captureCam.update();
-                imageBuffer = captureCam.get();
-                if (imageBuffer.getSize() == 0)
+                if (imageBuffer.empty())
                     return false;
 
                 spec = imageBuffer.getSpec();
-                cv::Mat capturedImage(spec.height, spec.width, CV_8UC4, imageBuffer.data());
+                cv::Mat capturedImage;
+                assert(spec.channels == 4); // All Image classes should output RGBA (when uncompressed)
+                capturedImage = cv::Mat(spec.height, spec.width, CV_8UC4, imageBuffer.data());
 
                 cv::cvtColor(capturedImage, capturedImage, CV_RGB2GRAY);
                 cv::Mat1b grayscale(spec.height, spec.width);
@@ -303,10 +330,16 @@ bool GeometricCalibrator::calibrationFunc()
         workspace.exportMatrixToYaml(mergedProjectors.value(), "decoded_matrix/pos_" + std::to_string(positionIndex));
 
         ++positionIndex;
-        while (!_nextPosition && !_finalizeCalibration)
-            std::this_thread::sleep_for(50ms);
+        setObjectAttribute("gui", "show", {1});
     }
     _finalizeCalibration = false;
+
+    if (_abortCalibration)
+    {
+        _abortCalibration = false;
+        Log::get() << Log::MESSAGE << "GeometricCalibrator::" << __FUNCTION__ << " - Geometric calibration aborted" << Log::endl;
+        return true;
+    }
 
     if (positionIndex < 3)
     {
@@ -354,7 +387,7 @@ bool GeometricCalibrator::calibrationFunc()
 void GeometricCalibrator::registerAttributes()
 {
     addAttribute("calibrate", [&](const Values&) {
-        _runCalibration = true;
+        calibrate();
         return true;
     });
     setAttributeDescription("calibrate", "Run the geometric calibration");
@@ -370,6 +403,13 @@ void GeometricCalibrator::registerAttributes()
         return true;
     });
     setAttributeDescription("finalizeCalibration", "Signals the calibration algorithm to finalize the calibration process");
+
+    addAttribute("abortCalibration", [&](const Values&) {
+        _abortCalibration = true;
+        _finalizeCalibration = true;
+        return true;
+    });
+    setAttributeDescription("abortCalibration", "Signals the calibration algorithm to abort");
 
     addAttribute("cameraFocal",
         [&](const Values& args) {
@@ -399,6 +439,15 @@ void GeometricCalibrator::registerAttributes()
         },
         {'s'});
     setAttributeDescription("cameraModel", "Camera model used for reconstruction, either PINHOLE or FISHEYE");
+
+    addAttribute("captureDelay",
+        [&](const Values& args) {
+            _captureDelay = std::chrono::milliseconds(args[0].as<int>());
+            return true;
+        },
+        [&]() -> Values { return {_captureDelay.count()}; },
+        {'n'});
+    setAttributeDescription("captureDelay", "Delay between the display of the next pattern and grabbing it through the camera");
 
     addAttribute("patternScale",
         [&](const Values& args) {

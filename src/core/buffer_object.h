@@ -105,7 +105,7 @@ class BufferObject : public GraphObject
      * \brief Get the timestamp for the current buffer object
      * \return Return the timestamp
      */
-    int64_t getTimestamp() const { return _timestamp; }
+    virtual int64_t getTimestamp() const { return _timestamp; }
 
     /**
      * \brief Serialize the object
@@ -131,10 +131,10 @@ class BufferObject : public GraphObject
     bool _newSerializedObject{false};                             //!< Set to true during serialized object processing
 
     /**
-     * \brief Updates the timestamp of the object. Also, set the update flag to true.
+     * Updates the timestamp of the object. Also, set the update flag to true.
      * \param timestamp Value to set the timestamp to, -1 to set to the current time
      */
-    void updateTimestamp(int64_t timestamp = -1);
+    virtual void updateTimestamp(int64_t timestamp = -1);
 
     /**
      * \brief Register new attributes

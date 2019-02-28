@@ -328,11 +328,10 @@ void Texture_Image::update()
         return;
     auto img = _img.lock();
 
-    if (img->getTimestamp() == _timestamp)
+    if (img->getTimestamp() == _spec.timestamp)
         return;
 
     img->update();
-    _timestamp = img->getTimestamp();
 
     if (_multisample > 1)
     {
@@ -518,6 +517,8 @@ void Texture_Image::update()
         }
     }
 
+    _spec.timestamp = spec.timestamp;
+
     // If needed, specify some uniforms for the shader which will use this texture
     _shaderUniforms.clear();
     if (spec.format == "YCoCg_DXT5")
@@ -549,8 +550,6 @@ void Texture_Image::init()
     // This is used for getting documentation "offline"
     if (!_root)
         return;
-
-    _timestamp = Timer::getTime();
 }
 
 /*************/
@@ -606,9 +605,6 @@ void Texture_Image::registerAttributes()
         },
         {'n', 'n'});
     setAttributeDescription("size", "Change the texture size");
-
-    addAttribute("lastDrawnTimestamp", [](const Values&) { return true; }, [&]() -> Values { return {_lastDrawnTimestamp}; });
-    setAttributeDescription("lastDrawnTimestamp", "Timestamp (in µs) of the last image drawn");
 }
 
 } // namespace Splash

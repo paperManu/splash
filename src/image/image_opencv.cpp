@@ -1,9 +1,9 @@
 #include "./image/image_opencv.h"
 
 #include <chrono>
+#include <regex>
 
 #include <opencv2/opencv.hpp>
-#include <hap.h>
 
 #include "./utils/cgutils.h"
 #include "./utils/log.h"
@@ -61,61 +61,76 @@ void Image_OpenCV::init()
     // This is used for getting documentation "offline"
     if (!_root)
         return;
-
-    _videoCapture = unique_ptr<cv::VideoCapture>(new cv::VideoCapture());
 }
 
 /*************/
 void Image_OpenCV::readLoop()
 {
-    if (!_videoCapture)
+    std::unique_ptr<cv::VideoCapture> videoCapture{nullptr};
+    if (_inputIndex >= 0)
+        videoCapture = make_unique<cv::VideoCapture>(_inputIndex);
+    else
+        videoCapture = make_unique<cv::VideoCapture>(_filepath);
+
+    if (!videoCapture->isOpened())
     {
-        Log::get() << Log::WARNING << "Image_OpenCV::" << __FUNCTION__ << " - Unable to create the VideoCapture" << Log::endl;
+        Log::get() << Log::WARNING << "Image_OpenCV::" << __FUNCTION__ << " - Unable to open video capture input " << _filepath << Log::endl;
         return;
     }
 
-    auto realPath = _filepath;
-    if (_inputIndex != -1)
-        realPath = to_string(_inputIndex);
+    uint32_t width = videoCapture->get(cv::CAP_PROP_FRAME_WIDTH);
+    uint32_t height = videoCapture->get(cv::CAP_PROP_FRAME_HEIGHT);
+    uint32_t framerate = videoCapture->get(cv::CAP_PROP_FPS);
+    float exposure = videoCapture->get(cv::CAP_PROP_AUTO_EXPOSURE);
 
-    if (!_videoCapture->isOpened())
-    {
-        bool status;
-        if (_inputIndex >= 0)
-            status = _videoCapture->open(_inputIndex);
-        else
-            status = _videoCapture->open(realPath);
+    Log::get() << Log::MESSAGE << "Image_OpenCV::" << __FUNCTION__ << " - Successfully initialized VideoCapture " << _filepath << Log::endl;
 
-        if (!status)
-        {
-            Log::get() << Log::WARNING << "Image_OpenCV::" << __FUNCTION__ << " - Unable to open video capture input " << realPath << Log::endl;
-            return;
-        }
-
-        _videoCapture->set(CV_CAP_PROP_FRAME_WIDTH, _width);
-        _videoCapture->set(CV_CAP_PROP_FRAME_HEIGHT, _height);
-        _videoCapture->set(CV_CAP_PROP_FPS, _framerate);
-
-        Log::get() << Log::MESSAGE << "Image_OpenCV::" << __FUNCTION__ << " - Successfully initialized VideoCapture " << realPath << Log::endl;
-    }
-
+    _capturing = true;
     while (_continueReading)
     {
-        if (Timer::get().isDebug())
-            Timer::get() << "read " + _name;
+        if (_cvOptionsUpdated)
+        {
+            _cvOptionsUpdated = false;
+            auto options = parseCVOptions(_cvOptions);
+            for (const auto& [prop, value] : options)
+                videoCapture->set(prop, value);
+        }
 
+        // Update capture parameters
+        if (width != _width)
+            videoCapture->set(CV_CAP_PROP_FRAME_WIDTH, _width);
+        if (height != _height)
+            videoCapture->set(CV_CAP_PROP_FRAME_HEIGHT, _height);
+        if (framerate != _framerate)
+            videoCapture->set(CV_CAP_PROP_FPS, _framerate);
+        if (exposure != _exposure)
+            videoCapture->set(cv::CAP_PROP_EXPOSURE, _exposure);
+
+        _width = width = videoCapture->get(CV_CAP_PROP_FRAME_WIDTH);
+        _height = height = videoCapture->get(CV_CAP_PROP_FRAME_HEIGHT);
+        _framerate = framerate = videoCapture->get(CV_CAP_PROP_FPS);
+        _exposure = exposure = videoCapture->get(cv::CAP_PROP_EXPOSURE);
+
+        // Capture
         auto capture = cv::Mat();
-        if (!_videoCapture->read(capture))
+        if (!videoCapture->read(capture))
         {
             Log::get() << Log::WARNING << "Image_OpenCV::" << __FUNCTION__ << " - An error occurred while reading the VideoCapture" << Log::endl;
             return;
+        }
+
+        if (capture.channels() == 1)
+        {
+            auto rgba = cv::Mat();
+            cv::cvtColor(capture, rgba, CV_GRAY2RGBA);
+            capture = rgba;
         }
 
         auto spec = _readBuffer.getSpec();
         if (static_cast<int>(spec.width) != capture.rows || static_cast<int>(spec.height) != capture.cols || static_cast<int>(spec.channels) != capture.channels())
         {
             ImageBufferSpec newSpec(capture.cols, capture.rows, capture.channels(), 8 * capture.channels(), ImageBufferSpec::Type::UINT8);
-            newSpec.format = "BGR";
+            newSpec.format = "BGRA";
             _readBuffer = ImageBuffer(newSpec);
         }
         unsigned char* pixels = reinterpret_cast<unsigned char*>(_readBuffer.data());
@@ -125,7 +140,7 @@ void Image_OpenCV::readLoop()
 
         lock_guard<shared_timed_mutex> lockWrite(_writeMutex);
         if (!_bufferImage)
-            _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
+            _bufferImage = make_unique<ImageBuffer>();
         std::swap(*_bufferImage, _readBuffer);
         _imageUpdated = true;
         updateTimestamp();
@@ -133,6 +148,34 @@ void Image_OpenCV::readLoop()
         if (Timer::get().isDebug())
             Timer::get() >> ("read " + _name);
     }
+    _capturing = false;
+}
+
+/*************/
+map<int, double> Image_OpenCV::parseCVOptions(const std::string& options)
+{
+    regex re("(([^=]+)=([^ ,]+))+");
+    auto sre_begin = sregex_iterator(options.begin(), options.end(), re);
+    auto sre_end = sregex_iterator();
+
+    map<int, double> result;
+    for (auto i = sre_begin; i != sre_end; ++i)
+    {
+        std::smatch match = *i;
+        try
+        {
+            auto key = std::stoi(match[2]);
+            auto value = std::stod(match[3]);
+            result[key] = value;
+        }
+        catch (...)
+        {
+            Log::get() << Log::WARNING << "Image_OpenCV::" << __FUNCTION__ << "Key " << string(match[2]) << " is not an integer, or value " << string(match[3])
+                       << " is not a floating point value" << Log::endl;
+            continue;
+        }
+    }
+    return result;
 }
 
 /*************/
@@ -146,7 +189,7 @@ void Image_OpenCV::registerAttributes()
             _height = args[1].as<int>();
 
             _width = (_width == 0) ? 640 : _width;
-            _height = (_height == 0) ? 640 : _height;
+            _height = (_height == 0) ? 480 : _height;
 
             return true;
         },
@@ -164,6 +207,31 @@ void Image_OpenCV::registerAttributes()
         [&]() -> Values { return {_framerate}; },
         {'n'});
     setAttributeDescription("framerate", "Set the desired capture framerate");
+
+    addAttribute("exposure",
+        [&](const Values& args) {
+            _exposure = args[0].as<float>();
+            return true;
+        },
+        [&]() -> Values { return {_exposure}; },
+        {'n'});
+    setAttributeDescription("exposure", "Camera exposure");
+
+    addAttribute("capturing", [](const Values&) { return true; }, [&]() -> Values { return {_capturing}; });
+    setAttributeDescription("capturing", "Ask whether the camera is grabbing images");
+
+    addAttribute("cvOptions",
+        [&](const Values& args) {
+            _cvOptions = args[0].as<string>();
+            _cvOptionsUpdated = true;
+            return true;
+        },
+        [&]() -> Values { return {_cvOptions}; },
+        {'s'});
+    setAttributeDescription("cvOptions",
+        R"(OpenCV attributes set as a string following the format: "key1=value1, key2=value2, ...".
+        Keys must be indices from cv::CAP_PROPs, and values must be doubles.
+        Attributes can be found in OpenCV documentation: https://docs.opencv.org.)");
 }
 
-} // end of namespace
+} // namespace Splash

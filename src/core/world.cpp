@@ -164,7 +164,7 @@ void World::addToWorld(const string& type, const string& name)
 
     auto object = _factory->create(type);
     auto realName = name;
-    if (object.get() != nullptr)
+    if (object)
     {
         object->setName(name);
         _objects[name] = object;

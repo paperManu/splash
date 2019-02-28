@@ -35,8 +35,6 @@ void Texture::init()
     // This is used for getting documentation "offline"
     if (!_root)
         return;
-
-    _timestamp = Timer::getTime();
 }
 
 /*************/
@@ -51,7 +49,7 @@ void Texture::registerAttributes()
 {
     GraphObject::registerAttributes();
 
-    addAttribute("timestamp", [](const Values&) { return true; }, [&]() -> Values { return {_timestamp}; });
+    addAttribute("timestamp", [](const Values&) { return true; }, [&]() -> Values { return {_spec.timestamp}; });
     setAttributeDescription("timestamp", "Timestamp (in µs) for the current texture, which mimicks the timestamp of the input image (if any)");
 }
 

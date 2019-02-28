@@ -394,12 +394,6 @@ cv::Mat3f ColorCalibrator::captureHDR(unsigned int nbrLDR, double step, bool com
         nextSpeed *= pow(2.0, step);
 
         string filename = "/tmp/splash_ldr_sample_" + to_string(i) + ".bmp";
-        int status = _gcamera->capture();
-        if (status == 0)
-        {
-            Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Error while capturing LDRI" << Log::endl;
-            return {};
-        }
         _gcamera->update();
         _gcamera->write(filename);
 
@@ -533,13 +527,6 @@ float ColorCalibrator::findCorrectExposure()
     while (true)
     {
         _gcamera->getAttribute("shutterspeed", res);
-        int status = _gcamera->capture();
-        if (status == 0)
-        {
-            Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - There was an issue during capture." << Log::endl;
-            return 0.f;
-        }
-
         _gcamera->update();
         ImageBuffer img = _gcamera->get();
         ImageBufferSpec spec = _gcamera->getSpec();

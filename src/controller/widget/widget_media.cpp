@@ -359,14 +359,13 @@ int GuiMedia::updateWindowFlags()
 list<shared_ptr<GraphObject>> GuiMedia::getSceneMedia()
 {
     auto mediaList = list<shared_ptr<GraphObject>>();
-    auto mediaTypes = list<string>({"image", "queue", "texture"});
+    auto mediaTypes = getTypesFromCategory(GraphObject::Category::IMAGE);
 
     for (auto& type : mediaTypes)
     {
         auto objects = getObjectsPtr(getObjectsOfType(type));
         for (auto& object : objects)
-            if (object->getSavable())
-                mediaList.push_back(object);
+            mediaList.push_back(object);
     }
 
     mediaList.sort();
@@ -395,4 +394,4 @@ list<shared_ptr<GraphObject>> GuiMedia::getFiltersForImage(const shared_ptr<Grap
     return filterList;
 }
 
-} // end of namespace
+} // namespace Splash

@@ -169,7 +169,7 @@ void Filter::render()
     auto input = _inTextures[0].lock();
     auto inputSpec = input->getSpec();
 
-    if (inputSpec != _outTextureSpec || (_sizeOverride[0] > 0 && _sizeOverride[1] > 0))
+    if (inputSpec != _spec || (_sizeOverride[0] > 0 && _sizeOverride[1] > 0))
     {
         auto newOutTextureSpec = inputSpec;
         if (_sizeOverride[0] > 0 || _sizeOverride[1] > 0)
@@ -179,15 +179,25 @@ void Filter::render()
             newOutTextureSpec.height = _sizeOverride[1] ? _sizeOverride[1] : _sizeOverride[0];
         }
 
-        if (_outTextureSpec != newOutTextureSpec)
+        if (_spec != newOutTextureSpec)
         {
-            _outTextureSpec = newOutTextureSpec;
-            _fbo->setSize(_outTextureSpec.width, _outTextureSpec.height);
+            _spec = newOutTextureSpec;
+            _fbo->setSize(_spec.width, _spec.height);
         }
     }
 
+    // Update the timestamp to the latest from all input textures
+    for (const auto& texture : _inTextures)
+    {
+        auto texturePtr = texture.lock();
+        if (!texturePtr)
+            continue;
+        auto spec = texturePtr->getSpec();
+        _spec.timestamp = std::max(_spec.timestamp, spec.timestamp);
+    }
+
     _fbo->bindDraw();
-    glViewport(0, 0, _outTextureSpec.width, _outTextureSpec.height);
+    glViewport(0, 0, _spec.width, _spec.height);
 
     _screen->activate();
     updateUniforms();

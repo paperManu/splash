@@ -576,14 +576,16 @@ void Gui::render()
         // Some global buttons
         if (ImGui::CollapsingHeader("General commands", nullptr, true, true))
         {
-#if HAVE_GPHOTO and HAVE_OPENCV
-            ImGui::Columns(2);
+
+            ImGui::Columns(3);
             ImGui::Text("General");
             ImGui::NextColumn();
             ImGui::Text("Color calibration");
             ImGui::NextColumn();
+            ImGui::Text("Geometric calibration");
             ImGui::Separator();
-#endif
+
+            ImGui::NextColumn();
             if (ImGui::Button("Compute blending map"))
                 computeBlending(true);
             if (ImGui::IsItemHovered())
@@ -602,8 +604,8 @@ void Gui::render()
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Switch objects between wireframe and textured (Ctrl+T and Ctrl+W)");
 
-#if HAVE_GPHOTO and HAVE_OPENCV
             ImGui::NextColumn();
+#if HAVE_GPHOTO and HAVE_OPENCV
             if (ImGui::Button("Calibrate camera response"))
                 calibrateColorResponseFunction();
             if (ImGui::IsItemHovered())
@@ -619,8 +621,32 @@ void Gui::render()
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Activate color LUT, once calibrated (Ctrl+L)");
 
-            ImGui::Columns(1);
 #endif
+
+            ImGui::NextColumn();
+#if HAVE_SLAPS
+            if (ImGui::Button("Start calibration"))
+                setObjectAttribute("geometricCalibrator", "calibrate", {1});
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Enter the calibration mode");
+
+            if (ImGui::Button("Capture new position"))
+                setObjectAttribute("geometricCalibrator", "nextPosition", {1});
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Capture the patterns for the current camera position");
+
+            if (ImGui::Button("Finalize calibration"))
+                setObjectAttribute("geometricCalibrator", "finalizeCalibration", {1});
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Compute calibration from the captured patterns");
+
+            if (ImGui::Button("Abort calibration"))
+                setObjectAttribute("geometricCalibrator", "abortCalibration", {1});
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Abort the calibration process");
+#endif
+            ImGui::Columns(1);
+
             // Configuration load
             ImGui::Separator();
             ImGui::Text("Configuration file");

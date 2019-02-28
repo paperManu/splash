@@ -187,6 +187,7 @@ bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
         ImageBufferSpec curSpec = _bufferDeserialize.getSpec();
         if (spec != curSpec)
             _bufferDeserialize = ImageBuffer(spec);
+        _bufferDeserialize.getSpec().timestamp = spec.timestamp;
 
         auto rawBuffer = obj->grabData();
         rawBuffer.shift(SPLASH_IMAGE_SERIALIZED_HEADER_SIZE);
@@ -214,8 +215,9 @@ bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
 /*************/
 bool Image::read(const string& filename)
 {
+    const auto filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
     if (!_isConnectedToRemote)
-        return readFile(filename);
+        return readFile(filepath);
     else
         return true;
 }
@@ -284,6 +286,14 @@ void Image::update()
     {
         updateTimestamp();
     }
+}
+
+/*************/
+void Image::updateTimestamp(int64_t timestamp)
+{
+    BufferObject::updateTimestamp(timestamp);
+    if (_bufferImage)
+        _bufferImage->getSpec().timestamp = _timestamp;
 }
 
 /*************/
@@ -403,7 +413,7 @@ void Image::registerAttributes()
             _filepath = args[0].as<string>();
             if (_filepath.empty())
                 return true;
-            return read(Utils::getFullPathFromFilePath(_filepath, _root->getConfigurationPath()));
+            return read(_filepath);
         },
         [&]() -> Values { return {_filepath}; },
         {'s'});

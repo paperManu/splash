@@ -81,28 +81,30 @@ float Image_FFmpeg::getMediaDuration() const
 /*************/
 bool Image_FFmpeg::read(const string& filename)
 {
+    const auto filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
+
     // First: cleanup
     freeFFmpegObjects();
 
-    if (avformat_open_input(&_avContext, filename.c_str(), nullptr, nullptr) != 0)
+    if (avformat_open_input(&_avContext, filepath.c_str(), nullptr, nullptr) != 0)
     {
-        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Couldn't read file " << filename << Log::endl;
+        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Couldn't read file " << filepath << Log::endl;
         return false;
     }
 
     if (avformat_find_stream_info(_avContext, NULL) < 0)
     {
-        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Couldn't retrieve information for file " << filename << Log::endl;
+        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Couldn't retrieve information for file " << filepath << Log::endl;
         avformat_close_input(&_avContext);
         return false;
     }
 
-    Log::get() << Log::MESSAGE << "Image_FFmpeg::" << __FUNCTION__ << " - Successfully loaded file " << filename << Log::endl;
-    av_dump_format(_avContext, 0, filename.c_str(), 0);
+    Log::get() << Log::MESSAGE << "Image_FFmpeg::" << __FUNCTION__ << " - Successfully loaded file " << filepath << Log::endl;
+    av_dump_format(_avContext, 0, filepath.c_str(), 0);
 
 #if HAVE_LINUX
     // Give the kernel hints about how to read the file
-    auto fd = Utils::getFileDescriptorForOpenedFile(filename);
+    auto fd = Utils::getFileDescriptorForOpenedFile(filepath);
     if (fd)
     {
         bool success = true;

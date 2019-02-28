@@ -140,7 +140,6 @@ class Filter : public Texture
 
     std::unique_ptr<Framebuffer> _fbo{nullptr};
     std::shared_ptr<Object> _screen;
-    ImageBufferSpec _outTextureSpec;
 
     // Filter parameters
     int _sizeOverride[2]{-1, -1}; //!< If set to positive values, overrides the size given by input textures

@@ -33,8 +33,8 @@
 #include "./core/attribute.h"
 #include "./core/buffer_object.h"
 #include "./core/coretypes.h"
-#include "./core/root_object.h"
 #include "./core/imagebuffer.h"
+#include "./core/root_object.h"
 
 namespace Splash
 {
@@ -92,6 +92,12 @@ class Image : public BufferObject
     ImageBufferSpec getSpec() const;
 
     /**
+     * Get the timestamp for the current image
+     * \return Return the timestamp
+     */
+    virtual int64_t getTimestamp() const final { return _image ? _image->getSpec().timestamp : 0; }
+
+    /**
      * \brief Set the image from an ImageBuffer
      * \param img Image buffer
      */
@@ -135,6 +141,12 @@ class Image : public BufferObject
      * \brief Update the content of the image
      */
     virtual void update() override;
+
+    /**
+     * Update the timestamp of the object. Also, set the update flag to true.
+     * \param timestamp Value to set the timestamp to, -1 to set to the current time
+     */
+    virtual void updateTimestamp(int64_t timestamp = -1) final;
 
     /**
      * \brief Write the current buffer to the specified file
@@ -192,6 +204,6 @@ class Image : public BufferObject
     void init();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_IMAGE_H

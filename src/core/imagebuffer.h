@@ -115,8 +115,6 @@ class ImageBufferSpec
             return false;
         if (format != spec.format)
             return false;
-        if (timestamp != spec.timestamp)
-            return false;
 
         return true;
     }
@@ -194,6 +192,12 @@ class ImageBuffer
      */
     ImageBufferSpec& getSpec() { return _spec; }
     const ImageBufferSpec& getSpec() const { return _spec; }
+
+    /**
+     * Return true if the image buffer is empty
+     * \return Return true if empty
+     */
+    bool empty() const { return getSize() == 0; }
 
     /**
      * \brief Get the image buffer size

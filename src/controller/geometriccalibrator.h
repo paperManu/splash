@@ -26,6 +26,7 @@
 #define SPLASH_GEOMETRICCALIBRATOR_H
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <future>
 #include <mutex>
@@ -49,17 +50,25 @@ class GeometricCalibrator : public ControllerObject
     /**
      * Destructor
      */
-    ~GeometricCalibrator() final = default;
+    ~GeometricCalibrator() final;
 
     /**
      * Run calibration
      */
-    void calibrate() { _runCalibration = true; }
+    void calibrate();
 
     /**
-     * Update the geometric calibration for the whole configuration
+     * Try linking the object to another one
+     * \param obj GraphObject to link to
+     * \return Return true if linking was successful
      */
-    void update() final;
+    bool linkTo(const std::shared_ptr<GraphObject>& obj) final;
+
+    /**
+     * Try unlinking the given GraphObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) final;
 
     /**
      * Register new functors to modify attributes
@@ -73,20 +82,24 @@ class GeometricCalibrator : public ControllerObject
         Fisheye = 1
     };
 
-    bool _runCalibration{false};
-    bool _running{false};
-    bool _nextPosition{false};
-    bool _finalizeCalibration{false};
-    bool _finished{false};
+    bool _runCalibration{false};      //!< True if calibration is meant to be ran
+    bool _running{false};             //!< True if calibration is currently running
+    bool _nextPosition{false};        //!< Set to true to capture from next camera position
+    bool _finalizeCalibration{false}; //!< Set to true to finalize calibration
+    bool _abortCalibration{false};
 
     float _cameraFocal{5000.f};
     CameraModel _cameraModel{CameraModel::Fisheye};
     float _structuredLightScale{1.0 / 16.0};
+    std::chrono::milliseconds _captureDelay{250ms};
+
+    std::shared_ptr<Image> _grabber{nullptr};
 
     std::future<bool> _calibrationFuture{};
 
     /**
      * Calibration function, ran in a separate thread through _calibrationFuture
+     * \return Return true if all went well during the calibration process
      */
     bool calibrationFunc();
 };

@@ -127,8 +127,6 @@ class Texture : public GraphObject
     // Store some texture parameters
     bool _resizable{true};
 
-    int64_t _timestamp;
-
     /**
      * \brief Register new functors to modify attributes
      */
