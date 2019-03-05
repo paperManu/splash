@@ -109,12 +109,6 @@ class Texture_Image : public Texture
     std::unordered_map<std::string, Values> getShaderUniforms() const final { return _shaderUniforms; }
 
     /**
-     * \brief Get spec of the texture
-     * \return Return the spec
-     */
-    ImageBufferSpec getSpec() const override { return _spec; }
-
-    /**
      * Grab the texture to the host memory, at the given mipmap level
      * \param level Mipmap level to grab
      * \return Return the image data in an ImageBuffer

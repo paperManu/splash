@@ -251,6 +251,9 @@ void GraphObject::registerAttributes()
             return true;
         },
         {'s'});
+
+    addAttribute("timestamp", [](const Values&) { return true; }, [&]() -> Values { return {getTimestamp()}; });
+    setAttributeDescription("timestamp", "Timestamp (in µs) for the current buffer, based on the latest image data created/received");
 }
 
 /*************/

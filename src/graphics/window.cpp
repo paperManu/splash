@@ -367,6 +367,17 @@ void Window::render()
     if (_guiTexture != nullptr)
         _guiTexture->setAttribute("size", {w, h});
 
+    // Update the timestamp based on the input textures
+    int64_t timestamp{0};
+    for (auto& t : _inTextures)
+    {
+        auto tex = t.lock();
+        if (!tex)
+            continue;
+        timestamp = std::max(timestamp, tex->getTimestamp());
+    }
+    _backBufferTimestamp = timestamp;
+
 #ifdef DEBUG
     GLenum error = glGetError();
     if (error)
@@ -463,6 +474,9 @@ void Window::swapBuffers()
 
     if (drawToFront)
         glDrawBuffer(GL_BACK);
+
+    _frontBufferTimestamp = _backBufferTimestamp;
+    _presentationDelay = Timer::getTime() - _frontBufferTimestamp;
 
     _window->releaseContext();
 }
@@ -809,6 +823,10 @@ void Window::registerAttributes()
             }
             return textureList;
         });
+    setAttributeDescription("textureList", "Get the list of the textures linked to the window");
+
+    addAttribute("presentationDelay", [&](const Values&) { return true; }, [&]() -> Values { return {_presentationDelay}; });
+    setAttributeDescription("presentationDelay", "Delay between the update of an image and its display");
 }
 
-} // end of namespace
+} // namespace Splash

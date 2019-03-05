@@ -75,12 +75,6 @@ class Texture_Syphon : public Texture
     std::unordered_map<std::string, Values> getShaderUniforms() const { return _shaderUniforms; }
 
     /**
-     * \brief Get spec of the texture
-     * \return Return the texture spec
-     */
-    ImageBufferSpec getSpec() const { return ImageBufferSpec(); }
-
-    /**
      * Get the output texture GL id
      * \return Return the id
      */

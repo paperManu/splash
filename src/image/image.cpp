@@ -53,7 +53,7 @@ void Image::init()
 /*************/
 Image::~Image()
 {
-    lock_guard<shared_timed_mutex> writeLock(_writeMutex);
+    lock_guard<shared_mutex> writeLock(_writeMutex);
     lock_guard<Spinlock> readlock(_readMutex);
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Image::~Image - Destructor" << Log::endl;
@@ -92,9 +92,11 @@ ImageBufferSpec Image::getSpec() const
 /*************/
 void Image::set(const ImageBuffer& img)
 {
-    lock_guard<Spinlock> lockRead(_readMutex);
-    if (_image)
-        *_image = img;
+    lock_guard<shared_mutex> lockRead(_writeMutex);
+    if (!_bufferImage)
+        _bufferImage = make_unique<ImageBuffer>();
+    *_bufferImage = img;
+    _imageUpdated = true;
     updateTimestamp();
 }
 
@@ -104,10 +106,11 @@ void Image::set(unsigned int w, unsigned int h, unsigned int channels, ImageBuff
     ImageBufferSpec spec(w, h, channels, 8 * sizeof(channels) * (int)type, type);
     ImageBuffer img(spec);
 
-    lock_guard<Spinlock> lock(_readMutex);
-    if (!_image)
-        _image = make_unique<ImageBuffer>();
-    std::swap(*_image, img);
+    lock_guard<shared_mutex> lock(_writeMutex);
+    if (!_bufferImage)
+        _bufferImage = make_unique<ImageBuffer>();
+    std::swap(*_bufferImage, img);
+    _imageUpdated = true;
     updateTimestamp();
 }
 
@@ -248,12 +251,11 @@ bool Image::readFile(const string& filename)
     memcpy(img.data(), rawImage, w * h * 4);
     stbi_image_free(rawImage);
 
-    lock_guard<shared_timed_mutex> lock(_writeMutex);
+    lock_guard<Spinlock> lock(_readMutex);
     if (!_bufferImage)
         _bufferImage = make_unique<ImageBuffer>();
     std::swap(*_bufferImage, img);
     _imageUpdated = true;
-
     updateTimestamp();
 
     return true;
@@ -275,7 +277,7 @@ void Image::update()
     if (_imageUpdated)
     {
         lock_guard<Spinlock> lockRead(_readMutex);
-        shared_lock<shared_timed_mutex> lockWrite(_writeMutex);
+        shared_lock<shared_mutex> lockWrite(_writeMutex);
         _image.swap(_bufferImage);
         _imageUpdated = false;
 

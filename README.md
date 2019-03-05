@@ -64,10 +64,10 @@ Splash relies on a few libraries to get the job done. The mandatory libraries ar
   - [Snappy](https://code.google.com/p/snappy/) to handle Hap codec decompression,
   - [ZMQ](http://zeromq.org) to communicate between the various process involved in a Splash session,
   - [cppzmq](https://github.com/zeromq/cppzmq.git) for its C++ bindings of ZMQ
+  - [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,
 - Dependencies built at compile-time from submodules:
   - [doctest](https://github.com/onqtam/doctest/) to do some unit testing,
   - [ImGui](https://github.com/ocornut/imgui) to draw the GUI,
-  - [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,
   - [stb_image](https://github.com/nothings/stb) to read images.
 
 Some other libraries are optional:

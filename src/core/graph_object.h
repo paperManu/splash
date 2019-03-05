@@ -110,7 +110,8 @@ class GraphObject : public BaseObject
      * \param types Vector of char holding the expected parameters for the set function
      * \return Return a reference to the created attribute
      */
-    Attribute& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types = {}) override;
+    Attribute& addAttribute(
+        const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types = {}) override;
 
     /**
      * \brief Get the real type of this BaseObject, as a std::string.
@@ -228,6 +229,18 @@ class GraphObject : public BaseObject
      * \return Return the category
      */
     Category getCategory() const { return _category; }
+
+    /**
+     * Get the timestamp for the last update of this graph object, or 0
+     * \return Return the timestamp in us
+     */
+    virtual int64_t getTimestamp() const { return 0; }
+
+    /**
+     * Set the timestamp
+     * \param timestamp Timestamp, in us
+     */
+    virtual void setTimestamp(int64_t) {}
 
     /**
      * \brief Set the rendering priority for this object

@@ -95,10 +95,10 @@ class Warp : public Texture
     GLuint getTexId() const { return _fbo->getColorTexture()->getTexId(); }
 
     /**
-     * \brief Get spec of the texture
-     * \return Return the spec
+     * Get the timestamp
+     * \return Return the timestamp in us
      */
-    ImageBufferSpec getSpec() const { return _outTextureSpec; }
+    virtual int64_t getTimestamp() const final { return _spec.timestamp; }
 
     /**
      * \brief Try to link the given GraphObject to this object
@@ -141,7 +141,6 @@ class Warp : public Texture
     std::unique_ptr<Framebuffer> _fbo{nullptr};
     std::shared_ptr<Mesh_BezierPatch> _screenMesh{nullptr};
     std::shared_ptr<Object> _screen{nullptr};
-    ImageBufferSpec _outTextureSpec;
 
     // Render options
     bool _showControlPoints{false};

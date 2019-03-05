@@ -536,6 +536,9 @@ Values Camera::pickVertexOrCalibrationPoint(float x, float y)
 /*************/
 void Camera::render()
 {
+    // Keep the timestamp of the newest object
+    int64_t timestamp{0};
+
     if (_updateColorDepth)
     {
         _msFbo->setParameters(_multisample, _render16bits, false);
@@ -597,6 +600,7 @@ void Camera::render()
             if (!obj)
                 continue;
 
+            timestamp = std::max(timestamp, obj->getTimestamp());
             obj->activate();
 
             vec2 colorBalance = colorBalanceFromTemperature(_colorTemperature);
@@ -751,6 +755,9 @@ void Camera::render()
         auto spec = colorTexture->getSpec();
         _mipmapBufferSpec = {spec.width, spec.height, spec.channels, spec.bpp, spec.format};
     }
+
+    // Set the timestamp for the output texture
+    _outFbo->getColorTexture()->setTimestamp(timestamp);
 
 #ifdef DEBUG
     GLenum error = glGetError();

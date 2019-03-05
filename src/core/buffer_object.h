@@ -75,12 +75,12 @@ class BufferObject : public GraphObject
      * \brief Check whether the object has been updated
      * \return Return true if the object has been updated
      */
-    bool wasUpdated() const { return _updatedBuffer | GraphObject::wasUpdated(); }
+    bool wasUpdated() const override { return _updatedBuffer | GraphObject::wasUpdated(); }
 
     /**
      * \brief Set the updated buffer flag to false.
      */
-    void setNotUpdated();
+    void setNotUpdated() override;
 
     /**
      * \brief Update the BufferObject from a serialized representation.
@@ -102,10 +102,16 @@ class BufferObject : public GraphObject
     virtual std::string getDistantName() const { return _name; }
 
     /**
-     * \brief Get the timestamp for the current buffer object
+     * Get the timestamp for the current buffer object
      * \return Return the timestamp
      */
-    virtual int64_t getTimestamp() const { return _timestamp; }
+    virtual int64_t getTimestamp() const override { return _timestamp; }
+
+    /**
+     * Set the timestamp
+     * \param timestamp Timestamp, in us
+     */
+    virtual void setTimestamp(int64_t timestamp) override { _timestamp = timestamp; }
 
     /**
      * \brief Serialize the object
@@ -121,7 +127,7 @@ class BufferObject : public GraphObject
 
   protected:
     mutable Spinlock _readMutex;                      //!< Read mutex locked when the object is read from
-    mutable std::shared_timed_mutex _writeMutex;      //!< Write mutex locked when the object is written to
+    mutable std::shared_mutex _writeMutex;            //!< Write mutex locked when the object is written to
     std::atomic_bool _serializedObjectWaiting{false}; //!< True if a serialized object has been set and waits for processing
     std::future<void> _deserializeFuture{};           //!< Holds the deserialization thread
     int64_t _timestamp{0};                            //!< Timestamp
@@ -142,6 +148,6 @@ class BufferObject : public GraphObject
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_BUFFER_OBJECT_H

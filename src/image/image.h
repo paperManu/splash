@@ -138,7 +138,9 @@ class Image : public BufferObject
     void zero();
 
     /**
-     * \brief Update the content of the image
+     * Update the content of the image
+     * Image is double buffered, so this has to be called after
+     * any new buffer is set for changes to be effective
      */
     virtual void update() override;
 

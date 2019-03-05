@@ -107,6 +107,12 @@ class Geometry : public BufferObject
     bool deserialize(const std::shared_ptr<SerializedObject>& obj) override;
 
     /**
+     * Get the timestamp
+     * \return Return the timestamp
+     */
+    virtual int64_t getTimestamp() const final { return _defaultMesh ? _defaultMesh->getTimestamp() : 0; }
+
+    /**
      * \brief Get whether the alternative buffers have been resized during the last feedback call
      * \return Return true if the buffers have been resized
      */

@@ -216,6 +216,7 @@ bool GeometricCalibrator::calibrationFunc()
 
             // Find which window displays the camera, and what is its ID in its layout
             std::string targetFilterName;
+            std::string targetWindowName;
             int targetLayoutIndex = 0;
             for (size_t index = 0; index < windowList.size(); ++index)
             {
@@ -228,6 +229,7 @@ bool GeometricCalibrator::calibrationFunc()
                     if (objectName == cameraName)
                     {
                         targetFilterName = worldFilterPrefix + std::to_string(index);
+                        targetWindowName = windowName;
                         break;
                     }
                     ++targetLayoutIndex;
@@ -235,7 +237,7 @@ bool GeometricCalibrator::calibrationFunc()
                 if (!targetFilterName.empty())
                     break;
             }
-            if (targetFilterName.empty())
+            if (targetFilterName.empty() || targetWindowName.empty())
                 continue;
 
             Values layout({0, 0, 0, 0});
@@ -253,13 +255,13 @@ bool GeometricCalibrator::calibrationFunc()
                 ImageBuffer imageBuffer(spec, pattern.data);
 
                 imageObject.set(imageBuffer);
+                imageObject.update(); // We have to force the update, as Image is double-buffered
                 auto serializedImage = imageObject.serialize();
 
                 // Send the buffer, and make sure it has been received and displayed
-                auto currentTimestamp = getObjectAttribute(targetFilterName, "timestamp");
                 sendBuffer(worldImageName, serializedImage);
-
-                for (auto updatedTimestamp = currentTimestamp; updatedTimestamp == currentTimestamp; updatedTimestamp = getObjectAttribute(targetFilterName, "timestamp"))
+                for (int64_t updatedTimestamp = 0; updatedTimestamp != imageObject.getTimestamp();
+                     updatedTimestamp = getObjectAttribute(targetWindowName, "timestamp")[0].as<int64_t>())
                     std::this_thread::sleep_for(15ms);
 
                 // Wait for a few more frames to be drawn, to account for double buffering,

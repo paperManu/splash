@@ -187,14 +187,15 @@ void Filter::render()
     }
 
     // Update the timestamp to the latest from all input textures
+    int64_t timestamp{0};
     for (const auto& texture : _inTextures)
     {
         auto texturePtr = texture.lock();
         if (!texturePtr)
             continue;
-        auto spec = texturePtr->getSpec();
-        _spec.timestamp = std::max(_spec.timestamp, spec.timestamp);
+        timestamp = std::max(timestamp, texturePtr->getTimestamp());
     }
+    _spec.timestamp = timestamp;
 
     _fbo->bindDraw();
     glViewport(0, 0, _spec.width, _spec.height);

@@ -136,6 +136,12 @@ class Camera : public GraphObject
     }
 
     /**
+     * Get the timestamp
+     * \return Return the timestamp in us
+     */
+    virtual int64_t getTimestamp() const final { return _outFbo ? _outFbo->getColorTexture()->getTimestamp() : 0; }
+
+    /**
      * \brief Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */

@@ -80,7 +80,7 @@ class Texture : public GraphObject
      * \brief Get spec of the texture
      * \return Return the texture spec
      */
-    virtual ImageBufferSpec getSpec() const = 0;
+    virtual ImageBufferSpec getSpec() const { return _spec; }
 
     /**
      * Get the output texture GL id
@@ -94,10 +94,22 @@ class Texture : public GraphObject
     virtual std::string getPrefix() const { return "_tex"; }
 
     /**
+     * Get the timestamp
+     * \return Return the timestamp in us
+     */
+    virtual int64_t getTimestamp() const override { return _spec.timestamp; }
+
+    /**
+     * Set the timestamp
+     * \param timestamp Timestamp, in us
+     */
+    virtual void setTimestamp(int64_t timestamp) override { _spec.timestamp = timestamp; }
+
+    /**
      * \brief Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    virtual bool linkTo(const std::shared_ptr<GraphObject>& obj);
+    virtual bool linkTo(const std::shared_ptr<GraphObject>& obj) override;
 
     /**
      * \brief Lock the texture for read / write operations
@@ -114,11 +126,6 @@ class Texture : public GraphObject
      * \param resizable If true, the texture is resizable
      */
     void setResizable(bool resizable) { _resizable = resizable; }
-
-    /**
-     * \brief Update the texture according to the owned Image
-     */
-    virtual void update() = 0;
 
   protected:
     mutable std::mutex _mutex;

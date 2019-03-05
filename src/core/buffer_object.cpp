@@ -37,7 +37,7 @@ void BufferObject::setSerializedObject(shared_ptr<SerializedObject> obj)
 
         // Deserialize it right away, in a separate thread
         _deserializeFuture = async(launch::async, [this]() {
-            lock_guard<shared_timed_mutex> lock(_writeMutex);
+            lock_guard<shared_mutex> lock(_writeMutex);
             deserialize();
             _serializedObjectWaiting.store(false, std::memory_order_acq_rel);
         });
@@ -60,9 +60,6 @@ void BufferObject::updateTimestamp(int64_t timestamp)
 void BufferObject::registerAttributes()
 {
     GraphObject::registerAttributes();
-
-    addAttribute("timestamp", [](const Values&) { return true; }, [&]() -> Values { return {_timestamp}; });
-    setAttributeDescription("timestamp", "Timestamp (in µs) for the current buffer, can be creation time or frame timing");
 }
 
 } // namespace Splash

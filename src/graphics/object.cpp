@@ -179,6 +179,15 @@ void Object::addCalibrationPoint(glm::dvec3 point)
 }
 
 /**************/
+int64_t Object::getTimestamp() const
+{
+    int64_t timestamp = 0;
+    for (const auto& texture : _textures)
+        timestamp = std::max(timestamp, texture->getTimestamp());
+    return timestamp;
+}
+
+/**************/
 void Object::removeCalibrationPoint(glm::dvec3 point)
 {
     for (auto it = _calibrationPoints.begin(), itEnd = _calibrationPoints.end(); it != itEnd; ++it)

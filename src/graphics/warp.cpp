@@ -129,15 +129,15 @@ void Warp::render()
     auto input = camera->getTexture();
 
     auto inputSpec = input->getSpec();
-    if (inputSpec != _outTextureSpec)
+    if (inputSpec != _spec)
     {
-        _outTextureSpec = inputSpec;
+        _spec = inputSpec;
         _fbo->setSize(inputSpec.width, inputSpec.height);
     }
 
     _fbo->bindDraw();
     glEnable(GL_FRAMEBUFFER_SRGB);
-    glViewport(0, 0, _outTextureSpec.width, _outTextureSpec.height);
+    glViewport(0, 0, _spec.width, _spec.height);
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -181,14 +181,17 @@ void Warp::render()
     glDisable(GL_FRAMEBUFFER_SRGB);
     _fbo->unbindDraw();
 
-    _fbo->getColorTexture()->generateMipmap();
+    auto colorTexture = _fbo->getColorTexture();
+    colorTexture->generateMipmap();
     if (_grabMipmapLevel >= 0)
     {
-        auto colorTexture = _fbo->getColorTexture();
         _mipmapBuffer = colorTexture->grabMipmap(_grabMipmapLevel).getRawBuffer();
         auto spec = colorTexture->getSpec();
         _mipmapBufferSpec = {spec.width, spec.height, spec.channels, spec.bpp, spec.format};
     }
+
+    colorTexture->setTimestamp(input->getTimestamp());
+    _spec.timestamp = input->getTimestamp();
 }
 
 /*************/

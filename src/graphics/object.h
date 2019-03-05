@@ -99,6 +99,13 @@ class Object : public GraphObject
     void addCalibrationPoint(glm::dvec3 point);
 
     /**
+     * Get the update timestamp of the object, which is computed as the latest
+     * timestamp from all its textures
+     * \return Return the timestamp, in us
+     */
+    virtual int64_t getTimestamp() const final;
+
+    /**
      * \brief Remove a calibration point
      * \param point Point coordinates
      */

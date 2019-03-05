@@ -126,6 +126,12 @@ class Window : public GraphObject
     static int getQuitFlag() { return _quitFlag; }
 
     /**
+     * Get the timestamp
+     * \return Return the timestamp in us
+     */
+    virtual int64_t getTimestamp() const final { return _frontBufferTimestamp; }
+
+    /**
      * \brief Check whether the window is initialized
      * \return Return true if the window is initialized
      */
@@ -180,6 +186,11 @@ class Window : public GraphObject
   private:
     bool _isInitialized{false};
     std::shared_ptr<GlWindow> _window;
+
+    int64_t _backBufferTimestamp{0};
+    int64_t _frontBufferTimestamp{0};
+    int64_t _presentationDelay{0};
+
     int _screenId{-1};
     bool _withDecoration{true};
     int _windowRect[4];

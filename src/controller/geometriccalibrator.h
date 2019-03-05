@@ -82,7 +82,6 @@ class GeometricCalibrator : public ControllerObject
         Fisheye = 1
     };
 
-    bool _runCalibration{false};      //!< True if calibration is meant to be ran
     bool _running{false};             //!< True if calibration is currently running
     bool _nextPosition{false};        //!< Set to true to capture from next camera position
     bool _finalizeCalibration{false}; //!< Set to true to finalize calibration
