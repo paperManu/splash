@@ -6,6 +6,10 @@
 #include <opencv2/opencv.hpp>
 #include <slaps/slaps.h>
 
+#include <glm/ext.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtx/euler_angles.hpp>
+
 #include "./image/image.h"
 #include "./image/image_gphoto.h"
 #include "./image/image_opencv.h"
@@ -105,9 +109,9 @@ bool GeometricCalibrator::calibrationFunc()
     // Create the patterns display pipeline
     // Camera output is overridden with filters mimicking the windows layout
     Image imageObject(_root);
-    const string worldImageName = "__pattern_image";
-    const string worldBlackImage = "__black_image";
-    const string worldFilterPrefix = "__pattern_filter_";
+    const std::string worldImageName = "__pattern_image";
+    const std::string worldBlackImage = "__black_image";
+    const std::string worldFilterPrefix = "__pattern_filter_";
     setWorldAttribute("addObject", {"image", worldImageName});
     setWorldAttribute("addObject", {"image", worldBlackImage});
 
@@ -368,9 +372,30 @@ bool GeometricCalibrator::calibrationFunc()
     auto geometryMeshUvs = geometryMesh.uvCoordinatesSphere();
 
     slaps::Obj objFile(geometryMeshUvs);
-    objFile.writeMesh(std::filesystem::path(workspace.getWorkPath()) / "final_mesh.obj");
+    const std::string finalMeshName = "final_mesh.obj";
+    objFile.writeMesh(std::filesystem::path(workspace.getWorkPath()) / finalMeshName);
 
-    // Compute projectors calibrations
+    // Load the mesh into a new Mesh object, create a new Object to replace the one connected to the cameras
+    const std::string calibrationPrefixName = "calibration_";
+    setWorldAttribute("addObject", {"mesh", calibrationPrefixName + "mesh"});
+    setWorldAttribute("addObject", {"object", calibrationPrefixName + "object"});
+    setWorldAttribute("addObject", {"image", calibrationPrefixName + "image"});
+    setWorldAttribute("link", {calibrationPrefixName + "mesh", calibrationPrefixName + "object"});
+    setWorldAttribute("link", {calibrationPrefixName + "image", calibrationPrefixName + "object"});
+
+    for (size_t cameraIndex = 0; cameraIndex < cameraList.size(); ++cameraIndex)
+    {
+        const auto& cameraName = cameraList[cameraIndex];
+        for (const auto& object : objectLinks.at(cameraName))
+            setWorldAttribute("unlink", {object, cameraName});
+        setWorldAttribute("link", {calibrationPrefixName + "object", cameraName});
+    }
+
+    for (auto objects = getObjectList(); std::find(objects.cbegin(), objects.cend(), calibrationPrefixName + "mesh") == objects.cend(); objects = getObjectList())
+        std::this_thread::sleep_for(15ms);
+    setObjectAttribute(calibrationPrefixName + "mesh", "file", {workspace.getWorkPath() + "/" + finalMeshName});
+
+    // Compute projectors calibrations, and set the Camera objects
     for (size_t cameraIndex = 0; cameraIndex < cameraList.size(); ++cameraIndex)
     {
         const auto& cameraName = cameraList[cameraIndex];
@@ -380,6 +405,46 @@ bool GeometricCalibrator::calibrationFunc()
         slaps::MapXYZs pixelMap(workspace.getWorkPath());
         pixelMap.pixelToProj(camHeight, _structuredLightScale);
         auto matchesByProj = pixelMap.sampling(15);
+
+        std::vector<uint32_t> inliers;
+        std::vector<double> parameters;
+        slaps::Kernel kernel(matchesByProj[cameraIndex + 1]); // Projectors start at 1 in SLAPS
+        parameters = kernel.Ransac(inliers);
+
+        if (parameters.empty())
+        {
+            Log::get() << Log::WARNING << "GeometricCalibrator::" << __FUNCTION__ << " - Unable to compute calibration parameters for camera " << cameraName << Log::endl;
+            return false;
+        }
+
+        Log::get() << Log::MESSAGE << "GeometricCalibrator::" << __FUNCTION__ << " - Camera " << cameraName << " parameters (fov, cx, cy, eye[3], rot[3], k1): ";
+        for (const auto& p : parameters)
+            Log::get() << p << " ";
+        Log::get() << Log::endl;
+
+        double fov = parameters[0];
+        double cx = parameters[1];
+        double cy = parameters[2];
+
+        glm::dvec3 euler{0.0, 0.0, 0.0};
+        glm::dvec4 eye{0.0, 0.0, 0.0, 0.0};
+        for (int i = 0; i < 3; ++i)
+        {
+            eye[i] = parameters[i + 3];
+            euler[i] = parameters[i + 6];
+        }
+
+        glm::dmat4 rotateMat = glm::yawPitchRoll(euler[0], euler[1], euler[2]);
+        glm::dvec4 target = rotateMat * glm::dvec4(1.0, 0.0, 0.0, 0.0);
+        glm::dvec4 up = rotateMat * glm::dvec4(0.0, 0.0, 1.0, 0.0);
+        target += eye;
+        up = glm::normalize(up);
+
+        setObjectAttribute(cameraName, "fov", {fov});
+        setObjectAttribute(cameraName, "principalPoint", {cx, cy});
+        setObjectAttribute(cameraName, "eye", {eye.x, eye.y, eye.z});
+        setObjectAttribute(cameraName, "target", {target.x, target.y, target.z});
+        setObjectAttribute(cameraName, "up", {up.x, up.y, up.z});
     }
 
     return true;
