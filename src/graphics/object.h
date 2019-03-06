@@ -93,16 +93,16 @@ class Object : public GraphObject
     void addTexture(const std::shared_ptr<Texture>& texture) { _textures.push_back(texture); }
 
     /**
-     * \brief Add a calibration point
+     * Add a calibration point
      * \param point Point coordinates
      */
-    void addCalibrationPoint(glm::dvec3 point);
+    void addCalibrationPoint(const glm::dvec3& point);
 
     /**
      * \brief Remove a calibration point
      * \param point Point coordinates
      */
-    void removeCalibrationPoint(glm::dvec3 point);
+    void removeCalibrationPoint(const glm::dvec3& point);
 
     /**
      * \brief Draw the object
