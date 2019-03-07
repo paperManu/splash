@@ -320,6 +320,11 @@ class Camera : public GraphObject
     void sendCalibrationPointsToObjects();
 
     /**
+     * Remove calibration points from the model
+     */
+    void removeCalibrationPointsFromObjects();
+
+    /**
      * \brief Register new functors to modify attributes
      */
     void registerAttributes();

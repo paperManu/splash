@@ -169,7 +169,7 @@ void Object::deactivate()
 }
 
 /**************/
-void Object::addCalibrationPoint(glm::dvec3 point)
+void Object::addCalibrationPoint(const glm::dvec3& point)
 {
     for (auto& p : _calibrationPoints)
         if (p == point)
@@ -188,7 +188,7 @@ int64_t Object::getTimestamp() const
 }
 
 /**************/
-void Object::removeCalibrationPoint(glm::dvec3 point)
+void Object::removeCalibrationPoint(const glm::dvec3& point)
 {
     for (auto it = _calibrationPoints.begin(), itEnd = _calibrationPoints.end(); it != itEnd; ++it)
     {

@@ -1037,6 +1037,20 @@ void Camera::loadDefaultModels()
 }
 
 /*************/
+void Camera::removeCalibrationPointsFromObjects()
+{
+    for (auto& objWeakPtr : _objects)
+    {
+        auto object = objWeakPtr.lock();
+        if (!object)
+            continue;
+
+        for (auto& point : _calibrationPoints)
+            object->removeCalibrationPoint(point.world);
+    }
+}
+
+/*************/
 void Camera::sendCalibrationPointsToObjects()
 {
     for (auto& objWeakPtr : _objects)
@@ -1311,6 +1325,9 @@ void Camera::registerAttributes()
     // Store / restore calibration points
     addAttribute("calibrationPoints",
         [&](const Values& args) {
+            removeCalibrationPointsFromObjects();
+            _calibrationPoints.clear();
+
             for (auto& arg : args)
             {
                 if (arg.getType() != Value::Type::values)
@@ -1329,7 +1346,6 @@ void Camera::registerAttributes()
             }
 
             sendCalibrationPointsToObjects();
-
             return true;
         },
         [&]() -> Values {
