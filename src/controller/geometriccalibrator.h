@@ -82,6 +82,48 @@ class GeometricCalibrator : public ControllerObject
         Fisheye = 1
     };
 
+    /**
+     * Structure holding the configuration state before calibration
+     */
+    struct ConfigurationState
+    {
+        std::vector<std::string> cameraList{};
+        std::vector<std::string> windowList{};
+        std::map<std::string, std::string> objectTypes{};
+        std::unordered_map<std::string, std::vector<std::string>> objectLinks{};
+        std::unordered_map<std::string, std::vector<std::string>> objectReversedLinks{};
+        std::vector<Values> windowLayouts{};
+        std::vector<uint8_t> windowTextureCount{};
+    };
+
+    /**
+     * Structure holding the computed calibration parameters for a given Camera
+     */
+    struct CalibrationParams
+    {
+        std::string cameraName;
+        double fov{0.0};
+        double cx{0.0};
+        double cy{0.0};
+        glm::dvec4 eye{};
+        glm::dvec4 target{};
+        glm::dvec4 up{};
+    };
+
+    /**
+     * Overall calibration, including the path to the 3D mesh
+     */
+    struct Calibration
+    {
+        std::string meshPath{};
+        std::vector<CalibrationParams> params;
+    };
+
+    static inline const std::string _worldImageName{"__pattern_image"};
+    static inline const std::string _worldBlackImage{"__black_image"};
+    static inline const std::string _worldFilterPrefix{"__pattern_filter_"};
+    static inline const std::string _finalMeshName{"final_mesh.obj"};
+
     bool _running{false};             //!< True if calibration is currently running
     bool _nextPosition{false};        //!< Set to true to capture from next camera position
     bool _finalizeCalibration{false}; //!< Set to true to finalize calibration
@@ -93,14 +135,37 @@ class GeometricCalibrator : public ControllerObject
     std::chrono::milliseconds _captureDelay{250ms};
 
     std::shared_ptr<Image> _grabber{nullptr};
-
     std::future<bool> _calibrationFuture{};
 
     /**
-     * Calibration function, ran in a separate thread through _calibrationFuture
-     * \return Return true if all went well during the calibration process
+     * Calibration function
+     * \return Return the generated calibration
      */
-    bool calibrationFunc();
+    std::optional<Calibration> calibrationFunc(const ConfigurationState& state);
+
+    /**
+     * Save the configuration state at the beginning of the calibration
+     * \return Return the configuration state
+     */
+    ConfigurationState saveCurrentState();
+
+    /**
+     * Setup the calibration state
+     * \param state Initial configuration state
+     */
+    void setupCalibrationState(const ConfigurationState& state);
+
+    /**
+     * Restore the configuration state to what it was before calibration
+     * \param state Configuration state
+     */
+    void restoreState(const ConfigurationState& state);
+
+    /**
+     * Apply calibration, after the calibration process has been ran
+     * \param calibration Calibration parameters
+     */
+    void applyCalibration(const ConfigurationState& state, const Calibration& calibration);
 };
 
 } // namespace Splash

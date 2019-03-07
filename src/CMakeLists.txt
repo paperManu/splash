@@ -289,3 +289,7 @@ install(TARGETS splash DESTINATION "bin/")
 if (APPLE)
     target_link_libraries(splash "-undefined dynamic_lookup")
 endif()
+
+install(FILES 
+    shaders/geometric_calibration_filter.frag
+    DESTINATION "share/splash/shaders")

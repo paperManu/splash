@@ -49,7 +49,21 @@ void GeometricCalibrator::calibrate()
     }
 
     _running = true;
-    _calibrationFuture = std::async(std::launch::async, [=]() { return calibrationFunc(); });
+    _calibrationFuture = std::async(std::launch::async, [=]() {
+        auto state = saveCurrentState();
+        setupCalibrationState(state);
+        auto params = calibrationFunc(state);
+        restoreState(state);
+        _running = false;
+
+        if (params.has_value())
+        {
+            applyCalibration(state, params.value());
+            return true;
+        }
+
+        return false;
+    });
 }
 
 /*************/
@@ -83,24 +97,58 @@ void GeometricCalibrator::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-bool GeometricCalibrator::calibrationFunc()
+GeometricCalibrator::ConfigurationState GeometricCalibrator::saveCurrentState()
 {
-    // Save current windows state
-    const auto cameraList = getObjectsOfType("camera");
-    const auto windowList = getObjectsOfType("window");
-    const auto objectTypes = getObjectTypes();
-    const auto objectLinks = getObjectLinks();
-    const auto objectReversedLinks = getObjectReversedLinks();
+    ConfigurationState state = {.cameraList = getObjectsOfType("camera"),
+        .windowList = getObjectsOfType("window"),
+        .objectTypes = getObjectTypes(),
+        .objectLinks = getObjectLinks(),
+        .objectReversedLinks = getObjectReversedLinks()};
 
-    std::vector<Values> windowLayouts;
-    std::vector<uint8_t> windowTextureCount;
-    for (const auto& windowName : windowList)
+    for (const auto& windowName : state.windowList)
     {
-        windowLayouts.push_back(getObjectAttribute(windowName, "layout"));
-        windowTextureCount.push_back(getObjectAttribute(windowName, "textureList").size());
-        for (const auto& objectName : objectLinks.at(windowName))
+        state.windowLayouts.push_back(getObjectAttribute(windowName, "layout"));
+        state.windowTextureCount.push_back(getObjectAttribute(windowName, "textureList").size());
+    }
+
+    return state;
+}
+
+/*************/
+void GeometricCalibrator::restoreState(const GeometricCalibrator::ConfigurationState& state)
+{
+    for (size_t index = 0; index < state.windowList.size(); ++index)
+    {
+        auto& windowName = state.windowList[index];
+        auto filterName = _worldFilterPrefix + std::to_string(index);
+        setWorldAttribute("unlink", {filterName, windowName});
+        setWorldAttribute("unlink", {_worldBlackImage, filterName});
+        setWorldAttribute("unlink", {_worldImageName, filterName});
+        setWorldAttribute("deleteObject", {filterName});
+    }
+
+    setWorldAttribute("deleteObject", {_worldBlackImage});
+    setWorldAttribute("deleteObject", {_worldImageName});
+
+    // Reset the original windows state
+    for (size_t index = 0; index < state.windowList.size(); ++index)
+    {
+        auto& windowName = state.windowList[index];
+        setObjectAttribute(windowName, "layout", {state.windowLayouts[index]});
+        for (const auto& objectName : state.objectLinks.at(windowName))
+            setWorldAttribute("link", {objectName, windowName});
+    }
+}
+
+/*************/
+void GeometricCalibrator::setupCalibrationState(const GeometricCalibrator::ConfigurationState& state)
+{
+    // Unlink everything from the Windows, except the GUI (we might need it...)
+    for (const auto& windowName : state.windowList)
+    {
+        for (const auto& objectName : state.objectLinks.at(windowName))
         {
-            if (objectTypes.at(objectName) == "gui")
+            if (state.objectTypes.at(objectName) == "gui")
                 continue;
             setWorldAttribute("unlink", {objectName, windowName});
         }
@@ -108,80 +156,53 @@ bool GeometricCalibrator::calibrationFunc()
 
     // Create the patterns display pipeline
     // Camera output is overridden with filters mimicking the windows layout
-    Image imageObject(_root);
-    const std::string worldImageName = "__pattern_image";
-    const std::string worldBlackImage = "__black_image";
-    const std::string worldFilterPrefix = "__pattern_filter_";
-    setWorldAttribute("addObject", {"image", worldImageName});
-    setWorldAttribute("addObject", {"image", worldBlackImage});
+    setWorldAttribute("addObject", {"image", _worldImageName});
+    setWorldAttribute("addObject", {"image", _worldBlackImage});
 
-    for (size_t index = 0; index < windowList.size(); ++index)
+    for (size_t index = 0; index < state.windowList.size(); ++index)
     {
         // Don't create a filter for a window with only a GUI
-        if (windowTextureCount[index] == 0)
+        if (state.windowTextureCount[index] == 0)
             continue;
 
-        auto filterName = worldFilterPrefix + std::to_string(index);
+        auto filterName = _worldFilterPrefix + std::to_string(index);
         setWorldAttribute("addObject", {"filter", filterName});
 
-        auto& windowName = windowList[index];
-        setWorldAttribute("link", {worldBlackImage, filterName});
-        setWorldAttribute("link", {worldImageName, filterName});
+        auto& windowName = state.windowList[index];
+        setWorldAttribute("link", {_worldBlackImage, filterName});
+        setWorldAttribute("link", {_worldImageName, filterName});
         setWorldAttribute("link", {filterName, windowName});
     }
 
     // Set the parameters for the filter
-    for (size_t index = 0; index < windowList.size(); ++index)
+    for (size_t index = 0; index < state.windowList.size(); ++index)
     {
         // No filter will be created for a window with only a GUI
-        if (windowTextureCount[index] == 0)
+        if (state.windowTextureCount[index] == 0)
             continue;
 
-        auto filterName = worldFilterPrefix + std::to_string(index);
+        auto filterName = _worldFilterPrefix + std::to_string(index);
         for (auto objects = getObjectList(); std::find(objects.cbegin(), objects.cend(), filterName) == objects.cend(); objects = getObjectList())
             std::this_thread::sleep_for(15ms);
         setObjectAttribute(filterName, "fileFilterSource", {std::string(DATADIR) + "/shaders/geometric_calibration_filter.frag"});
 
         for (auto attrList = getObjectAttributes(filterName); attrList.find("subdivs") == attrList.cend(); attrList = getObjectAttributes(filterName))
             std::this_thread::sleep_for(15ms);
-        auto windowSize = getObjectAttribute(windowList[index], "size");
-        setObjectAttribute(filterName, "subdivs", {windowTextureCount[index]});
+        auto windowSize = getObjectAttribute(state.windowList[index], "size");
+        setObjectAttribute(filterName, "subdivs", {state.windowTextureCount[index]});
         setObjectAttribute(filterName, "texLayout", {0, 0, 0, 0});
         setObjectAttribute(filterName, "sizeOverride", windowSize);
     }
+}
 
+/*************/
+std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibrationFunc(const GeometricCalibrator::ConfigurationState& state)
+{
     // Begin calibration
     slaps::Workspace workspace;
     slaps::Structured_Light structuredLight(_structuredLightScale);
 
-    // Whenever we exit this function, cleanup our mess
-    OnScopeExit
-    {
-        for (size_t index = 0; index < windowList.size(); ++index)
-        {
-            auto& windowName = windowList[index];
-            auto filterName = worldFilterPrefix + std::to_string(index);
-            setWorldAttribute("unlink", {filterName, windowName});
-            setWorldAttribute("unlink", {worldBlackImage, filterName});
-            setWorldAttribute("unlink", {worldImageName, filterName});
-            setWorldAttribute("deleteObject", {filterName});
-        }
-
-        setWorldAttribute("deleteObject", {worldBlackImage});
-        setWorldAttribute("deleteObject", {worldImageName});
-
-        // Reset the original windows state
-        for (size_t index = 0; index < windowList.size(); ++index)
-        {
-            auto& windowName = windowList[index];
-            setObjectAttribute(windowName, "layout", {windowLayouts[index]});
-            for (const auto& objectName : objectLinks.at(windowName))
-                setWorldAttribute("link", {objectName, windowName});
-        }
-
-        _running = false;
-    };
-
+    Image imageObject(_root);
     _finalizeCalibration = false;
     size_t positionIndex = 0;
     while (!_finalizeCalibration)
@@ -199,9 +220,9 @@ bool GeometricCalibrator::calibrationFunc()
 
         // For each position, capture the patterns for all cameras
         std::vector<cv::Mat2i> decodedProjectors;
-        for (size_t cameraIndex = 0; cameraIndex < cameraList.size(); ++cameraIndex)
+        for (size_t cameraIndex = 0; cameraIndex < state.cameraList.size(); ++cameraIndex)
         {
-            const auto& cameraName = cameraList[cameraIndex];
+            const auto& cameraName = state.cameraList[cameraIndex];
             auto cameraSize = getObjectAttribute(cameraName, "size");
             auto camWidth = cameraSize[0].as<int>();
             auto camHeight = cameraSize[1].as<int>();
@@ -222,17 +243,17 @@ bool GeometricCalibrator::calibrationFunc()
             std::string targetFilterName;
             std::string targetWindowName;
             int targetLayoutIndex = 0;
-            for (size_t index = 0; index < windowList.size(); ++index)
+            for (size_t index = 0; index < state.windowList.size(); ++index)
             {
-                auto& windowName = windowList[index];
+                auto& windowName = state.windowList[index];
                 targetLayoutIndex = 0;
-                for (const auto& objectName : objectLinks.at(windowName))
+                for (const auto& objectName : state.objectLinks.at(windowName))
                 {
-                    if (objectTypes.at(objectName) != "camera")
+                    if (state.objectTypes.at(objectName) != "camera")
                         continue;
                     if (objectName == cameraName)
                     {
-                        targetFilterName = worldFilterPrefix + std::to_string(index);
+                        targetFilterName = _worldFilterPrefix + std::to_string(index);
                         targetWindowName = windowName;
                         break;
                     }
@@ -245,7 +266,7 @@ bool GeometricCalibrator::calibrationFunc()
                 continue;
 
             Values layout({0, 0, 0, 0});
-            layout[targetLayoutIndex] = 1; // This index will display the second texture, named worldImageName
+            layout[targetLayoutIndex] = 1; // This index will display the second texture, named _worldImageName
             setObjectAttribute(targetFilterName, "texLayout", layout);
 
             std::vector<cv::Mat1b> capturedPatterns{};
@@ -263,7 +284,7 @@ bool GeometricCalibrator::calibrationFunc()
                 auto serializedImage = imageObject.serialize();
 
                 // Send the buffer, and make sure it has been received and displayed
-                sendBuffer(worldImageName, serializedImage);
+                sendBuffer(_worldImageName, serializedImage);
                 for (int64_t updatedTimestamp = 0; updatedTimestamp != imageObject.getTimestamp();
                      updatedTimestamp = getObjectAttribute(targetWindowName, "timestamp")[0].as<int64_t>())
                     std::this_thread::sleep_for(15ms);
@@ -282,7 +303,7 @@ bool GeometricCalibrator::calibrationFunc()
                 }
 
                 if (imageBuffer.empty())
-                    return false;
+                    return {};
 
                 spec = imageBuffer.getSpec();
                 cv::Mat capturedImage;
@@ -314,14 +335,14 @@ bool GeometricCalibrator::calibrationFunc()
             auto decodedCoords = structuredLight.getDecodedCoordinates(camWidth, camHeight);
 
             if (!decoded || !shadowMask || !decodedCoords)
-                return false;
+                return {};
 
             slaps::Workspace::ImageList imagesToSave(
                 {{"decoded_images/pos_" + std::to_string(positionIndex) + "_proj" + std::to_string(cameraIndex) + "_shadow_mask.jpg", shadowMask.value()},
                     {"decoded_images/pos_" + std::to_string(positionIndex) + "_proj" + std::to_string(cameraIndex) + "_x.jpg", decodedCoords.value().first},
                     {"decoded_images/pos_" + std::to_string(positionIndex) + "_proj" + std::to_string(cameraIndex) + "_y.jpg", decodedCoords.value().second}});
             if (!workspace.saveImagesFromList(imagesToSave))
-                return false;
+                return {};
             decodedProjectors.push_back(decoded.value());
 
             setObjectAttribute(targetFilterName, "texLayout", {0, 0, 0, 0});
@@ -332,7 +353,7 @@ bool GeometricCalibrator::calibrationFunc()
 
         auto mergedProjectors = workspace.combineDecodedProjectors(decodedProjectors);
         if (!mergedProjectors)
-            return false;
+            return {};
         workspace.exportMatrixToYaml(mergedProjectors.value(), "decoded_matrix/pos_" + std::to_string(positionIndex));
 
         ++positionIndex;
@@ -344,13 +365,13 @@ bool GeometricCalibrator::calibrationFunc()
     {
         _abortCalibration = false;
         Log::get() << Log::MESSAGE << "GeometricCalibrator::" << __FUNCTION__ << " - Geometric calibration aborted" << Log::endl;
-        return true;
+        return {};
     }
 
     if (positionIndex < 3)
     {
         Log::get() << Log::WARNING << "GeometricCalibrator::" << __FUNCTION__ << " - Not enough positions have been captured to do the calibration" << Log::endl;
-        return false;
+        return {};
     }
 
     // Compute the calibration
@@ -372,33 +393,15 @@ bool GeometricCalibrator::calibrationFunc()
     auto geometryMeshUvs = geometryMesh.uvCoordinatesSphere();
 
     slaps::Obj objFile(geometryMeshUvs);
-    const std::string finalMeshName = "final_mesh.obj";
-    objFile.writeMesh(std::filesystem::path(workspace.getWorkPath()) / finalMeshName);
+    objFile.writeMesh(std::filesystem::path(workspace.getWorkPath()) / _finalMeshName);
 
-    // Load the mesh into a new Mesh object, create a new Object to replace the one connected to the cameras
-    const std::string calibrationPrefixName = "calibration_";
-    setWorldAttribute("addObject", {"mesh", calibrationPrefixName + "mesh"});
-    setWorldAttribute("addObject", {"object", calibrationPrefixName + "object"});
-    setWorldAttribute("addObject", {"image", calibrationPrefixName + "image"});
-    setWorldAttribute("link", {calibrationPrefixName + "mesh", calibrationPrefixName + "object"});
-    setWorldAttribute("link", {calibrationPrefixName + "image", calibrationPrefixName + "object"});
-
-    for (size_t cameraIndex = 0; cameraIndex < cameraList.size(); ++cameraIndex)
-    {
-        const auto& cameraName = cameraList[cameraIndex];
-        for (const auto& object : objectLinks.at(cameraName))
-            setWorldAttribute("unlink", {object, cameraName});
-        setWorldAttribute("link", {calibrationPrefixName + "object", cameraName});
-    }
-
-    for (auto objects = getObjectList(); std::find(objects.cbegin(), objects.cend(), calibrationPrefixName + "mesh") == objects.cend(); objects = getObjectList())
-        std::this_thread::sleep_for(15ms);
-    setObjectAttribute(calibrationPrefixName + "mesh", "file", {workspace.getWorkPath() + "/" + finalMeshName});
+    Calibration calibration;
+    calibration.meshPath = workspace.getWorkPath() + "/" + _finalMeshName;
 
     // Compute projectors calibrations, and set the Camera objects
-    for (size_t cameraIndex = 0; cameraIndex < cameraList.size(); ++cameraIndex)
+    for (size_t cameraIndex = 0; cameraIndex < state.cameraList.size(); ++cameraIndex)
     {
-        const auto& cameraName = cameraList[cameraIndex];
+        const auto& cameraName = state.cameraList[cameraIndex];
         auto cameraSize = getObjectAttribute(cameraName, "size");
         auto camHeight = cameraSize[1].as<int>();
 
@@ -414,7 +417,7 @@ bool GeometricCalibrator::calibrationFunc()
         if (parameters.empty())
         {
             Log::get() << Log::WARNING << "GeometricCalibrator::" << __FUNCTION__ << " - Unable to compute calibration parameters for camera " << cameraName << Log::endl;
-            return false;
+            return {};
         }
 
         Log::get() << Log::MESSAGE << "GeometricCalibrator::" << __FUNCTION__ << " - Camera " << cameraName << " parameters (fov, cx, cy, eye[3], rot[3], k1): ";
@@ -437,17 +440,48 @@ bool GeometricCalibrator::calibrationFunc()
         glm::dmat4 rotateMat = glm::yawPitchRoll(euler[0], euler[1], euler[2]);
         glm::dvec4 target = rotateMat * glm::dvec4(1.0, 0.0, 0.0, 0.0);
         glm::dvec4 up = rotateMat * glm::dvec4(0.0, 0.0, 1.0, 0.0);
-        target += eye;
+        target = eye - target;
         up = glm::normalize(up);
 
-        setObjectAttribute(cameraName, "fov", {fov});
-        setObjectAttribute(cameraName, "principalPoint", {cx, cy});
-        setObjectAttribute(cameraName, "eye", {eye.x, eye.y, eye.z});
-        setObjectAttribute(cameraName, "target", {target.x, target.y, target.z});
-        setObjectAttribute(cameraName, "up", {up.x, up.y, up.z});
+        CalibrationParams params = {.cameraName = cameraName, .fov = fov, .cx = cx, .cy = cy, .eye = eye, .target = target, .up = up};
+        calibration.params.push_back(params);
     }
 
-    return true;
+    return {calibration};
+}
+
+/*************/
+void GeometricCalibrator::applyCalibration(const GeometricCalibrator::ConfigurationState& state, const Calibration& calibration)
+{
+    // Load the mesh into a new Mesh object, create a new Object to replace the one connected to the cameras
+    const std::string calibrationPrefixName = "calibration_";
+    setWorldAttribute("addObject", {"mesh", calibrationPrefixName + "mesh"});
+    setWorldAttribute("addObject", {"object", calibrationPrefixName + "object"});
+    setWorldAttribute("addObject", {"image", calibrationPrefixName + "image"});
+    setWorldAttribute("link", {calibrationPrefixName + "mesh", calibrationPrefixName + "object"});
+    setWorldAttribute("link", {calibrationPrefixName + "image", calibrationPrefixName + "object"});
+
+    for (size_t cameraIndex = 0; cameraIndex < state.cameraList.size(); ++cameraIndex)
+    {
+        const auto& cameraName = state.cameraList[cameraIndex];
+        for (const auto& object : state.objectLinks.at(cameraName))
+            setWorldAttribute("unlink", {object, cameraName});
+        setWorldAttribute("link", {calibrationPrefixName + "object", cameraName});
+    }
+
+    for (auto objects = getObjectList(); std::find(objects.cbegin(), objects.cend(), calibrationPrefixName + "mesh") == objects.cend(); objects = getObjectList())
+        std::this_thread::sleep_for(15ms);
+    setObjectAttribute(calibrationPrefixName + "mesh", "file", {calibration.meshPath});
+
+    // Apply projector calibration
+    for (const auto& params : calibration.params)
+    {
+        setObjectAttribute(params.cameraName, "fov", {params.fov});
+        setObjectAttribute(params.cameraName, "principalPoint", {params.cx, params.cy});
+        setObjectAttribute(params.cameraName, "eye", {params.eye.x, params.eye.y, params.eye.z});
+        setObjectAttribute(params.cameraName, "target", {params.target.x, params.target.y, params.target.z});
+        setObjectAttribute(params.cameraName, "up", {params.up.x, params.up.y, params.up.z});
+    }
 }
 
 /*************/

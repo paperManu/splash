@@ -38,7 +38,3 @@ install(FILES
     splash.json
     share/icons/hicolor/512x512/apps/splash.png
     DESTINATION "share/splash/")
-
-install(FILES 
-    shaders/geometric_calibration_filter.frag
-    DESTINATION "share/splash/shaders")
