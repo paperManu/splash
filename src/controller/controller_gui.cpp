@@ -574,7 +574,7 @@ void Gui::render()
             _showAbout = true;
 
         // Some global buttons
-        if (ImGui::CollapsingHeader("General commands", nullptr, true, true))
+        if (ImGui::CollapsingHeader("General commands", nullptr, ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_DefaultOpen))
         {
 
             ImGui::Columns(3);

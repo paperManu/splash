@@ -28,6 +28,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLM_ENABLE_EXPERIMENTAL")
 set_source_files_properties(
     ../external/imgui/imgui_demo.cpp
     ../external/imgui/imgui_draw.cpp
+    ../external/imgui/imgui_widgets.cpp
     ../external/imgui/imgui.cpp
 	../external/hap/source/hap.c
     PROPERTIES COMPILE_FLAGS "-Wno-error -Wno-all -Wno-extra -Wno-sign-compare -Wno-deprecated-declarations"
@@ -42,7 +43,7 @@ set_source_files_properties(
 if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
   set_source_files_properties(
       image/image.cpp
-      PROPERTIES COMPILE_FLAGS "-Wno-error=implicit-fallthrough= -Wno-implicit-fallthrough"
+      PROPERTIES COMPILE_FLAGS "-Wno-error=implicit-fallthrough -Wno-implicit-fallthrough -Wno-error=type-limits -Wno-type-limits"
   )
 endif()
 
@@ -171,6 +172,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     utils/cgutils.cpp
     ../external/imgui/imgui_demo.cpp
     ../external/imgui/imgui_draw.cpp
+    ../external/imgui/imgui_widgets.cpp
     ../external/imgui/imgui.cpp
 	../external/hap/source/hap.c
 )
