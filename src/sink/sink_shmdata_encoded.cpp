@@ -16,8 +16,6 @@ Sink_Shmdata_Encoded::Sink_Shmdata_Encoded(RootObject* root)
 {
     _type = "sink_shmdata_encoded";
     registerAttributes();
-
-    av_register_all();
 }
 
 /*************/

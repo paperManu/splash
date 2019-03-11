@@ -42,8 +42,6 @@ void Image_FFmpeg::init()
     // This is used for getting documentation "offline"
     if (!_root)
         return;
-
-    av_register_all();
 }
 
 /*************/
@@ -394,7 +392,7 @@ void Image_FFmpeg::readLoop()
                         copy(buffer.begin(), buffer.end(), pixels);
 
                         if (packet.pts != AV_NOPTS_VALUE)
-                            timing = static_cast<uint64_t>((double)av_frame_get_best_effort_timestamp(frame) * _videoTimeBase * 1e6);
+                            timing = static_cast<uint64_t>((double)frame->best_effort_timestamp * _videoTimeBase * 1e6);
                         else
                             timing = 0.0;
                         // This handles repeated frames
