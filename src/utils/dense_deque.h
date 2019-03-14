@@ -50,7 +50,7 @@ class DenseDeque
     {
     }
     template <typename InputIt>
-    explicit DenseDeque(InputIt first, InputIt last)
+    DenseDeque(InputIt first, InputIt last)
         : _data(first, last)
     {
     }
@@ -62,6 +62,8 @@ class DenseDeque
     DenseDeque(const DenseDeque<T>& value) { operator=(value); }
     DenseDeque<T>& operator=(const DenseDeque<T>& other)
     {
+        if (&other == this)
+            return *this;
         _data = other._data;
         return *this;
     }
@@ -69,6 +71,8 @@ class DenseDeque
     DenseDeque(const DenseDeque<T>&& value) { operator=(value); }
     DenseDeque<T>& operator=(DenseDeque<T>&& other) noexcept
     {
+        if (&other == this)
+            return *this;
         _data = other._data;
         return *this;
     }
@@ -100,7 +104,7 @@ class DenseDeque
 
     inline iterator end() noexcept { return _data.end(); }
     inline const_iterator end() const noexcept { return _data.end(); }
-    inline const_iterator cend() const noexcept { return _data.end(); }
+    inline const_iterator cend() const noexcept { return _data.cend(); }
 
     inline iterator rbegin() noexcept { return _data.rbegin(); }
     inline const_iterator rbegin() const noexcept { return _data.rbegin(); }

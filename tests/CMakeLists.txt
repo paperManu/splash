@@ -60,11 +60,16 @@ link_directories(${PORTAUDIO_LIBRARY_DIRS})
 link_directories(${OPENCV_LIBRARY_DIRS})
 link_directories(${PYTHON_LIBRARY_DIRS})
 
+#
+# Unit tests (executed through 'make check' or 'make test')
+#
 add_executable(unitTests unitTests.cpp)
 target_sources(unitTests PRIVATE
     check_attributefunctor.cpp
     check_base_object.cpp
     check_dense_deque.cpp
+    check_dense_map.cpp
+    check_dense_set.cpp
     check_resizablearray.cpp
     check_serialization.cpp
     check_tree.cpp
@@ -72,7 +77,6 @@ target_sources(unitTests PRIVATE
     check_value.cpp
 )
 
-# Unit tests (executed through 'make check')
 if (NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
     add_custom_command(OUTPUT update_assets
         COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/data
@@ -90,7 +94,9 @@ add_test(NAME unitTests COMMAND unitTests)
 add_custom_command(OUTPUT tests COMMAND unitTests)
 add_custom_target(check DEPENDS update_assets tests)
 
+#
 # Integration tests (executed by launching Splash and checking its behavior)
+#
 add_custom_command(OUTPUT integration_tests
     COMMAND if [ ! -d ${CMAKE_CURRENT_SOURCE_DIR}/assets ]; then $(git clone https://gitlab.com/sat-metalab/splash-assets ${CMAKE_CURRENT_SOURCE_DIR}/assets); fi
     COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/assets && git pull origin master
@@ -107,3 +113,13 @@ add_custom_command(OUTPUT cppcheck_analysis
     COMMAND ${CMAKE_CURRENT_BINARY_DIR}/cppcheck/cppcheck --enable=warning,performance,unusedFunction --project=${CMAKE_CURRENT_BINARY_DIR}/../compile_commands.json 2> ${CMAKE_CURRENT_BINARY_DIR}/static_analysis_result.txt
 )
 add_custom_target(static_analysis DEPENDS cppcheck_analysis)
+
+#
+# Performance tests
+#
+add_executable(perf_dense_map perf_dense_map.cpp)
+add_custom_command(OUTPUT run_perf_tests
+    COMMAND ./perf_dense_map
+    DEPENDS perf_dense_map
+)
+add_custom_target(check_perf DEPENDS run_perf_tests)
