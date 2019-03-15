@@ -34,10 +34,10 @@
 #include <string>
 #include <tuple>
 #include <set>
-#include <unordered_map>
 #include <utility>
 
 #include "./config.h"
+#include "./utils/dense_map.h"
 
 namespace Splash
 {
@@ -232,10 +232,10 @@ class Branch
     int _currentCallbackID{0};
     std::mutex _callbackMutex;
     std::map<Task, std::set<int>> _callbackTargetIds{};
-    std::unordered_map<int, UpdateCallback> _callbacks{};
+    DenseMap<int, UpdateCallback> _callbacks{};
     std::string _name{"branch"};
-    std::unordered_map<std::string, std::unique_ptr<Branch>> _branches{};
-    std::unordered_map<std::string, std::unique_ptr<Leaf>> _leaves{};
+    DenseMap<std::string, std::unique_ptr<Branch>> _branches{};
+    DenseMap<std::string, std::unique_ptr<Leaf>> _leaves{};
     Branch* _parentBranch{nullptr};
 };
 

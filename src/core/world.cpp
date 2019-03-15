@@ -101,7 +101,7 @@ void World::run()
                     if (!serializedObjectIt.second)
                         continue; // Error while inserting the object in the map
 
-                    threads.push_back(async(launch::async, [=, &o]() {
+                    threads.push_back(async(launch::async, [=]() {
                         // Update the local objects
                         o.second->update();
 

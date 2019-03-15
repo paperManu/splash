@@ -32,12 +32,12 @@
 #include <mutex>
 #include <string>
 #include <tuple>
-#include <unordered_map>
 #include <utility>
 
 #include "./config.h"
 
 #include "./core/value.h"
+#include "./utils/dense_map.h"
 
 namespace Splash
 {
@@ -140,7 +140,7 @@ class Leaf
   private:
     int _currentCallbackID{0};
     std::mutex _callbackMutex;
-    std::unordered_map<int, UpdateCallback> _callbacks{};
+    DenseMap<int, UpdateCallback> _callbacks{};
     std::chrono::system_clock::time_point _timestamp{};
     std::string _name{"leaf"};
     Value _value{};

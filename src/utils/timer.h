@@ -28,11 +28,11 @@
 #include <chrono>
 #include <string>
 #include <thread>
-#include <unordered_map>
 
 #include "./config.h"
 #include "./core/coretypes.h"
 #include "./core/spinlock.h"
+#include "./utils/dense_map.h"
 
 namespace Splash
 {
@@ -120,7 +120,7 @@ class Timer
         auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
         auto timeIt = _timeMap.find(name);
         if (timeIt == _timeMap.end())
-            _timeMap[name].store(currentTime, std::memory_order_acq_rel);
+            _timeMap[name] = currentTime;
         else
             timeIt->second = currentTime;
     }
@@ -141,9 +141,9 @@ class Timer
 
             auto durationIt = _durationMap.find(name);
             if (durationIt == _durationMap.end())
-                _durationMap[name].store(currentTime - timeIt->second.load(std::memory_order_acq_rel), std::memory_order_acq_rel);
+                _durationMap[name] = currentTime - timeIt->second;
             else
-                durationIt->second = currentTime - timeIt->second.load(std::memory_order_acq_rel);
+                durationIt->second = currentTime - timeIt->second;
         }
     }
 
@@ -166,7 +166,7 @@ class Timer
         auto durationIt = _durationMap.find(name);
         unsigned long long elapsed;
 
-        elapsed = currentTime - timeIt->second.load(std::memory_order_acq_rel);
+        elapsed = currentTime - timeIt->second;
 
         timespec nap;
         nap.tv_sec = 0;
@@ -180,7 +180,7 @@ class Timer
         }
 
         if (durationIt == _durationMap.end())
-            _durationMap[name].store(std::max(duration, elapsed), std::memory_order_acq_rel);
+            _durationMap[name] = std::max(duration, elapsed);
         else
             durationIt->second = std::max(duration, elapsed);
 
@@ -206,7 +206,7 @@ class Timer
      * \brief Get the whole duration map
      * \return Return the whole duration map
      */
-    const std::unordered_map<std::string, std::atomic_ullong>& getDurationMap() const { return _durationMap; }
+    const DenseMap<std::string, uint64_t>& getDurationMap() const { return _durationMap; }
 
     /**
      * \brief Set an element in the duration map. Used for transmitting timings between pairs
@@ -217,7 +217,7 @@ class Timer
     {
         auto durationIt = _durationMap.find(name);
         if (durationIt == _durationMap.end())
-            _durationMap[name].store(value, std::memory_order_acq_rel);
+            _durationMap[name] = value;
         else
             durationIt->second = value;
     }
@@ -247,14 +247,14 @@ class Timer
     Timer& operator<<(const std::string& name)
     {
         start(name);
-        _currentDuration.store(0, std::memory_order_acq_rel);
+        _currentDuration = 0;
         return *this;
     }
 
     Timer& operator>>(unsigned long long duration)
     {
         _timerMutex.lock(); // We lock the mutex to prevent this value to be reset by another call to timer
-        _currentDuration.store(duration, std::memory_order_acq_rel);
+        _currentDuration = duration;
         _durationThreadId = std::this_thread::get_id();
         _isDurationSet = true;
         return *this;
@@ -266,8 +266,8 @@ class Timer
         if (_isDurationSet && _durationThreadId == std::this_thread::get_id())
         {
             _isDurationSet = false;
-            duration = _currentDuration.load(std::memory_order_acq_rel);
-            _currentDuration.store(0, std::memory_order_acq_rel);
+            duration = _currentDuration;
+            _currentDuration = 0;
             _timerMutex.unlock();
         }
 
@@ -380,9 +380,9 @@ class Timer
     const Timer& operator=(const Timer&) = delete;
 
   private:
-    std::unordered_map<std::string, std::atomic_ullong> _timeMap;
-    std::unordered_map<std::string, std::atomic_ullong> _durationMap;
-    std::atomic_ullong _currentDuration{0};
+    DenseMap<std::string, uint64_t> _timeMap;
+    DenseMap<std::string, uint64_t> _durationMap;
+    uint64_t _currentDuration{0};
     bool _isDurationSet{false};
     std::thread::id _durationThreadId;
     mutable Spinlock _timerMutex;

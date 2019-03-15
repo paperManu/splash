@@ -36,7 +36,7 @@ TEST_CASE("Testing Splash::DenseMap")
     dmap = DenseMap<int, float>(values.begin(), values.end());
     CHECK(dmap.size() == values.size());
     CHECK(!dmap.empty());
-    for (const auto& v : values)
+    for (auto& v : values)
         CHECK(dmap.at(v.first) == v.second);
 
     auto otherMap = DenseMap(dmap);

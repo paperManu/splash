@@ -36,6 +36,7 @@
 
 #include "./core/attribute.h"
 #include "./core/coretypes.h"
+#include "./utils/dense_map.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
@@ -126,9 +127,9 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     void runTasks();
 
   protected:
-    std::string _name{""};                                       //!< Object name
-    std::unordered_map<std::string, Attribute> _attribFunctions; //!< Map of all attributes
-    bool _updatedParams{true};                                   //!< True if the parameters have been updated and the object needs to reflect these changes
+    std::string _name{""};                             //!< Object name
+    DenseMap<std::string, Attribute> _attribFunctions; //!< Map of all attributes
+    bool _updatedParams{true};                         //!< True if the parameters have been updated and the object needs to reflect these changes
 
     std::future<void> _asyncTask{};
     std::mutex _asyncTaskMutex{};

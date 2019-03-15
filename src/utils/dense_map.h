@@ -90,7 +90,7 @@ class DenseMap
 
         bool operator==(const iterator& other) const { return _map == other._map && _index == other._index; }
         bool operator!=(const iterator& other) const { return !operator==(other); }
-        std::pair<const Key&, T&> operator*() const { return std::pair<const Key&, T&>(*(_map->_keys.begin() + _index), _map->_values[_index]); }
+        const std::pair<const Key&, T&> operator*() const { return std::pair<const Key&, T&>(*(_map->_keys.begin() + _index), _map->_values[_index]); }
         std::pair<const Key&, T&>* operator->() const
         {
             _entry.reset(new std::pair<const Key&, T&>(*(_map->_keys.begin() + _index), _map->_values[_index]));
@@ -159,7 +159,7 @@ class DenseMap
 
         bool operator==(const const_iterator& other) const { return _map == other._map && _index == other._index; }
         bool operator!=(const const_iterator& other) const { return !operator==(other); }
-        std::pair<const Key&, const T&> operator*() const { return std::pair<const Key&, const T&>(*(_map->_keys.begin() + _index), _map->_values[_index]); }
+        const std::pair<const Key&, const T&> operator*() const { return std::pair<const Key&, const T&>(*(_map->_keys.begin() + _index), _map->_values[_index]); }
         std::pair<const Key&, const T&>* operator->() const
         {
             _entry.reset(new std::pair<const Key&, const T&>(*(_map->_keys.begin() + _index), _map->_values[_index]));
@@ -222,7 +222,7 @@ class DenseMap
 
         bool operator==(const reverse_iterator& other) const { return _map == other._map && _index == other._index; }
         bool operator!=(const reverse_iterator& other) const { return !operator==(other); }
-        std::pair<const Key&, T&> operator*() const { return std::pair<const Key&, T&>(*(_map->_keys.rbegin() + _index), _map->_values[_map->_values.size() - 1 - _index]); }
+        const std::pair<const Key&, T&> operator*() const { return std::pair<const Key&, T&>(*(_map->_keys.rbegin() + _index), _map->_values[_map->_values.size() - 1 - _index]); }
         std::pair<const Key&, T&>* operator->() const
         {
             _entry.reset(new std::pair<const Key&, T&>(*(_map->_keys.begin() + _index), _map->_values[_index]));
@@ -290,7 +290,7 @@ class DenseMap
 
         bool operator==(const const_reverse_iterator& other) const { return _map == other._map && _index == other._index; }
         bool operator!=(const const_reverse_iterator& other) const { return !operator==(other); }
-        std::pair<const Key&, const T&> operator*() const
+        const std::pair<const Key&, const T&> operator*() const
         {
             return std::pair<const Key&, const T&>(*(_map->_keys.rbegin() + _index), _map->_values[_map->_values.size() - 1 - _index]);
         }
@@ -455,7 +455,7 @@ class DenseMap
         auto result = _keys.insert(value.first);
         if (result.second)
         {
-            _values.emplace_back(value.second);
+            _values.emplace_back(std::move(value.second));
             return std::make_pair(iterator(_keys.size() - 1, *this), true);
         }
 
@@ -545,6 +545,16 @@ class DenseMap
             current = erase(current);
         auto index = std::distance(cbegin(), current);
         return iterator(index, *this);
+    }
+    size_t erase(const Key& key)
+    {
+        auto it = _keys.find(key);
+        if (it == _keys.end())
+            return 0;
+        auto index = std::distance(_keys.begin(), it);
+        _keys.erase(key);
+        _values.erase(_values.begin() + index);
+        return 1;
     }
 
     void swap(DenseMap& other)

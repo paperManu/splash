@@ -38,6 +38,7 @@
 #include "./core/link.h"
 #include "./core/name_registry.h"
 #include "./core/tree.h"
+#include "./utils/dense_map.h"
 
 namespace Splash
 {
@@ -201,9 +202,9 @@ class RootObject : public BaseObject
     Spinlock _bufferObjectSingleMutex{};
     bool _bufferObjectUpdated = ATOMIC_FLAG_INIT;
 
-    mutable std::recursive_mutex _objectsMutex{};                             //!< Used in registration and unregistration of objects
-    std::atomic_bool _objectsCurrentlyUpdated{false};                         //!< Prevents modification of objects from multiple places at the same time
-    std::unordered_map<std::string, std::shared_ptr<GraphObject>> _objects{}; //!< Map of all the objects
+    mutable std::recursive_mutex _objectsMutex{};                   //!< Used in registration and unregistration of objects
+    std::atomic_bool _objectsCurrentlyUpdated{false};               //!< Prevents modification of objects from multiple places at the same time
+    DenseMap<std::string, std::shared_ptr<GraphObject>> _objects{}; //!< Map of all the objects
 
     /**
      * \brief Wait for a BufferObject update. This does not prevent spurious wakeups.
