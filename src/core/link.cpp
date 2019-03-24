@@ -274,8 +274,8 @@ bool Link::sendMessage(const string& name, const string& attribute, const Values
                     _socketMessageOut->send(msg, ZMQ_SNDMORE);
 
                     std::string valueName = v.getName();
-                    msg.rebuild(sizeof(valueName) + 1);
-                    memcpy(msg.data(), valueName.c_str(), sizeof(valueName) + 1);
+                    msg.rebuild(valueName.size() + 1);
+                    memcpy(msg.data(), valueName.data(), valueName.size() + 1);
                     _socketMessageOut->send(msg, ZMQ_SNDMORE);
 
                     if (valueType == Value::Type::values)
