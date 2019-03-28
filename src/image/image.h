@@ -95,7 +95,11 @@ class Image : public BufferObject
      * Get the timestamp for the current image
      * \return Return the timestamp
      */
-    virtual int64_t getTimestamp() const final { return _image ? _image->getSpec().timestamp : 0; }
+    virtual int64_t getTimestamp() const final
+    {
+        std::lock_guard<Spinlock> lock(_readMutex);
+        return _image ? _image->getSpec().timestamp : 0;
+    }
 
     /**
      * \brief Set the image from an ImageBuffer
@@ -146,7 +150,8 @@ class Image : public BufferObject
 
     /**
      * Update the timestamp of the object. Also, set the update flag to true.
-     * \param timestamp Value to set the timestamp to, -1 to set to the current time
+     * \param timestamp Value to set the timestamp to, -1 to set to the current
+     * time
      */
     virtual void updateTimestamp(int64_t timestamp = -1) final;
 
@@ -167,9 +172,9 @@ class Image : public BufferObject
 
     bool _flip{false};
     bool _flop{false};
-    bool _imageUpdated{false};
     bool _srgb{true};
     bool _benchmark{false};
+    std::atomic_bool _imageUpdated{false};
 
     void createDefaultImage(); //< Create a default black image
     void createPattern();      //< Create a default pattern

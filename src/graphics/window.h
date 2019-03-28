@@ -204,7 +204,7 @@ class Window : public GraphObject
     bool _swapSynchronizationTesting{false};
     glm::vec4 _swapSynchronizationColor{0.0, 0.0, 0.0, 1.0};
 
-    static std::atomic_int _swappableWindowsCount;
+    static int _swappableWindowsCount;
 
     // Offscreen rendering related objects
     GLuint _renderFbo{0};

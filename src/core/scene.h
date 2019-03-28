@@ -194,7 +194,7 @@ class Scene : public RootObject
 
   protected:
     std::shared_ptr<GlWindow> _mainWindow;
-    bool _isRunning{false};
+    std::atomic_bool _isRunning{false};
 
     // Gui exists in master scene whatever the configuration
     std::shared_ptr<Gui> _gui;
@@ -222,7 +222,7 @@ class Scene : public RootObject
     static std::vector<int> _glVersion;
 
     bool _runInBackground{false}; //!< If true, no window will be created
-    bool _started{false};
+    std::atomic_bool _started{false};
 
     bool _isMaster{false}; //!< Set to true if this is the master Scene of the current config
     bool _isInitialized{false};

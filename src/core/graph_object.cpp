@@ -26,6 +26,7 @@ GraphObject::~GraphObject()
 /*************/
 Attribute& GraphObject::operator[](const string& attr)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     auto attribFunction = _attribFunctions.find(attr);
     return attribFunction->second;
 }
@@ -230,6 +231,7 @@ void GraphObject::registerAttributes()
 
     addAttribute("switchLock",
         [&](const Values& args) {
+            unique_lock<recursive_mutex> lock(_attribMutex);
             auto attribIterator = _attribFunctions.find(args[0].as<string>());
             if (attribIterator == _attribFunctions.end())
                 return false;
@@ -286,6 +288,7 @@ void GraphObject::initializeTree()
     // Create the leaves for the attributes in the tree
     {
         auto attrPath = path + "/attributes/";
+        lock_guard<recursive_mutex> lock(_attribMutex);
         for (const auto& attribute : _attribFunctions)
         {
             if (!attribute.second.hasGetter())
@@ -331,6 +334,7 @@ void GraphObject::initializeTree()
     }
 
     // Remove leaves for attributes which do not exist anymore
+    lock_guard<recursive_mutex> lock(_attribMutex);
     for (const auto& leafName : tree->getLeafListAt(path + "/attributes"))
     {
         if (_attribFunctions.find(leafName) != _attribFunctions.end())

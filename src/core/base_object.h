@@ -129,6 +129,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
   protected:
     std::string _name{""};                             //!< Object name
     DenseMap<std::string, Attribute> _attribFunctions; //!< Map of all attributes
+    mutable std::recursive_mutex _attribMutex;
     bool _updatedParams{true};                         //!< True if the parameters have been updated and the object needs to reflect these changes
 
     std::future<void> _asyncTask{};

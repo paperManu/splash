@@ -455,6 +455,7 @@ void Scene::textureUploadRun()
             bool expectedAtomicValue = false;
             if (_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true, std::memory_order_acquire))
             {
+                lock_guard<recursive_mutex> lockObjects(_objectsMutex);
                 for (auto& obj : _objects)
                 {
                     auto texture = dynamic_pointer_cast<Texture>(obj.second);

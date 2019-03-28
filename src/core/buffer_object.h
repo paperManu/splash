@@ -105,13 +105,21 @@ class BufferObject : public GraphObject
      * Get the timestamp for the current buffer object
      * \return Return the timestamp
      */
-    virtual int64_t getTimestamp() const override { return _timestamp; }
+    virtual int64_t getTimestamp() const override
+    {
+        std::lock_guard<Spinlock> lock(_timestampMutex);
+        return _timestamp;
+    }
 
     /**
      * Set the timestamp
      * \param timestamp Timestamp, in us
      */
-    virtual void setTimestamp(int64_t timestamp) override { _timestamp = timestamp; }
+    virtual void setTimestamp(int64_t timestamp) override
+    {
+        std::lock_guard<Spinlock> lock(_timestampMutex);
+        _timestamp = timestamp;
+    }
 
     /**
      * \brief Serialize the object
@@ -126,12 +134,13 @@ class BufferObject : public GraphObject
     void setSerializedObject(std::shared_ptr<SerializedObject> obj);
 
   protected:
-    mutable Spinlock _readMutex;                      //!< Read mutex locked when the object is read from
-    mutable std::shared_mutex _writeMutex;            //!< Write mutex locked when the object is written to
-    std::atomic_bool _serializedObjectWaiting{false}; //!< True if a serialized object has been set and waits for processing
-    std::future<void> _deserializeFuture{};           //!< Holds the deserialization thread
-    int64_t _timestamp{0};                            //!< Timestamp
-    bool _updatedBuffer{false};                       //!< True if the BufferObject has been updated
+    mutable Spinlock _readMutex;                //!< Read mutex locked when the object is read from
+    mutable std::shared_mutex _writeMutex;      //!< Write mutex locked when the object is written to
+    std::mutex _serializedObjectWaitingMutex{}; //!< Mutex is locked if a serialized object has been set and waits for processing
+    std::future<void> _deserializeFuture{};     //!< Holds the deserialization thread
+    mutable Spinlock _timestampMutex;
+    int64_t _timestamp{0};      //!< Timestamp
+    bool _updatedBuffer{false}; //!< True if the BufferObject has been updated
 
     std::shared_ptr<SerializedObject> _serializedObject{nullptr}; //!< Internal buffer object
     bool _newSerializedObject{false};                             //!< Set to true during serialized object processing

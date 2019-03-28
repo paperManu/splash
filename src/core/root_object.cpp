@@ -275,6 +275,7 @@ void RootObject::updateTreeFromObjects()
     auto attributePath = string("/" + _name + "/attributes");
     assert(_tree.hasBranchAt(attributePath));
 
+    unique_lock<recursive_mutex> lock(_attribMutex);
     for (const auto& leafName : _tree.getLeafListAt(attributePath))
     {
         auto attribIt = _attribFunctions.find(leafName);
@@ -360,6 +361,7 @@ void RootObject::initializeTree()
     // This is done in the main loop to grab all created attributes
     addTask([this]() {
         auto path = "/" + _name + "/attributes/";
+        unique_lock<recursive_mutex> lock(_attribMutex);
         for (const auto& attribute : _attribFunctions)
         {
             if (!attribute.second.hasGetter())

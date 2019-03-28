@@ -151,7 +151,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.cmake" "${CMAKE_CURRENT
 # Generic compilation flags
 #
 include(CheckCXXCompilerFlag)
-
+CHECK_CXX_COMPILER_FLAG("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
 if(COMPILER_SUPPORTS_MARCH_NATIVE AND NOT BUILD_GENERIC_ARCH)
     include(OptimizeForArchitecture)
     OptimizeForArchitecture()

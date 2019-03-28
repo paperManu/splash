@@ -274,12 +274,12 @@ void Image::zero()
 /*************/
 void Image::update()
 {
-    if (_imageUpdated)
+    bool expectedAtomicValue = true;
+    if (_imageUpdated.compare_exchange_strong(expectedAtomicValue, false, std::memory_order_acquire))
     {
         lock_guard<Spinlock> lockRead(_readMutex);
         shared_lock<shared_mutex> lockWrite(_writeMutex);
         _image.swap(_bufferImage);
-        _imageUpdated = false;
 
         if (_remoteType.empty() || _type == _remoteType)
             updateMediaInfo();

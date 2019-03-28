@@ -42,6 +42,7 @@ void BaseObject::addPeriodicTask(const string& name, const function<void()>& tas
 /*************/
 bool BaseObject::setAttribute(const string& attrib, const Values& args)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     auto attribFunction = _attribFunctions.find(attrib);
     bool attribNotPresent = (attribFunction == _attribFunctions.end());
 
@@ -64,6 +65,7 @@ bool BaseObject::setAttribute(const string& attrib, const Values& args)
 /*************/
 bool BaseObject::getAttribute(const string& attrib, Values& args) const
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     auto attribFunction = _attribFunctions.find(attrib);
     if (attribFunction == _attribFunctions.end())
     {
@@ -88,6 +90,7 @@ optional<Values> BaseObject::getAttribute(const string& attrib) const
 /*************/
 string BaseObject::getAttributeDescription(const string& name)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     auto attr = _attribFunctions.find(name);
     if (attr != _attribFunctions.end())
         return attr->second.getDescription();
@@ -98,6 +101,7 @@ string BaseObject::getAttributeDescription(const string& name)
 /*************/
 Values BaseObject::getAttributesDescriptions()
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     Values descriptions;
     for (const auto& attr : _attribFunctions)
         descriptions.push_back(Values({attr.first, attr.second.getDescription(), attr.second.getArgsTypes()}));
@@ -107,6 +111,7 @@ Values BaseObject::getAttributesDescriptions()
 /*************/
 Attribute::Sync BaseObject::getAttributeSyncMethod(const string& name)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     auto attr = _attribFunctions.find(name);
     if (attr != _attribFunctions.end())
         return attr->second.getSyncMethod();
@@ -124,6 +129,7 @@ void BaseObject::runAsyncTask(const function<void(void)>& func)
 /*************/
 Attribute& BaseObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const vector<char>& types)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     _attribFunctions[name] = Attribute(name, set, nullptr, types);
     _attribFunctions[name].setObjectName(_name);
     return _attribFunctions[name];
@@ -132,6 +138,7 @@ Attribute& BaseObject::addAttribute(const string& name, const function<bool(cons
 /*************/
 Attribute& BaseObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const function<const Values()>& get, const vector<char>& types)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     _attribFunctions[name] = Attribute(name, set, get, types);
     _attribFunctions[name].setObjectName(_name);
     return _attribFunctions[name];
@@ -140,6 +147,7 @@ Attribute& BaseObject::addAttribute(const string& name, const function<bool(cons
 /*************/
 void BaseObject::setAttributeDescription(const string& name, const string& description)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     auto attr = _attribFunctions.find(name);
     if (attr != _attribFunctions.end())
     {
@@ -150,6 +158,7 @@ void BaseObject::setAttributeDescription(const string& name, const string& descr
 /*************/
 void BaseObject::setAttributeSyncMethod(const string& name, const Attribute::Sync& method)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     auto attr = _attribFunctions.find(name);
     if (attr != _attribFunctions.end())
         attr->second.setSyncMethod(method);
@@ -158,6 +167,7 @@ void BaseObject::setAttributeSyncMethod(const string& name, const Attribute::Syn
 /*************/
 void BaseObject::removeAttribute(const string& name)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     auto attr = _attribFunctions.find(name);
     if (attr != _attribFunctions.end())
         _attribFunctions.erase(attr);
@@ -181,6 +191,7 @@ void BaseObject::removePeriodicTask(const string& name)
 /*************/
 CallbackHandle BaseObject::registerCallback(const string& attr, Attribute::Callback cb)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     auto attribute = _attribFunctions.find(attr);
     if (attribute == _attribFunctions.end())
         return CallbackHandle();
@@ -194,6 +205,7 @@ bool BaseObject::unregisterCallback(const CallbackHandle& handle)
     if (!handle)
         return false;
 
+    unique_lock<recursive_mutex> lock(_attribMutex);
     auto attribute = _attribFunctions.find(handle.getAttribute());
     if (attribute == _attribFunctions.end())
         return false;

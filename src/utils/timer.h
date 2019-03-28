@@ -109,45 +109,6 @@ class Timer
     bool isLoose() const { return _looseClock; }
 
     /**
-     * \brief Start a duration measurement
-     * \param name Duration name
-     */
-    void start(const std::string& name)
-    {
-        if (!_enabled)
-            return;
-
-        auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-        auto timeIt = _timeMap.find(name);
-        if (timeIt == _timeMap.end())
-            _timeMap[name] = currentTime;
-        else
-            timeIt->second = currentTime;
-    }
-
-    /**
-     * \brief End a duration measurement
-     * \param name Duration name
-     */
-    void stop(const std::string& name)
-    {
-        if (!_enabled)
-            return;
-
-        auto timeIt = _timeMap.find(name);
-        if (timeIt != _timeMap.end())
-        {
-            auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-
-            auto durationIt = _durationMap.find(name);
-            if (durationIt == _durationMap.end())
-                _durationMap[name] = currentTime - timeIt->second;
-            else
-                durationIt->second = currentTime - timeIt->second;
-        }
-    }
-
-    /**
      * \brief Wait for the specified timer to reach a certain value, in us
      * \param name Duration name
      * \param duration Desired duration
@@ -155,6 +116,7 @@ class Timer
      */
     bool waitUntilDuration(const std::string& name, unsigned long long duration)
     {
+        std::lock_guard<Spinlock> lock(_timerMutex);
         if (!_enabled)
             return false;
 
@@ -196,6 +158,7 @@ class Timer
      */
     unsigned long long getDuration(const std::string& name) const
     {
+        std::lock_guard<Spinlock> lock(_timerMutex);
         auto durationIt = _durationMap.find(name);
         if (durationIt == _durationMap.end())
             return 0;
@@ -206,7 +169,11 @@ class Timer
      * \brief Get the whole duration map
      * \return Return the whole duration map
      */
-    const DenseMap<std::string, uint64_t>& getDurationMap() const { return _durationMap; }
+    const DenseMap<std::string, uint64_t> getDurationMap() const
+    {
+        std::lock_guard<Spinlock> lock(_timerMutex);
+        return _durationMap;
+    }
 
     /**
      * \brief Set an element in the duration map. Used for transmitting timings between pairs
@@ -215,6 +182,7 @@ class Timer
      */
     void setDuration(const std::string& name, unsigned long long value)
     {
+        std::lock_guard<Spinlock> lock(_timerMutex);
         auto durationIt = _durationMap.find(name);
         if (durationIt == _durationMap.end())
             _durationMap[name] = value;
@@ -229,6 +197,7 @@ class Timer
      */
     unsigned long long sinceLastSeen(const std::string& name)
     {
+        std::lock_guard<Spinlock> lock(_timerMutex);
         if (_timeMap.find(name) == _timeMap.end())
         {
             start(name);
@@ -246,6 +215,7 @@ class Timer
      */
     Timer& operator<<(const std::string& name)
     {
+        std::lock_guard<Spinlock> lock(_timerMutex);
         start(name);
         _currentDuration = 0;
         return *this;
@@ -253,7 +223,8 @@ class Timer
 
     Timer& operator>>(unsigned long long duration)
     {
-        _timerMutex.lock(); // We lock the mutex to prevent this value to be reset by another call to timer
+        std::lock_guard<Spinlock> lock(_timerMutex);
+        _setTimerMutex.lock(); // We lock the mutex to prevent this value to be reset by another call to timer
         _currentDuration = duration;
         _durationThreadId = std::this_thread::get_id();
         _isDurationSet = true;
@@ -262,13 +233,14 @@ class Timer
 
     bool operator>>(const std::string& name)
     {
+        std::lock_guard<Spinlock> lock(_timerMutex);
         unsigned long long duration = 0;
         if (_isDurationSet && _durationThreadId == std::this_thread::get_id())
         {
             _isDurationSet = false;
             duration = _currentDuration;
             _currentDuration = 0;
-            _timerMutex.unlock();
+            _setTimerMutex.unlock();
         }
 
         bool overtime = false;
@@ -279,7 +251,11 @@ class Timer
         return overtime;
     }
 
-    unsigned long long operator[](const std::string& name) { return getDuration(name); }
+    unsigned long long operator[](const std::string& name)
+    {
+        std::lock_guard<Spinlock> lock(_timerMutex);
+        return getDuration(name);
+    }
 
     /**
      * \brief Enable / disable the timers
@@ -386,6 +362,7 @@ class Timer
     bool _isDurationSet{false};
     std::thread::id _durationThreadId;
     mutable Spinlock _timerMutex;
+    mutable Spinlock _setTimerMutex;
     mutable Spinlock _clockMutex;
     bool _enabled{true};
     bool _isDebug{false};
@@ -393,6 +370,45 @@ class Timer
     std::chrono::microseconds _lastMasterClockUpdate{};
     Timer::Point _clock;
     bool _clockSet{false};
+
+    /**
+     * \brief Start a duration measurement
+     * \param name Duration name
+     */
+    void start(const std::string& name)
+    {
+        if (!_enabled)
+            return;
+
+        auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        auto timeIt = _timeMap.find(name);
+        if (timeIt == _timeMap.end())
+            _timeMap[name] = currentTime;
+        else
+            timeIt->second = currentTime;
+    }
+
+    /**
+     * \brief End a duration measurement
+     * \param name Duration name
+     */
+    void stop(const std::string& name)
+    {
+        if (!_enabled)
+            return;
+
+        auto timeIt = _timeMap.find(name);
+        if (timeIt != _timeMap.end())
+        {
+            auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+
+            auto durationIt = _durationMap.find(name);
+            if (durationIt == _durationMap.end())
+                _durationMap[name] = currentTime - timeIt->second;
+            else
+                durationIt->second = currentTime - timeIt->second;
+        }
+    }
 };
 
 } // namespace Splash

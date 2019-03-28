@@ -161,22 +161,30 @@ class ResizableArray
      */
     inline void resize(size_t size)
     {
-        if (size == 0)
+        if (size == _size)
+        {
+            return;
+        }
+        else if (size == 0)
         {
             _size = 0;
             _shift = 0;
             _buffer.reset(nullptr);
         }
-
-        auto newBuffer = std::unique_ptr<T[]>(new T[size]);
-        if (size >= _size)
-            memcpy(newBuffer.get(), _buffer.get(), _size);
         else
-            memcpy(newBuffer.get(), _buffer.get(), size);
-
-        std::swap(_buffer, newBuffer);
-        _size = size;
-        _shift = 0;
+        {
+            auto newBuffer = std::unique_ptr<T[]>(new T[size]);
+            if (_size != 0)
+            {
+                if (size > _size)
+                    memcpy(newBuffer.get(), _buffer.get(), _size);
+                else
+                    memcpy(newBuffer.get(), _buffer.get(), size);
+            }
+            std::swap(_buffer, newBuffer);
+            _size = size;
+            _shift = 0;
+        }
     }
 
   private:
