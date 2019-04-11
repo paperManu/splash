@@ -121,6 +121,7 @@ class GeometricCalibrator : public ControllerObject
 
     static inline const std::string _worldImageName{"__pattern_image"};
     static inline const std::string _worldBlackImage{"__black_image"};
+    static inline const std::string _worldGreyImage{"__grey_image"};
     static inline const std::string _worldFilterPrefix{"__pattern_filter_"};
     static inline const std::string _finalMeshName{"final_mesh.obj"};
 
@@ -130,7 +131,7 @@ class GeometricCalibrator : public ControllerObject
     bool _abortCalibration{false};
 
     float _cameraFocal{5000.f};
-    CameraModel _cameraModel{CameraModel::Fisheye};
+    CameraModel _cameraModel{CameraModel::Pinhole};
     float _structuredLightScale{1.0 / 16.0};
     std::chrono::milliseconds _captureDelay{250ms};
 
@@ -166,6 +167,16 @@ class GeometricCalibrator : public ControllerObject
      * \param calibration Calibration parameters
      */
     void applyCalibration(const ConfigurationState& state, const Calibration& calibration);
+
+    /**
+     * Wait for an object to be created
+     * \param name Object name
+     */
+    void waitForObjectCreation(const std::string& name)
+    {
+        while (!checkObject(name))
+            std::this_thread::sleep_for(15ms);
+    }
 };
 
 } // namespace Splash

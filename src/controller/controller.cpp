@@ -21,6 +21,15 @@ shared_ptr<GraphObject> ControllerObject::getObjectPtr(const string& name) const
 }
 
 /*************/
+bool ControllerObject::checkObject(const std::string& name) const
+{
+    auto objects = getObjectList();
+    if (std::find(objects.cbegin(), objects.cend(), name) != objects.cend())
+        return true;
+    return false;
+}
+
+/*************/
 vector<shared_ptr<GraphObject>> ControllerObject::getObjectsPtr(const vector<string>& names) const
 {
     auto scene = dynamic_cast<Scene*>(_root);

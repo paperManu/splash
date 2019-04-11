@@ -57,6 +57,13 @@ class ControllerObject : public GraphObject
     virtual ~ControllerObject() override {}
 
     /**
+     * Check whether an object of the given name exists
+     * \param name Object name
+     * \return Return true if the object exists, false otherwise
+     */
+    bool checkObject(const std::string& name) const;
+
+    /**
      * Get a ptr to the named object
      * \return The object
      */

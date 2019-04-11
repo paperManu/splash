@@ -1,7 +1,8 @@
 #version 450 core
 
 uniform sampler2D _tex0; // black texture
-uniform sampler2D _tex1; // pattern texture
+uniform sampler2D _tex1; // grey texture
+uniform sampler2D _tex2; // pattern texture
 
 uniform int subdivs = 0;
 uniform ivec4 texLayout = ivec4(0);
@@ -24,7 +25,9 @@ void main(void)
         fragColor = vec4(tc, 0.0, 1.0);
         if (texLayout[i] == 0)
             fragColor = texture(_tex0, tc);
-        else
+        else if (texLayout[i] == 1)
             fragColor = texture(_tex1, tc);
+        else
+            fragColor = texture(_tex2, tc);
     }
 }

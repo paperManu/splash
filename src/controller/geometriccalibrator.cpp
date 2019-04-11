@@ -117,17 +117,21 @@ GeometricCalibrator::ConfigurationState GeometricCalibrator::saveCurrentState()
 /*************/
 void GeometricCalibrator::restoreState(const GeometricCalibrator::ConfigurationState& state)
 {
+    Log::get() << Log::MESSAGE << "GeometricCalibrator::" << __FUNCTION__ << " - Cleaning calibration objects" << Log::endl;
+
     for (size_t index = 0; index < state.windowList.size(); ++index)
     {
         auto& windowName = state.windowList[index];
         auto filterName = _worldFilterPrefix + std::to_string(index);
         setWorldAttribute("unlink", {filterName, windowName});
         setWorldAttribute("unlink", {_worldBlackImage, filterName});
+        setWorldAttribute("unlink", {_worldGreyImage, filterName});
         setWorldAttribute("unlink", {_worldImageName, filterName});
         setWorldAttribute("deleteObject", {filterName});
     }
 
     setWorldAttribute("deleteObject", {_worldBlackImage});
+    setWorldAttribute("deleteObject", {_worldGreyImage});
     setWorldAttribute("deleteObject", {_worldImageName});
 
     // Reset the original windows state
@@ -158,6 +162,10 @@ void GeometricCalibrator::setupCalibrationState(const GeometricCalibrator::Confi
     // Camera output is overridden with filters mimicking the windows layout
     setWorldAttribute("addObject", {"image", _worldImageName});
     setWorldAttribute("addObject", {"image", _worldBlackImage});
+    setWorldAttribute("addObject", {"image", _worldGreyImage});
+
+    waitForObjectCreation(_worldGreyImage);
+    setObjectAttribute(_worldGreyImage, "pattern", {1});
 
     for (size_t index = 0; index < state.windowList.size(); ++index)
     {
@@ -170,6 +178,7 @@ void GeometricCalibrator::setupCalibrationState(const GeometricCalibrator::Confi
 
         auto& windowName = state.windowList[index];
         setWorldAttribute("link", {_worldBlackImage, filterName});
+        setWorldAttribute("link", {_worldGreyImage, filterName});
         setWorldAttribute("link", {_worldImageName, filterName});
         setWorldAttribute("link", {filterName, windowName});
     }
@@ -182,8 +191,7 @@ void GeometricCalibrator::setupCalibrationState(const GeometricCalibrator::Confi
             continue;
 
         auto filterName = _worldFilterPrefix + std::to_string(index);
-        for (auto objects = getObjectList(); std::find(objects.cbegin(), objects.cend(), filterName) == objects.cend(); objects = getObjectList())
-            std::this_thread::sleep_for(15ms);
+        waitForObjectCreation(filterName);
         setObjectAttribute(filterName, "fileFilterSource", {std::string(DATADIR) + "/shaders/geometric_calibration_filter.frag"});
 
         for (auto attrList = getObjectAttributes(filterName); attrList.find("subdivs") == attrList.cend(); attrList = getObjectAttributes(filterName))
@@ -202,6 +210,13 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
     slaps::Workspace workspace;
     slaps::Structured_Light structuredLight(_structuredLightScale);
 
+    // Set all cameras to display a pattern
+    for (size_t index = 0; index < state.windowList.size(); ++index)
+    {
+        auto filterName = _worldFilterPrefix + std::to_string(index);
+        setObjectAttribute(filterName, "texLayout", {1, 1, 1, 1});
+    }
+
     Image imageObject(_root);
     _finalizeCalibration = false;
     size_t positionIndex = 0;
@@ -217,6 +232,13 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
 
         // If an error happens while capturing this position, this flag will be set to true
         bool abortCurrentPosition = false;
+
+        // Set all cameras to black
+        for (size_t index = 0; index < state.windowList.size(); ++index)
+        {
+            auto filterName = _worldFilterPrefix + std::to_string(index);
+            setObjectAttribute(filterName, "texLayout", {0, 0, 0, 0});
+        }
 
         // For each position, capture the patterns for all cameras
         std::vector<cv::Mat2i> decodedProjectors;
@@ -266,7 +288,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
                 continue;
 
             Values layout({0, 0, 0, 0});
-            layout[targetLayoutIndex] = 1; // This index will display the second texture, named _worldImageName
+            layout[targetLayoutIndex] = 2; // This index will display the third texture, named _worldImageName
             setObjectAttribute(targetFilterName, "texLayout", layout);
 
             std::vector<cv::Mat1b> capturedPatterns{};
@@ -344,8 +366,13 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
             if (!workspace.saveImagesFromList(imagesToSave))
                 return {};
             decodedProjectors.push_back(decoded.value());
+        }
 
-            setObjectAttribute(targetFilterName, "texLayout", {0, 0, 0, 0});
+        // Set all cameras to display a pattern
+        for (size_t index = 0; index < state.windowList.size(); ++index)
+        {
+            auto filterName = _worldFilterPrefix + std::to_string(index);
+            setObjectAttribute(filterName, "texLayout", {1, 1, 1, 1});
         }
 
         if (abortCurrentPosition)
@@ -390,7 +417,8 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
     auto geometry = slaps::Geometry(points, {}, {}, {});
     auto geometryNormals = geometry.computeNormalsPointSet();
     auto geometryMesh = geometryNormals.marchingCubes(600);
-    auto geometryMeshUvs = geometryMesh.uvCoordinatesSphere();
+    auto geometryMeshClean = geometryMesh.simplifyGeometry();
+    auto geometryMeshUvs = geometryMeshClean.uvCoordinatesSphere();
 
     slaps::Obj objFile(geometryMeshUvs);
     objFile.writeMesh(std::filesystem::path(workspace.getWorkPath()) / _finalMeshName);
@@ -409,9 +437,20 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
         pixelMap.pixelToProj(camHeight, _structuredLightScale);
         auto matchesByProj = pixelMap.sampling(15);
 
+        std::shared_ptr<slaps::Camera> cameraModel{nullptr};
+        switch (_cameraModel)
+        {
+        default:
+            assert(false);
+            break;
+        case CameraModel::Pinhole:
+            cameraModel = std::make_shared<slaps::cameramodel::Pinhole>(cameraSize[0].as<int>(), cameraSize[1].as<int>());
+            break;
+        }
+
         std::vector<uint32_t> inliers;
         std::vector<double> parameters;
-        slaps::Kernel kernel(matchesByProj[cameraIndex + 1]); // Projectors start at 1 in SLAPS
+        slaps::Kernel kernel(cameraModel, matchesByProj[cameraIndex + 1]); // Projectors start at 1 in SLAPS
         parameters = kernel.Ransac(inliers);
 
         if (parameters.empty())
@@ -426,8 +465,9 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
         Log::get() << Log::endl;
 
         double fov = parameters[0];
-        double cx = parameters[1];
-        double cy = parameters[2];
+        // SLAPS handles lens shift in a mirror way
+        double cx = 1.0 - parameters[1];
+        double cy = 1.0 - parameters[2];
 
         glm::dvec3 euler{0.0, 0.0, 0.0};
         glm::dvec4 eye{0.0, 0.0, 0.0, 0.0};
@@ -453,6 +493,8 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
 /*************/
 void GeometricCalibrator::applyCalibration(const GeometricCalibrator::ConfigurationState& state, const Calibration& calibration)
 {
+    Log::get() << Log::MESSAGE << "GeometricCalibrator::" << __FUNCTION__ << " - Calibration set" << Log::endl;
+
     // Load the mesh into a new Mesh object, create a new Object to replace the one connected to the cameras
     const std::string calibrationPrefixName = "calibration_";
     setWorldAttribute("addObject", {"mesh", calibrationPrefixName + "mesh"});
@@ -469,8 +511,7 @@ void GeometricCalibrator::applyCalibration(const GeometricCalibrator::Configurat
         setWorldAttribute("link", {calibrationPrefixName + "object", cameraName});
     }
 
-    for (auto objects = getObjectList(); std::find(objects.cbegin(), objects.cend(), calibrationPrefixName + "mesh") == objects.cend(); objects = getObjectList())
-        std::this_thread::sleep_for(15ms);
+    waitForObjectCreation(calibrationPrefixName + "mesh");
     setObjectAttribute(calibrationPrefixName + "mesh", "file", {calibration.meshPath});
 
     // Apply projector calibration
