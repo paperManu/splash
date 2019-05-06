@@ -329,8 +329,8 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
 
                 spec = imageBuffer.getSpec();
                 cv::Mat capturedImage;
-                assert(spec.channels == 4); // All Image classes should output RGBA (when uncompressed)
-                capturedImage = cv::Mat(spec.height, spec.width, CV_8UC4, imageBuffer.data());
+                assert(spec.channels == 4 || spec.channels == 3); // All Image classes should output RGB or RGBA (when uncompressed)
+                capturedImage = cv::Mat(spec.height, spec.width, spec.channels == 4 ? CV_8UC4 : CV_8UC3, imageBuffer.data());
 
                 cv::cvtColor(capturedImage, capturedImage, CV_RGB2GRAY);
                 cv::Mat1b grayscale(spec.height, spec.width);
@@ -348,6 +348,9 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
                     Log::get() << Log::WARNING << "GeometricCalibrator::" << __FUNCTION__ << " - Could not write image to " << patternImageFilePath << Log::endl;
 #endif
             }
+
+            layout[targetLayoutIndex] = 0; // This index will display the first texture, _worldBlackImage
+            setObjectAttribute(targetFilterName, "texLayout", layout);
 
             if (abortCurrentPosition)
                 break;
