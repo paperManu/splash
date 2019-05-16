@@ -526,11 +526,10 @@ void Gui::render()
             if (linksIt != allLinks.end())
             {
                 auto links = linksIt->second;
-                bool hasOwnWindow = true;
                 for (const auto& link : links)
-                    if (link != _name)
-                        hasOwnWindow = false;
-                if (hasOwnWindow)
+                    if (link == _name)
+                        _hasOwnWindow = true;
+                if (_hasOwnWindow)
                     _isVisible = true;
             }
         }
@@ -558,7 +557,7 @@ void Gui::render()
         // Check whether the GUI is alone in its window
         auto objReversedLinks = getObjectReversedLinks();
         auto objLinks = getObjectLinks();
-        if (objLinks[objReversedLinks[_name][0]].size() == 1)
+        if (_hasOwnWindow)
         {
             ImGui::SetWindowPos(ImVec2(0, 0), ImGuiSetCond_Once);
             ImGui::SetWindowSize(ImVec2(_width, _height));

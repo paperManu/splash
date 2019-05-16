@@ -219,6 +219,7 @@ class Gui : public ControllerObject
     bool _wireframe{false};
     bool _blendingActive{false};
     bool _showAbout{false};
+    bool _hasOwnWindow{false};
 
     /**
      * \brief Initialize ImGui
