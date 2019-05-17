@@ -172,9 +172,9 @@ class Image : public BufferObject
 
     bool _flip{false};
     bool _flop{false};
+    bool _imageUpdated{false};
     bool _srgb{true};
     bool _benchmark{false};
-    std::atomic_bool _imageUpdated{false};
 
     void createDefaultImage(); //< Create a default black image
     void createPattern();      //< Create a default pattern
