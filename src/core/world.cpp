@@ -700,32 +700,9 @@ bool World::copyCameraParameters(const std::string& filename)
     // List of copyable types
     static vector<string> copyableTypes{"camera", "warp"};
 
-    ifstream in(filename, ios::in | ios::binary);
-    string contents;
-    if (in)
-    {
-        in.seekg(0, ios::end);
-        contents.resize(in.tellg());
-        in.seekg(0, ios::beg);
-        in.read(&contents[0], contents.size());
-        in.close();
-    }
-    else
-    {
-        Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to open file " << filename << Log::endl;
-        return false;
-    }
-
     Json::Value config;
-    Json::Reader reader;
-
-    bool success = reader.parse(contents, config);
-    if (!success)
-    {
-        Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to parse file " << filename << Log::endl;
-        Log::get() << Log::WARNING << reader.getFormattedErrorMessages() << Log::endl;
+    if (!Utils::loadJsonFile(filename, config))
         return false;
-    }
 
     // Get the scene names from this other configuration file
     for (const auto& s : config["scenes"].getMemberNames())

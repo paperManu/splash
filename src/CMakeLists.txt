@@ -170,6 +170,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     userinput/userinput_keyboard.cpp
     userinput/userinput_mouse.cpp
     utils/cgutils.cpp
+    utils/jsonutils.cpp
     ../external/imgui/imgui_demo.cpp
     ../external/imgui/imgui_draw.cpp
     ../external/imgui/imgui_widgets.cpp

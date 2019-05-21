@@ -1,7 +1,5 @@
 #include "./core/factory.h"
 
-#include <json/json.h>
-
 #include "./controller/controller_blender.h"
 #include "./core/link.h"
 #include "./core/scene.h"
@@ -19,6 +17,7 @@
 #include "./image/queue.h"
 #include "./mesh/mesh.h"
 #include "./sink/sink.h"
+#include "./utils/jsonutils.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
@@ -79,32 +78,9 @@ void Factory::loadDefaults()
         return;
 
     auto filename = string(defaultEnv);
-    ifstream in(filename, ios::in | ios::binary);
-    string contents;
-    if (in)
-    {
-        in.seekg(0, ios::end);
-        contents.resize(in.tellg());
-        in.seekg(0, ios::beg);
-        in.read(&contents[0], contents.size());
-        in.close();
-    }
-    else
-    {
-        Log::get() << Log::WARNING << "Factory::" << __FUNCTION__ << " - Unable to open file " << filename << Log::endl;
-        return;
-    }
-
     Json::Value config;
-    Json::Reader reader;
-
-    bool success = reader.parse(contents, config);
-    if (!success)
-    {
-        Log::get() << Log::WARNING << "Factory::" << __FUNCTION__ << " - Unable to parse file " << filename << Log::endl;
-        Log::get() << Log::WARNING << reader.getFormattedErrorMessages() << Log::endl;
+    if (!Utils::loadJsonFile(filename, config))
         return;
-    }
 
     auto objNames = config.getMemberNames();
     for (auto& name : objNames)
