@@ -19,7 +19,6 @@
 #include "./utils/timer.h"
 
 #define SPLASH_SHMDATA_THREADS 2
-#define SPLASH_SHMDATA_WITH_POOL 0 // FIXME: there is an issue with the threadpool in the shmdata callback
 
 using namespace std;
 

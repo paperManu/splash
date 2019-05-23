@@ -329,10 +329,25 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
 
                 spec = imageBuffer.getSpec();
                 cv::Mat capturedImage;
-                assert(spec.channels == 4 || spec.channels == 3); // All Image classes should output RGB or RGBA (when uncompressed)
-                capturedImage = cv::Mat(spec.height, spec.width, spec.channels == 4 ? CV_8UC4 : CV_8UC3, imageBuffer.data());
 
-                cv::cvtColor(capturedImage, capturedImage, CV_RGB2GRAY);
+                if (spec.format.find("RGB") != std::string::npos)
+                {
+                    assert(spec.channels == 4 || spec.channels == 3); // All Image classes should output RGB or RGBA (when uncompressed)
+                    capturedImage = cv::Mat(spec.height, spec.width, spec.channels == 4 ? CV_8UC4 : CV_8UC3, imageBuffer.data());
+                    cv::cvtColor(capturedImage, capturedImage, CV_RGB2GRAY);
+                }
+                else if (spec.format == "YUYV")
+                {
+                    assert(spec.channels == 3 && spec.bpp == 16);
+                    auto yuvImage = cv::Mat(spec.height, spec.width, CV_8UC2, imageBuffer.data());
+                    cv::cvtColor(yuvImage, capturedImage, CV_YUV2RGB_YUYV);
+                }
+                else
+                {
+                    Log::get() << Log::WARNING << "GeometricCalibrator::" << __FUNCTION__ << " - Format " << spec.format << " is not supported" << Log::endl;
+                    return {};
+                }
+
                 cv::Mat1b grayscale(spec.height, spec.width);
                 int fromTo[] = {0, 0};
                 cv::mixChannels(&capturedImage, 1, &grayscale, 1, fromTo, 1);
@@ -441,15 +456,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
         auto matchesByProj = pixelMap.sampling(15);
 
         std::shared_ptr<slaps::Camera> cameraModel{nullptr};
-        switch (_cameraModel)
-        {
-        default:
-            assert(false);
-            break;
-        case CameraModel::Pinhole:
-            cameraModel = std::make_shared<slaps::cameramodel::Pinhole>(cameraSize[0].as<int>(), cameraSize[1].as<int>());
-            break;
-        }
+        cameraModel = std::make_shared<slaps::cameramodel::Pinhole>(cameraSize[0].as<int>(), cameraSize[1].as<int>());
 
         std::vector<uint32_t> inliers;
         std::vector<double> parameters;
