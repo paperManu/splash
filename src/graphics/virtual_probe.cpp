@@ -170,8 +170,6 @@ void VirtualProbe::setupFBO()
     _fbo = make_unique<Framebuffer>(_root);
     _fbo->setSize(_width, _height);
     _fbo->setParameters(0, false, false, true);
-    _fbo->getDepthTexture()->setName("depthCube");
-    _fbo->getColorTexture()->setName("colorCube");
     _fbo->getColorTexture()->setAttribute("clampToEdge", {1});
     _fbo->getColorTexture()->setAttribute("filtering", {0});
 
