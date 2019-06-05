@@ -35,10 +35,6 @@ before_script:
   - export CCACHE_BASEDIR=${PWD}
   - export CCACHE_DIR=${PWD}/ccache
   - export PATH="/usr/lib/ccache:${PATH}"
-  # Datapath driver download
-  - mkdir -p Datapath && cd Datapath
-  - wget -q --show-progress http://downloads.datapath.co.uk/Linux/VisionInstall-7.17.14.304.tar.gz
-  - tar xvzf VisionInstall-7.17.14.304.tar.gz && cd ..
 
 #
 # Tests
@@ -50,7 +46,7 @@ test:18.04:
     - git submodule update --init
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build
-    - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DDATAPATH_SDK_PATH=../Datapath ..
+    - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make test
 
@@ -61,7 +57,7 @@ test:18.04-clang:
     - git submodule update --init
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build
-    - CC=clang CXX=clang++ cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DDATAPATH_SDK_PATH=../Datapath ..
+    - CC=clang CXX=clang++ cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make test
 
@@ -71,7 +67,7 @@ test:18.04-syslibs:
   script:
     - git submodule update --init
     - rm -rf build && mkdir build && cd build
-    - cmake -DBUILD_GENERIC_ARCH=ON -DUSE_SYSTEM_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr -DDATAPATH_SDK_PATH=../Datapath ..
+    - cmake -DBUILD_GENERIC_ARCH=ON -DUSE_SYSTEM_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make test
 
@@ -103,7 +99,7 @@ package:debian:
   stage: package
   image: $CI_REGISTRY_IMAGE:ci_18.04
   script:
-    - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DDATAPATH_SDK_PATH=../Datapath ..
+    - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make package
     - mv *.deb ../
