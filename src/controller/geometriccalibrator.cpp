@@ -475,9 +475,8 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
         Log::get() << Log::endl;
 
         double fov = parameters[0];
-        // SLAPS handles lens shift in a mirror way
-        double cx = 1.0 - parameters[1];
-        double cy = 1.0 - parameters[2];
+        double cx = parameters[1];
+        double cy = parameters[2];
 
         glm::dvec3 euler{0.0, 0.0, 0.0};
         glm::dvec4 eye{0.0, 0.0, 0.0, 0.0};
@@ -490,7 +489,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
         glm::dmat4 rotateMat = glm::yawPitchRoll(euler[0], euler[1], euler[2]);
         glm::dvec4 target = rotateMat * glm::dvec4(1.0, 0.0, 0.0, 0.0);
         glm::dvec4 up = rotateMat * glm::dvec4(0.0, 0.0, 1.0, 0.0);
-        target = eye - target;
+        target += eye;
         up = glm::normalize(up);
 
         CalibrationParams params = {.cameraName = cameraName, .fov = fov, .cx = cx, .cy = cy, .eye = eye, .target = target, .up = up};
