@@ -754,6 +754,7 @@ void Shader::registerAttributes()
 
         return true;
     });
+    setAttribute("uniform", {"Set the shader uniform to the given value, if it exists. This has to be called while the shader is active"});
 }
 
 /*************/

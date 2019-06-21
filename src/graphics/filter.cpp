@@ -1,6 +1,7 @@
 #include "./graphics/filter.h"
 
 #include "./core/scene.h"
+#include "./graphics/camera.h"
 #include "./graphics/texture_image.h"
 #include "./utils/cgutils.h"
 #include "./utils/log.h"
@@ -83,6 +84,12 @@ bool Filter::linkIt(const std::shared_ptr<GraphObject>& obj)
         else
             return false;
     }
+    else if (dynamic_pointer_cast<Camera>(obj).get())
+    {
+        auto cam = dynamic_pointer_cast<Camera>(obj).get();
+        auto tex = cam->getTexture();
+        return linkTo(tex);
+    }
 
     return false;
 }
@@ -96,7 +103,7 @@ void Filter::unbind()
 /*************/
 void Filter::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Texture>(obj).get())
     {
         for (uint32_t i = 0; i < _inTextures.size();)
         {
@@ -116,7 +123,7 @@ void Filter::unlinkIt(const std::shared_ptr<GraphObject>& obj)
             }
         }
     }
-    else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
+    else if (dynamic_pointer_cast<Image>(obj).get())
     {
         auto textureName = getName() + "_" + obj->getName() + "_tex";
 
@@ -127,6 +134,12 @@ void Filter::unlinkIt(const std::shared_ptr<GraphObject>& obj)
         }
 
         _root->disposeObject(textureName);
+    }
+    else if (dynamic_pointer_cast<Camera>(obj).get())
+    {
+        auto cam = dynamic_pointer_cast<Camera>(obj);
+        auto tex = cam->getTexture();
+        unlinkFrom(tex);
     }
 }
 
