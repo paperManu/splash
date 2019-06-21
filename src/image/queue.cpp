@@ -451,11 +451,6 @@ void QueueSurrogate::registerAttributes()
                 image->setRemoteType(type);
                 object = image;
             }
-            // TODO: add Texture_Syphon type
-            // else if (type.find("texture_syphon") != string::npos)
-            //{
-            //    object = make_shared<Texture_Syphon>();
-            //}
             else
             {
                 return;

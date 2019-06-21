@@ -67,11 +67,8 @@ void GeometricCalibrator::calibrate()
 }
 
 /*************/
-bool GeometricCalibrator::linkTo(const shared_ptr<GraphObject>& obj)
+bool GeometricCalibrator::linkIt(const shared_ptr<GraphObject>& obj)
 {
-    if (!GraphObject::linkTo(obj))
-        return false;
-
     if (_grabber)
         return false;
 
@@ -84,7 +81,7 @@ bool GeometricCalibrator::linkTo(const shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void GeometricCalibrator::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
+void GeometricCalibrator::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
     auto image = dynamic_pointer_cast<Image>(obj);
     if (!image)
@@ -92,8 +89,6 @@ void GeometricCalibrator::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
 
     if (_grabber == image)
         _grabber.reset();
-
-    GraphObject::unlinkFrom(obj);
 }
 
 /*************/

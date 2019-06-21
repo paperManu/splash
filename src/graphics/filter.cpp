@@ -59,13 +59,12 @@ unordered_map<string, Values> Filter::getShaderUniforms() const
 }
 
 /*************/
-bool Filter::linkTo(const std::shared_ptr<GraphObject>& obj)
+bool Filter::linkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    // Mandatory before trying to link
-    if (!obj || !Texture::linkTo(obj))
+    if (!obj)
         return false;
 
-    if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Texture>(obj))
     {
         if (!_inTextures.empty() && _inTextures[_inTextures.size() - 1].expired())
             _screen->removeTexture(_inTextures[_inTextures.size() - 1].lock());
@@ -76,7 +75,7 @@ bool Filter::linkTo(const std::shared_ptr<GraphObject>& obj)
 
         return true;
     }
-    else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
+    else if (dynamic_pointer_cast<Image>(obj))
     {
         auto tex = dynamic_pointer_cast<Texture_Image>(_root->createObject("texture_image", getName() + "_" + obj->getName() + "_tex").lock());
         if (tex->linkTo(obj))
@@ -85,7 +84,7 @@ bool Filter::linkTo(const std::shared_ptr<GraphObject>& obj)
             return false;
     }
 
-    return true;
+    return false;
 }
 
 /*************/
@@ -95,7 +94,7 @@ void Filter::unbind()
 }
 
 /*************/
-void Filter::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
+void Filter::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
@@ -129,8 +128,6 @@ void Filter::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
 
         _root->disposeObject(textureName);
     }
-
-    Texture::unlinkFrom(obj);
 }
 
 /*************/

@@ -38,13 +38,6 @@ void Texture::init()
 }
 
 /*************/
-bool Texture::linkTo(const shared_ptr<GraphObject>& obj)
-{
-    // Mandatory before trying to link
-    return GraphObject::linkTo(obj);
-}
-
-/*************/
 void Texture::registerAttributes()
 {
     GraphObject::registerAttributes();

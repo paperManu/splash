@@ -141,18 +141,6 @@ class Object : public GraphObject
     int getVerticesNumber() const;
 
     /**
-     * \brief Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
-     */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) override;
-
-    /**
-     * \brief Try to unlink the given GraphObject from this object
-     * \param obj Shared pointer to the (supposed) child object
-     */
-    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) override;
-
-    /**
      * \brief Get the coordinates of the closest vertex to the given point
      * \param p Coordinates around which to look
      * \param v Found vertex coordinates
@@ -226,6 +214,19 @@ class Object : public GraphObject
      * \param primitiveIdShift Shift for the ID as rendered in the texture
      */
     void transferVisibilityFromTexToAttr(int width, int height, int primitiveIdShift);
+
+  protected:
+    /**
+     * \brief Try to link the given GraphObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
+
+    /**
+     * \brief Try to unlink the given GraphObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
   private:
     mutable std::mutex _mutex;

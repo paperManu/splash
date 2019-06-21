@@ -176,19 +176,15 @@ vector<string> Window::getPathDropped()
 }
 
 /*************/
-bool Window::linkTo(const shared_ptr<GraphObject>& obj)
+bool Window::linkIt(const shared_ptr<GraphObject>& obj)
 {
-    // Mandatory before trying to link
-    if (!GraphObject::linkTo(obj))
-        return false;
-
-    if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Texture>(obj))
     {
         auto tex = dynamic_pointer_cast<Texture>(obj);
         setTexture(tex);
         return true;
     }
-    else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
+    else if (dynamic_pointer_cast<Image>(obj))
     {
         auto tex = dynamic_pointer_cast<Texture_Image>(_root->createObject("texture_image", getName() + "_" + obj->getName() + "_tex").lock());
         tex->setResizable(0);
@@ -197,7 +193,7 @@ bool Window::linkTo(const shared_ptr<GraphObject>& obj)
         else
             return false;
     }
-    else if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
+    else if (dynamic_pointer_cast<Camera>(obj))
     {
         auto scene = dynamic_cast<Scene*>(_root);
         if (!scene)
@@ -211,7 +207,7 @@ bool Window::linkTo(const shared_ptr<GraphObject>& obj)
 
         return true;
     }
-    else if (dynamic_pointer_cast<Gui>(obj).get() != nullptr)
+    else if (dynamic_pointer_cast<Gui>(obj))
     {
         if (_guiTexture != nullptr)
             _screenGui->removeTexture(_guiTexture);
@@ -225,14 +221,14 @@ bool Window::linkTo(const shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void Window::unlinkFrom(const shared_ptr<GraphObject>& obj)
+void Window::unlinkIt(const shared_ptr<GraphObject>& obj)
 {
-    if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Texture>(obj))
     {
         auto tex = dynamic_pointer_cast<Texture>(obj);
         unsetTexture(tex);
     }
-    else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
+    else if (dynamic_pointer_cast<Image>(obj))
     {
         // Look for the corresponding texture
         string texName = getName() + "_" + obj->getName() + "_tex";
@@ -252,7 +248,7 @@ void Window::unlinkFrom(const shared_ptr<GraphObject>& obj)
             _root->disposeObject(texName);
         }
     }
-    else if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
+    else if (dynamic_pointer_cast<Camera>(obj))
     {
         auto warpName = getName() + "_" + obj->getName() + "_warp";
 
@@ -263,7 +259,7 @@ void Window::unlinkFrom(const shared_ptr<GraphObject>& obj)
             _root->disposeObject(warpName);
         }
     }
-    else if (dynamic_pointer_cast<Gui>(obj).get() != nullptr)
+    else if (dynamic_pointer_cast<Gui>(obj))
     {
         auto gui = dynamic_pointer_cast<Gui>(obj);
         if (gui->getTexture() == _guiTexture)
@@ -272,8 +268,6 @@ void Window::unlinkFrom(const shared_ptr<GraphObject>& obj)
             _guiTexture = nullptr;
         }
     }
-
-    return GraphObject::unlinkFrom(obj);
 }
 
 /*************/

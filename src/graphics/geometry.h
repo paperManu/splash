@@ -119,12 +119,6 @@ class Geometry : public BufferObject
     bool hasBeenResized() { return _buffersResized; }
 
     /**
-     * \brief Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
-     */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) override;
-
-    /**
      * \brief Get the coordinates of the closest vertex to the given point
      * \param p Point around which to look
      * \param v If detected, vertex coordinates
@@ -153,6 +147,13 @@ class Geometry : public BufferObject
      * \param isActive If true, use alternative buffers
      */
     void useAlternativeBuffers(bool isActive);
+
+  protected:
+    /**
+     * \brief Try to link the given GraphObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) override;
 
   private:
     mutable std::mutex _mutex;

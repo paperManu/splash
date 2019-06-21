@@ -451,13 +451,9 @@ void Gui::mouseScroll(double /*xoffset*/, double yoffset)
 }
 
 /*************/
-bool Gui::linkTo(const shared_ptr<GraphObject>& obj)
+bool Gui::linkIt(const shared_ptr<GraphObject>& obj)
 {
-    // Mandatory before trying to link
-    if (!ControllerObject::linkTo(obj))
-        return false;
-
-    if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Object>(obj))
     {
         auto object = dynamic_pointer_cast<Object>(obj);
         _guiCamera->linkTo(object);
@@ -468,12 +464,10 @@ bool Gui::linkTo(const shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void Gui::unlinkFrom(const shared_ptr<GraphObject>& obj)
+void Gui::unlinkIt(const shared_ptr<GraphObject>& obj)
 {
     if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
         _guiCamera->unlinkFrom(obj);
-
-    GraphObject::unlinkFrom(obj);
 }
 
 /*************/

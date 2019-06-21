@@ -133,18 +133,6 @@ class Gui : public ControllerObject
     void mouseScroll(double xoffset, double yoffset);
 
     /**
-     * \brief Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
-     */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) final;
-
-    /**
-     * \brief Try to unlink the given GraphObject from this object
-     * \param obj Shared pointer to the (supposed) child object
-     */
-    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) final;
-
-    /**
      * \brief Render this gui
      */
     void render();
@@ -179,6 +167,19 @@ class Gui : public ControllerObject
      * \param height Height
      */
     void setOutputSize(int width, int height);
+
+  protected:
+    /**
+     * \brief Try to link the given GraphObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
+
+    /**
+     * \brief Try to unlink the given GraphObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
   private:
     bool _isInitialized{false};

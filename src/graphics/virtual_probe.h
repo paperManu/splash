@@ -84,18 +84,6 @@ class VirtualProbe : public Texture
     ImageBufferSpec getSpec() const override { return _outFbo->getColorTexture()->getSpec(); }
 
     /**
-     * \brief Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
-     */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) override;
-
-    /**
-     * \brief Try to unlink the given GraphObject from this object
-     * \param obj Shared pointer to the (supposed) child object
-     */
-    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) override;
-
-    /**
      * \brief Render this camera into its textures
      */
     void render() override;
@@ -133,6 +121,19 @@ class VirtualProbe : public Texture
      */
     void update() final {}
 
+  protected:
+    /**
+     * \brief Try to link the given GraphObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
+
+    /**
+     * \brief Try to unlink the given GraphObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
+
   private:
     enum ProjectionType
     {
@@ -140,7 +141,6 @@ class VirtualProbe : public Texture
         Spherical = 1
     };
 
-  private:
     std::unique_ptr<Framebuffer> _fbo{nullptr};
     std::unique_ptr<Framebuffer> _outFbo{nullptr};
     std::vector<std::weak_ptr<Object>> _objects{};

@@ -116,12 +116,6 @@ class Texture_Image : public Texture
     ImageBuffer grabMipmap(unsigned int level = 0) const;
 
     /**
-     * \brief Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
-     */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) final;
-
-    /**
      * \brief Lock the texture for read / write operations
      */
     void lock() const { _mutex.lock(); }
@@ -165,6 +159,19 @@ class Texture_Image : public Texture
      * \brief Update the texture according to the owned Image
      */
     void update() final;
+
+  protected:
+    /**
+     * \brief Try to link the given GraphObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
+
+    /**
+     * \brief Unlink a given object
+     * \param obj Object to unlink from
+     */
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
   private:
     GLuint _glTex{0};

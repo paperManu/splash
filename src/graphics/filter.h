@@ -102,18 +102,6 @@ class Filter : public Texture
     GLuint getTexId() const override { return _fbo->getColorTexture()->getTexId(); }
 
     /**
-     * \brief Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
-     */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) override;
-
-    /**
-     * \brief Try to unlink the given GraphObject from this object
-     * \param obj Shared pointer to the (supposed) child object
-     */
-    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) override;
-
-    /**
      * Set whether to keep the input image ratio
      * \param keepRatio Keep ratio if true
      */
@@ -134,6 +122,19 @@ class Filter : public Texture
      * \brief Update for a filter does nothing, it is the render() job
      */
     void update() override {}
+
+  protected:
+    /**
+     * \brief Try to link the given GraphObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
+
+    /**
+     * \brief Try to unlink the given GraphObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
   private:
     std::vector<std::weak_ptr<Texture>> _inTextures;

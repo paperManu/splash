@@ -142,18 +142,6 @@ class Camera : public GraphObject
     virtual int64_t getTimestamp() const final { return _outFbo ? _outFbo->getColorTexture()->getTimestamp() : 0; }
 
     /**
-     * \brief Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
-     */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) override;
-
-    /**
-     * \brief Try to unlink the given GraphObject from this object
-     * \param obj Shared pointer to the (supposed) child object
-     */
-    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) override;
-
-    /**
      * \brief Get the coordinates of the closest vertex to the given point
      * \param x Target x coordinate
      * \param y Target y coordinate
@@ -222,6 +210,19 @@ class Camera : public GraphObject
      * \return Return true if all went well
      */
     bool setCalibrationPoint(const Values& screenPoint);
+
+  protected:
+    /**
+     * \brief Try to link the given GraphObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
+
+    /**
+     * \brief Try to unlink the given GraphObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
   private:
     std::unique_ptr<Framebuffer> _msFbo{nullptr}, _outFbo{nullptr};

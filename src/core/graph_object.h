@@ -275,6 +275,18 @@ class GraphObject : public BaseObject
     std::vector<std::weak_ptr<GraphObject>> _linkedObjects; //!< Linked objects
 
     /**
+     * Linking method to be defined by derived types
+     * \param obj Object to link to
+     */
+    virtual bool linkIt(const std::shared_ptr<GraphObject>&) { return false; }
+
+    /**
+     * Unlinking method to be defined by derived types
+     * \param obj Object to unlink from
+     */
+    virtual void unlinkIt(const std::shared_ptr<GraphObject>&) {}
+
+    /**
      * Inform that the given object is a parent
      * \param obj Parent object
      */

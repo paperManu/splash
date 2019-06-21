@@ -379,13 +379,9 @@ void Camera::drawModelOnce(const std::string& modelName, const glm::dmat4& rtMat
 }
 
 /*************/
-bool Camera::linkTo(const shared_ptr<GraphObject>& obj)
+bool Camera::linkIt(const shared_ptr<GraphObject>& obj)
 {
-    // Mandatory before trying to link
-    if (!GraphObject::linkTo(obj))
-        return false;
-
-    if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Object>(obj))
     {
         auto obj3D = dynamic_pointer_cast<Object>(obj);
         _objects.push_back(obj3D);
@@ -398,7 +394,7 @@ bool Camera::linkTo(const shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void Camera::unlinkFrom(const shared_ptr<GraphObject>& obj)
+void Camera::unlinkIt(const shared_ptr<GraphObject>& obj)
 {
     auto objIterator = find_if(_objects.begin(), _objects.end(), [&](const std::weak_ptr<Object> o) {
         if (o.expired())
@@ -411,8 +407,6 @@ void Camera::unlinkFrom(const shared_ptr<GraphObject>& obj)
 
     if (objIterator != _objects.end())
         _objects.erase(objIterator);
-
-    GraphObject::unlinkFrom(obj);
 }
 
 /*************/

@@ -95,6 +95,9 @@ void GraphObject::unlinkFromParent(GraphObject* obj)
 /*************/
 bool GraphObject::linkTo(const shared_ptr<GraphObject>& obj)
 {
+    if (obj.get() == this)
+        return false;
+
     auto objectIt = find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const weak_ptr<GraphObject>& o) {
         auto object = o.lock();
         if (!object)
@@ -106,6 +109,12 @@ bool GraphObject::linkTo(const shared_ptr<GraphObject>& obj)
 
     if (objectIt != _linkedObjects.end())
         return false;
+
+    if (!linkIt(obj))
+    {
+        Log::get() << Log::WARNING << "GraphObject::" << __FUNCTION__ << " - Unable to link objects of type " << _type << " and " << obj->getType() << Log::endl;
+        return false;
+    }
 
     _linkedObjects.push_back(obj);
     obj->linkToParent(this);
@@ -145,6 +154,7 @@ void GraphObject::unlinkFrom(const shared_ptr<GraphObject>& obj)
     if (objectIt == _linkedObjects.end())
         return;
 
+    unlinkIt(obj);
     _linkedObjects.erase(objectIt);
     obj->unlinkFromParent(this);
 

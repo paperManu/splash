@@ -101,18 +101,6 @@ class Warp : public Texture
     virtual int64_t getTimestamp() const final { return _spec.timestamp; }
 
     /**
-     * \brief Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
-     */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) final;
-
-    /**
-     * \brief Try to unlink the given GraphObject from this object
-     * \param obj Shared pointer to the (supposed) child object
-     */
-    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) final;
-
-    /**
      * \brief Get the coordinates of the closest vertex to the given point
      * \param p Point around which to look
      * \param v Closest vertex coordinates
@@ -134,6 +122,19 @@ class Warp : public Texture
      * \brief Update for a warp does nothing, it is the render() job
      */
     void update() final {}
+
+  protected:
+    /**
+     * \brief Try to link the given GraphObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
+
+    /**
+     * \brief Try to unlink the given GraphObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
   private:
     std::weak_ptr<Camera> _inCamera;

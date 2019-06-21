@@ -111,13 +111,9 @@ ImageBuffer Texture_Image::grabMipmap(unsigned int level) const
 }
 
 /*************/
-bool Texture_Image::linkTo(const std::shared_ptr<GraphObject>& obj)
+bool Texture_Image::linkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    // Mandatory before trying to link
-    if (!Texture::linkTo(obj))
-        return false;
-
-    if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Image>(obj))
     {
         auto img = dynamic_pointer_cast<Image>(obj);
         img->setDirty();
@@ -126,6 +122,17 @@ bool Texture_Image::linkTo(const std::shared_ptr<GraphObject>& obj)
     }
 
     return false;
+}
+
+/*************/
+void Texture_Image::unlinkIt(const shared_ptr<GraphObject>& obj)
+{
+    if (dynamic_pointer_cast<Image>(obj))
+    {
+        auto img = dynamic_pointer_cast<Image>(obj);
+        if (img == _img.lock())
+            _img.reset();
+    }
 }
 
 /*************/

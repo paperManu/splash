@@ -220,12 +220,8 @@ int Object::getVerticesNumber() const
 }
 
 /*************/
-bool Object::linkTo(const shared_ptr<GraphObject>& obj)
+bool Object::linkIt(const shared_ptr<GraphObject>& obj)
 {
-    // Mandatory before trying to link
-    if (!GraphObject::linkTo(obj))
-        return false;
-
     if (obj->getType().find("texture") != string::npos)
     {
         auto filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", getName() + "_" + obj->getName() + "_filter").lock());
@@ -279,7 +275,7 @@ bool Object::linkTo(const shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void Object::unlinkFrom(const shared_ptr<GraphObject>& obj)
+void Object::unlinkIt(const shared_ptr<GraphObject>& obj)
 {
     auto type = obj->getType();
     if (type.find("texture") != string::npos)
@@ -338,8 +334,6 @@ void Object::unlinkFrom(const shared_ptr<GraphObject>& obj)
         auto tex = dynamic_pointer_cast<Texture>(obj);
         removeTexture(tex);
     }
-
-    GraphObject::unlinkFrom(obj);
 }
 
 /*************/

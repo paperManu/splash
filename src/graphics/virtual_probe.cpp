@@ -53,24 +53,20 @@ unordered_map<string, Values> VirtualProbe::getShaderUniforms() const
 }
 
 /*************/
-bool VirtualProbe::linkTo(const shared_ptr<GraphObject>& obj)
+bool VirtualProbe::linkIt(const shared_ptr<GraphObject>& obj)
 {
-    // Mandatory before trying to link
-    if (!obj || !Texture::linkTo(obj))
-        return false;
-
-    if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Object>(obj))
     {
         auto obj3D = dynamic_pointer_cast<Object>(obj);
         _objects.push_back(obj3D);
         return true;
     }
 
-    return true;
+    return false;
 }
 
 /*************/
-void VirtualProbe::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
+void VirtualProbe::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
     auto objIterator = find_if(_objects.begin(), _objects.end(), [&](const std::weak_ptr<Object> o) {
         if (o.expired())
@@ -84,7 +80,7 @@ void VirtualProbe::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
     if (objIterator != _objects.end())
         _objects.erase(objIterator);
 
-    Texture::unlinkFrom(obj);
+    Texture::unlinkIt(obj);
 }
 
 /*************/

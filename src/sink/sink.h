@@ -66,18 +66,6 @@ class Sink : public GraphObject
     std::string getCaps() const;
 
     /**
-     * Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
-     */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) override;
-
-    /**
-     * Try to unlink the given GraphObject from this object
-     * \param obj Shared pointer to the (supposed) child object
-     */
-    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) override;
-
-    /**
      * Update the inner buffer of the sink
      */
     void update() override;
@@ -89,6 +77,18 @@ class Sink : public GraphObject
 
   protected:
     uint32_t _framerate{30}; //!< Maximum framerate
+
+    /**
+     * Try to link the given GraphObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) override;
+
+    /**
+     * Try to unlink the given GraphObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) override;
 
     /**
      * \brief Register new functors to modify attributes

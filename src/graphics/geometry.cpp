@@ -178,13 +178,9 @@ bool Geometry::deserialize(const shared_ptr<SerializedObject>& obj)
 }
 
 /*************/
-bool Geometry::linkTo(const shared_ptr<GraphObject>& obj)
+bool Geometry::linkIt(const shared_ptr<GraphObject>& obj)
 {
-    // Mandatory before trying to link
-    if (!GraphObject::linkTo(obj))
-        return false;
-
-    if (dynamic_pointer_cast<Mesh>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Mesh>(obj))
     {
         shared_ptr<Mesh> mesh = dynamic_pointer_cast<Mesh>(obj);
         setMesh(mesh);

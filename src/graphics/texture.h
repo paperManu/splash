@@ -106,12 +106,6 @@ class Texture : public GraphObject
     virtual void setTimestamp(int64_t timestamp) override { _spec.timestamp = timestamp; }
 
     /**
-     * \brief Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
-     */
-    virtual bool linkTo(const std::shared_ptr<GraphObject>& obj) override;
-
-    /**
      * \brief Lock the texture for read / write operations
      */
     void lock() const { _mutex.lock(); }

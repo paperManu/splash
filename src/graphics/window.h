@@ -144,18 +144,6 @@ class Window : public GraphObject
     bool isWindow(GLFWwindow* w) const { return (w == _window->get() ? true : false); }
 
     /**
-     * \brief Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
-     */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) final;
-
-    /**
-     * \brief Try to unlink the given GraphObject from this object
-     * \param obj Shared pointer to the (supposed) child object
-     */
-    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) final;
-
-    /**
      * \brief Render this window to screen
      */
     void render() final;
@@ -182,6 +170,19 @@ class Window : public GraphObject
      * \brief Swap the back and front buffers
      */
     void swapBuffers();
+
+  protected:
+    /**
+     * \brief Try to link the given GraphObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
+
+    /**
+     * \brief Try to unlink the given GraphObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
   private:
     bool _isInitialized{false};

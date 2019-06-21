@@ -57,23 +57,19 @@ class GeometricCalibrator : public ControllerObject
      */
     void calibrate();
 
+  protected:
     /**
      * Try linking the object to another one
      * \param obj GraphObject to link to
      * \return Return true if linking was successful
      */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) final;
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
 
     /**
      * Try unlinking the given GraphObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) final;
-
-    /**
-     * Register new functors to modify attributes
-     */
-    void registerAttributes();
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
   private:
     enum CameraModel
@@ -177,6 +173,11 @@ class GeometricCalibrator : public ControllerObject
         while (!checkObject(name))
             std::this_thread::sleep_for(15ms);
     }
+
+    /**
+     * Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // namespace Splash
