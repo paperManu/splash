@@ -106,7 +106,7 @@ class Texture_Image : public Texture
      * \brief Get the shader parameters related to this texture. Texture should be locked first.
      * \return Return the shader uniforms
      */
-    std::unordered_map<std::string, Values> getShaderUniforms() const final { return _shaderUniforms; }
+    std::unordered_map<std::string, Values> getShaderUniforms() const final;
 
     /**
      * Grab the texture to the host memory, at the given mipmap level

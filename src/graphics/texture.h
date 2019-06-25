@@ -71,7 +71,8 @@ class Texture : public GraphObject
     virtual void unbind() = 0;
 
     /**
-     * \brief Get the shader parameters related to this texture. Texture should be locked first.
+     * Get the shader parameters related to this texture. Texture should be locked first.
+     * The uniform should at least define the "size" attribute of the texture.
      * \return Return the shader uniforms
      */
     virtual std::unordered_map<std::string, Values> getShaderUniforms() const = 0;

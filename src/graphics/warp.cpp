@@ -64,7 +64,9 @@ void Warp::bind()
 /*************/
 unordered_map<string, Values> Warp::getShaderUniforms() const
 {
+    auto spec = _fbo->getColorTexture()->getSpec();
     unordered_map<string, Values> uniforms;
+    uniforms["size"] = {static_cast<float>(_spec.width), static_cast<float>(spec.height)};
     return uniforms;
 }
 

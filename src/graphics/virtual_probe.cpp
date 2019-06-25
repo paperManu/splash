@@ -48,7 +48,9 @@ void VirtualProbe::unbind()
 /*************/
 unordered_map<string, Values> VirtualProbe::getShaderUniforms() const
 {
+    auto spec = _outFbo->getColorTexture()->getSpec();
     unordered_map<string, Values> uniforms;
+    uniforms["size"] = {static_cast<float>(_spec.width), static_cast<float>(spec.height)};
     return uniforms;
 }
 

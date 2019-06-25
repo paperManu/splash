@@ -112,7 +112,7 @@ void Filter::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 
             auto inTex = _inTextures[i].lock();
             auto tex = dynamic_pointer_cast<Texture>(obj);
-            if (inTex->getName() == tex->getName())
+            if (inTex == tex)
             {
                 _screen->removeTexture(tex);
                 _inTextures.erase(_inTextures.begin() + i);

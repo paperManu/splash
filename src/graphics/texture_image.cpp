@@ -94,6 +94,14 @@ RgbValue Texture_Image::getMeanValue() const
 }
 
 /*************/
+unordered_map<string, Values> Texture_Image::getShaderUniforms() const
+{
+    auto uniforms = _shaderUniforms;
+    uniforms["size"] = {static_cast<float>(_spec.width), static_cast<float>(_spec.height)};
+    return uniforms;
+}
+
+/*************/
 ImageBuffer Texture_Image::grabMipmap(unsigned int level) const
 {
     int mipmapLevel = std::min<int>(level, _texLevels);
@@ -542,7 +550,6 @@ void Texture_Image::update()
 
     _shaderUniforms["flip"] = flip;
     _shaderUniforms["flop"] = flop;
-    _shaderUniforms["size"] = {(float)_spec.width, (float)_spec.height};
 
     if (_filtering && !isCompressed)
         generateMipmap();
