@@ -304,7 +304,6 @@ void Filter::updateUniforms()
 /*************/
 void Filter::setOutput()
 {
-    glGetError();
     _fbo = make_unique<Framebuffer>(_root);
     _fbo->getColorTexture()->setAttribute("filtering", {1});
     _fbo->setParameters(false, true);
