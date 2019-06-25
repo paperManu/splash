@@ -60,11 +60,7 @@ void Object::activate()
 
     // Create and store the shader depending on its type
     auto shaderIt = _graphicsShaders.find(_fill);
-    if (shaderIt == _graphicsShaders.end() && _fill == "userDefined")
-    {
-        _graphicsShaders["userDefined"] = _shader;
-    }
-    else if (shaderIt == _graphicsShaders.end())
+    if (shaderIt == _graphicsShaders.end())
     {
         _shader = make_shared<Shader>();
         _graphicsShaders[_fill] = _shader;

@@ -177,12 +177,6 @@ class Object : public GraphObject
     void resetBlendingAttribute();
 
     /**
-     * \brief Set the shader to render this object with
-     * \param shader Shader to use
-     */
-    void setShader(const std::shared_ptr<Shader>& shader) { _shader = shader; }
-
-    /**
      * \brief Set the view and projection matrices
      * \param mv View matrix
      * \[aram mp Projection matrix
