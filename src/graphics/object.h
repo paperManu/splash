@@ -209,6 +209,11 @@ class Object : public GraphObject
      */
     void transferVisibilityFromTexToAttr(int width, int height, int primitiveIdShift);
 
+    /**
+     * \brief Set the shader for this object
+     */
+    void setShader(std::shared_ptr<Shader> shader);
+
   protected:
     /**
      * \brief Try to link the given GraphObject to this object

@@ -560,6 +560,13 @@ void Object::setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 }
 
 /*************/
+void Object::setShader(std::shared_ptr<Shader> shader)
+{
+    _shader = shader;
+    _graphicsShaders["userDefined"] = shader;
+}
+
+/*************/
 void Object::registerAttributes()
 {
     GraphObject::registerAttributes();
@@ -631,7 +638,7 @@ void Object::registerAttributes()
         [&]() -> Values { return {_fill}; },
         {'s'});
     setAttributeDescription("fill",
-        "Set the fill type (texture, wireframe, or color). A fourth choice is available: userDefinedFilter. The fragment shader has to be defined "
+        "Set the fill type (texture, wireframe, or color). A fourth choice is available: userDefined. The fragment shader has to be defined "
         "manually then. Additional parameters are sent as #define directives to the shader compiler.");
 
     addAttribute("color",

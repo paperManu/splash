@@ -7,7 +7,12 @@ uniform sampler2D _tex2; // pattern texture
 uniform int subdivs = 0;
 uniform ivec4 texLayout = ivec4(0);
 
-in vec2 texCoord;
+in VertexData
+        {
+            vec4 position;
+            vec2 texCoord;
+            vec4 normal;
+        } vertexIn;
 out vec4 fragColor;
 
 void main(void)
@@ -18,7 +23,7 @@ void main(void)
     fragColor = vec4(0.0, 0.0, 0.0, 1.0);
     for (int i = 0; i < subdivs; ++i)
     {
-        vec2 tc = vec2((texCoord.x - width * float(i)) * subdivs_f, texCoord.y);
+        vec2 tc = vec2((vertexIn.texCoord.x - width * float(i)) * subdivs_f, vertexIn.texCoord.y);
         if (tc.x < 0.0)
             continue;
 

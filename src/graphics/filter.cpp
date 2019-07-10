@@ -335,8 +335,6 @@ void Filter::updateShaderParameters()
 /*************/
 bool Filter::setFilterSource(const string& source)
 {
-    _screen->setAttribute("fill", {"userDefined"});
-
     auto shader = _screen->getShader();
     // Save the value for all existing uniforms
     auto uniformValues = _filterUniforms;
@@ -348,6 +346,7 @@ bool Filter::setFilterSource(const string& source)
         Log::get() << Log::WARNING << "Filter::" << __FUNCTION__ << " - Could not apply shader filter" << Log::endl;
         return false;
     }
+    _screen->setShader(shader);
 
     // This is a trick to force the shader compilation
     _screen->activate();
