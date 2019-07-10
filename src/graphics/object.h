@@ -129,10 +129,14 @@ class Object : public GraphObject
     inline glm::dmat4 getModelMatrix() const { return computeModelMatrix(); }
 
     /**
-     * \brief Get the shader used for the object
+     * \brief Get the shader used for the object. This must be called while the object is active
      * \return Return the shader
      */
-    inline std::shared_ptr<Shader> getShader() const { return _shader; }
+    inline std::shared_ptr<Shader> getShader() const
+    {
+        assert(_shader);
+        return _shader;
+    }
 
     /**
      * \brief Get the number of vertices for this object
@@ -212,7 +216,7 @@ class Object : public GraphObject
     /**
      * \brief Set the shader for this object
      */
-    void setShader(std::shared_ptr<Shader> shader);
+    void setShader(const std::shared_ptr<Shader>& shader);
 
   protected:
     /**

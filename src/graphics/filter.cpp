@@ -335,7 +335,7 @@ void Filter::updateShaderParameters()
 /*************/
 bool Filter::setFilterSource(const string& source)
 {
-    auto shader = _screen->getShader();
+    auto shader = make_shared<Shader>();
     // Save the value for all existing uniforms
     auto uniformValues = _filterUniforms;
 

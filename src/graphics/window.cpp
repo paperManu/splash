@@ -320,9 +320,9 @@ void Window::render()
 
         auto layout = _layout;
         layout.push_front("_layout");
+        _screen->activate();
         _screen->getShader()->setAttribute("uniform", layout);
         _screen->getShader()->setAttribute("uniform", {"_gamma", (float)_srgb, _gammaCorrection});
-        _screen->activate();
         _screen->draw();
         _screen->deactivate();
     }

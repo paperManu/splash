@@ -38,7 +38,6 @@ void Object::init()
     if (!_root)
         return;
 
-    _shader = make_shared<Shader>();
     _modelMatrix = glm::dmat4(0.0);
 }
 
@@ -560,10 +559,10 @@ void Object::setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 }
 
 /*************/
-void Object::setShader(std::shared_ptr<Shader> shader)
+void Object::setShader(const std::shared_ptr<Shader>& shader)
 {
-    _shader = shader;
     _graphicsShaders["userDefined"] = shader;
+    _fill = "userDefined";
 }
 
 /*************/
