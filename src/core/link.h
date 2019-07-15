@@ -123,20 +123,22 @@ class Link
     RootObject* _rootObject;
     std::string _basePath{""};
     std::string _name{""};
-    std::shared_ptr<zmq::context_t> _context;
-    Spinlock _msgSendMutex;
-    Spinlock _bufferSendMutex;
+
+    std::unique_ptr<zmq::context_t> _context;
+    std::unique_ptr<zmq::socket_t> _socketBufferIn;
+    std::unique_ptr<zmq::socket_t> _socketBufferOut;
+    std::unique_ptr<zmq::socket_t> _socketMessageIn;
+    std::unique_ptr<zmq::socket_t> _socketMessageOut;
 
     std::vector<std::string> _connectedTargets;
     std::map<std::string, RootObject*> _connectedTargetPointers;
 
     bool _connectedToInner{false};
     bool _connectedToOuter{false};
+    bool _running{false};
 
-    std::shared_ptr<zmq::socket_t> _socketBufferIn;
-    std::shared_ptr<zmq::socket_t> _socketBufferOut;
-    std::shared_ptr<zmq::socket_t> _socketMessageIn;
-    std::shared_ptr<zmq::socket_t> _socketMessageOut;
+    Spinlock _msgSendMutex;
+    Spinlock _bufferSendMutex;
 
     std::deque<std::shared_ptr<SerializedObject>> _otgBuffers;
     Spinlock _otgMutex;

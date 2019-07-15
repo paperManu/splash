@@ -186,8 +186,8 @@ class RootObject : public BaseObject
     std::unordered_map<std::string, int> _treeCallbackIds{};
     std::unordered_map<std::string, CallbackHandle> _attributeCallbackHandles{};
 
-    std::unique_ptr<Factory> _factory; //!< Object factory
-    std::shared_ptr<Link> _link;       //!< Link object for communicatin between World and Scene
+    std::unique_ptr<Factory> _factory{}; //!< Object factory
+    std::unique_ptr<Link> _link{};       //!< Link object for communicatin between World and Scene
     std::string _linkSocketPrefix{""}; //!< Prefix to add to shared memory socket paths
 
     Values _lastAnswerReceived{}; //!< Holds the last answer received through the link

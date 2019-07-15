@@ -20,12 +20,17 @@ Link::Link(RootObject* root, const string& name)
     {
         _rootObject = root;
         _name = name;
-        _context = make_shared<zmq::context_t>(2);
+        _context = make_unique<zmq::context_t>(2);
 
-        _socketMessageOut = make_shared<zmq::socket_t>(*_context, ZMQ_PUB);
-        _socketMessageIn = make_shared<zmq::socket_t>(*_context, ZMQ_SUB);
-        _socketBufferOut = make_shared<zmq::socket_t>(*_context, ZMQ_PUB);
-        _socketBufferIn = make_shared<zmq::socket_t>(*_context, ZMQ_SUB);
+        _socketMessageOut = make_unique<zmq::socket_t>(*_context, ZMQ_PUB);
+        _socketMessageIn = make_unique<zmq::socket_t>(*_context, ZMQ_SUB);
+        _socketBufferOut = make_unique<zmq::socket_t>(*_context, ZMQ_PUB);
+        _socketBufferIn = make_unique<zmq::socket_t>(*_context, ZMQ_SUB);
+
+        // High water mark set to zero for the outputs
+        int hwm = 0;
+        _socketMessageOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
+        _socketBufferOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
     }
     catch (const zmq::error_t& e)
     {
@@ -38,6 +43,7 @@ Link::Link(RootObject* root, const string& name)
     if (!socketPrefix.empty())
         _basePath += socketPrefix + string("_");
 
+    _running = true;
     _bufferInThread = thread([&]() { handleInputBuffers(); });
     _messageInThread = thread([&]() { handleInputMessages(); });
 }
@@ -45,6 +51,10 @@ Link::Link(RootObject* root, const string& name)
 /*************/
 Link::~Link()
 {
+    _running = false;
+    _bufferInThread.join();
+    _messageInThread.join();
+
     int lingerValue = 0;
     try
     {
@@ -55,13 +65,6 @@ Link::~Link()
     {
         Log::get() << Log::ERROR << "Link::" << __FUNCTION__ << " - Error while closing socket: " << e.what() << Log::endl;
     }
-
-    _socketMessageOut.reset();
-    _socketBufferOut.reset();
-
-    _context.reset();
-    _bufferInThread.join();
-    _messageInThread.join();
 }
 
 /*************/
@@ -74,12 +77,7 @@ void Link::connectTo(const string& name)
 
     try
     {
-        // High water mark set to zero for the outputs
-        int hwm = 0;
-        _socketMessageOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
-        _socketBufferOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
-
-        // TODO: for now, all connections are through IPC.
+        // For now, all connections are through IPC.
         _socketMessageOut->connect((_basePath + "msg_" + name).c_str());
         _socketBufferOut->connect((_basePath + "buf_" + name).c_str());
     }
@@ -114,26 +112,26 @@ void Link::connectTo(const std::string& name, RootObject* peer)
 /*************/
 void Link::disconnectFrom(const std::string& name)
 {
-    auto targetPointerIt = _connectedTargetPointers.find(name);
-    if (targetPointerIt != _connectedTargetPointers.end())
-    {
-        _connectedTargetPointers.erase(targetPointerIt);
-    }
-
     auto targetIt = find(_connectedTargets.begin(), _connectedTargets.end(), name);
     if (targetIt != _connectedTargets.end())
     {
         try
         {
-            _connectedTargets.erase(targetIt);
             _socketMessageOut->disconnect((_basePath + "msg_" + name).c_str());
             _socketBufferOut->disconnect((_basePath + "buf_" + name).c_str());
+            _connectedTargets.erase(targetIt);
         }
         catch (const zmq::error_t& e)
         {
             if (errno != ETERM)
                 Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception while disconnecting from " << name << ": " << e.what() << Log::endl;
         }
+    }
+
+    auto targetPointerIt = _connectedTargetPointers.find(name);
+    if (targetPointerIt != _connectedTargetPointers.end())
+    {
+        _connectedTargetPointers.erase(targetPointerIt);
     }
 }
 
@@ -326,7 +324,7 @@ void Link::freeOlderBuffer(void* data, void* hint)
 
     if (index >= ctx->_otgBuffers.size())
     {
-        Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Buffer to free not found in currently sent buffers list" << Log::endl;
+        Log::get() << Log::DEBUGGING << "Link::" << __FUNCTION__ << " - Buffer to free not found in currently sent buffers list" << Log::endl;
         return;
     }
     ctx->_otgBuffers.erase(ctx->_otgBuffers.begin() + index);
@@ -382,9 +380,10 @@ void Link::handleInputMessages()
             return values;
         };
 
-        while (true)
+        while (_running)
         {
-            _socketMessageIn->recv(&msg); // name of the target
+            if (!_socketMessageIn->recv(&msg, ZMQ_DONTWAIT)) // name of the target
+                continue;
             string name((char*)msg.data());
             _socketMessageIn->recv(&msg); // target's attribute
             string attribute((char*)msg.data());
@@ -406,8 +405,6 @@ void Link::handleInputMessages()
         if (errno != ETERM)
             Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
-
-    _socketMessageIn.reset();
 }
 
 /*************/
@@ -422,11 +419,12 @@ void Link::handleInputBuffers()
         _socketBufferIn->bind((_basePath + "buf_" + _name).c_str());
         _socketBufferIn->setsockopt(ZMQ_SUBSCRIBE, NULL, 0); // We subscribe to all incoming messages
 
-        while (true)
+        while (_running)
         {
             zmq::message_t msg;
 
-            _socketBufferIn->recv(&msg);
+            if (!_socketBufferIn->recv(&msg, ZMQ_DONTWAIT))
+                continue;
             string name((char*)msg.data());
 
             _socketBufferIn->recv(&msg);
@@ -441,8 +439,6 @@ void Link::handleInputBuffers()
         if (errno != ETERM)
             Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
-
-    _socketBufferIn.reset();
 }
 
 } // end of namespace

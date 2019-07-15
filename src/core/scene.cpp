@@ -109,8 +109,6 @@ Scene::~Scene()
 
     _mainWindow->releaseContext();
 
-    _link->disconnectFrom("world");
-
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
 #endif
@@ -756,7 +754,7 @@ void Scene::init(const string& name)
     _textureUploadWindow = getNewSharedWindow();
 
     // Create the link and connect to the World
-    _link = make_shared<Link>(this, name);
+    _link = make_unique<Link>(this, name);
     _link->connectTo("world");
     sendMessageToWorld("sceneLaunched", {});
 }

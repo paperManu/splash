@@ -567,7 +567,7 @@ Json::Value RootObject::getRootConfigurationAsJson(const string& rootName)
 /*************/
 Values RootObject::sendMessageWithAnswer(const string& name, const string& attribute, const Values& message, const unsigned long long timeout)
 {
-    if (_link == nullptr)
+    if (!_link)
         return {};
 
     lock_guard<mutex> lock(_answerMutex);

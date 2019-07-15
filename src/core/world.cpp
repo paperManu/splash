@@ -680,7 +680,7 @@ void World::init()
 
         if (_linkSocketPrefix.empty())
             _linkSocketPrefix = to_string(static_cast<int>(getpid()));
-        _link = make_shared<Link>(this, _name);
+        _link = make_unique<Link>(this, _name);
 
         registerAttributes();
         initializeTree();
