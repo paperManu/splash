@@ -105,6 +105,7 @@ class World : public RootObject
     bool _runInBackground{false};     //!< If true, no window will be created
 
     bool _runAsChild{false}; //!< If true, runs as a child process
+    bool _spawnSubprocesses{true}; //!< If true, spawns subprocesses if needed
     std::string _childSceneName{"scene"};
 
     std::map<std::string, int> _scenes; //!< Map holding the PID of the Scene processes

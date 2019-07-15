@@ -195,9 +195,9 @@ void World::applyConfig()
         {
             string sceneAddress = scenes[sceneName].isMember("address") ? scenes[sceneName]["address"].asString() : "localhost";
             string sceneDisplay = scenes[sceneName].isMember("display") ? scenes[sceneName]["display"].asString() : "";
-            int spawn = scenes[sceneName].isMember("spawn") ? scenes[sceneName]["spawn"].asInt() : 1;
+            bool spawn = scenes[sceneName].isMember("spawn") ? scenes[sceneName]["spawn"].asBool() : true;
 
-            if (!addScene(sceneName, sceneDisplay, sceneAddress, spawn))
+            if (!addScene(sceneName, sceneDisplay, sceneAddress, spawn && _spawnSubprocesses))
                 continue;
 
             // Set the remaining parameters
@@ -373,7 +373,7 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
 #endif
 
         int pid = -1;
-        if (spawn > 0)
+        if (spawn)
         {
             _sceneLaunched = false;
 
@@ -935,11 +935,12 @@ void World::parseArguments(int argc, char** argv)
             {"silent", no_argument, 0, 's'},
             {"timer", no_argument, 0, 't'},
             {"child", no_argument, 0, 'c'},
+            {"spawnProcesses", required_argument, 0, 'x'},
             {0, 0, 0, 0}
         };
 
         int optionIndex = 0;
-        auto ret = getopt_long(argc, argv, "+cdD:S:hHilo:p:P:st", longOptions, &optionIndex);
+        auto ret = getopt_long(argc, argv, "+cdD:S:hHilo:p:P:stx", longOptions, &optionIndex);
 
         if (ret == -1)
             break;
@@ -968,6 +969,7 @@ void World::parseArguments(int argc, char** argv)
             cout << "\t-l (--log2file) : write the logs to /var/log/splash.log, if possible" << endl;
             cout << "\t-p (--prefix) : set the shared memory socket paths prefix (defaults to the PID)" << endl;
             cout << "\t-c (--child): run as a child controlled by a master Splash process" << endl;
+            cout << "\t-x (--doNotSpawn): do not spawn subprocesses, which have to be ran manually" << endl;
             cout << endl;
             exit(0);
         }
@@ -1094,6 +1096,11 @@ void World::parseArguments(int argc, char** argv)
         case 'c':
         {
             _runAsChild = true;
+            break;
+        }
+        case 'x':
+        {
+            _spawnSubprocesses = false;
             break;
         }
         }
