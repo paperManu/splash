@@ -1141,7 +1141,7 @@ void World::parseArguments(int argc, char** argv)
 
     if (defaultFile && !_runAsChild)
         Log::get() << Log::MESSAGE << "No filename specified, loading default file" << Log::endl;
-    else
+    else if (!_runAsChild)
         Log::get() << Log::MESSAGE << "Loading file " << filename << Log::endl;
 }
 

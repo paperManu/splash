@@ -233,7 +233,7 @@ class Timer
 
     bool operator>>(const std::string& name)
     {
-        std::lock_guard<Spinlock> lock(_timerMutex);
+        std::unique_lock<Spinlock> lock(_timerMutex);
         unsigned long long duration = 0;
         if (_isDurationSet && _durationThreadId == std::this_thread::get_id())
         {
@@ -242,6 +242,7 @@ class Timer
             _currentDuration = 0;
             _setTimerMutex.unlock();
         }
+        lock.unlock();
 
         bool overtime = false;
         if (duration > 0)
