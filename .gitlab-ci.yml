@@ -1,11 +1,7 @@
 variables:
   DOCKER_DRIVER: overlay2
 
-services:
-  - docker:dind
-
 stages:
-  - prepare_docker
   - test
   - package
 
@@ -13,35 +9,28 @@ cache:
   paths:
     - ccache/
 
-# 
-# Prepare docker images
 #
-prepare_docker:18.04:
-  stage: prepare_docker
-  image: docker:stable
-  before_script:
-    - docker info
-  script:
-    - docker login -u gitlab-ci-token -p ${CI_BUILD_TOKEN} ${CI_REGISTRY}
-    - docker build --pull -t $CI_REGISTRY_IMAGE:ci_18.04 -f $CI_PROJECT_DIR/ci/Dockerfile_18.04 .
-    - docker push $CI_REGISTRY_IMAGE:ci_18.04
+# Tests
+#
 
-
+# This is specifically used for Ubuntu builds
 before_script:
   - apt update -qq
-  - DEBIAN_FRONTEND=noninteractive apt install -y ccache wget
+  - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends ccache wget curl build-essential git-core libjsoncpp-dev
+    zip cmake automake libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev 
+    libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python clang libopencv-dev libglfw3-dev libglm-dev
+    libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev gcc-8 g++-8
+  - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 700 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+  - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
   # CCache stuff
   - mkdir -p ccache
   - export CCACHE_BASEDIR=${PWD}
   - export CCACHE_DIR=${PWD}/ccache
   - export PATH="/usr/lib/ccache:${PATH}"
 
-#
-# Tests
-#
 test:18.04:
   stage: test
-  image: $CI_REGISTRY_IMAGE:ci_18.04
+  image: ubuntu:18.04
   script: 
     - git submodule update --init
     - ./make_deps.sh
@@ -52,7 +41,7 @@ test:18.04:
 
 test:18.04-clang:
   stage: test
-  image: $CI_REGISTRY_IMAGE:ci_18.04
+  image: ubuntu:18.04
   script: 
     - git submodule update --init
     - ./make_deps.sh
@@ -63,7 +52,7 @@ test:18.04-clang:
 
 test:18.04-syslibs:
   stage: test
-  image: $CI_REGISTRY_IMAGE:ci_18.04
+  image: ubuntu:18.04
   script:
     - git submodule update --init
     - rm -rf build && mkdir build && cd build
@@ -97,7 +86,7 @@ test:archlinux:
 #
 package:debian:
   stage: package
-  image: $CI_REGISTRY_IMAGE:ci_18.04
+  image: ubuntu:18.04
   script:
     - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
