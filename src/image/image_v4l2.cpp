@@ -211,19 +211,18 @@ void Image_V4L2::captureThreadFunc()
                                                 to_string((float)_v4l2SourceFormat.fmt.pix.priv / 1000.f) + "Hz, format " +
                                                 string(reinterpret_cast<char*>(&_v4l2SourceFormat.fmt.pix.pixelformat), 4);
 
-                    bool expectedResizingValue = false;
-                    if (_autosetResolution && _automaticResizing.compare_exchange_weak(expectedResizingValue, true))
+                    if (!_automaticResizing)
                     {
                         if (_outputWidth != _v4l2SourceFormat.fmt.pix.width || _outputHeight != _v4l2SourceFormat.fmt.pix.height)
                         {
+                            _automaticResizing = true;
                             addTask([=]() {
-                                setAttribute("captureSize", {_v4l2SourceFormat.fmt.pix.width, _v4l2SourceFormat.fmt.pix.height});
+                                stopCapture();
+                                _outputWidth = std::max(320u, _v4l2SourceFormat.fmt.pix.width);
+                                _outputHeight = std::max(240u, _v4l2SourceFormat.fmt.pix.height);
+                                doCapture();
                                 _automaticResizing = false;
                             });
-                        }
-                        else
-                        {
-                            _automaticResizing = false;
                         }
                     }
 
@@ -449,7 +448,7 @@ bool Image_V4L2::initializeCapture()
 #if HAVE_DATAPATH
 bool Image_V4L2::openControlDevice()
 {
-    if ((_controlFd = open(_controlDevicePath.c_str(), O_RDWR)) < 0)
+    if ((_controlFd = open(_controlDevicePath.c_str(), O_RDWR | O_NONBLOCK)) < 0)
     {
         _isDatapath = false;
         Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - Unable to open control device." << Log::endl;
@@ -480,7 +479,7 @@ bool Image_V4L2::openCaptureDevice(const std::string& devicePath)
         return false;
     }
 
-    if ((_deviceFd = open(devicePath.c_str(), O_RDWR)) < 0)
+    if ((_deviceFd = open(devicePath.c_str(), O_RDWR | O_NONBLOCK)) < 0)
     {
         Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - Unable to open capture device" << Log::endl;
         return false;
@@ -729,23 +728,28 @@ void Image_V4L2::updateMoreMediaInfo(Values& mediaInfo)
 }
 
 /*************/
+void Image_V4L2::scheduleCapture()
+{
+    _shouldCapture = true;
+    addTask([=]() {
+        if (_shouldCapture and !_capturing)
+        {
+            doCapture();
+            _shouldCapture = false;
+        }
+    });
+}
+
+/*************/
 void Image_V4L2::registerAttributes()
 {
     Image::registerAttributes();
 
-    addAttribute("autosetResolution",
-        [&](const Values& args) {
-            _autosetResolution = static_cast<bool>(args[0].as<int>());
-            return true;
-        },
-        [&]() -> Values { return {(int)_autosetResolution}; },
-        {'n'});
-
     addAttribute("doCapture",
         [&](const Values& args) {
-            if (args[0].as<int>() == 1)
-                return doCapture();
-            else
+            if (args[0].as<bool>() and !_capturing)
+                scheduleCapture();
+            else if (_capturing)
                 stopCapture();
 
             return true;
@@ -756,14 +760,11 @@ void Image_V4L2::registerAttributes()
     addAttribute("captureSize",
         [&](const Values& args) {
             auto isCapturing = _capturing;
-            if (isCapturing)
-                stopCapture();
-
+            stopCapture();
             _outputWidth = std::max(320, args[0].as<int>());
             _outputHeight = std::max(240, args[1].as<int>());
-
             if (isCapturing)
-                doCapture();
+                scheduleCapture();
 
             return true;
         },
@@ -793,8 +794,7 @@ void Image_V4L2::registerAttributes()
             }
 
             auto isCapturing = _capturing;
-            if (isCapturing)
-                stopCapture();
+            stopCapture();
 
             if (index != -1) // Only the index is specified
                 _devicePath = "/dev/video" + to_string(index);
@@ -804,9 +804,8 @@ void Image_V4L2::registerAttributes()
                 _devicePath = path;
 
             _capabilitiesEnumerated = false;
-
             if (isCapturing)
-                doCapture();
+                scheduleCapture();
 
             return true;
         },
@@ -816,11 +815,11 @@ void Image_V4L2::registerAttributes()
     addAttribute("index",
         [&](const Values& args) {
             auto isCapturing = _capturing;
-            if (isCapturing)
-                stopCapture();
+            stopCapture();
             _v4l2Index = std::max(args[0].as<int>(), 0);
             if (isCapturing)
-                doCapture();
+                scheduleCapture();
+
             return true;
         },
         [&]() -> Values { return {_v4l2Index}; },
@@ -832,8 +831,7 @@ void Image_V4L2::registerAttributes()
     addAttribute("pixelFormat",
         [&](const Values& args) {
             auto isCapturing = _capturing;
-            if (isCapturing)
-                stopCapture();
+            stopCapture();
 
             auto format = args[0].as<string>();
             if (format.find("RGB") != string::npos)
@@ -846,7 +844,7 @@ void Image_V4L2::registerAttributes()
                 _outputPixelFormat = V4L2_PIX_FMT_RGB24;
 
             if (isCapturing)
-                doCapture();
+                scheduleCapture();
 
             return true;
         },

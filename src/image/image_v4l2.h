@@ -84,7 +84,6 @@ class Image_V4L2 : public Image
     struct v4l2_format _v4l2Format;
 
     // Datapath specific variables
-    bool _autosetResolution{true};
 #if HAVE_DATAPATH
     bool _isDatapath{false};
     int _controlFd{-1};
@@ -100,9 +99,10 @@ class Image_V4L2 : public Image
 
     // Capture buffers;
     struct v4l2_requestbuffers _v4l2RequestBuffers;
-    static const uint32_t _bufferCount{4};
+    static const uint32_t _bufferCount{1};
     std::deque<std::unique_ptr<ImageBuffer>> _imageBuffers{};
 
+    bool _shouldCapture{false};    //!< True if the device should start capturing
     bool _capturing{false};        //!< True if currently capturing frames
     bool _captureThreadRun{false}; //!< Set to false to stop the capture thread
     std::mutex _startStopMutex{};
@@ -195,6 +195,11 @@ class Image_V4L2 : public Image
      * \return Return true if the capture has been launched successfully
      */
     bool doCapture();
+
+    /**
+     * Schedule starting capture during the next loop
+     */
+    void scheduleCapture();
 
     /**
      * Stop capture from the device
