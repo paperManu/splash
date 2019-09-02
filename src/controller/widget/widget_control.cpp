@@ -120,8 +120,7 @@ void GuiControl::render()
             ImGui::Spacing();
 
             string newName = objectAliases[_targetObjectName];
-            newName.resize(256);
-            if (ImGui::InputText("Rename", const_cast<char*>(newName.c_str()), newName.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+            if (SplashImGui::InputText("Rename", newName, ImGuiInputTextFlags_EnterReturnsTrue))
                 setObjectAttribute("alias", _targetObjectName, {newName});
 
             ImGui::Spacing();

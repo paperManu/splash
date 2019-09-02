@@ -31,6 +31,7 @@
 
 #include <deque>
 #include <functional>
+#include <imgui.h>
 #include <list>
 #include <map>
 #include <memory>
@@ -58,6 +59,15 @@ struct FilesystemFile
 
 bool FileSelectorParseDir(std::string& path, std::vector<FilesystemFile>& list, const std::vector<std::string>& extensions, bool showNormalFiles);
 bool FileSelector(const std::string& label, std::string& path, bool& cancelled, const std::vector<std::string>& extensions, bool showNormalFiles = true);
+
+/**
+ * Utility method to call InputText on a std::string
+ * \param label Label for the InputText
+ * \param str String to fill
+ * \param flags ImGui flags
+ * \return Return true if the input has been validated
+ */
+bool InputText(const char* label, std::string& str, ImGuiInputTextFlags flags = ImGuiInputTextFlags_None);
 }
 
 /*************/

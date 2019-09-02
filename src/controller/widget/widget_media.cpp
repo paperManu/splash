@@ -210,12 +210,11 @@ void GuiMedia::render()
                         ImGui::PopID();
                         ImGui::PopItemWidth();
 
-                        string filepath = _newMedia[1].as<string>();
-                        filepath.resize(512);
                         ImGui::SameLine();
                         ImGui::PushItemWidth(-32.f);
                         ImGui::PushID("newMediaFile");
-                        if (ImGui::InputText("", const_cast<char*>(filepath.c_str()), filepath.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                        string filepath = _newMedia[1].as<string>();
+                        if (SplashImGui::InputText("", filepath, ImGuiInputTextFlags_EnterReturnsTrue))
                             _newMedia[1] = filepath;
                         if (ImGui::IsItemHovered())
                             ImGui::SetTooltip("Media path");

@@ -122,15 +122,13 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
         windowName += " - " + label;
 
     ImGui::Begin(windowName.c_str(), nullptr, ImVec2(400, 600), 0.95f);
-    char textBuffer[512];
-    memset(textBuffer, 0, 512);
-    strncpy(textBuffer, path.c_str(), 510);
 
     ImGui::PushItemWidth(-1.f);
     vector<FilesystemFile> fileList;
-    if (ImGui::InputText("##FileSelectFullPath", textBuffer, 512))
+    string newPath = path;
+    if (SplashImGui::InputText("##FileSelectFullPath", newPath))
     {
-        path = string(textBuffer);
+        path = newPath;
     }
     ImGui::PopItemWidth();
 
@@ -210,6 +208,18 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
     if (selectionDone || cancelled)
         return true;
 
+    return false;
+}
+
+/*************/
+bool InputText(const char* label, std::string& str, ImGuiInputTextFlags flags)
+{
+    str.resize(512, 0);
+    if (ImGui::InputText(label, str.data(), str.size(), flags))
+    {
+        str.resize(str.find((char)0) + 1);
+        return true;
+    }
     return false;
 }
 
@@ -354,9 +364,8 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                 {
 
                     string tmp = v.as<string>();
-                    tmp.resize(512);
                     ImGui::PushID((objName + attrName).c_str());
-                    if (ImGui::InputText("", const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                    if (SplashImGui::InputText("", tmp, ImGuiInputTextFlags_EnterReturnsTrue))
                         setObjectAttribute(objName, attrName, {tmp});
 
                     // Callback for dragndrop: replace the file path in the field
@@ -391,8 +400,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                 else
                 {
                     string tmp = v.as<string>();
-                    tmp.resize(256);
-                    if (ImGui::InputText(attrName.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                    if (SplashImGui::InputText(attrName.c_str(), tmp, ImGuiInputTextFlags_EnterReturnsTrue))
                         setObjectAttribute(objName, attrName, {tmp});
                 }
             }
@@ -409,4 +417,4 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
     }
 }
 
-} // end of namespace
+} // namespace Splash

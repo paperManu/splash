@@ -643,10 +643,7 @@ void Gui::render()
             // Configuration load
             ImGui::Separator();
             ImGui::Text("Configuration file");
-            char configurationPath[512];
-            strncpy(configurationPath, _configurationPath.data(), 511);
-            ImGui::InputText("##ConfigurationPath", configurationPath, 512);
-            _configurationPath = string(configurationPath);
+            SplashImGui::InputText("##ConfigurationPath", _configurationPath);
 
             ImGui::SameLine();
             static bool showConfigurationFileSelector{false};
@@ -687,10 +684,7 @@ void Gui::render()
             // Project load
             ImGui::Separator();
             ImGui::Text("Project file");
-            char projectPath[512];
-            strncpy(projectPath, _projectPath.data(), 511);
-            ImGui::InputText("##ProjectPath", projectPath, 512);
-            _projectPath = string(projectPath);
+            SplashImGui::InputText("##ProjectPath", _projectPath);
 
             ImGui::SameLine();
             static bool showProjectFileSelector{false};
@@ -725,9 +719,8 @@ void Gui::render()
             // Media directory
             ImGui::Separator();
             ImGui::Text("Media directory");
-            char mediaPath[512];
-            strncpy(mediaPath, _root->getMediaPath().data(), 511);
-            if (ImGui::InputText("##MediaPath", mediaPath, 512))
+            string mediaPath = _root->getMediaPath();
+            if (SplashImGui::InputText("##MediaPath", mediaPath))
                 setWorldAttribute("mediaPath", {string(mediaPath)});
 
             ImGui::SameLine();
