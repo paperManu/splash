@@ -192,9 +192,9 @@ void Gui::loadProject()
 }
 
 /*************/
-void Gui::copyCameraParameters()
+void Gui::copyCameraParameters(const string& path)
 {
-    setWorldAttribute("copyCameraParameters", {_configurationPath});
+    setWorldAttribute("copyCameraParameters", {path});
 }
 
 /*************/
@@ -676,10 +676,22 @@ void Gui::render()
                 ImGui::SetTooltip("Load the given path");
 
             ImGui::SameLine();
-            if (ImGui::Button("Copy"))
-                copyCameraParameters();
+            static bool showCalibrationFileSelector{false};
+            if (ImGui::Button("Copy calibration...##CopyCalibration"))
+                showCalibrationFileSelector = true;
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Copy the camera parameters from the given file");
+                ImGui::SetTooltip("Copy the camera parameters from the selected");
+            if (showCalibrationFileSelector)
+            {
+                static string path = _root->getConfigurationPath();
+                bool cancelled;
+                if (SplashImGui::FileSelector("Copy calibration", path, cancelled, {{"json"}}))
+                {
+                    if (!cancelled)
+                        copyCameraParameters(path);
+                    showCalibrationFileSelector = false;
+                }
+            }
 
             // Project load
             ImGui::Separator();

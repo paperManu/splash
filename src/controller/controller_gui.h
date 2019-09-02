@@ -278,8 +278,9 @@ class Gui : public ControllerObject
 
     /**
      * \brief Copy camera parameters from the specified configuration file to the current configuration
+     * \param path Path to the configuration file to copy from
      */
-    void copyCameraParameters();
+    void copyCameraParameters(const std::string& path);
 
     /**
      * \brief Load the specified configuration
