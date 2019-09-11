@@ -953,7 +953,7 @@ void World::parseArguments(int argc, char** argv)
         {
             printWelcome();
 
-            cout << "Basic usage: splash [arguments] [config.json] -- [python script argument]" << endl;
+            cout << "Basic usage: splash [options] [config.json] -- [python script argument]" << endl;
             cout << "Options:" << endl;
             cout << "\t-o (--open) [filename] : set [filename] as the configuration file to open" << endl;
             cout << "\t-d (--debug) : activate debug messages (if Splash was compiled with -DDEBUG)" << endl;
