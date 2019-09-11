@@ -932,6 +932,7 @@ void World::parseArguments(int argc, char** argv)
             {"log2file", no_argument, 0, 'l'},
             {"open", required_argument, 0, 'o'},
             {"prefix", required_argument, 0, 'p'},
+            {"python", required_argument, 0, 'P'},
             {"silent", no_argument, 0, 's'},
             {"timer", no_argument, 0, 't'},
             {"child", no_argument, 0, 'c'},
