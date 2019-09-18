@@ -1,6 +1,8 @@
 #include "./core/link.h"
 
 #include <algorithm>
+#include <chrono>
+#include <thread>
 
 #include "./core/attribute.h"
 #include "./core/buffer_object.h"
@@ -383,7 +385,10 @@ void Link::handleInputMessages()
         while (_running)
         {
             if (!_socketMessageIn->recv(&msg, ZMQ_DONTWAIT)) // name of the target
+            {
+                std::this_thread::sleep_for(1ms);
                 continue;
+            }
             string name((char*)msg.data());
             _socketMessageIn->recv(&msg); // target's attribute
             string attribute((char*)msg.data());
@@ -424,7 +429,10 @@ void Link::handleInputBuffers()
             zmq::message_t msg;
 
             if (!_socketBufferIn->recv(&msg, ZMQ_DONTWAIT))
+            {
+                std::this_thread::sleep_for(1ms);
                 continue;
+            }
             string name((char*)msg.data());
 
             _socketBufferIn->recv(&msg);
