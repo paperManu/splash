@@ -17,11 +17,15 @@ void GuiTexturesView::render()
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
         auto cameras = getObjectsPtr(getObjectsOfType("camera"));
-        auto odd = true;
+        auto odd = false;
         double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
 
         for (auto& cameraAsObj : cameras)
         {
+            if (odd)
+                ImGui::SameLine();
+            odd = !odd;
+
             cameraAsObj->render();
 
             Values size;
@@ -49,10 +53,6 @@ void GuiTexturesView::render()
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("%s", camera->getName().c_str());
             ImGui::EndChild();
-
-            if (odd)
-                ImGui::SameLine();
-            odd = !odd;
         }
 
         auto objects = getObjectsOfBaseType<Texture>();
@@ -60,9 +60,14 @@ void GuiTexturesView::render()
         {
             Values size;
             object->getAttribute("size", size);
+            assert(size.size() == 2);
 
             if (size[0].as<int>() == 0)
                 continue;
+
+            if (odd)
+                ImGui::SameLine();
+            odd = !odd;
 
             int sizeX = size[0].as<int>();
             int sizeY = size[1].as<int>();
@@ -80,10 +85,6 @@ void GuiTexturesView::render()
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("%s", object->getName().c_str());
             ImGui::EndChild();
-
-            if (odd)
-                ImGui::SameLine();
-            odd = !odd;
         }
     }
 }

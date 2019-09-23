@@ -343,6 +343,15 @@ void Texture_Image::update()
         return;
     auto img = _img.lock();
 
+    auto spec = img->getSpec();
+    Values srgb, flip, flop;
+    img->getAttribute("srgb", srgb);
+    img->getAttribute("flip", flip);
+    img->getAttribute("flop", flop);
+
+    _shaderUniforms["flip"] = flip;
+    _shaderUniforms["flop"] = flop;
+
     if (img->getTimestamp() == _spec.timestamp)
         return;
 
@@ -353,12 +362,6 @@ void Texture_Image::update()
         Log::get() << Log::ERROR << "Texture_Image::" << __FUNCTION__ << " - Texture " << _name << " is multisampled, and can not be set from an image" << Log::endl;
         return;
     }
-
-    auto spec = img->getSpec();
-    Values srgb, flip, flop;
-    img->getAttribute("srgb", srgb);
-    img->getAttribute("flip", flip);
-    img->getAttribute("flop", flop);
 
     // Store the image data size
     int imageDataSize = spec.rawSize();
@@ -548,9 +551,6 @@ void Texture_Image::update()
     else
         _shaderUniforms["YUV"] = {0};
 
-    _shaderUniforms["flip"] = flip;
-    _shaderUniforms["flop"] = flop;
-
     if (_filtering && !isCompressed)
         generateMipmap();
 }
@@ -595,7 +595,8 @@ void Texture_Image::registerAttributes()
 {
     Texture::registerAttributes();
 
-    addAttribute("filtering",
+    addAttribute(
+        "filtering",
         [&](const Values& args) {
             _filtering = args[0].as<int>() > 0 ? true : false;
             return true;
@@ -612,10 +613,14 @@ void Texture_Image::registerAttributes()
         {'n'});
     setAttributeDescription("clampToEdge", "If set to 1, clamp the texture to the edge");
 
-    addAttribute("size",
+    addAttribute(
+        "size",
         [&](const Values& args) {
             resize(args[0].as<int>(), args[1].as<int>());
             return true;
+        },
+        [&]() -> Values {
+            return {_spec.width, _spec.height};
         },
         {'n', 'n'});
     setAttributeDescription("size", "Change the texture size");
