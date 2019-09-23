@@ -48,6 +48,8 @@ namespace Splash
 
 bool Scene::_hasNVSwapGroup{false};
 vector<int> Scene::_glVersion{0, 0};
+std::string Scene::_glVendor{};
+std::string Scene::_glRenderer{};
 vector<string> Scene::_ghostableTypes{"camera", "warp"};
 
 /*************/
@@ -162,7 +164,6 @@ std::shared_ptr<GraphObject> Scene::addObject(const string& type, const string& 
 /*************/
 void Scene::addGhost(const string& type, const string& name)
 {
-    // Currently, only Cameras can be ghosts
     if (find(_ghostableTypes.begin(), _ghostableTypes.end(), type) == _ghostableTypes.end())
         return;
 
@@ -225,6 +226,23 @@ void Scene::remove(const string& name)
 /*************/
 void Scene::render()
 {
+    // We want to have as much time as possible for uploading the textures,
+    // so we start it right now.
+    if (!_threadedTextureUpload)
+    {
+        bool expectedAtomicValue = false;
+        if (!_doUploadTextures.compare_exchange_strong(expectedAtomicValue, false, std::memory_order_acq_rel))
+        {
+            lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+            for (auto& obj : _objects)
+            {
+                auto texture = dynamic_pointer_cast<Texture>(obj.second);
+                if (texture)
+                    texture->update();
+            }
+        }
+    }
+
     {
 #ifdef PROFILE
         PROFILEGL("Render loop")
@@ -343,11 +361,14 @@ void Scene::render()
 /*************/
 void Scene::run()
 {
-    _textureUploadFuture = async(std::launch::async, [&]() { textureUploadRun(); });
-
     _mainWindow->setAsCurrentContext();
     while (_isRunning)
     {
+        if (_threadedTextureUpload && !_textureUploadFuture.valid())
+            _textureUploadFuture = async(std::launch::async, [&]() { textureUploadRun(); });
+        else if (!_threadedTextureUpload && _textureUploadFuture.valid())
+            _textureUploadFuture.wait();
+
         // Process tree updates
         Timer::get() << "tree_process";
         _tree.processQueue();
@@ -393,7 +414,9 @@ void Scene::run()
     _mainWindow->releaseContext();
 
     signalBufferObjectUpdated();
-    _textureUploadFuture.wait();
+
+    if (_textureUploadFuture.valid())
+        _textureUploadFuture.wait();
 
     // Clean the tree from anything related to this Scene
     _tree.cutBranchAt("/" + _name);
@@ -428,7 +451,7 @@ void Scene::textureUploadRun()
 {
     _textureUploadWindow->setAsCurrentContext();
 
-    while (_isRunning)
+    while (_isRunning && _threadedTextureUpload)
     {
         if (!_started)
         {
@@ -440,7 +463,7 @@ void Scene::textureUploadRun()
         Timer::get() >> "loop_texture";
         Timer::get() << "loop_texture";
 
-        if (!_isRunning)
+        if (!_isRunning || !_threadedTextureUpload)
             break;
 
         {
@@ -709,6 +732,15 @@ void Scene::init(const string& name)
 
     _mainWindow->setAsCurrentContext();
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+
+    // Get hardware information
+    _glVendor = std::string(reinterpret_cast<const char*>(glGetString(GL_VENDOR)));
+    _glRenderer = std::string(reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
+    Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - GL vendor: " << _glVendor << Log::endl;
+    Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - GL renderer: " << _glRenderer << Log::endl;
+
+    // Nvidia hardware gets a special treatment by default
+    _threadedTextureUpload = _glVendor == "NVIDIA Corporation";
 
 // Activate GL debug messages
 #ifdef DEBUGGL
@@ -1072,7 +1104,8 @@ void Scene::registerAttributes()
         {'n'});
     setAttributeDescription("runInBackground", "If set to 1, Splash will run in the background (useful for background processing)");
 
-    addAttribute("swapInterval",
+    addAttribute(
+        "swapInterval",
         [&](const Values& args) {
             _swapInterval = max(-1, args[0].as<int>());
             _targetFrameDuration = updateTargetFrameDuration();
@@ -1080,13 +1113,24 @@ void Scene::registerAttributes()
         },
         [&]() -> Values { return {(int)_swapInterval}; },
         {'n'});
-    setAttributeDescription("swapInterval", "Set the interval between two video frames. 1 is synced, 0 is not, -1 to sync when possible ");
+    setAttributeDescription("swapInterval", "Set the interval between two video frames. 1 is synced, 0 is not, -1 to sync when possible");
+
+    addAttribute(
+        "threadedTextureUpload",
+        [&](const Values& args) {
+            _threadedTextureUpload = args[0].as<bool>();
+            return true;
+        },
+        [&]() -> Values { return {_threadedTextureUpload}; },
+        {'n'});
+    setAttributeDescription("threadedTextureUpload", "Activate threaded texture upload. This can cause freezes on some hardware");
 }
 
 /*************/
 void Scene::initializeTree()
 {
-    _tree.addCallbackToLeafAt("/world/attributes/masterClock",
+    _tree.addCallbackToLeafAt(
+        "/world/attributes/masterClock",
         [](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
             auto args = value.as<Values>();
             Timer::Point clock;

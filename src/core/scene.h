@@ -220,8 +220,11 @@ class Scene : public RootObject
 
     static bool _hasNVSwapGroup; //!< If true, NV swap groups have been detected and are used
     static std::vector<int> _glVersion;
+    static std::string _glVendor;
+    static std::string _glRenderer;
 
     bool _runInBackground{false}; //!< If true, no window will be created
+    bool _threadedTextureUpload{false}; //!< If true, texture upload is done in a separate thread
     std::atomic_bool _started{false};
 
     bool _isMaster{false}; //!< Set to true if this is the master Scene of the current config
