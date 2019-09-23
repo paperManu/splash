@@ -40,10 +40,6 @@
 #include "./controller/controller_pythonembedded.h"
 #endif
 
-#if HAVE_OSX
-#include "./graphics/texture_syphon.h"
-#endif
-
 #if HAVE_OPENCV
 #include "./image/image_opencv.h"
 #endif
@@ -398,20 +394,6 @@ void Factory::registerObjects()
         "texture image",
         "Texture object created from an Image object.",
         true);
-
-#if HAVE_OSX
-    _objectBook["texture_syphon"] = Page(
-        [&](RootObject* root) {
-            if (!_scene)
-                return shared_ptr<GraphObject>(nullptr);
-            else
-                return dynamic_pointer_cast<GraphObject>(make_shared<Texture_Syphon>(root));
-        },
-        GraphObject::Category::TEXTURE,
-        "texture image through Syphon",
-        "Texture object synchronized through Syphon.",
-        true);
-#endif
 
     _objectBook["virtual_probe"] = Page(
         [&](RootObject* root) {

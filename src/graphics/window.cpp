@@ -445,26 +445,20 @@ void Window::swapBuffers()
     // Only one window will wait for vblank, the others draws directly into front buffer
     auto windowIndex = _swappableWindowsCount++;
 
-// If swap interval is null (meaning no vsync), draw directly to the front buffer in any case
-#if not HAVE_OSX
+    // If swap interval is null (meaning no vsync), draw directly to the front buffer in any case
     bool drawToFront = false;
     if (!Scene::getHasNVSwapGroup() && windowIndex != 0)
     {
         drawToFront = true;
         glDrawBuffer(GL_FRONT);
     }
-#endif
 
     glBlitNamedFramebuffer(_readFbo, 0, 0, 0, _windowRect[2], _windowRect[3], 0, 0, _windowRect[2], _windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-#if HAVE_OSX
-    glfwSwapBuffers(_window->get());
-#else
     if (Scene::getHasNVSwapGroup())
         glfwSwapBuffers(_window->get());
     else if (windowIndex == 0)
         glfwSwapBuffers(_window->get());
-#endif
 
     if (drawToFront)
         glDrawBuffer(GL_BACK);
@@ -687,7 +681,8 @@ void Window::registerAttributes()
 {
     GraphObject::registerAttributes();
 
-    addAttribute("decorated",
+    addAttribute(
+        "decorated",
         [&](const Values& args) {
             _withDecoration = args[0].as<int>() == 0 ? false : true;
             setWindowDecoration(_withDecoration);
@@ -698,7 +693,8 @@ void Window::registerAttributes()
         {'n'});
     setAttributeDescription("decorated", "If set to 0, the window is drawn without decoration");
 
-    addAttribute("srgb",
+    addAttribute(
+        "srgb",
         [&](const Values& args) {
             if (args[0].as<int>() != 0)
                 _srgb = true;
@@ -710,7 +706,8 @@ void Window::registerAttributes()
         {'n'});
     setAttributeDescription("srgb", "If set to 1, the window is drawn in the sRGB color space");
 
-    addAttribute("gamma",
+    addAttribute(
+        "gamma",
         [&](const Values& args) {
             _gammaCorrection = args[0].as<float>();
             return true;
@@ -720,7 +717,8 @@ void Window::registerAttributes()
     setAttributeDescription("gamma", "Set the gamma correction for this window");
 
     // Attribute to configure the placement of the various texture input
-    addAttribute("layout",
+    addAttribute(
+        "layout",
         [&](const Values& args) {
             _layout.clear();
             for (auto& arg : args)
@@ -738,7 +736,8 @@ void Window::registerAttributes()
         {'n'});
     setAttributeDescription("layout", "Set the placement of the various input textures");
 
-    addAttribute("position",
+    addAttribute(
+        "position",
         [&](const Values& args) {
             _windowRect[0] = args[0].as<int>();
             _windowRect[1] = args[1].as<int>();
@@ -758,7 +757,8 @@ void Window::registerAttributes()
         },
         {'n'});
 
-    addAttribute("size",
+    addAttribute(
+        "size",
         [&](const Values& args) {
             _windowRect[2] = args[0].as<int>();
             _windowRect[3] = args[1].as<int>();
@@ -796,7 +796,8 @@ void Window::registerAttributes()
         {'n', 'n', 'n', 'n'});
     setAttributeDescription("swapTestColor", "Set the swap test color");
 
-    addAttribute("textureList",
+    addAttribute(
+        "textureList",
         [](const Values&) { return true; },
         [&]() -> Values {
             Values textureList;
@@ -819,7 +820,8 @@ void Window::registerAttributes()
         });
     setAttributeDescription("textureList", "Get the list of the textures linked to the window");
 
-    addAttribute("presentationDelay", [&](const Values&) { return true; }, [&]() -> Values { return {_presentationDelay}; });
+    addAttribute(
+        "presentationDelay", [&](const Values&) { return true; }, [&]() -> Values { return {_presentationDelay}; });
     setAttributeDescription("presentationDelay", "Delay between the update of an image and its display");
 }
 

@@ -228,8 +228,7 @@ class SplashImageNode(SplashBaseNode):
     sp_imageTypes = [
         ("image", "image", "Static image"),
         ("image_ffmpeg", "video", "Video file"),
-        ("image_shmdata", "shared memory", "Video through shared memory"),
-        ("texture_syphon", "syphon", "Video through Syphon (only on OSX)"),
+        ("image_shmdata", "shared memory", "Video through shared memory")
     ]
     sp_imageTypeProperty = bpy.props.EnumProperty(name="Type",
                                                   description="Image source type",

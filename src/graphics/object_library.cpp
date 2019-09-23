@@ -19,11 +19,9 @@ bool ObjectLibrary::loadModel(const string& name, const string& filename)
     if (!ifstream(filepath, ios::in | ios::binary))
     {
         if (ifstream(string(DATADIR) + filepath, ios::in | ios::binary))
+        {
             filepath = string(DATADIR) + filepath;
-#if HAVE_OSX
-        else if (ifstream("../Resources/" + filepath, ios::in | ios::binary))
-            filepath = "../Resources/" + filepath;
-#endif
+        }
         else
         {
             Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - File " << filename << " does not seem to be readable." << Log::endl;

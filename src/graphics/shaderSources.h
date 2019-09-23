@@ -170,15 +170,9 @@ struct ShaderSources
 /**
  * Version directive, included at the start of all shaders
  */
-#if HAVE_OSX
     const std::string VERSION_DIRECTIVE_GL4{R"(
-        #version 410 core
+        #version 450 core
     )"};
-#else
-    const std::string VERSION_DIRECTIVE_GL4{R"(
-        #version 430 core
-    )"};
-#endif
 
     /**************************/
     // COMPUTE

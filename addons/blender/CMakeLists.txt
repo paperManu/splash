@@ -17,11 +17,7 @@
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-if(UNIX AND NOT APPLE)
-    set(UPDATE_BLENDER_VERSION sed -i 's/\"version\": .*/\"version\": \(${PROJECT_VERSION_MAJOR}, ${PROJECT_VERSION_MINOR}, ${PROJECT_VERSION_PATCH}\),/g' ${CMAKE_CURRENT_SOURCE_DIR}/splash/__init__.py)
-elseif(APPLE)
-    set(UPDATE_BLENDER_VERSION sed -i \"\" 's/\"version\": .*/\"version\": \(${PROJECT_VERSION_MAJOR}, ${PROJECT_VERSION_MINOR}, ${PROJECT_VERSION_PATCH}\),/g' ${CMAKE_CURRENT_SOURCE_DIR}/splash/__init__.py)
-endif()
+set(UPDATE_BLENDER_VERSION sed -i 's/\"version\": .*/\"version\": \(${PROJECT_VERSION_MAJOR}, ${PROJECT_VERSION_MINOR}, ${PROJECT_VERSION_PATCH}\),/g' ${CMAKE_CURRENT_SOURCE_DIR}/splash/__init__.py)
 
 add_custom_command(
     OUTPUT blenderSplash.zip

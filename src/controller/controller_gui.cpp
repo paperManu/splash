@@ -314,11 +314,7 @@ void Gui::key(int key, int action, int mods)
     }
     case GLFW_KEY_TAB:
     {
-#if HAVE_OSX
-        if (action == GLFW_PRESS && mods == GLFW_MOD_ALT)
-#else
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
-#endif
         {
             _isVisible = !_isVisible;
         }

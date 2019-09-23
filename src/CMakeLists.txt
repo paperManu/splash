@@ -68,11 +68,7 @@ if (HAVE_DATAPATH)
     include_directories(${DATAPATH_SDK_PATH}/utils/include)
 endif()
 
-if (APPLE)
-    include_directories(../external/glad/compatibility/include)
-else()
     include_directories(../external/glad/core/include)
-endif()
 
 include_directories(${GLFW_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIRS})
@@ -112,10 +108,6 @@ add_executable(splash splash-app.cpp)
 #
 # Splash library
 #
-if (APPLE)
-    add_dependencies(splash-${API_VERSION} Syphon)
-endif()
-
 target_sources(splash-${API_VERSION} PRIVATE
     core/attribute.cpp
     core/base_object.cpp
@@ -178,19 +170,10 @@ target_sources(splash-${API_VERSION} PRIVATE
 	../external/hap/source/hap.c
 )
 
-if (APPLE)
-    target_sources(splash-${API_VERSION} PRIVATE
-	    ../external/glad/compatibility/src/glad_compatibility.c
-        texture_syphon.cpp
-        texture_syphon_client.mm
-    )
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -F${CMAKE_CURRENT_SOURCE_DIR}/../external/syphon/build/Release -framework Syphon")
-else()
     target_sources(splash-${API_VERSION} PRIVATE
 	    ../external/glad/core/src/glad_core.c
         image/image_v4l2.cpp
     )
-endif()
 
 if (GPHOTO_FOUND AND OPENCV_FOUND)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -288,10 +271,6 @@ target_link_libraries(splash splash-${API_VERSION})
 # Installation
 #
 install(TARGETS splash DESTINATION "bin/")
-
-if (APPLE)
-    target_link_libraries(splash "-undefined dynamic_lookup")
-endif()
 
 install(FILES 
     shaders/geometric_calibration_filter.frag

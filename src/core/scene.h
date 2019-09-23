@@ -273,14 +273,10 @@ class Scene : public RootObject
      */
     static void glfwErrorCallback(int code, const char* msg);
 
-/**
- * \brief Callback for GL errors and warnings
- */
-#ifdef HAVE_OSX
-    static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
-#else
+    /**
+     * \brief Callback for GL errors and warnings
+     */
     static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, void*);
-#endif
 
     /**
      * \brief Texture update loop

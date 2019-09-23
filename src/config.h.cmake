@@ -4,9 +4,6 @@
 /* Considering a Linux system */
 #cmakedefine01 HAVE_LINUX
 
-/* Apple Mac OS X operating system not detected */
-#cmakedefine01 HAVE_OSX
-
 /* Defined to 1 if libgphoto2 is detected */
 #cmakedefine01 HAVE_GPHOTO
 
