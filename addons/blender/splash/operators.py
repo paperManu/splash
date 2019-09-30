@@ -181,7 +181,7 @@ class Splash:
                 try:
                     from pyshmdata import Writer
                     os.remove(target._texWriterPath)
-                except os.error as e:
+                except os.error:
                     pass
 
                 if target._texWriter is not None:
@@ -206,7 +206,7 @@ class SplashActivateSendMesh(Operator):
     def execute(self, context):
         try:
             from pyshmdata import Writer
-        except os.error as e:
+        except os.error:
             print("Module pyshmdata was not found")
             return {'FINISHED'}
 
@@ -234,7 +234,7 @@ class SplashActivateSendMesh(Operator):
             path = splash.outputPathPrefix + "_mesh_" + splash.targetObject
             try:
                 os.remove(path)
-            except os.error as e:
+            except os.error:
                 pass
 
             splashTarget._meshWriter = Writer(path=path, datatype="application/x-polymesh")
