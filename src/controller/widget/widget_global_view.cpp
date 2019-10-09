@@ -188,7 +188,7 @@ void GuiGlobalView::render()
             ImGui::Text("Current camera: %s - Reprojection error: %f", _camera->getAlias().c_str(), reprojectionError[0].as<float>());
 
             ImGui::Image((void*)(intptr_t)_camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
-            if (ImGui::IsItemHoveredRect())
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly))
                 _noMove = true;
             else
                 _noMove = false;
@@ -445,7 +445,7 @@ void GuiGlobalView::processJoystickState()
 /*************/
 void GuiGlobalView::processKeyEvents()
 {
-    if (!ImGui::IsItemHoveredRect())
+    if (!ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly))
         return;
 
     ImGuiIO& io = ImGui::GetIO();
@@ -524,7 +524,7 @@ void GuiGlobalView::processMouseEvents()
     // Get mouse pos
     ImVec2 mousePos = ImVec2((io.MousePos.x - ImGui::GetCursorScreenPos().x) / _camWidth, -(io.MousePos.y - ImGui::GetCursorScreenPos().y) / _camHeight);
 
-    if (ImGui::IsItemHoveredRect())
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly))
     {
         // Vertex selection
         if (io.MouseDown[0])

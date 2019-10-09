@@ -92,7 +92,7 @@ void GuiWarp::render()
 
                 ImGui::Image((void*)(intptr_t)texture->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
 
-                if (ImGui::IsItemHoveredRect())
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly))
                 {
                     _noMove = true;
                     processKeyEvents(warp);
