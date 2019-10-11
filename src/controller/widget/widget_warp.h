@@ -18,8 +18,8 @@
  */
 
 /*
- * @widget_global_view.h
- * The global view widget, to calibrate cameras
+ * @widget_warp.h
+ * The warp view widget
  */
 
 #ifndef SPLASH_WIDGET_WARP_H

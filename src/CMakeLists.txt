@@ -128,7 +128,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     controller/widget/widget.cpp
     controller/widget/widget_control.cpp
     controller/widget/widget_filters.cpp
-    controller/widget/widget_global_view.cpp
+    controller/widget/widget_camera.cpp
     controller/widget/widget_graph.cpp
     controller/widget/widget_node_view.cpp
     controller/widget/widget_media.cpp

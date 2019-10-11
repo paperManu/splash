@@ -18,8 +18,8 @@
  */
 
 /*
- * @widget_global_view.h
- * The global view widget, to calibrate cameras
+ * @widget_node_view.h
+ * The scene graph widget
  */
 
 #ifndef SPLASH_WIDGET_NODE_VIEW_H

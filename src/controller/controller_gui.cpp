@@ -3,9 +3,9 @@
 #include <fstream>
 
 #include "./controller/controller.h"
+#include "./controller/widget/widget_camera.h"
 #include "./controller/widget/widget_control.h"
 #include "./controller/widget/widget_filters.h"
-#include "./controller/widget/widget_global_view.h"
 #include "./controller/widget/widget_graph.h"
 #include "./controller/widget/widget_media.h"
 #include "./controller/widget/widget_meshes.h"
@@ -565,7 +565,6 @@ void Gui::render()
         // Some global buttons
         if (ImGui::CollapsingHeader("General commands", nullptr, ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_DefaultOpen))
         {
-
             ImGui::Columns(3);
             ImGui::Text("General");
             ImGui::NextColumn();
@@ -755,12 +754,14 @@ void Gui::render()
             }
         }
 
-        // Specific widgets
+        // Other tabulations
         for (auto& widget : _guiWidgets)
         {
             widget->render();
             _windowFlags |= widget->updateWindowFlags();
         }
+        ImGui::EndTabBar();
+
         ImGui::End();
     }
 
@@ -1053,7 +1054,7 @@ void Gui::setClipboardText(void* userData, const char* text)
 void Gui::initImWidgets()
 {
     // Some help regarding keyboard shortcuts
-    auto helpBox = make_shared<GuiTextBox>(_scene, "Shortcuts");
+    auto helpBox = make_shared<GuiTextBox>(_scene, "Help");
     helpBox->setTextFunc([]() {
         string text = R"(Tab: show / hide this GUI
         General shortcuts:
@@ -1192,11 +1193,11 @@ void Gui::initImWidgets()
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(timingBox));
 
     // Control
-    auto controlView = make_shared<GuiControl>(_scene, "Controls");
+    auto controlView = make_shared<GuiControl>(_scene, "Graph");
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(controlView));
 
     // Media
-    auto mediaSelector = make_shared<GuiMedia>(_scene, "Media");
+    auto mediaSelector = make_shared<GuiMedia>(_scene, "Medias");
     _guiWidgets.push_back(mediaSelector);
 
     // Filters
@@ -1208,12 +1209,12 @@ void Gui::initImWidgets()
     _guiWidgets.push_back(meshesSelector);
 
     // GUI camera view
-    auto globalView = make_shared<GuiGlobalView>(_scene, "Cameras");
+    auto globalView = make_shared<GuiCamera>(_scene, "Cameras");
     globalView->setCamera(_guiCamera);
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(globalView));
 
     // Warp control
-    auto warpControl = make_shared<GuiWarp>(_scene, "Warp");
+    auto warpControl = make_shared<GuiWarp>(_scene, "Warps");
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWarp>(warpControl));
 
     if (Log::get().getVerbosity() == Log::DEBUGGING)
@@ -1234,7 +1235,7 @@ void Gui::initImWidgets()
         _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(logBox));
 
         // Performance graph
-        auto perfGraph = make_shared<GuiGraph>(_scene, "Performance Graph");
+        auto perfGraph = make_shared<GuiGraph>(_scene, "Performances");
         _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(perfGraph));
 
         auto texturesView = make_shared<GuiTexturesView>(_scene, "Textures");

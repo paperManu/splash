@@ -18,8 +18,8 @@
  */
 
 /*
- * @widget_global_view.h
- * The global view widget, to calibrate cameras
+ * @widget_control.h
+ * The general controls widget
  */
 
 #ifndef SPLASH_WIDGET_CONTROL_H

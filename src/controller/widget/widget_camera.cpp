@@ -1,4 +1,4 @@
-#include "./controller/widget/widget_global_view.h"
+#include "./controller/widget/widget_camera.h"
 
 #include <array>
 #include <fstream>
@@ -15,7 +15,7 @@ namespace Splash
 {
 
 /*************/
-void GuiGlobalView::captureJoystick()
+void GuiCamera::captureJoystick()
 {
     if (_joystickCaptured)
         return;
@@ -38,7 +38,7 @@ void GuiGlobalView::captureJoystick()
 }
 
 /*************/
-void GuiGlobalView::releaseJoystick()
+void GuiCamera::releaseJoystick()
 {
     if (!_joystickCaptured)
         return;
@@ -50,7 +50,7 @@ void GuiGlobalView::releaseJoystick()
 }
 
 /*************/
-void GuiGlobalView::render()
+void GuiCamera::render()
 {
     ImGuiIO& io = ImGui::GetIO();
 
@@ -212,7 +212,7 @@ void GuiGlobalView::render()
 }
 
 /*************/
-int GuiGlobalView::updateWindowFlags()
+int GuiCamera::updateWindowFlags()
 {
     ImGuiWindowFlags flags = 0;
     if (_noMove)
@@ -224,7 +224,7 @@ int GuiGlobalView::updateWindowFlags()
 }
 
 /*************/
-void GuiGlobalView::setCamera(const shared_ptr<Camera>& cam)
+void GuiCamera::setCamera(const shared_ptr<Camera>& cam)
 {
     if (cam != nullptr)
     {
@@ -235,14 +235,14 @@ void GuiGlobalView::setCamera(const shared_ptr<Camera>& cam)
 }
 
 /*************/
-void GuiGlobalView::setJoystick(const vector<float>& axes, const vector<uint8_t>& buttons)
+void GuiCamera::setJoystick(const vector<float>& axes, const vector<uint8_t>& buttons)
 {
     _joyAxes = axes;
     _joyButtons = buttons;
 }
 
 /*************/
-vector<glm::dmat4> GuiGlobalView::getCamerasRTMatrices()
+vector<glm::dmat4> GuiCamera::getCamerasRTMatrices()
 {
     auto rtMatrices = vector<glm::dmat4>();
     auto cameras = getObjectsPtr(getObjectsOfType("camera"));
@@ -253,7 +253,7 @@ vector<glm::dmat4> GuiGlobalView::getCamerasRTMatrices()
 }
 
 /*************/
-void GuiGlobalView::nextCamera()
+void GuiCamera::nextCamera()
 {
     vector<shared_ptr<Camera>> cameras;
 
@@ -297,12 +297,12 @@ void GuiGlobalView::nextCamera()
 }
 
 /*************/
-void GuiGlobalView::revertCalibration()
+void GuiCamera::revertCalibration()
 {
     if (_previousCameraParameters.size() == 0)
         return;
 
-    Log::get() << Log::MESSAGE << "GuiGlobalView::" << __FUNCTION__ << " - Reverting camera to previous parameters" << Log::endl;
+    Log::get() << Log::MESSAGE << "GuiCamera::" << __FUNCTION__ << " - Reverting camera to previous parameters" << Log::endl;
 
     auto params = _previousCameraParameters.back();
     // We keep the very first calibration, it has proven useful
@@ -317,7 +317,7 @@ void GuiGlobalView::revertCalibration()
 }
 
 /*************/
-void GuiGlobalView::showAllCalibrationPoints(Camera::CalibrationPointsVisibility showPoints)
+void GuiCamera::showAllCalibrationPoints(Camera::CalibrationPointsVisibility showPoints)
 {
     if (showPoints == Camera::CalibrationPointsVisibility::switchVisibility)
         _showCalibrationPoints = !_showCalibrationPoints;
@@ -325,7 +325,7 @@ void GuiGlobalView::showAllCalibrationPoints(Camera::CalibrationPointsVisibility
 }
 
 /*************/
-void GuiGlobalView::showAllCamerasCalibrationPoints()
+void GuiCamera::showAllCamerasCalibrationPoints()
 {
     if (_camera == _guiCamera)
         _guiCamera->setAttribute("switchDisplayAllCalibration", {});
@@ -334,7 +334,7 @@ void GuiGlobalView::showAllCamerasCalibrationPoints()
 }
 
 /*************/
-void GuiGlobalView::colorizeCameraWireframes(bool colorize)
+void GuiCamera::colorizeCameraWireframes(bool colorize)
 {
     if ((_camera == _guiCamera && colorize) || colorize == _camerasColorizedPreviousValue)
         return;
@@ -353,7 +353,7 @@ void GuiGlobalView::colorizeCameraWireframes(bool colorize)
 }
 
 /*************/
-void GuiGlobalView::doCalibration()
+void GuiCamera::doCalibration()
 {
     CameraParameters params;
     // We keep the current values
@@ -371,7 +371,7 @@ void GuiGlobalView::doCalibration()
 }
 
 /*************/
-void GuiGlobalView::hideOtherCameras(bool hide)
+void GuiCamera::hideOtherCameras(bool hide)
 {
     if (hide == _camerasHidden)
         return;
@@ -384,7 +384,7 @@ void GuiGlobalView::hideOtherCameras(bool hide)
 }
 
 /*************/
-void GuiGlobalView::processJoystickState()
+void GuiCamera::processJoystickState()
 {
     lock_guard<mutex> lock(_joystickMutex);
     float speed = 1.f;
@@ -443,7 +443,7 @@ void GuiGlobalView::processJoystickState()
 }
 
 /*************/
-void GuiGlobalView::processKeyEvents()
+void GuiCamera::processKeyEvents()
 {
     if (!ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly))
         return;
@@ -517,7 +517,7 @@ void GuiGlobalView::processKeyEvents()
 }
 
 /*************/
-void GuiGlobalView::processMouseEvents()
+void GuiCamera::processMouseEvents()
 {
     ImGuiIO& io = ImGui::GetIO();
 
@@ -645,7 +645,7 @@ void GuiGlobalView::processMouseEvents()
 }
 
 /*************/
-vector<shared_ptr<Camera>> GuiGlobalView::getCameras()
+vector<shared_ptr<Camera>> GuiCamera::getCameras()
 {
     auto cameras = vector<shared_ptr<Camera>>();
 
@@ -664,7 +664,7 @@ vector<shared_ptr<Camera>> GuiGlobalView::getCameras()
 }
 
 /*************/
-void GuiGlobalView::drawVirtualProbes()
+void GuiCamera::drawVirtualProbes()
 {
     auto rtMatrices = vector<glm::dmat4>();
     auto probes = getObjectsPtr(getObjectsOfType("virtual_probe"));
