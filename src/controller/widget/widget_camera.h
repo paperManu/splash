@@ -43,7 +43,6 @@ class GuiCamera : public GuiWidget
     int updateWindowFlags() final;
     void setCamera(const std::shared_ptr<Camera>& cam);
     void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons);
-    void setScene(Scene* scene) { _scene = scene; }
 
   private:
     std::shared_ptr<Camera> _camera{nullptr};

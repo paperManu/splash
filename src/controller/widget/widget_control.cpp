@@ -13,7 +13,7 @@ namespace Splash
 /*************/
 void GuiControl::render()
 {
-    if (ImGui::CollapsingHeader(_name.c_str()))
+    if (ImGui::BeginTabItem(_name.c_str()))
     {
         // World control
         ImGui::Text("World configuration");
@@ -49,7 +49,6 @@ void GuiControl::render()
         {
             auto scene = dynamic_cast<Scene*>(_root);
             auto nodeView = make_shared<GuiNodeView>(scene, "Nodes");
-            nodeView->setScene(_scene);
             _nodeView = dynamic_pointer_cast<GuiWidget>(nodeView);
         }
         ImGui::Text("Configuration global view");
@@ -134,6 +133,7 @@ void GuiControl::render()
                 _targetIndex = -1;
             }
         }
+        ImGui::EndTabItem();
     }
 }
 

@@ -79,7 +79,6 @@ class GuiWidget : public ControllerObject
     virtual void render() override {}
     virtual int updateWindowFlags() { return 0; }
     virtual void setJoystick(const std::vector<float>& /*axes*/, const std::vector<uint8_t>& /*buttons*/) {}
-    void setScene(Scene* scene) { _scene = scene; }
 
   protected:
     std::string _name{""};

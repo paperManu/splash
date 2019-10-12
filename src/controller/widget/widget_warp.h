@@ -40,7 +40,6 @@ class GuiWarp : public GuiWidget
     {
     }
     void render() final;
-    void setScene(Scene* scene) { _scene = scene; }
     int updateWindowFlags() final;
 
   private:
