@@ -255,9 +255,6 @@ class GraphObject : public BaseObject
      */
     virtual void render() {}
 
-  public:
-    bool _savable{true}; //!< True if the object should be saved
-
   protected:
     Category _category{Category::MISC};   //!< Object category, updated by the factory
     std::string _type{"baseobject"};      //!< Internal type
@@ -267,6 +264,7 @@ class GraphObject : public BaseObject
     std::unordered_map<std::string, int> _treeCallbackIds{};
 
     Priority _renderingPriority{Priority::NO_RENDER}; //!< Rendering priority, if negative the object won't be rendered
+    bool _savable{true};                              //!< True if the object should be saved
     int _priorityShift{0};                            //!< Shift applied to rendering priority
 
     bool _isConnectedToRemote{false}; //!< True if the object gets data from a World object

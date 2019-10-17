@@ -80,7 +80,7 @@ Some other libraries are optional:
 - Dependencies built at compile-time from submodules:
   - [libltc](http://x42.github.io/libltc/) to read timecodes from an audio input,
 
-Also, the [Roboto](https://www.fontsquirrel.com/fonts/roboto) font is used and distributed under the Apache license.
+Also, the [Roboto](https://www.fontsquirrel.com/fonts/roboto) font and the [DSEG font family](https://github.com/keshikan/DSEG) are used and distributed under their respective open source licenses.
 
 By default Splash is built and linked against the libraries included as submodules, but it is possible to force it to use the libraries installed on the system. This is described in the next section.
 

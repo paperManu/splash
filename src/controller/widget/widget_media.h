@@ -49,6 +49,8 @@ class GuiMedia : public GuiWidget
     float _newMediaStop{0.f};
     bool _newMediaFreeRun{false};
 
+    std::string _selectedMediaName;
+
     std::list<std::shared_ptr<GraphObject>> getSceneMedia();
     std::list<std::shared_ptr<GraphObject>> getFiltersForImage(const std::shared_ptr<GraphObject>& image);
     void replaceMedia(const std::string& previousMedia, const std::string& alias, const std::string& type);

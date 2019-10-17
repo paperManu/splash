@@ -5,7 +5,7 @@
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
-#define DISTANT_NAME_SUFFIX "_source"
+#define DISTANT_NAME_SUFFIX "_queue_source"
 
 using namespace std;
 
@@ -112,6 +112,7 @@ void Queue::update()
         if (sourceIndex >= _playlist.size())
         {
             _currentSource = dynamic_pointer_cast<BufferObject>(_factory->create("image"));
+            _currentSource->setName(_name + DISTANT_NAME_SUFFIX);
             _root->sendMessage(_name, "source", {"image"});
         }
         else
@@ -126,7 +127,7 @@ void Queue::update()
             else
                 _currentSource = dynamic_pointer_cast<BufferObject>(_factory->create("image"));
             dynamic_pointer_cast<Image>(_currentSource)->zero();
-            dynamic_pointer_cast<Image>(_currentSource)->setName(_name + DISTANT_NAME_SUFFIX);
+            _currentSource->setName(_name + DISTANT_NAME_SUFFIX);
 
             _currentSource->setAttribute("file", {sourceParameters.filename});
 
@@ -274,7 +275,8 @@ void Queue::registerAttributes()
 {
     BufferObject::registerAttributes();
 
-    addAttribute("loop",
+    addAttribute(
+        "loop",
         [&](const Values& args) {
             _loop = (bool)args[0].as<int>();
             return true;
@@ -283,7 +285,8 @@ void Queue::registerAttributes()
         {'n'});
     setAttributeDescription("loop", "Set whether to loop through the queue or not");
 
-    addAttribute("pause",
+    addAttribute(
+        "pause",
         [&](const Values& args) {
             _paused = args[0].as<int>();
 
@@ -293,7 +296,8 @@ void Queue::registerAttributes()
         {'n'});
     setAttributeDescription("pause", "Pause the queue if set to 1");
 
-    addAttribute("playlist",
+    addAttribute(
+        "playlist",
         [&](const Values& args) {
             lock_guard<mutex> lock(_playlistMutex);
             vector<Source> playlist;
@@ -349,10 +353,12 @@ void Queue::registerAttributes()
         });
     setAttributeDescription("playlist", "Set the playlist as an array of [type, filename, start, end, (args)]");
 
-    addAttribute("elapsed", [&](const Values& /*args*/) { return true; }, [&]() -> Values { return {static_cast<float>(_currentTime / 1e6)}; }, {'n'});
+    addAttribute(
+        "elapsed", [&](const Values& /*args*/) { return true; }, [&]() -> Values { return {static_cast<float>(_currentTime / 1e6)}; }, {'n'});
     setAttributeDescription("elapsed", "Time elapsed since the beginning of the queue");
 
-    addAttribute("seek",
+    addAttribute(
+        "seek",
         [&](const Values& args) {
             _seekTime = args[0].as<float>();
             _startTime = Timer::getTime() - static_cast<int64_t>(_seekTime * 1e6);
@@ -363,7 +369,8 @@ void Queue::registerAttributes()
         {'n'});
     setAttributeDescription("seek", "Seek through the playlist");
 
-    addAttribute("useClock",
+    addAttribute(
+        "useClock",
         [&](const Values& args) {
             _useClock = args[0].as<int>();
             if (_currentSource)
@@ -385,7 +392,7 @@ QueueSurrogate::QueueSurrogate(RootObject* root)
     , _filter(make_shared<Filter>(root))
 {
     _filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", "queueFilter_" + _name + to_string(_filterIndex++)).lock());
-    _filter->_savable = false;
+    _filter->setAttribute("savable", {false});
 
     registerAttributes();
 }
@@ -446,7 +453,7 @@ void QueueSurrogate::registerAttributes()
 
             if (type.find("image") != string::npos)
             {
-                auto image = dynamic_pointer_cast<Image>(_root->createObject("image", _name + "_source").lock());
+                auto image = dynamic_pointer_cast<Image>(_root->createObject("image", _name + DISTANT_NAME_SUFFIX).lock());
                 image->zero();
                 image->setRemoteType(type);
                 object = image;
@@ -457,6 +464,7 @@ void QueueSurrogate::registerAttributes()
             }
 
             object->setName(sourceName);
+            object->setAttribute("savable", {false});
             _source.swap(object);
             _filter->linkTo(_source);
         });

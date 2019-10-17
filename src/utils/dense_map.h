@@ -21,6 +21,9 @@
  * @dense_map.h
  * Dense map, a cache friendly unordered map based on std::vector
  * It matches as much as possible std::map, check https://en.cppreference.com/w/cpp/container/map
+ *
+ * Known issues:
+ * - modifying the DenseMap while iterating over it with a for range may invalide the std::pair references
  */
 
 #ifndef SPLASH_DENSE_MAP_H

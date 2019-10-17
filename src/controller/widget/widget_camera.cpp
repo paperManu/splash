@@ -54,160 +54,181 @@ void GuiCamera::render()
 {
     ImGuiIO& io = ImGui::GetIO();
 
-    if (ImGui::CollapsingHeader(_name.c_str()))
+    captureJoystick();
+
+    auto cameras = getCameras();
+    drawVirtualProbes();
+
+    ImVec2 availableSize = ImGui::GetContentRegionAvail();
+
+    //
+    // Draw all cameras to allow for selecting one
+    //
+    ImGui::BeginChild("Cameras", ImVec2(availableSize.x * 0.25, availableSize.y), true);
+    ImGui::Text("Camera list");
+
+    double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
+    for (auto& camera : cameras)
     {
-        captureJoystick();
-        if (ImGui::Button("Calibrate camera"))
-            doCalibration();
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Calibrate the selected camera\n(C while hovering the view)");
-        ImGui::SameLine();
+        camera->render();
 
-        if (ImGui::Button("Revert camera"))
-            revertCalibration();
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Revert the selected camera to its previous calibration\n(Ctrl + Z while hovering the view)");
-        ImGui::SameLine();
+        Values size;
+        camera->getAttribute("size", size);
 
-        if (ImGui::Button("Reset camera") && _camera)
+        int w = ImGui::GetWindowWidth() - 3 * leftMargin;
+        int h = w * size[1].as<int>() / size[0].as<int>();
+
+        if (ImGui::ImageButton((void*)(intptr_t)camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
         {
-            auto cameraName = _camera->getName();
-            setObjectAttribute(cameraName, "eye", {2.0, 2.0, 2.0});
-            setObjectAttribute(cameraName, "target", {0.0, 0.0, 0.0});
-            setObjectAttribute(cameraName, "up", {0.0, 0.0, 1.0});
-        }
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Reset the camera to default values, useful when lost in 3D space");
-
-        ImGui::Checkbox("Hide other cameras", &_hideCameras);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Hide all but the selected camera\n(H while hovering the view)");
-        ImGui::SameLine();
-
-        if (ImGui::Checkbox("Show targets", &_showCalibrationPoints))
-            showAllCalibrationPoints(static_cast<Camera::CalibrationPointsVisibility>(_showCalibrationPoints));
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Show the target positions for the calibration points\n(A while hovering the view)");
-        ImGui::SameLine();
-
-        static bool showAllCamerasPoints = false;
-        if (ImGui::Checkbox("Show points everywhere", &showAllCamerasPoints))
-            showAllCamerasCalibrationPoints();
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Show this camera's calibration points in other cameras\n(O while hovering the view)");
-        ImGui::SameLine();
-
-        // Colorization of the wireframe rendering. Applied after the GUI camera rendering to keep cameras in gui white
-        ImGui::Checkbox("Colorize wireframes", &_camerasColorized);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Activate colorization of the wireframe rendering, green for selected camera and magenta for the other cameras\n(V while hovering the view)");
-
-        double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
-
-        auto cameras = getCameras();
-        drawVirtualProbes();
-
-        ImGui::BeginChild("Cameras", ImVec2(ImGui::GetWindowWidth() * 0.25, ImGui::GetWindowWidth() * 0.67), true);
-        ImGui::Text("Select a camera:");
-        for (auto& camera : cameras)
-        {
-            camera->render();
-
-            Values size;
-            camera->getAttribute("size", size);
-
-            int w = ImGui::GetWindowWidth() - 4 * leftMargin;
-            int h = w * size[1].as<int>() / size[0].as<int>();
-
-            if (ImGui::ImageButton((void*)(intptr_t)camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
+            // If shift is pressed, we hide / unhide this camera
+            if (io.KeyCtrl)
             {
-                // If shift is pressed, we hide / unhide this camera
-                if (io.KeyCtrl)
-                {
-                    setObjectAttribute(camera->getName(), "hide", {-1});
-                }
-                else
-                {
-                    // Empty previous camera parameters
-                    _previousCameraParameters.clear();
-
-                    // List the number of visible cameras
-                    vector<string> visibleCameras{};
-                    for (const auto& cam : cameras)
-                    {
-                        auto visibility = getObjectAttribute(cam->getName(), "hide");
-                        if (visibility.size() and !visibility[0].as<bool>())
-                            visibleCameras.push_back(cam->getName());
-                    }
-
-                    // Keep the same set of cameras visible
-                    for (const auto& cam : cameras)
-                        setObjectAttribute(cam->getName(), "hide", {1});
-
-                    for (const auto& camName : visibleCameras)
-                        setObjectAttribute(camName, "hide", {0});
-
-                    // Ensure the selected camera is visible...
-                    setObjectAttribute(camera->getName(), "hide", {0});
-
-                    _camerasColorized = false;
-                    setObjectAttribute(_camera->getName(), "frame", {0});
-                    setObjectAttribute(_camera->getName(), "displayCalibration", {0});
-
-                    _camera = camera;
-
-                    setObjectAttribute(_camera->getName(), "frame", {1});
-                    setObjectAttribute(_camera->getName(), "displayCalibration", {1});
-                    showAllCalibrationPoints(static_cast<Camera::CalibrationPointsVisibility>(_showCalibrationPoints));
-                }
+                setObjectAttribute(camera->getName(), "hide", {-1});
             }
-
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("%s", camera->getAlias().c_str());
-        }
-        ImGui::EndChild();
-
-        ImGui::SameLine();
-        ImGui::BeginChild("Calibration", ImVec2(0, ImGui::GetWindowWidth() * 0.67), true);
-        if (_camera != nullptr)
-        {
-            Values size;
-            _camera->getAttribute("size", size);
-
-            int sizeX = size[0].as<int>();
-            int sizeY = size[1].as<int>();
-
-            int w = ImGui::GetWindowWidth() - 2 * leftMargin;
-            int h = sizeX != 0 ? w * sizeY / sizeX : 1;
-
-            _camWidth = w;
-            _camHeight = h;
-
-            Values reprojectionError;
-            _camera->getAttribute("getReprojectionError", reprojectionError);
-            ImGui::Text("Current camera: %s - Reprojection error: %f", _camera->getAlias().c_str(), reprojectionError[0].as<float>());
-
-            ImGui::Image((void*)(intptr_t)_camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
-            if (ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly))
-                _noMove = true;
             else
-                _noMove = false;
+            {
+                // Empty previous camera parameters
+                _previousCameraParameters.clear();
 
-            processKeyEvents();
-            processMouseEvents();
+                // List the number of visible cameras
+                vector<string> visibleCameras{};
+                for (const auto& cam : cameras)
+                {
+                    auto visibility = getObjectAttribute(cam->getName(), "hide");
+                    if (visibility.size() and !visibility[0].as<bool>())
+                        visibleCameras.push_back(cam->getName());
+                }
+
+                // Keep the same set of cameras visible
+                for (const auto& cam : cameras)
+                    setObjectAttribute(cam->getName(), "hide", {1});
+
+                for (const auto& camName : visibleCameras)
+                    setObjectAttribute(camName, "hide", {0});
+
+                // Ensure the selected camera is visible...
+                setObjectAttribute(camera->getName(), "hide", {0});
+
+                _camerasColorized = false;
+                setObjectAttribute(_camera->getName(), "frame", {0});
+                setObjectAttribute(_camera->getName(), "displayCalibration", {0});
+
+                _camera = camera;
+
+                setObjectAttribute(_camera->getName(), "frame", {1});
+                setObjectAttribute(_camera->getName(), "displayCalibration", {1});
+                showAllCalibrationPoints(static_cast<Camera::CalibrationPointsVisibility>(_showCalibrationPoints));
+            }
         }
-        ImGui::EndChild();
 
-        // Applying options which should not be visible inside the GUI
-        hideOtherCameras(_hideCameras);
-        colorizeCameraWireframes(_camerasColorized);
-
-        // Joystick can be updated independently from the mouse position
-        processJoystickState();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s", camera->getAlias().c_str());
     }
-    else
+    ImGui::EndChild();
+
+    //
+    // Draw the selected camera and some display parameters
+    //
+    ImGui::SameLine();
+    ImGui::BeginChild("Calibration", ImVec2(0, availableSize.y), true);
+
+    if (ImGui::Button("Calibrate camera"))
+        doCalibration();
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Calibrate the selected camera\n(C while hovering the view)");
+    ImGui::SameLine();
+
+    if (ImGui::Button("Revert camera"))
+        revertCalibration();
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Revert the selected camera to its previous "
+                          "calibration\n(Ctrl + Z while hovering the view)");
+    ImGui::SameLine();
+
+    if (ImGui::Button("Reset camera") && _camera)
     {
-        releaseJoystick();
+        auto cameraName = _camera->getName();
+        setObjectAttribute(cameraName, "eye", {2.0, 2.0, 2.0});
+        setObjectAttribute(cameraName, "target", {0.0, 0.0, 0.0});
+        setObjectAttribute(cameraName, "up", {0.0, 0.0, 1.0});
+    }
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Reset the camera to default values, useful when lost in 3D space");
+
+    ImGui::Checkbox("Hide other cameras", &_hideCameras);
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Hide all but the selected camera\n(H while hovering the view)");
+    ImGui::SameLine();
+
+    if (ImGui::Checkbox("Show targets", &_showCalibrationPoints))
+        showAllCalibrationPoints(static_cast<Camera::CalibrationPointsVisibility>(_showCalibrationPoints));
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Show the target positions for the calibration "
+                          "points\n(A while hovering the view)");
+    ImGui::SameLine();
+
+    static bool showAllCamerasPoints = false;
+    if (ImGui::Checkbox("Show points everywhere", &showAllCamerasPoints))
+        showAllCamerasCalibrationPoints();
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Show this camera's calibration points in other "
+                          "cameras\n(O while hovering the view)");
+    ImGui::SameLine();
+
+    // Colorization of the wireframe rendering. Applied after the GUI camera
+    // rendering to keep cameras in gui white
+    ImGui::Checkbox("Colorize wireframes", &_camerasColorized);
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Activate colorization of the wireframe rendering, green "
+                          "for selected camera and magenta for the other "
+                          "cameras\n(V while hovering the view)");
+
+    if (_camera != nullptr)
+    {
+        Values size;
+        _camera->getAttribute("size", size);
+
+        int sizeX = size[0].as<int>();
+        int sizeY = size[1].as<int>();
+
+        int w = ImGui::GetWindowWidth() - 2 * leftMargin;
+        int h = sizeX != 0 ? w * sizeY / sizeX : 1;
+
+        _camWidth = w;
+        _camHeight = h;
+
+        Values reprojectionError;
+        _camera->getAttribute("getReprojectionError", reprojectionError);
+        ImGui::Text("Current camera: %s - Reprojection error: %f", _camera->getAlias().c_str(), reprojectionError[0].as<float>());
+
+        ImGui::Image((void*)(intptr_t)_camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly))
+            _noMove = true;
+        else
+            _noMove = false;
+
+        processKeyEvents();
+        processMouseEvents();
+    }
+    ImGui::EndChild();
+
+    // Applying options which should not be visible inside the GUI
+    hideOtherCameras(_hideCameras);
+    colorizeCameraWireframes(_camerasColorized);
+
+    // Joystick can be updated independently from the mouse position
+    processJoystickState();
+
+    releaseJoystick();
+}
+
+/*************/
+void GuiCamera::update()
+{
+    if (_rendered)
+    {
+        _rendered = false;
+        return;
     }
 }
 
@@ -502,7 +523,8 @@ void GuiCamera::processKeyEvents()
         else if (io.KeyCtrl)
             delta = 10.f;
 
-        // Setting the camera locally is needed due to async nature of setObjectAttribute
+        // Setting the camera locally is needed due to async nature of
+        // setObjectAttribute
         if (io.KeysDownDuration[ImGui::GetKeyIndex(ImGuiKey_RightArrow)] > 0.0)
             setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {delta, 0});
         if (io.KeysDownDuration[ImGui::GetKeyIndex(ImGuiKey_LeftArrow)] > 0.0)
@@ -540,7 +562,8 @@ void GuiCamera::processMouseEvents()
                 if (position.size() == 3)
                     setObjectAttribute(_camera->getName(), "removeCalibrationPoint", {position[0], position[1], position[2]});
             }
-            else if (io.KeyShift) // Define the screenpoint corresponding to the selected calibration point
+            else if (io.KeyShift) // Define the screenpoint corresponding to the
+                                  // selected calibration point
                 setObjectAttribute(_camera->getName(), "setCalibrationPoint", {mousePos.x * 2.f - 1.f, mousePos.y * 2.f - 1.f});
             else if (io.MouseClicked[0]) // Add a new calibration point
             {
@@ -584,7 +607,8 @@ void GuiCamera::processMouseEvents()
         }
     }
 
-    // This handles the mouse capture even when the mouse goes outside the view widget, which controls are defined next
+    // This handles the mouse capture even when the mouse goes outside the view
+    // widget, which controls are defined next
     static bool viewCaptured = false;
     if (io.MouseDownDuration[2] > 0.0)
     {
@@ -605,7 +629,8 @@ void GuiCamera::processMouseEvents()
             float dx = io.MouseDelta.x;
             float dy = io.MouseDelta.y;
 
-            // We reset the up vector. Not ideal, but prevent the camera from being unusable.
+            // We reset the up vector. Not ideal, but prevent the camera from being
+            // unusable.
             setObjectAttribute(_camera->getName(), "up", {0.0, 0.0, 1.0});
             if (_camera != _guiCamera)
             {
@@ -674,4 +699,4 @@ void GuiCamera::drawVirtualProbes()
 
 #pragma clang diagnostic pop
 
-} // end of namespace
+} // namespace Splash

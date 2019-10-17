@@ -12,108 +12,114 @@ namespace Splash
 /*************/
 void GuiWarp::render()
 {
-    if (ImGui::CollapsingHeader(_name.c_str()))
+    auto objects = getObjectsPtr(getObjectsOfType("warp"));
+    auto warps = vector<shared_ptr<Warp>>();
+
+    std::transform(objects.cbegin(), objects.cend(), std::back_inserter(warps), [](const auto& warp) { return dynamic_pointer_cast<Warp>(warp); });
+    _currentWarpName = _currentWarp < warps.size() ? warps[_currentWarp]->getName() : "";
+
+    auto leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
+
+    ImGui::BeginChild("Warps", ImVec2(ImGui::GetWindowWidth() * 0.25, ImGui::GetWindowWidth() * 0.67), true);
+    ImGui::Text("Warp list");
+    for (uint32_t i = 0; i < warps.size(); ++i)
     {
-        auto objects = getObjectsPtr(getObjectsOfType("warp"));
-        auto warps = vector<shared_ptr<Warp>>();
-        for (auto& object : objects)
-            warps.push_back(dynamic_pointer_cast<Warp>(object));
+        auto& warp = warps[i];
 
-        _currentWarpName = warps[_currentWarp]->getName();
-
-        double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
-
-        ImGui::BeginChild("Warps", ImVec2(ImGui::GetWindowWidth() * 0.25, ImGui::GetWindowWidth() * 0.67), true);
-        ImGui::Text("Select a warp:");
-        for (uint32_t i = 0; i < warps.size(); ++i)
+        // We need to update the underlying camera
+        auto linkedObj = warp->getLinkedObjects();
+        for (auto& weakLinkedObject : linkedObj)
         {
-            auto& warp = warps[i];
-
-            // We need to update the underlying camera
-            auto linkedObj = warp->getLinkedObjects();
-            for (auto& weakLinkedObject : linkedObj)
-            {
-                auto linkedObject = weakLinkedObject.lock();
-                if (!linkedObject)
-                    continue;
-
-                if (linkedObject->getType() == "camera")
-                    dynamic_pointer_cast<Camera>(linkedObject)->render();
-            }
-
-            if (_currentWarp == i)
-                setObjectAttribute(warp->getName(), "showControlLattice", {1});
-            else
-                setObjectAttribute(warp->getName(), "showControlLattice", {0});
-
-            warp->render();
-
-            auto warpSpec = warp->getSpec();
-            if (warpSpec.width == 0 || warpSpec.height == 0)
+            auto linkedObject = weakLinkedObject.lock();
+            if (!linkedObject)
                 continue;
 
-            int w = ImGui::GetWindowWidth() - 4 * leftMargin;
+            if (linkedObject->getType() == "camera")
+                dynamic_pointer_cast<Camera>(linkedObject)->render();
+        }
+
+        if (_currentWarp == i)
+            setObjectAttribute(warp->getName(), "showControlLattice", {1});
+        else
+            setObjectAttribute(warp->getName(), "showControlLattice", {0});
+
+        warp->render();
+
+        auto warpSpec = warp->getSpec();
+        if (warpSpec.width == 0 || warpSpec.height == 0)
+            continue;
+
+        int w = ImGui::GetWindowWidth() - 4 * leftMargin;
+        int h = w * warpSpec.height / warpSpec.width;
+
+        if (ImGui::ImageButton((void*)(intptr_t)warp->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
+            _currentWarp = i;
+
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s", warp->getAlias().c_str());
+    }
+    ImGui::EndChild();
+
+    ImGui::SameLine();
+    ImGui::BeginChild("Configure warp", ImVec2(0, 0), true);
+    if (_currentWarp < warps.size())
+    {
+        auto& warp = warps[_currentWarp];
+
+        Values values;
+        ImGui::PushID(warp->getName().c_str());
+
+        warp->getAttribute("patchResolution", values);
+        if (ImGui::InputInt("patchResolution", static_cast<int*>(values[0].data()), 1, 32, ImGuiInputTextFlags_EnterReturnsTrue))
+            setObjectAttribute(warp->getName(), "patchResolution", {values[0].as<int>()});
+
+        warp->getAttribute("patchSize", values);
+        vector<int> tmp;
+        tmp.push_back(values[0].as<int>());
+        tmp.push_back(values[1].as<int>());
+
+        if (ImGui::InputInt2("patchSize", tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
+            setObjectAttribute(warp->getName(), "patchSize", {tmp[0], tmp[1]});
+
+        if (const auto texture = warp->getTexture())
+        {
+            auto warpSpec = warp->getSpec();
+            int w = ImGui::GetWindowWidth() - 2 * leftMargin;
             int h = w * warpSpec.height / warpSpec.width;
 
-            if (ImGui::ImageButton((void*)(intptr_t)warp->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
-                _currentWarp = i;
+            ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(texture->getTexId())), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
 
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("%s", warp->getAlias().c_str());
-        }
-        ImGui::EndChild();
-
-        ImGui::SameLine();
-        ImGui::BeginChild("Configure warp", ImVec2(0, ImGui::GetWindowWidth() * 0.67), false);
-        if (_currentWarp < warps.size())
-        {
-            auto& warp = warps[_currentWarp];
-
-            Values values;
-            ImGui::PushID(warp->getName().c_str());
-
-            warp->getAttribute("patchResolution", values);
-            if (ImGui::InputInt("patchResolution", (int*)values[0].data(), 1, 32, ImGuiInputTextFlags_EnterReturnsTrue))
-                setObjectAttribute(warp->getName(), "patchResolution", {values[0].as<int>()});
-
-            warp->getAttribute("patchSize", values);
-            vector<int> tmp;
-            tmp.push_back(values[0].as<int>());
-            tmp.push_back(values[1].as<int>());
-
-            if (ImGui::InputInt2("patchSize", tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
-                setObjectAttribute(warp->getName(), "patchSize", {tmp[0], tmp[1]});
-
-            if (auto texture = warp->getTexture())
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly))
             {
-                auto warpSpec = warp->getSpec();
-                int w = ImGui::GetWindowWidth() - 2 * leftMargin;
-                int h = w * warpSpec.height / warpSpec.width;
-
-                ImGui::Image((void*)(intptr_t)texture->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
-
-                if (ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly))
-                {
-                    _noMove = true;
-                    processKeyEvents(warp);
-                    processMouseEvents(warp, w, h);
-                }
-                else
-                {
-                    _noMove = false;
-                }
+                _noMove = true;
+                processKeyEvents(warp);
+                processMouseEvents(warp, w, h);
             }
-            ImGui::PopID();
+            else
+            {
+                _noMove = false;
+            }
         }
-        ImGui::EndChild();
+        ImGui::PopID();
     }
-    else
+    ImGui::EndChild();
+
+    _rendered = true;
+}
+
+/*************/
+void GuiWarp::update()
+{
+    if (_rendered)
     {
-        if (_currentWarpName != "")
-        {
-            setObjectAttribute(_currentWarpName, "showControlLattice", {0});
-            _currentWarpName = "";
-        }
+        _rendered = false;
+        return;
+    }
+
+    if (_currentWarpName != "")
+    {
+        setObjectAttribute(_currentWarpName, "showControlLattice", {0});
+        _currentWarpName = "";
     }
 }
 
@@ -241,4 +247,4 @@ void GuiWarp::processMouseEvents(const shared_ptr<Warp>& warp, int warpWidth, in
     }
 }
 
-} // end of namespace
+} // namespace Splash

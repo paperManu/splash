@@ -40,11 +40,13 @@ class GuiWarp : public GuiWidget
     {
     }
     void render() final;
+    void update() final;
     int updateWindowFlags() final;
 
   private:
     bool _noMove{false};
 
+    bool _rendered{false};
     uint32_t _currentWarp{0};
     std::string _currentWarpName{""};
     int _currentControlPointIndex{0};

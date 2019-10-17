@@ -1328,7 +1328,7 @@ void World::registerAttributes()
             _configFilename = args[0].as<string>();
 
         addTask([=]() {
-            Log::get() << "Saving configuration" << Log::endl;
+            Log::get() << "Saving configuration to " << _configFilename << Log::endl;
             saveConfig();
         });
         return true;
@@ -1339,7 +1339,7 @@ void World::registerAttributes()
         [&](const Values& args) {
             _projectFilename = args[0].as<string>();
             addTask([=]() {
-                Log::get() << "Saving partial configuration to " << _projectFilename << Log::endl;
+                Log::get() << "Saving project to " << _projectFilename << Log::endl;
                 saveProject();
             });
             return true;

@@ -43,6 +43,8 @@ class GuiFilters : public GuiWidget
   private:
     std::map<std::string, int> _meshTypeIndex;
     std::list<std::shared_ptr<GraphObject>> getSceneFilters();
+
+    std::string _selectedFilterName;
 };
 
 } // end of namespace

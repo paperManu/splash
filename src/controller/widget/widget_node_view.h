@@ -27,6 +27,12 @@
 
 #include "./widget.h"
 
+#include <array>
+#include <string>
+#include <vector>
+
+#include <imgui.h>
+
 namespace Splash
 {
 
@@ -46,12 +52,27 @@ class GuiNodeView : public GuiWidget
     std::vector<std::string> _objectTypes{};
 
     // Node render settings
-    std::vector<int> _nodeSize{200, 30};
-    std::vector<int> _viewSize{640, 360};
+    bool _viewNonSavableObjects{false};
+    std::vector<int> _nodeSize{160, 32};
     std::vector<int> _viewShift{0, 0};
     std::map<std::string, std::vector<float>> _nodePositions;
 
+    // Temporary variables used for ImGui
+    bool _firstRender{true};
+    int _comboObjectIndex{0};
+    ImVec2 _graphSize{0, 0};
+
+    /**
+     * Render the given node
+     * \param name Node name
+     */
     void renderNode(const std::string& name);
+
+    /**
+     * Initialize node positions
+     * \param objectNames Names of the objects nodes to initialize
+     */
+    void initializeNodePositions(const std::vector<std::string>& objectNames);
 };
 
 } // end of namespace

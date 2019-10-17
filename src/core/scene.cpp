@@ -251,12 +251,12 @@ void Scene::render()
         map<GraphObject::Priority, vector<shared_ptr<GraphObject>>> objectList{};
         {
             lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-            for (auto& obj : _objects)
+            for (auto obj = _objects.cbegin(); obj != _objects.cend(); ++obj)
             {
                 // We also run all pending tasks for every object
-                obj.second->runTasks();
+                obj->second->runTasks();
 
-                auto priority = obj.second->getRenderingPriority();
+                auto priority = obj->second->getRenderingPriority();
                 if (priority == GraphObject::Priority::NO_RENDER)
                     continue;
 
@@ -270,7 +270,7 @@ void Scene::render()
                         continue;
                 }
 
-                listIt->second.push_back(obj.second);
+                listIt->second.push_back(obj->second);
             }
         }
 

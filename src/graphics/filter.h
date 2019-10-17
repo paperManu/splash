@@ -108,12 +108,6 @@ class Filter : public Texture
     void setKeepRatio(bool keepRatio);
 
     /**
-     * \brief Filters should always be saved as it holds user-modifiable parameters
-     * \param savable Needed for heritage reasons, no effect whatsoever
-     */
-    void setSavable(bool /*savable*/) override { _savable = true; }
-
-    /**
      * \brief Render the filter
      */
     void render() override;

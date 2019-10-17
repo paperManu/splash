@@ -57,7 +57,7 @@ struct FilesystemFile
     bool isDir{false};
 };
 
-bool FileSelectorParseDir(std::string& path, std::vector<FilesystemFile>& list, const std::vector<std::string>& extensions, bool showNormalFiles);
+bool FileSelectorParseDir(const std::string& path, std::vector<FilesystemFile>& list, const std::vector<std::string>& extensions, bool showNormalFiles);
 bool FileSelector(const std::string& label, std::string& path, bool& cancelled, const std::vector<std::string>& extensions, bool showNormalFiles = true);
 
 /**
@@ -74,14 +74,27 @@ bool InputText(const char* label, std::string& str, ImGuiInputTextFlags flags = 
 class GuiWidget : public ControllerObject
 {
   public:
-    GuiWidget(Scene* scene, std::string name = "");
+    GuiWidget(Scene* scene, const std::string& name = "");
     virtual ~GuiWidget() override {}
+
+    /**
+     * Render the widget
+     */
     virtual void render() override {}
+
+    /**
+     * Get the window flags as updated by the widget
+     */
     virtual int updateWindowFlags() { return 0; }
+
+    /**
+     * Send joystick information to the widget
+     * \param axes Vector containing axes values
+     * \param buttons Vector containingi buttons statuses
+     */
     virtual void setJoystick(const std::vector<float>& /*axes*/, const std::vector<uint8_t>& /*buttons*/) {}
 
   protected:
-    std::string _name{""};
     Scene* _scene;
     std::string _fileSelectorTarget{""};
     std::list<std::string> _hiddenAttributes{"savable"};
