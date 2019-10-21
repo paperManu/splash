@@ -68,52 +68,52 @@ def getSplashOutputList(scene, context):
 
 
 class SplashSettings(PropertyGroup):
-    outputActive = BoolProperty(
+    outputActive : BoolProperty(
         name="Splash output active",
         description="True if data is being sent to Splash",
         options={'SKIP_SAVE'},
         default=False
     )
-    sendTexture = BoolProperty(
+    sendTexture : BoolProperty(
         name="Texture is sent if active",
         description="Set to true to send the texture along with the mesh",
         default=False
     )
-    targetObject = StringProperty(
+    targetObject : StringProperty(
         name="Object name",
         description="Name of the object being sent",
         default="", maxlen=1024,
     )
-    targetNames = EnumProperty(
+    targetNames : EnumProperty(
         name="Targets",
         description="Current mesh outputs",
         items=getSplashOutputList
     )
-    outputPathPrefix = StringProperty(
+    outputPathPrefix : StringProperty(
         name="Splash output path prefix",
         description="Path prefix to the shared memory where the selected object is sent",
         default="/tmp/blenderToSplash", maxlen=1024, subtype="FILE_PATH",
     )
-    updatePeriodObject = FloatProperty(
+    updatePeriodObject : FloatProperty(
         name="Update period in Object mode",
         description="Time between updates of the shared memory while in Object mode",
         subtype='TIME',
         default=0.5,
         min=0.01, max=1.0,
     )
-    updatePeriodEdit = FloatProperty(
+    updatePeriodEdit : FloatProperty(
         name="Update period in Edit mode",
         description="Time between updates of the shared memory while in Edit mode",
         subtype='TIME',
         default=0.05,
         min=0.01, max=1.0,
     )
-    textureName = EnumProperty(
+    textureName : EnumProperty(
         name="Images",
         description="Available images to send",
         items=getImageList
     )
-    updatePeriodTexture = FloatProperty(
+    updatePeriodTexture : FloatProperty(
         name="Update period for the texture",
         description="Time between updates of the texture",
         subtype='TIME',
@@ -170,7 +170,7 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.types.Scene.splash = PointerProperty(type=SplashSettings)
+    bpy.types.Scene.splash : PointerProperty(type=SplashSettings)
 
     import nodeitems_utils
     nodeitems_utils.register_node_categories("SPLASH_NODES", nodes.node_categories)

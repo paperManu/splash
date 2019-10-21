@@ -120,7 +120,7 @@ class SplashCameraNode(SplashBaseNode):
         'SplashObjectNodeType',
     ]
 
-    sp_objectProperty = bpy.props.StringProperty(name="Source object",
+    sp_objectProperty : bpy.props.StringProperty(name="Source object",
                                                  description="Object holding the camera",
                                                  default="",
                                                  maxlen=1024)
@@ -231,7 +231,7 @@ class SplashImageNode(SplashBaseNode):
         ("image_ffmpeg", "video", "Video file"),
         ("image_shmdata", "shared memory", "Video through shared memory")
     ]
-    sp_imageTypeProperty = bpy.props.EnumProperty(name="Type",
+    sp_imageTypeProperty : bpy.props.EnumProperty(name="Type",
                                                   description="Image source type",
                                                   items=sp_imageTypes,
                                                   default="image",
@@ -304,7 +304,7 @@ class SplashMeshNode(SplashBaseNode):
         ("mesh", "OBJ file", "Mesh from OBJ file"),
         ("mesh_shmdata", "Shared memory", "Mesh from shared memory")
     ]
-    sp_meshTypeProperty = bpy.props.EnumProperty(name="Type",
+    sp_meshTypeProperty : bpy.props.EnumProperty(name="Type",
                                                  description="Mesh source type",
                                                  items=sp_meshTypes,
                                                  default="mesh",
@@ -391,7 +391,7 @@ class SplashObjectNode(SplashBaseNode):
         ("1", "front", "Frontface culling"),
         ("2", "back", "Backface culling")
     ]
-    sp_cullingModeProperty = bpy.props.EnumProperty(name="Culling",
+    sp_cullingModeProperty : bpy.props.EnumProperty(name="Culling",
                                                     description="Face winding culling",
                                                     items=sp_cullingModes,
                                                     default="0")
@@ -433,7 +433,7 @@ class SplashProbeNode(SplashBaseNode):
         ("0", "equirectangular", "Equirectangular"),
         ("1", "spherical", "Spherical")
     ]
-    sp_projectionTypeProperty = bpy.props.EnumProperty(name="Projection",
+    sp_projectionTypeProperty : bpy.props.EnumProperty(name="Projection",
                                                        description="Projection type",
                                                        items=sp_projectionType,
                                                        default="0")
