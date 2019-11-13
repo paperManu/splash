@@ -113,6 +113,7 @@ void Image_V4L2::captureThreadFunc()
             {
                 unique_lock<shared_mutex> lockWrite(_writeMutex);
                 result = ::read(_deviceFd, _bufferImage->data(), _spec.rawSize());
+                _imageUpdated = true;
             }
 
             if (result < 0)
@@ -121,8 +122,9 @@ void Image_V4L2::captureThreadFunc()
                 return;
             }
 
-            _imageUpdated = true;
             updateTimestamp();
+            if (!_isConnectedToRemote)
+                update();
         }
     }
     else
@@ -177,11 +179,13 @@ void Image_V4L2::captureThreadFunc()
                         auto& imageBuffer = _imageBuffers[buffer.index];
                         unique_lock<shared_mutex> lockWrite(_writeMutex);
                         _bufferImage = make_unique<ImageBuffer>(imageBuffer->getSpec(), imageBuffer->data());
+                        _imageUpdated = true;
                     }
                     else if (_ioMethod == V4L2_MEMORY_USERPTR)
                     {
                         unique_lock<shared_mutex> lockWrite(_writeMutex);
                         _bufferImage.swap(_imageBuffers[buffer.index]);
+                        _imageUpdated = true;
                     }
 
                     buffer.m.userptr = reinterpret_cast<unsigned long>(_imageBuffers[buffer.index]->data());
@@ -194,8 +198,9 @@ void Image_V4L2::captureThreadFunc()
                         return;
                     }
 
-                    _imageUpdated = true;
                     updateTimestamp();
+                    if (!_isConnectedToRemote)
+                        update();
                 }
             }
 

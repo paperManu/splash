@@ -61,7 +61,7 @@ class Image : public BufferObject
     virtual ~Image() override;
 
     /**
-     * No copy constructor, but a copy operator
+     * No copy constructor
      */
     Image(const Image&) = delete;
     Image& operator=(const Image&) = delete;

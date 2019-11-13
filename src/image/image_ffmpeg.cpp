@@ -760,12 +760,17 @@ void Image_FFmpeg::videoDisplayLoop()
 
                 _elapsedTime = timedFrame.timing;
 
-                lock_guard<shared_mutex> lock(_writeMutex);
-                if (!_bufferImage)
-                    _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
-                std::swap(_bufferImage, timedFrame.frame);
-                _imageUpdated = true;
+                {
+                    lock_guard<shared_mutex> lock(_writeMutex);
+                    if (!_bufferImage)
+                        _bufferImage = make_unique<ImageBuffer>();
+                    std::swap(_bufferImage, timedFrame.frame);
+                    _imageUpdated = true;
+                }
+
                 updateTimestamp(_bufferImage->getSpec().timestamp);
+                if (!_isConnectedToRemote)
+                    update();
             }
 
             localQueue.pop_front();

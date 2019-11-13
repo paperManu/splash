@@ -251,12 +251,17 @@ bool Image::readFile(const string& filename)
     memcpy(img.data(), rawImage, w * h * 4);
     stbi_image_free(rawImage);
 
-    lock_guard<Spinlock> lock(_readMutex);
-    if (!_bufferImage)
-        _bufferImage = make_unique<ImageBuffer>();
-    std::swap(*_bufferImage, img);
-    _imageUpdated = true;
+    {
+        lock_guard<Spinlock> lock(_readMutex);
+        if (!_bufferImage)
+            _bufferImage = make_unique<ImageBuffer>();
+        std::swap(*_bufferImage, img);
+        _imageUpdated = true;
+    }
+
     updateTimestamp();
+    if (!_isConnectedToRemote)
+        update();
 
     return true;
 }
