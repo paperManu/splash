@@ -123,9 +123,9 @@ TEST_CASE("Testing Value serialization")
 
     CHECK(Serial::getSize(Value(42)) == sizeof(Value::Type) + sizeof(int64_t));
     CHECK(Serial::getSize(Value(2.71828f)) == sizeof(Value::Type) + sizeof(double));
-    CHECK(Serial::getSize(Value(testString)) == sizeof(Value::Type) + sizeof(size_t) + testString.size() * sizeof(char));
+    CHECK(Serial::getSize(Value(testString)) == sizeof(Value::Type) + sizeof(uint32_t) + testString.size() * sizeof(char));
     CHECK(Serial::getSize(Value(Values({3.14159f, 42, testString}))) ==
-          sizeof(Value::Type) + sizeof(size_t) + sizeof(Value::Type) * 3 + sizeof(double) + sizeof(int64_t) + sizeof(size_t) + sizeof(char) * testString.size());
+          sizeof(Value::Type) + sizeof(uint32_t) + sizeof(Value::Type) * 3 + sizeof(double) + sizeof(int64_t) + sizeof(uint32_t) + sizeof(char) * testString.size());
 
     {
         vector<uint8_t> buffer;
@@ -151,9 +151,9 @@ TEST_CASE("Testing Value serialization")
         auto bufferPtr = buffer.data();
         CHECK(*reinterpret_cast<Value::Type*>(bufferPtr) == Value::Type::string);
         bufferPtr += sizeof(Value::Type);
-        auto stringLength = *reinterpret_cast<size_t*>(bufferPtr);
+        auto stringLength = *reinterpret_cast<uint32_t*>(bufferPtr);
         CHECK(stringLength == testString.size());
-        bufferPtr += sizeof(size_t);
+        bufferPtr += sizeof(uint32_t);
         CHECK(string(reinterpret_cast<char*>(bufferPtr), stringLength) == testString);
     }
 
@@ -164,8 +164,8 @@ TEST_CASE("Testing Value serialization")
         auto bufferPtr = buffer.data();
         CHECK(*reinterpret_cast<Value::Type*>(bufferPtr) == Value::Type::values);
         bufferPtr += sizeof(Value::Type);
-        CHECK(*reinterpret_cast<size_t*>(bufferPtr) == data.size());
-        bufferPtr += sizeof(size_t);
+        CHECK(*reinterpret_cast<uint32_t*>(bufferPtr) == data.size());
+        bufferPtr += sizeof(uint32_t);
         CHECK(*reinterpret_cast<Value::Type*>(bufferPtr) == Value::Type::integer);
         bufferPtr += sizeof(Value::Type);
         CHECK(*reinterpret_cast<int64_t*>(bufferPtr) == data.as<Values>()[0].as<int64_t>());

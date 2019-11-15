@@ -39,7 +39,7 @@ namespace detail
 template <class T>
 struct getSizeHelper<T, typename std::enable_if<std::is_same<T, Value::Buffer>::value>::type>
 {
-    static size_t value(const T& obj) { return sizeof(size_t) + obj.size(); }
+    static uint32_t value(const T& obj) { return sizeof(uint32_t) + obj.size(); }
 };
 
 template <class T>
@@ -47,7 +47,7 @@ struct serializeHelper<T, typename std::enable_if<std::is_same<T, Value::Buffer>
 {
     static void apply(const T& obj, std::vector<uint8_t>::iterator& it)
     {
-        auto size = obj.size();
+        auto size = static_cast<uint32_t>(obj.size());
         serializer(size, it);
         auto data = reinterpret_cast<const uint8_t*>(obj.data());
         std::copy(data, data + size, it);
@@ -60,8 +60,8 @@ struct deserializeHelper<T, typename std::enable_if<std::is_same<T, Value::Buffe
 {
     static T apply(std::vector<uint8_t>::const_iterator& it)
     {
-        auto size = deserializer<size_t>(it);
-        T obj(size);
+        auto size = deserializer<uint32_t>(it);
+        T obj(static_cast<size_t>(size));
         auto data = reinterpret_cast<uint8_t*>(obj.data());
         std::copy(it, it + size, data);
         it += size;
@@ -74,9 +74,9 @@ struct deserializeHelper<T, typename std::enable_if<std::is_same<T, Value::Buffe
 template <class T>
 struct getSizeHelper<T, typename std::enable_if<std::is_same<T, Value>::value>::type>
 {
-    static size_t value(const Value& obj)
+    static uint32_t value(const Value& obj)
     {
-        size_t acc = sizeof(Value::Type);
+        uint32_t acc = sizeof(Value::Type);
         auto objType = obj.getType();
 
         if (objType == Value::Type::string)

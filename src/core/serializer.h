@@ -21,6 +21,7 @@
  * @serializer.h
  * The serializer and deserializer methods
  * This has been inspired a lot by https://github.com/motonacciu/meta-serialization
+ * For the sake of supporting multiple platforms, size_t is converted to uint32_t
  */
 
 #ifndef SPLASH_SERIALIZER_H
@@ -89,7 +90,7 @@ struct is_specialisation_of<Template, Template<Args...>> : std::true_type
 
 /*************/
 template <class T>
-size_t getSize(const T& obj);
+uint32_t getSize(const T& obj);
 
 namespace detail
 {
@@ -100,52 +101,49 @@ struct getSizeHelper;
 template <class T>
 struct getSizeHelper<T, typename std::enable_if<std::is_arithmetic<T>::value || std::is_enum<T>::value>::type>
 {
-    static size_t value(const T& obj) { return sizeof(obj); };
+    static uint32_t value(const T& obj) { return sizeof(obj); };
 };
 
 template <class T>
 struct getSizeHelper<T, typename std::enable_if<std::is_same<T, std::string>::value>::type>
 {
-    static size_t value(const T& obj) { return sizeof(size_t) + obj.size() * sizeof(char); }
+    static uint32_t value(const T& obj) { return sizeof(uint32_t) + obj.size() * sizeof(char); }
 };
 
 template <class T>
 struct getSizeHelper<T, typename std::enable_if<is_specialisation_of<std::chrono::time_point, T>::value>::type>
 {
-    static size_t value(const T& /*obj*/)
-    {
-        return sizeof(int64_t);
-    }
+    static uint32_t value(const T& /*obj*/) { return sizeof(int64_t); }
 };
 
 template <class T>
 struct getSizeHelper<T, typename std::enable_if<isIterable<T>::value && !std::is_same<T, std::string>::value>::type>
 {
-    static size_t value(const T& obj)
+    static uint32_t value(const T& obj)
     {
-        return std::accumulate(obj.cbegin(), obj.cend(), sizeof(size_t), [](const size_t& acc, const auto& i) { return acc + getSize(i); });
+        return std::accumulate(obj.cbegin(), obj.cend(), sizeof(uint32_t), [](const uint32_t& acc, const auto& i) { return acc + getSize(i); });
     }
 };
 
 template <class T>
-inline size_t getTupleSize(const T& obj, int_<0>)
+inline uint32_t getTupleSize(const T& obj, int_<0>)
 {
-    constexpr size_t idx = std::tuple_size<T>::value - 1;
+    constexpr uint32_t idx = std::tuple_size<T>::value - 1;
     return getSize(std::get<idx>(obj));
 }
 
 template <class T, size_t pos>
-inline size_t getTupleSize(const T& obj, int_<pos>)
+inline uint32_t getTupleSize(const T& obj, int_<pos>)
 {
     constexpr size_t idx = std::tuple_size<T>::value - pos - 1;
-    size_t acc = getSize(std::get<idx>(obj));
+    uint32_t acc = getSize(std::get<idx>(obj));
     return acc + getTupleSize(obj, int_<pos - 1>());
 }
 
 template <class T>
 struct getSizeHelper<T, typename std::enable_if<is_specialisation_of<std::tuple, T>::value>::type>
 {
-    static size_t value(const T& obj)
+    static uint32_t value(const T& obj)
     {
         constexpr size_t tupleSize = std::tuple_size<T>::value - 1;
         return getTupleSize(obj, int_<tupleSize>());
@@ -160,7 +158,7 @@ struct getSizeHelper<T, typename std::enable_if<is_specialisation_of<std::tuple,
  * \return Return the expected serialized size
  */
 template <class T>
-inline size_t getSize(const T& obj)
+inline uint32_t getSize(const T& obj)
 {
     return detail::getSizeHelper<T>::value(obj);
 }
@@ -204,7 +202,7 @@ struct serializeHelper<T, typename std::enable_if<isIterable<T>::value>::type>
 {
     static void apply(const T& obj, std::vector<uint8_t>::iterator& it)
     {
-        serializer(obj.size(), it);
+        serializer(static_cast<uint32_t>(obj.size()), it);
         for (const auto& cur : obj)
             serializer(cur, it);
     }
@@ -251,8 +249,8 @@ inline void serializer(const T& obj, std::vector<uint8_t>::iterator& it)
 template <class T>
 inline void serialize(const T& obj, std::vector<uint8_t>& buffer)
 {
-    size_t offset = buffer.size();
-    size_t size = getSize(obj);
+    uint32_t offset = buffer.size();
+    uint32_t size = getSize(obj);
     buffer.resize(offset + size);
 
     auto it = buffer.begin() + offset;
@@ -286,8 +284,8 @@ struct deserializeHelper<T, typename std::enable_if<std::is_same<T, std::string>
 {
     static T apply(std::vector<uint8_t>::const_iterator& it)
     {
-        auto size = deserializer<size_t>(it);
-        auto obj = T(size, ' ');
+        auto size = deserializer<uint32_t>(it);
+        auto obj = T(static_cast<size_t>(size), ' ');
         for (uint32_t i = 0; i < size; ++i)
             obj[i] = deserializer<typename T::value_type>(it);
         return obj;
@@ -311,8 +309,8 @@ struct deserializeHelper<T, typename std::enable_if<isIterable<T>::value && !std
 {
     static T apply(std::vector<uint8_t>::const_iterator& it)
     {
-        auto size = deserializer<size_t>(it);
-        auto obj = T(size);
+        auto size = deserializer<uint32_t>(it);
+        auto obj = T(static_cast<size_t>(size));
         auto objIt = obj.begin();
         for (uint32_t i = 0; i < size; ++i)
         {
