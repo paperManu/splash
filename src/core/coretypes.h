@@ -22,7 +22,7 @@
  * A few, mostly basic, types
  */
 
-#include "config.h"
+#include "./config.h"
 
 #define SPLASH
 #define SPLASH_GL_DEBUG true
@@ -33,16 +33,13 @@
 #define SPLASH_FILE_CONFIGURATION "splashConfiguration"
 #define SPLASH_FILE_PROJECT "splashProject"
 
-#include <ostream>
+#include <iostream>
 #include <execinfo.h>
 
-#include "./graphics/gl_window.h"
-#include "./utils/log.h"
-#include "./core/resizable_array.h"
-#include "./core/serialized_object.h"
-#include "./core/spinlock.h"
-#include "./utils/timer.h"
-#include "./core/value.h"
+// clang-format off
+#include "./glad/glad.h"
+#include <GLFW/glfw3.h>
+// clang-format on
 
 #ifndef SPLASH_CORETYPES_H
 #define SPLASH_CORETYPES_H

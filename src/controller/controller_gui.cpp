@@ -1096,14 +1096,13 @@ void Gui::initImGui(int width, int height)
     glGetProgramiv(_imGuiShaderHandle, GL_LINK_STATUS, &status);
     if (status == GL_FALSE)
     {
-        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
+        Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
 
         GLint length;
         glGetProgramiv(_imGuiShaderHandle, GL_INFO_LOG_LENGTH, &length);
-        char* log = (char*)malloc(length);
-        glGetProgramInfoLog(_imGuiShaderHandle, length, &length, log);
-        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
-        free(log);
+        auto log = string(static_cast<size_t>(length), '0');
+        glGetProgramInfoLog(_imGuiShaderHandle, length, &length, log.data());
+        Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error log: \n" << log << Log::endl;
 
         return;
     }

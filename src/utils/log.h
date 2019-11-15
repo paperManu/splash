@@ -39,8 +39,8 @@
 
 #include "./config.h"
 
-#include "./core/coretypes.h"
 #include "./core/spinlock.h"
+#include "./core/value.h"
 
 #define SPLASH_LOG_FILE "/var/log/splash.log"
 

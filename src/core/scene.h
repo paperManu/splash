@@ -38,6 +38,7 @@
 #include "./core/factory.h"
 #include "./core/root_object.h"
 #include "./core/spinlock.h"
+#include "./graphics/gl_window.h"
 #include "./graphics/object_library.h"
 
 namespace Splash

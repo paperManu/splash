@@ -37,6 +37,9 @@
 
 #include "./config.h"
 #include "./core/coretypes.h"
+#include "./core/serialized_object.h"
+#include "./core/spinlock.h"
+#include "./core/value.h"
 
 namespace Splash
 {

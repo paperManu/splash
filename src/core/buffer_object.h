@@ -35,6 +35,7 @@
 #include <unordered_map>
 
 #include "./core/graph_object.h"
+#include "./core/serialized_object.h"
 #include "./core/spinlock.h"
 
 namespace Splash

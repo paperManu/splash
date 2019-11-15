@@ -35,6 +35,7 @@
 #include <unordered_map>
 
 #include "./core/coretypes.h"
+#include "./core/value.h"
 
 namespace Splash
 {

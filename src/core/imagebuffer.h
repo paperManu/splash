@@ -32,6 +32,7 @@
 #include "./config.h"
 
 #include "./core/coretypes.h"
+#include "./core/resizable_array.h"
 
 namespace Splash
 {

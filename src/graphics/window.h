@@ -39,6 +39,7 @@
 #include "./core/attribute.h"
 #include "./core/coretypes.h"
 #include "./core/graph_object.h"
+#include "./graphics/gl_window.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"

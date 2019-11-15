@@ -30,7 +30,7 @@
 #include <memory>
 #include <vector>
 
-#include "config.h"
+#include "./config.h"
 
 #include "./core/attribute.h"
 #include "./core/coretypes.h"
