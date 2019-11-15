@@ -68,7 +68,7 @@ using CallbackID = int;
 /**
  * A seed represents a change with given parameters applied at a given timepoint to a Tree of a given name
  * Seeds are automatically generated every time the Tree is modified,
- * and a list of all changes can be retrieved using Tree::getSeedList()
+ * and a list of all changes can be retrieved using Tree::getUpdateSeedList()
  * This allows for replicating changes from a Tree to another
  */
 using Seed = std::tuple<Task, Value, std::chrono::system_clock::time_point, UUID>;
@@ -294,11 +294,11 @@ class Root
     }
 
     /**
-     * Get the Seeds generated while modifying the tree
+     * Get the seeds generated while modifying the tree
      * This clears the updates queue.
      * \return Return the list of updates
      */
-    std::list<Seed> getSeedList();
+    std::list<Seed> getUpdateSeedList();
 
     /**
      * Process the seeds queue to update the tree. Also register pending leaf callbacks

@@ -311,7 +311,9 @@ void RootObject::updateTreeFromObjects()
 /*************/
 void RootObject::propagateTree()
 {
-    auto treeSeeds = _tree.getSeedList();
+    auto treeSeeds = _tree.getUpdateSeedList();
+    if (treeSeeds.empty())
+        return;
     vector<uint8_t> serializedSeeds;
     Serial::serialize(treeSeeds, serializedSeeds);
     auto dataPtr = reinterpret_cast<uint8_t*>(serializedSeeds.data());

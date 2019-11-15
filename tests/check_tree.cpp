@@ -106,7 +106,7 @@ TEST_CASE("Testing the synchronization between trees")
     maple.createLeafAt("/some_branch/some_leaf", value);
     maple.createBranchAt("/some_branch/child_branch");
     maple.renameBranchAt("/some_branch/child_branch", "you_are_my_son");
-    auto updates = maple.getSeedList();
+    auto updates = maple.getUpdateSeedList();
 
     oak.addSeedsToQueue(updates);
     CHECK_NOTHROW(oak.processQueue());
@@ -120,7 +120,7 @@ TEST_CASE("Testing the synchronization between trees")
     maple.removeLeafAt("/some_branch/some_leaf");
     maple.removeBranchAt("/some_branch");
 
-    updates = maple.getSeedList();
+    updates = maple.getUpdateSeedList();
     oak.addSeedsToQueue(updates);
     CHECK_NOTHROW(oak.processQueue());
     CHECK(!oak.getError(error));
@@ -140,7 +140,7 @@ TEST_CASE("Testing adding and cutting existing branches and leaves")
     oak.createLeafAt("/a_leaf");
     oak.setValueForLeafAt("/a_leaf", "Some oak's leaf");
 
-    auto oakSeeds = oak.getSeedList();
+    auto oakSeeds = oak.getUpdateSeedList();
     beech.addSeedsToQueue(oakSeeds);
     beech.processQueue();
     CHECK(oak == beech);
@@ -149,14 +149,14 @@ TEST_CASE("Testing adding and cutting existing branches and leaves")
     CHECK(branch.get() != nullptr);
     auto leaf = oak.cutLeafAt("/a_leaf");
     CHECK(leaf.get() != nullptr);
-    oakSeeds = oak.getSeedList();
+    oakSeeds = oak.getUpdateSeedList();
 
     maple.addBranchAt("/", move(branch));
     maple.addLeafAt("/", move(leaf));
     CHECK(maple == beech);
     CHECK(oak != beech);
 
-    auto mapleSeeds = maple.getSeedList();
+    auto mapleSeeds = maple.getUpdateSeedList();
     oak.addSeedsToQueue(mapleSeeds);
     oak.processQueue();
     CHECK(maple == oak);
@@ -178,8 +178,8 @@ TEST_CASE("Testing the chronology handling of updates")
     oak.setValueForLeafAt("/a_branch/a_leaf", "Fresh meat!");
     maple.setValueForLeafAt("/a_branch/a_leaf", "Stop clicking on me!");
 
-    beech.addSeedsToQueue(maple.getSeedList());
-    beech.addSeedsToQueue(oak.getSeedList());
+    beech.addSeedsToQueue(maple.getUpdateSeedList());
+    beech.addSeedsToQueue(oak.getUpdateSeedList());
 
     Value leafValue;
     CHECK_NOTHROW(beech.processQueue());
@@ -236,10 +236,10 @@ TEST_CASE("Testing propagation through a main tree")
     Tree::Root main, maple, oak;
     maple.createLeafAt("/some_leaf");
     maple.createBranchAt("/a_branch");
-    auto seeds = maple.getSeedList();
+    auto seeds = maple.getUpdateSeedList();
     main.addSeedsToQueue(seeds);
     main.processQueue(true);
-    seeds = main.getSeedList();
+    seeds = main.getUpdateSeedList();
     oak.addSeedsToQueue(seeds);
     oak.processQueue();
 

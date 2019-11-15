@@ -398,12 +398,7 @@ bool Root::hasBranchAt(const string& path) const
 {
     auto parts = processPath(path);
     if (parts.empty())
-    {
-#ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
-#endif
-        return false;
-    }
+        return true; // The root is always there!
 
     auto branchName = parts.back();
     parts.pop_back();
@@ -482,7 +477,7 @@ bool Root::setValueForLeafAt(const string& path, const Value& value, chrono::sys
 }
 
 /*************/
-list<Seed> Root::getSeedList()
+list<Seed> Root::getUpdateSeedList()
 {
     list<Seed> updates;
     lock_guard<recursive_mutex> lock(_updatesMutex);
