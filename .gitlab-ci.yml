@@ -130,6 +130,10 @@ package:flatpak:
 static_analysis:
   stage: test
   script:
+    - git submodule update --init
+    - ./make_deps.sh
+    - rm -rf build && mkdir build && cd build
+    - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - wget https://scan.coverity.com/download/linux64 --post-data "token=zkRfEWYxyAeJDlYYg9Hkkg&project=paperManu%2Fsplash"
       -O coverity_tool.tgz
     - tar xvzf coverity_tool.tgz
