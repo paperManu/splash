@@ -405,8 +405,8 @@ cv::Mat3f ColorCalibrator::captureHDR(unsigned int nbrLDR, double step, bool com
 
     // Check that all is well
     bool isValid = true;
-    for (auto& image : ldr)
-        isValid |= image.total() != 0;
+    for (const auto& image : ldr)
+        isValid &= image.total() != 0;
 
     if (!isValid)
         return {};

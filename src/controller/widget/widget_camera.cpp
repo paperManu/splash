@@ -74,6 +74,7 @@ void GuiCamera::render()
 
         Values size;
         camera->getAttribute("size", size);
+        assert(size.size() == 2 && size[0].as<int>() != 0);
 
         int w = ImGui::GetWindowWidth() - 3 * leftMargin;
         int h = w * size[1].as<int>() / size[0].as<int>();

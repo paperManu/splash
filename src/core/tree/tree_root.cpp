@@ -182,6 +182,7 @@ bool Root::createBranchAt(const string& path, bool silent)
             return false;
         assert(getBranchAt(parts));
         holdingBranch = getBranchAt(parts);
+        assert(holdingBranch);
     }
 
     auto newBranch = make_unique<Branch>(newBranchName);
@@ -230,6 +231,7 @@ bool Root::createLeafAt(const std::string& path, Values value, bool silent)
             return false;
         assert(getBranchAt(parts));
         holdingBranch = getBranchAt(parts);
+        assert(holdingBranch);
     }
 
     auto newLeaf = make_unique<Leaf>(newLeafName, value);
@@ -312,6 +314,8 @@ unique_ptr<Leaf> Root::cutLeafAt(const string& path, bool silent)
 /*************/
 bool Root::getError(string& error)
 {
+    lock_guard<recursive_mutex> lockTree(_treeMutex);
+
     if (!_hasError)
     {
         error = "";

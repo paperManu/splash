@@ -884,29 +884,31 @@ void Gui::render()
         drawMenuBar();
 
         ImGui::BeginChild("##controlWidgets", ImVec2(0, -256));
-        ImGui::BeginTabBar("Tabs", ImGuiTabBarFlags_None);
-        // Main tabulation
-        if (ImGui::BeginTabItem("Main"))
+        if (ImGui::BeginTabBar("Tabs", ImGuiTabBarFlags_None))
         {
-            drawMainTab();
-            ImGui::EndTabItem();
-        }
-
-        // Controls tabulations
-        for (auto& widget : _guiWidgets)
-        {
-            widget->update();
-            if (ImGui::BeginTabItem(widget->getName().c_str()))
+            // Main tabulation
+            if (ImGui::BeginTabItem("Main"))
             {
-                ImGui::BeginChild(widget->getName().c_str());
-                widget->render();
-                ImGui::EndChild();
+                drawMainTab();
                 ImGui::EndTabItem();
             }
-            _windowFlags |= widget->updateWindowFlags();
-        }
 
-        ImGui::EndTabBar();
+            // Controls tabulations
+            for (auto& widget : _guiWidgets)
+            {
+                widget->update();
+                if (ImGui::BeginTabItem(widget->getName().c_str()))
+                {
+                    ImGui::BeginChild(widget->getName().c_str());
+                    widget->render();
+                    ImGui::EndChild();
+                    ImGui::EndTabItem();
+                }
+                _windowFlags |= widget->updateWindowFlags();
+            }
+
+            ImGui::EndTabBar();
+        }
         ImGui::EndChild();
 
         // Health information
