@@ -26,12 +26,14 @@
 #define SPLASH_NAME_REGISTRY_H
 
 #include <atomic>
-#include <list>
 #include <mutex>
 #include <string>
+#include <unordered_set>
 
 namespace Splash
 {
+
+class RootObject;
 
 /*************/
 class NameRegistry
@@ -59,7 +61,7 @@ class NameRegistry
 
   private:
     static std::atomic_uint _counter;
-    std::list<std::string> _registry{};
+    std::unordered_set<std::string> _registry{};
     std::mutex _registryMutex{};
 };
 

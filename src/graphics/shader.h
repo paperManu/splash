@@ -217,7 +217,6 @@ class Shader : public GraphObject
     Fill _fill{texture};
     std::string _shaderOptions{""};
     Sideness _sideness{doubleSided};
-    std::vector<int> _layout{0, 0, 0, 0};
 
     /**
      * \brief Compile the shader program

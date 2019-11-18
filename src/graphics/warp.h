@@ -95,22 +95,10 @@ class Warp : public Texture
     GLuint getTexId() const { return _fbo->getColorTexture()->getTexId(); }
 
     /**
-     * \brief Get spec of the texture
-     * \return Return the spec
+     * Get the timestamp
+     * \return Return the timestamp in us
      */
-    ImageBufferSpec getSpec() const { return _outTextureSpec; }
-
-    /**
-     * \brief Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
-     */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) final;
-
-    /**
-     * \brief Try to unlink the given GraphObject from this object
-     * \param obj Shared pointer to the (supposed) child object
-     */
-    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) final;
+    virtual int64_t getTimestamp() const final { return _spec.timestamp; }
 
     /**
      * \brief Get the coordinates of the closest vertex to the given point
@@ -135,22 +123,34 @@ class Warp : public Texture
      */
     void update() final {}
 
+  protected:
+    /**
+     * \brief Try to link the given GraphObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
+
+    /**
+     * \brief Try to unlink the given GraphObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
+
   private:
     std::weak_ptr<Camera> _inCamera;
 
     std::unique_ptr<Framebuffer> _fbo{nullptr};
     std::shared_ptr<Mesh_BezierPatch> _screenMesh{nullptr};
     std::shared_ptr<Object> _screen{nullptr};
-    ImageBufferSpec _outTextureSpec;
-
-    // Some default models use in various situations
-    std::list<std::shared_ptr<Mesh>> _modelMeshes;
-    std::list<std::shared_ptr<Geometry>> _modelGeometries;
-    std::unordered_map<std::string, std::shared_ptr<Object>> _models;
 
     // Render options
     bool _showControlPoints{false};
     int _selectedControlPointIndex{-1};
+
+    // Mipmap capture
+    int _grabMipmapLevel{-1};
+    Value _mipmapBuffer{};
+    Values _mipmapBufferSpec{};
 
     /**
      * \brief Init function called in constructors

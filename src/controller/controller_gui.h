@@ -59,6 +59,23 @@ class Scene;
 class Gui : public ControllerObject
 {
   public:
+    enum class FontType : uint8_t
+    {
+        Default,
+        Clock
+    };
+
+    enum class MenuAction : uint8_t
+    {
+        None,
+        OpenConfiguration,
+        OpenProject,
+        CopyCalibration,
+        SaveConfigurationAs,
+        SaveProjectAs
+    };
+
+  public:
     /**
      * \brief Constructor
      * \param w Window to display the gui
@@ -133,18 +150,6 @@ class Gui : public ControllerObject
     void mouseScroll(double xoffset, double yoffset);
 
     /**
-     * \brief Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
-     */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) final;
-
-    /**
-     * \brief Try to unlink the given GraphObject from this object
-     * \param obj Shared pointer to the (supposed) child object
-     */
-    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) final;
-
-    /**
      * \brief Render this gui
      */
     void render();
@@ -180,7 +185,27 @@ class Gui : public ControllerObject
      */
     void setOutputSize(int width, int height);
 
+  protected:
+    /**
+     * \brief Try to link the given GraphObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
+
+    /**
+     * \brief Try to unlink the given GraphObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
+
   private:
+    struct FontDefinition
+    {
+        FontType type;
+        std::string filename;
+        uint32_t size;
+    };
+
     bool _isInitialized{false};
     std::shared_ptr<GlWindow> _window;
     Scene* _scene;
@@ -206,8 +231,12 @@ class Gui : public ControllerObject
     static size_t _imGuiVboMaxSize;
 
     // ImGUI objects
+    bool _showFileSelector{false};
+    MenuAction _menuAction{MenuAction::None};
     ImGuiWindowFlags _windowFlags{0};
+    std::map<FontType, ImFont*> _guiFonts{};
     std::vector<std::shared_ptr<GuiWidget>> _guiWidgets;
+    std::vector<std::shared_ptr<GuiWidget>> _guiBottomWidgets;
 
     // Gui related attributes
     std::string _configurationPath;
@@ -219,6 +248,8 @@ class Gui : public ControllerObject
     bool _wireframe{false};
     bool _blendingActive{false};
     bool _showAbout{false};
+    bool _showHelp{false};
+    bool _hasOwnWindow{false};
 
     /**
      * \brief Initialize ImGui
@@ -243,9 +274,14 @@ class Gui : public ControllerObject
      */
 
     /**
-     * \brief Activate the cameras lookup tables
+     * Draw the main tabulation
      */
-    void activateLUT();
+    void drawMainTab();
+
+    /**
+     * Draw the menu bar
+     */
+    void drawMenuBar();
 
     /**
      * \brief Launch calibration of the camera response function
@@ -276,13 +312,9 @@ class Gui : public ControllerObject
 
     /**
      * \brief Copy camera parameters from the specified configuration file to the current configuration
+     * \param path Path to the configuration file to copy from
      */
-    void copyCameraParameters();
-
-    /**
-     * \brief Load the specified configuration
-     */
-    void loadConfiguration();
+    void copyCameraParameters(const std::string& path);
 
     /**
      * Load the icon image
@@ -290,24 +322,14 @@ class Gui : public ControllerObject
     void loadIcon();
 
     /**
-     * \brief Load a partial configuration, which does not contain calibration or projection parameters
-     */
-    void loadProject();
-
-    /**
      * Render the splash screen
      */
     void renderSplashScreen();
 
     /**
-     * \brief Save the configuration to the specified file
+     * Render the help
      */
-    void saveConfiguration();
-
-    /**
-     * \brief Save a partial configuration, which does not contain calibration or projection parameters
-     */
-    void saveProject();
+    void renderHelp();
 
     /**
      * Register new functors to modify attributes

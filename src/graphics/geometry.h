@@ -107,16 +107,16 @@ class Geometry : public BufferObject
     bool deserialize(const std::shared_ptr<SerializedObject>& obj) override;
 
     /**
+     * Get the timestamp
+     * \return Return the timestamp
+     */
+    virtual int64_t getTimestamp() const final { return _defaultMesh ? _defaultMesh->getTimestamp() : 0; }
+
+    /**
      * \brief Get whether the alternative buffers have been resized during the last feedback call
      * \return Return true if the buffers have been resized
      */
     bool hasBeenResized() { return _buffersResized; }
-
-    /**
-     * \brief Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
-     */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) override;
 
     /**
      * \brief Get the coordinates of the closest vertex to the given point
@@ -148,6 +148,13 @@ class Geometry : public BufferObject
      */
     void useAlternativeBuffers(bool isActive);
 
+  protected:
+    /**
+     * \brief Try to link the given GraphObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) override;
+
   private:
     mutable std::mutex _mutex;
     bool _onMasterScene{false};
@@ -173,7 +180,6 @@ class Geometry : public BufferObject
 
     // Transform feedback
     GLuint _feedbackQuery;
-    bool _feedbackQueryRunning{false};
     int _feedbackMaxNbrPrimitives{0};
 
     /**

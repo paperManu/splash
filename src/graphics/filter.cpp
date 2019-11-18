@@ -1,6 +1,7 @@
 #include "./graphics/filter.h"
 
 #include "./core/scene.h"
+#include "./graphics/camera.h"
 #include "./graphics/texture_image.h"
 #include "./utils/cgutils.h"
 #include "./utils/log.h"
@@ -59,13 +60,12 @@ unordered_map<string, Values> Filter::getShaderUniforms() const
 }
 
 /*************/
-bool Filter::linkTo(const std::shared_ptr<GraphObject>& obj)
+bool Filter::linkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    // Mandatory before trying to link
-    if (!obj || !Texture::linkTo(obj))
+    if (!obj)
         return false;
 
-    if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Texture>(obj))
     {
         if (!_inTextures.empty() && _inTextures[_inTextures.size() - 1].expired())
             _screen->removeTexture(_inTextures[_inTextures.size() - 1].lock());
@@ -76,7 +76,7 @@ bool Filter::linkTo(const std::shared_ptr<GraphObject>& obj)
 
         return true;
     }
-    else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
+    else if (dynamic_pointer_cast<Image>(obj))
     {
         auto tex = dynamic_pointer_cast<Texture_Image>(_root->createObject("texture_image", getName() + "_" + obj->getName() + "_tex").lock());
         if (tex->linkTo(obj))
@@ -84,8 +84,14 @@ bool Filter::linkTo(const std::shared_ptr<GraphObject>& obj)
         else
             return false;
     }
+    else if (dynamic_pointer_cast<Camera>(obj).get())
+    {
+        auto cam = dynamic_pointer_cast<Camera>(obj).get();
+        auto tex = cam->getTexture();
+        return linkTo(tex);
+    }
 
-    return true;
+    return false;
 }
 
 /*************/
@@ -95,9 +101,9 @@ void Filter::unbind()
 }
 
 /*************/
-void Filter::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
+void Filter::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Texture>(obj).get())
     {
         for (uint32_t i = 0; i < _inTextures.size();)
         {
@@ -106,7 +112,7 @@ void Filter::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
 
             auto inTex = _inTextures[i].lock();
             auto tex = dynamic_pointer_cast<Texture>(obj);
-            if (inTex->getName() == tex->getName())
+            if (inTex == tex)
             {
                 _screen->removeTexture(tex);
                 _inTextures.erase(_inTextures.begin() + i);
@@ -117,7 +123,7 @@ void Filter::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
             }
         }
     }
-    else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
+    else if (dynamic_pointer_cast<Image>(obj).get())
     {
         auto textureName = getName() + "_" + obj->getName() + "_tex";
 
@@ -129,8 +135,12 @@ void Filter::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
 
         _root->disposeObject(textureName);
     }
-
-    Texture::unlinkFrom(obj);
+    else if (dynamic_pointer_cast<Camera>(obj).get())
+    {
+        auto cam = dynamic_pointer_cast<Camera>(obj);
+        auto tex = cam->getTexture();
+        unlinkFrom(tex);
+    }
 }
 
 /*************/
@@ -169,7 +179,7 @@ void Filter::render()
     auto input = _inTextures[0].lock();
     auto inputSpec = input->getSpec();
 
-    if (inputSpec != _outTextureSpec || (_sizeOverride[0] > 0 && _sizeOverride[1] > 0))
+    if (inputSpec != _spec || (_sizeOverride[0] > 0 && _sizeOverride[1] > 0))
     {
         auto newOutTextureSpec = inputSpec;
         if (_sizeOverride[0] > 0 || _sizeOverride[1] > 0)
@@ -179,15 +189,26 @@ void Filter::render()
             newOutTextureSpec.height = _sizeOverride[1] ? _sizeOverride[1] : _sizeOverride[0];
         }
 
-        if (_outTextureSpec != newOutTextureSpec)
+        if (_spec != newOutTextureSpec)
         {
-            _outTextureSpec = newOutTextureSpec;
-            _fbo->setSize(_outTextureSpec.width, _outTextureSpec.height);
+            _spec = newOutTextureSpec;
+            _fbo->setSize(_spec.width, _spec.height);
         }
     }
 
+    // Update the timestamp to the latest from all input textures
+    int64_t timestamp{0};
+    for (const auto& texture : _inTextures)
+    {
+        auto texturePtr = texture.lock();
+        if (!texturePtr)
+            continue;
+        timestamp = std::max(timestamp, texturePtr->getTimestamp());
+    }
+    _spec.timestamp = timestamp;
+
     _fbo->bindDraw();
-    glViewport(0, 0, _outTextureSpec.width, _outTextureSpec.height);
+    glViewport(0, 0, _spec.width, _spec.height);
 
     _screen->activate();
     updateUniforms();
@@ -197,6 +218,13 @@ void Filter::render()
     _fbo->unbindDraw();
 
     _fbo->getColorTexture()->generateMipmap();
+    if (_grabMipmapLevel >= 0)
+    {
+        auto colorTexture = _fbo->getColorTexture();
+        _mipmapBuffer = colorTexture->grabMipmap(_grabMipmapLevel).getRawBuffer();
+        auto spec = colorTexture->getSpec();
+        _mipmapBufferSpec = {spec.width, spec.height, spec.channels, spec.bpp, spec.format};
+    }
 
     // Automatic black level stuff
     if (_autoBlackLevelTargetValue != 0.f)
@@ -227,6 +255,11 @@ void Filter::updateUniforms()
     // Built-in uniforms
     _filterUniforms["_time"] = {static_cast<int>(Timer::getTime() / 1000)};
 
+    int64_t masterClock;
+    bool paused;
+    if (Timer::get().getMasterClock<chrono::milliseconds>(masterClock, paused))
+        _filterUniforms["_clock"] = {static_cast<int>(masterClock)};
+
     if (!_colorCurves.empty())
     {
         Values tmpCurves;
@@ -242,18 +275,18 @@ void Filter::updateUniforms()
     for (auto& weakObject : _linkedObjects)
     {
         auto obj = weakObject.lock();
-        if (obj)
+        if (!obj)
+            continue;
+
+        if (obj->getType() == "image")
         {
-            if (obj->getType() == "image")
-            {
-                Values remainingTime, duration;
-                obj->getAttribute("duration", duration);
-                obj->getAttribute("remaining", remainingTime);
-                if (remainingTime.size() == 1)
-                    shader->setAttribute("uniform", {"_filmRemaining", remainingTime[0].as<float>()});
-                if (duration.size() == 1)
-                    shader->setAttribute("uniform", {"_filmDuration", duration[0].as<float>()});
-            }
+            Values remainingTime, duration;
+            obj->getAttribute("duration", duration);
+            obj->getAttribute("remaining", remainingTime);
+            if (remainingTime.size() == 1)
+                shader->setAttribute("uniform", {"_filmRemaining", remainingTime[0].as<float>()});
+            if (duration.size() == 1)
+                shader->setAttribute("uniform", {"_filmDuration", duration[0].as<float>()});
         }
     }
 
@@ -271,9 +304,9 @@ void Filter::updateUniforms()
 /*************/
 void Filter::setOutput()
 {
-    glGetError();
     _fbo = make_unique<Framebuffer>(_root);
     _fbo->getColorTexture()->setAttribute("filtering", {1});
+    _fbo->setParameters(false, true);
 
     // Setup the virtual screen
     _screen = make_shared<Object>(_root);
@@ -302,9 +335,10 @@ void Filter::updateShaderParameters()
 /*************/
 bool Filter::setFilterSource(const string& source)
 {
-    _screen->setAttribute("fill", {"userDefined"});
+    auto shader = make_shared<Shader>();
+    // Save the value for all existing uniforms
+    auto uniformValues = _filterUniforms;
 
-    auto shader = _screen->getShader();
     map<Shader::ShaderType, string> shaderSources;
     shaderSources[Shader::ShaderType::fragment] = source;
     if (!shader->setSource(shaderSources))
@@ -312,19 +346,20 @@ bool Filter::setFilterSource(const string& source)
         Log::get() << Log::WARNING << "Filter::" << __FUNCTION__ << " - Could not apply shader filter" << Log::endl;
         return false;
     }
+    _screen->setShader(shader);
 
     // This is a trick to force the shader compilation
     _screen->activate();
     _screen->deactivate();
 
     // Unregister previous automatically added uniforms
-    _attribFunctions.clear();
-    registerAttributes();
+    for (const auto& uniform : _filterUniforms)
+        _attribFunctions.erase(uniform.first);
 
     // Register the attributes corresponding to the shader uniforms
     auto uniforms = shader->getUniforms();
     auto uniformsDocumentation = shader->getUniformsDocumentation();
-    for (auto& u : uniforms)
+    for (const auto& u : uniforms)
     {
         // Uniforms starting with a underscore are kept hidden
         if (u.first.empty() || u.first[0] == '_')
@@ -346,6 +381,11 @@ bool Filter::setFilterSource(const string& source)
         auto documentation = uniformsDocumentation.find(u.first);
         if (documentation != uniformsDocumentation.end())
             setAttributeDescription(u.first, documentation->second);
+
+        // Reset the value if this uniform already existed
+        auto uniformValueIt = uniformValues.find(u.first);
+        if (uniformValueIt != uniformValues.end())
+            setAttribute(u.first, uniformValueIt->second);
     }
 
     return true;
@@ -400,6 +440,44 @@ void Filter::registerAttributes()
         [&]() -> Values { return {_shaderSourceFile}; },
         {'s'});
     setAttributeDescription("fileFilterSource", "Set the fragment shader source for the filter from a file");
+
+    addAttribute("watchShaderFile",
+        [&](const Values& args) {
+            _watchShaderFile = args[0].as<bool>();
+
+            if (_watchShaderFile)
+            {
+                addPeriodicTask("watchShader",
+                    [=]() {
+                        if (_shaderSourceFile.empty())
+                            return;
+
+                        std::filesystem::path sourcePath(_shaderSourceFile);
+                        try
+                        {
+                            auto lastWriteTime = std::filesystem::last_write_time(sourcePath);
+                            if (lastWriteTime != _lastShaderSourceWrite)
+                            {
+                                _lastShaderSourceWrite = lastWriteTime;
+                                setAttribute("fileFilterSource", {_shaderSourceFile});
+                            }
+                        }
+                        catch (...)
+                        {
+                        }
+                    },
+                    500);
+            }
+            else
+            {
+                removePeriodicTask("watchShader");
+            }
+
+            return true;
+        },
+        [&]() -> Values { return {_watchShaderFile}; },
+        {'n'});
+    setAttributeDescription("watchShaderFile", "If true, automatically updates the shader from the source file");
 }
 
 /*************/
@@ -577,6 +655,22 @@ void Filter::registerDefaultShaderAttributes()
         {'n'});
     setAttributeDescription("saturation", "Set the saturation for the linked texture");
 
+    addAttribute("scale",
+        [&](const Values& args) {
+            auto scale_x = args[0].as<float>();
+            auto scale_y = args[1].as<float>();
+            _filterUniforms["_scale"] = {scale_x, scale_y};
+            return true;
+        },
+        [&]() -> Values {
+            auto it = _filterUniforms.find("_scale");
+            if (it == _filterUniforms.end())
+                _filterUniforms["_scale"] = {1.0, 1.0}; // Default value
+            return _filterUniforms["_scale"];
+        },
+        {'n', 'n'});
+    setAttributeDescription("scale", "Set the scaling of the texture along both axes");
+
     addAttribute("size",
         [&](const Values&) { return true; },
         [&]() -> Values {
@@ -604,6 +698,23 @@ void Filter::registerDefaultShaderAttributes()
         },
         {'n', 'n'});
     setAttributeDescription("sizeOverride", "Sets the filter output to a different resolution than its input");
+
+    //
+    // Mipmap capture
+    addAttribute("grabMipmapLevel",
+        [&](const Values& args) {
+            _grabMipmapLevel = args[0].as<int>();
+            return true;
+        },
+        [&]() -> Values { return {_grabMipmapLevel}; },
+        {'n'});
+    setAttributeDescription("grabMipmapLevel", "If set to 0 or superior, sync the rendered texture to the tree, at the given mipmap level");
+
+    addAttribute("buffer", [&](const Values&) { return true; }, [&]() -> Values { return {_mipmapBuffer}; }, {});
+    setAttributeDescription("buffer", "Getter attribute which gives access to the mipmap image, if grabMipmapLevel is greater or equal to 0");
+
+    addAttribute("bufferSpec", [&](const Values&) { return true; }, [&]() -> Values { return _mipmapBufferSpec; }, {});
+    setAttributeDescription("bufferSpec", "Getter attribute to the specs of the attribute buffer");
 }
 
-} // end of namespace
+} // namespace Splash

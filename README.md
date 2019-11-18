@@ -21,7 +21,7 @@ Introduction
 ------------
 
 ### About
-Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending and color), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers mapping together is planned.
+Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending and color), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers is planned.
 
 Although Splash was primarily targeted toward fulldome mapping and has been extensively tested in this context, it can be used for virtually any surface provided that a 3D model of the geometry is available. Multiple fulldomes have been mapped, either by the authors of this software (two small dome (3m wide) with 4 projectors, a big one (20m wide) with 8 projectors) or by other teams. It has also been tested sucessfully as a more regular video-mapping software to project on buildings, or [onto moving objects](https://vimeo.com/268028595).
 
@@ -64,10 +64,10 @@ Splash relies on a few libraries to get the job done. The mandatory libraries ar
   - [Snappy](https://code.google.com/p/snappy/) to handle Hap codec decompression,
   - [ZMQ](http://zeromq.org) to communicate between the various process involved in a Splash session,
   - [cppzmq](https://github.com/zeromq/cppzmq.git) for its C++ bindings of ZMQ
+  - [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,
 - Dependencies built at compile-time from submodules:
   - [doctest](https://github.com/onqtam/doctest/) to do some unit testing,
   - [ImGui](https://github.com/ocornut/imgui) to draw the GUI,
-  - [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,
   - [stb_image](https://github.com/nothings/stb) to read images.
 
 Some other libraries are optional:
@@ -80,7 +80,7 @@ Some other libraries are optional:
 - Dependencies built at compile-time from submodules:
   - [libltc](http://x42.github.io/libltc/) to read timecodes from an audio input,
 
-Also, the [Roboto](https://www.fontsquirrel.com/fonts/roboto) font is used and distributed under the Apache license.
+Also, the [Roboto](https://www.fontsquirrel.com/fonts/roboto) font and the [DSEG font family](https://github.com/keshikan/DSEG) are used and distributed under their respective open source licenses.
 
 By default Splash is built and linked against the libraries included as submodules, but it is possible to force it to use the libraries installed on the system. This is described in the next section.
 
@@ -119,7 +119,7 @@ The packages necessary to compile Splash are the following:
 sudo apt install build-essential git-core cmake libxrandr-dev libxi-dev \
     mesa-common-dev libgsl0-dev libatlas3-base libgphoto2-dev libz-dev \
     libxinerama-dev libxcursor-dev python3-dev yasm portaudio19-dev \
-    python3-numpy libopencv-dev
+    python3-numpy libopencv-dev gcc-8 g++-8 libjsoncpp-dev
 
 # Non mandatory libraries needed to link against system libraries only
 sudo apt install libglfw3-dev libglm-dev libavcodec-dev libavformat-dev \
@@ -129,7 +129,7 @@ sudo apt install libglfw3-dev libglm-dev libavcodec-dev libavformat-dev \
 - Archlinux (not well maintained, please signal any issue):
 
 ```bash
-pacman -Sy git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcursor
+pacman -Sy git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcursor libjsoncpp
 pacman -Sy mesa glm gsl libgphoto2 python3 portaudio zip zlib
 ```
 
@@ -141,7 +141,7 @@ cd splash
 git submodule update --init
 ./make_deps.sh
 mkdir -p build && cd build
-cmake ..
+CC=gcc-8 CXX=g++-8 cmake ..
 make && sudo make install
 ```
 
@@ -186,4 +186,4 @@ And that's it, you can move on the the [Walkthrough](https://gitlab.com/sat-meta
 Going forward
 -------------
 
-To learn how to configure and use Splash, the best resource currently is the Wiki page on [Github](https://gitlab.com/sat-metalab/splash/wikis/home).
+To learn how to configure and use Splash, the best resource currently is the Wiki page on [Gitlab](https://gitlab.com/sat-metalab/splash/wikis/home).

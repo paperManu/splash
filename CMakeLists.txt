@@ -17,10 +17,10 @@
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.5)
 project(
     splash 
-    VERSION 0.7.20
+    VERSION 0.8.0
     LANGUAGES C CXX
 )
 
@@ -48,6 +48,13 @@ set(DEBUG_OPENGL OFF CACHE BOOL "Enable OpenGL debugging")
 set(PROFILE_OPENGL OFF CACHE BOOL "Enable OpenGL profiling")
 set(USE_SYSTEM_LIBS OFF CACHE BOOL "Enable using system libraries instead of bundle ones")
 
+# Force color output (useful when building with Ninja)
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+   add_compile_options (-fdiagnostics-color=always)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+   add_compile_options (-fcolor-diagnostics)
+endif ()
+
 #
 # Find the various libraries
 #
@@ -58,19 +65,15 @@ endif()
 find_package(PkgConfig REQUIRED)
 
 # Mandatory dependencies
+pkg_search_module(JSONCPP REQUIRED jsoncpp)
 pkg_search_module(GSL REQUIRED gsl)
 pkg_search_module(ZMQ REQUIRED libzmq)
 pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswscale)
+pkg_check_modules(UUID REQUIRED uuid)
 
 # Optional dependencies
-if(UNIX AND NOT APPLE)
-    set(Python_ADDITIONAL_VERSIONS 3.4 3.5)
-    find_package(PythonLibs)
-elseif(APPLE)
-    pkg_check_modules(PYTHON python3)
-    set(PYTHONLIBS_VERSION_STRING ${PYTHON_VERSION})
-    set(PYTHONLIBS_FOUND ${PYTHON_FOUND})
-endif()
+set(Python_ADDITIONAL_VERSIONS 3.4 3.5)
+find_package(PythonLibs)
 
 find_package(Doxygen)
 pkg_search_module(GPHOTO libgphoto2)
@@ -78,13 +81,14 @@ pkg_search_module(OPENCV opencv)
 pkg_search_module(JACK jack)
 pkg_search_module(PORTAUDIO portaudio-2.0)
 pkg_search_module(SHMDATA shmdata-1.3)
+pkg_search_module(SLAPS slaps-0.0)
 
 #
 # Configuration
 #
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLM_FORCE_RADIANS")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDATADIR=\\\"${CMAKE_INSTALL_PREFIX}/share/splash/\\\"")
@@ -95,19 +99,14 @@ set(HAVE_OPENCV ${OPENCV_FOUND})
 set(HAVE_PORTAUDIO ${PORTAUDIO_FOUND})
 set(HAVE_SHMDATA ${SHMDATA_FOUND})
 set(HAVE_PYTHON ${PYTHONLIBS_FOUND})
+set(HAVE_SLAPS ${SLAPS_FOUND})
 
 if (FFMPEG_libavformat_VERSION LESS 57)
     message(WARNING "FFmpeg version is older than 3.1, support disabled")
     set(FFMPEG_FOUND 0)
 endif()
 
-if(UNIX AND NOT APPLE)
-    set(HAVE_LINUX 1)
-    set(HAVE_OSX 0)
-elseif(APPLE)
-    set(HAVE_LINUX 0)
-    set(HAVE_OSX 1)
-endif()
+set(HAVE_LINUX 1)
 
 if (DEBUG_OPENGL)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUGGL")
@@ -142,7 +141,8 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.cmake" "${CMAKE_CURRENT
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
 if(COMPILER_SUPPORTS_MARCH_NATIVE AND NOT BUILD_GENERIC_ARCH)
-    add_definitions(-march=native)
+    include(OptimizeForArchitecture)
+    OptimizeForArchitecture()
 endif()
 
 #
@@ -176,19 +176,17 @@ set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 
-if(UNIX AND NOT APPLE) # Package creation on Linux
-    set(CPACK_GENERATOR "DEB")
-    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
-    set(CPACK_DEBIAN_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-mapper")
-    set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}")
-    set(CPACK_DEBIAN_PROJECT_HOMEPAGE "https://gitlab.com/sat-metalab/splash/wiki")
-    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
-    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
-    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_VENDOR} <emmanueldurand@protonmail.com>")
-    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers mapping together is planned.")
-    set(CPACK_DEBIAN_PACKAGE_SECTION "video")
-    set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
-endif()
+set(CPACK_GENERATOR "DEB")
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+set(CPACK_DEBIAN_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-mapper")
+set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}")
+set(CPACK_DEBIAN_PROJECT_HOMEPAGE "https://gitlab.com/sat-metalab/splash/wiki")
+set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_VENDOR} <emmanueldurand@protonmail.com>")
+set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers is planned.")
+set(CPACK_DEBIAN_PACKAGE_SECTION "video")
+set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
 
 include(CPack)
 
@@ -228,10 +226,10 @@ info_cfg_option(FFMPEG_libswscale_VERSION)
 info_cfg_option(OPENCV_VERSION)
 info_cfg_option(PORTAUDIO_VERSION)
 info_cfg_option(JACK_VERSION)
-info_cfg_option(JACK_LIBRARIES)
-info_cfg_option(HAVE_JACK)
 info_cfg_option(PYTHONLIBS_VERSION_STRING)
+info_cfg_option(JSONCPP_VERSION)
 info_cfg_option(SHMDATA_VERSION)
+info_cfg_option(SLAPS_VERSION)
 info_cfg_option(ZMQ_VERSION)
 info_cfg_option(DATAPATH_SDK_PATH)
 info_cfg_option(DOXYGEN_FOUND)

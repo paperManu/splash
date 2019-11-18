@@ -35,21 +35,15 @@ void Texture::init()
     // This is used for getting documentation "offline"
     if (!_root)
         return;
-
-    _timestamp = Timer::getTime();
-}
-
-/*************/
-bool Texture::linkTo(const shared_ptr<GraphObject>& obj)
-{
-    // Mandatory before trying to link
-    return GraphObject::linkTo(obj);
 }
 
 /*************/
 void Texture::registerAttributes()
 {
     GraphObject::registerAttributes();
+
+    addAttribute("timestamp", [](const Values&) { return true; }, [&]() -> Values { return {_spec.timestamp}; });
+    setAttributeDescription("timestamp", "Timestamp (in µs) for the current texture, which mimicks the timestamp of the input image (if any)");
 }
 
 } // namespace Splash

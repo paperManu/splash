@@ -93,16 +93,23 @@ class Object : public GraphObject
     void addTexture(const std::shared_ptr<Texture>& texture) { _textures.push_back(texture); }
 
     /**
-     * \brief Add a calibration point
+     * Add a calibration point
      * \param point Point coordinates
      */
-    void addCalibrationPoint(glm::dvec3 point);
+    void addCalibrationPoint(const glm::dvec3& point);
+
+    /**
+     * Get the update timestamp of the object, which is computed as the latest
+     * timestamp from all its textures
+     * \return Return the timestamp, in us
+     */
+    virtual int64_t getTimestamp() const final;
 
     /**
      * \brief Remove a calibration point
      * \param point Point coordinates
      */
-    void removeCalibrationPoint(glm::dvec3 point);
+    void removeCalibrationPoint(const glm::dvec3& point);
 
     /**
      * \brief Draw the object
@@ -122,28 +129,20 @@ class Object : public GraphObject
     inline glm::dmat4 getModelMatrix() const { return computeModelMatrix(); }
 
     /**
-     * \brief Get the shader used for the object
+     * \brief Get the shader used for the object. This must be called while the object is active
      * \return Return the shader
      */
-    inline std::shared_ptr<Shader> getShader() const { return _shader; }
+    inline std::shared_ptr<Shader> getShader() const
+    {
+        assert(_shader);
+        return _shader;
+    }
 
     /**
      * \brief Get the number of vertices for this object
      * \return Return the number of vertices
      */
     int getVerticesNumber() const;
-
-    /**
-     * \brief Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
-     */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) override;
-
-    /**
-     * \brief Try to unlink the given GraphObject from this object
-     * \param obj Shared pointer to the (supposed) child object
-     */
-    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) override;
 
     /**
      * \brief Get the coordinates of the closest vertex to the given point
@@ -182,12 +181,6 @@ class Object : public GraphObject
     void resetBlendingAttribute();
 
     /**
-     * \brief Set the shader to render this object with
-     * \param shader Shader to use
-     */
-    void setShader(const std::shared_ptr<Shader>& shader) { _shader = shader; }
-
-    /**
      * \brief Set the view and projection matrices
      * \param mv View matrix
      * \[aram mp Projection matrix
@@ -219,6 +212,24 @@ class Object : public GraphObject
      * \param primitiveIdShift Shift for the ID as rendered in the texture
      */
     void transferVisibilityFromTexToAttr(int width, int height, int primitiveIdShift);
+
+    /**
+     * \brief Set the shader for this object
+     */
+    void setShader(const std::shared_ptr<Shader>& shader);
+
+  protected:
+    /**
+     * \brief Try to link the given GraphObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
+
+    /**
+     * \brief Try to unlink the given GraphObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
   private:
     mutable std::mutex _mutex;

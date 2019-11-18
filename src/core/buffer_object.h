@@ -35,6 +35,7 @@
 #include <unordered_map>
 
 #include "./core/graph_object.h"
+#include "./core/serialized_object.h"
 #include "./core/spinlock.h"
 
 namespace Splash
@@ -75,12 +76,12 @@ class BufferObject : public GraphObject
      * \brief Check whether the object has been updated
      * \return Return true if the object has been updated
      */
-    bool wasUpdated() const { return _updatedBuffer | GraphObject::wasUpdated(); }
+    bool wasUpdated() const override { return _updatedBuffer | GraphObject::wasUpdated(); }
 
     /**
      * \brief Set the updated buffer flag to false.
      */
-    void setNotUpdated();
+    void setNotUpdated() override;
 
     /**
      * \brief Update the BufferObject from a serialized representation.
@@ -102,10 +103,24 @@ class BufferObject : public GraphObject
     virtual std::string getDistantName() const { return _name; }
 
     /**
-     * \brief Get the timestamp for the current buffer object
+     * Get the timestamp for the current buffer object
      * \return Return the timestamp
      */
-    int64_t getTimestamp() const { return _timestamp; }
+    virtual int64_t getTimestamp() const override
+    {
+        std::lock_guard<Spinlock> lock(_timestampMutex);
+        return _timestamp;
+    }
+
+    /**
+     * Set the timestamp
+     * \param timestamp Timestamp, in us
+     */
+    virtual void setTimestamp(int64_t timestamp) override
+    {
+        std::lock_guard<Spinlock> lock(_timestampMutex);
+        _timestamp = timestamp;
+    }
 
     /**
      * \brief Serialize the object
@@ -120,27 +135,29 @@ class BufferObject : public GraphObject
     void setSerializedObject(std::shared_ptr<SerializedObject> obj);
 
   protected:
-    mutable Spinlock _readMutex;                      //!< Read mutex locked when the object is read from
-    mutable std::shared_timed_mutex _writeMutex;      //!< Write mutex locked when the object is written to
-    std::atomic_bool _serializedObjectWaiting{false}; //!< True if a serialized object has been set and waits for processing
-    std::future<void> _deserializeFuture{};           //!< Holds the deserialization thread
-    int64_t _timestamp{0};                            //!< Timestamp
-    bool _updatedBuffer{false};                       //!< True if the BufferObject has been updated
+    mutable Spinlock _readMutex;                //!< Read mutex locked when the object is read from
+    mutable std::shared_mutex _writeMutex;      //!< Write mutex locked when the object is written to
+    std::mutex _serializedObjectWaitingMutex{}; //!< Mutex is locked if a serialized object has been set and waits for processing
+    std::future<void> _deserializeFuture{};     //!< Holds the deserialization thread
+    mutable Spinlock _timestampMutex;
+    int64_t _timestamp{0};      //!< Timestamp
+    bool _updatedBuffer{false}; //!< True if the BufferObject has been updated
 
     std::shared_ptr<SerializedObject> _serializedObject{nullptr}; //!< Internal buffer object
     bool _newSerializedObject{false};                             //!< Set to true during serialized object processing
 
     /**
-     * \brief Updates the timestamp of the object. Also, set the update flag to true.
+     * Updates the timestamp of the object. Also, set the update flag to true.
+     * \param timestamp Value to set the timestamp to, -1 to set to the current time
      */
-    void updateTimestamp();
+    virtual void updateTimestamp(int64_t timestamp = -1);
 
     /**
      * \brief Register new attributes
      */
-    void registerAttributes() { GraphObject::registerAttributes(); }
+    void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_BUFFER_OBJECT_H

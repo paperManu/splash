@@ -25,9 +25,6 @@
 #include "./controller/colorcalibrator.h"
 #endif
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wformat-security"
-
 using namespace std;
 
 namespace Splash
@@ -36,10 +33,10 @@ namespace Splash
 namespace SplashImGui
 {
 /*********/
-bool FileSelectorParseDir(string& path, vector<FilesystemFile>& list, const vector<string>& extensions, bool showNormalFiles)
+bool FileSelectorParseDir(const string& sourcePath, vector<FilesystemFile>& list, const vector<string>& extensions, bool showNormalFiles)
 {
     bool isDirectoryPath = true;
-    path = Utils::cleanPath(path);
+    auto path = Utils::cleanPath(sourcePath);
     string tmpPath = path;
 
     auto directory = opendir(tmpPath.c_str());
@@ -92,7 +89,7 @@ bool FileSelectorParseDir(string& path, vector<FilesystemFile>& list, const vect
                                    return false;
 
                                bool filteredOut = true;
-                               for (auto& ext : extensions)
+                               for (const auto& ext : extensions)
                                {
                                    auto pos = p.filename.rfind(ext);
                                    if (pos != string::npos && pos == p.filename.size() - ext.size())
@@ -124,16 +121,20 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
     if (label.size() != 0)
         windowName += " - " + label;
 
-    ImGui::Begin(windowName.c_str(), nullptr, ImVec2(400, 600), 0.95f);
-    char textBuffer[512];
-    memset(textBuffer, 0, 512);
-    strncpy(textBuffer, path.c_str(), 510);
+    ImGui::Begin(windowName.c_str(), nullptr, ImVec2(400, 600), 0.99f);
 
-    ImGui::PushItemWidth(-1.f);
+    ImGui::PushItemWidth(-64.f);
     vector<FilesystemFile> fileList;
-    if (ImGui::InputText("##FileSelectFullPath", textBuffer, 512))
+
+    string newPath = Utils::getPathFromFilePath(path);
+    string newFilename = Utils::getFilenameFromFilePath(path);
+    if (SplashImGui::InputText("Path##FileSelectFullPath", newPath))
     {
-        path = string(textBuffer);
+        path = Utils::getPathFromFilePath(newPath);
+    }
+    if (SplashImGui::InputText("Filename##FileSelectFilename", newFilename))
+    {
+        path += Utils::getFilenameFromFilePath(newFilename);
     }
     ImGui::PopItemWidth();
 
@@ -168,7 +169,7 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
 
         if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
         {
-            path = path + "/" + filename;
+            path = Utils::getPathFromFilePath(path) + filename;
             if (!FileSelectorParseDir(path, fileList, extensions, showNormalFiles))
                 selectionDone = true;
         }
@@ -216,15 +217,27 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
     return false;
 }
 
+/*************/
+bool InputText(const char* label, std::string& str, ImGuiInputTextFlags flags)
+{
+    str.resize(512, 0);
+    if (ImGui::InputText(label, str.data(), str.size(), flags))
+    {
+        str.resize(str.find((char)0) + 1);
+        return true;
+    }
+    return false;
+}
+
 } // end of namespace SplashImGui
 
 /*************/
 /*************/
-GuiWidget::GuiWidget(Scene* scene, string name)
+GuiWidget::GuiWidget(Scene* scene, const string& name)
     : ControllerObject(scene)
-    , _name(name)
     , _scene(scene)
 {
+    _name = name;
 }
 
 /*************/
@@ -232,12 +245,17 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
 {
     auto objAlias = getObjectAlias(objName);
     vector<string> attributeNames;
-    for (auto& attr : attributes)
+    for (const auto& attr : attributes)
         attributeNames.push_back(attr.first);
     sort(attributeNames.begin(), attributeNames.end());
 
-    for (auto& attrName : attributeNames)
+    ImVec2 availableSize = ImGui::GetContentRegionAvail();
+    ImGui::PushItemWidth(availableSize.x * 0.5);
+    for (const auto& attrName : attributeNames)
     {
+        if (find(_hiddenAttributes.begin(), _hiddenAttributes.end(), attrName) != _hiddenAttributes.end())
+            continue;
+
         const auto& attribute = attributes.find(attrName)->second;
         if (attribute.empty() || attribute.size() > 4)
             continue;
@@ -325,9 +343,9 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                     float minValue = numeric_limits<float>::max();
                     float maxValue = numeric_limits<float>::min();
                     vector<float> samples;
-                    for (auto& v : values)
+                    for (const auto& v : values)
                     {
-                        float value = v.as<float>();
+                        auto value = v.as<float>();
                         maxValue = std::max(value, maxValue);
                         minValue = std::min(value, minValue);
                         samples.push_back(value);
@@ -347,16 +365,15 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
         }
         case 's':
         {
-            for (auto& v : attribute)
+            for (const auto& v : attribute)
             {
                 // We have a special way to handle file paths
                 if (attrName.find("file") == 0)
                 {
 
                     string tmp = v.as<string>();
-                    tmp.resize(512);
                     ImGui::PushID((objName + attrName).c_str());
-                    if (ImGui::InputText("", const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                    if (SplashImGui::InputText("", tmp, ImGuiInputTextFlags_EnterReturnsTrue))
                         setObjectAttribute(objName, attrName, {tmp});
 
                     // Callback for dragndrop: replace the file path in the field
@@ -391,8 +408,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                 else
                 {
                     string tmp = v.as<string>();
-                    tmp.resize(256);
-                    if (ImGui::InputText(attrName.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                    if (SplashImGui::InputText(attrName.c_str(), tmp, ImGuiInputTextFlags_EnterReturnsTrue))
                         setObjectAttribute(objName, attrName, {tmp});
                 }
             }
@@ -407,8 +423,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                 ImGui::SetTooltip("%s", answer[0].as<string>().c_str());
         }
     }
+    ImGui::PopItemWidth();
 }
 
-#pragma clang diagnostic pop
-
-} // end of namespace
+} // namespace Splash

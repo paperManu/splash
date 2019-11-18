@@ -14,6 +14,7 @@
 #include "./core/buffer_object.h"
 #include "./core/link.h"
 #include "./core/scene.h"
+#include "./core/serializer.h"
 #include "./image/image.h"
 #include "./image/queue.h"
 #include "./mesh/mesh.h"
@@ -35,7 +36,6 @@ World* World::_that;
 /*************/
 World::World(int argc, char** argv)
 {
-    registerAttributes();
     parseArguments(argc, argv);
     init();
 }
@@ -73,7 +73,13 @@ void World::run()
         Timer::get() << "loop_world_inner";
         lock_guard<mutex> lockConfiguration(_configurationMutex);
 
+        // Process tree updates
+        Timer::get() << "tree_process";
+        _tree.processQueue(true);
+        Timer::get() >> "tree_process";
+
         // Execute waiting tasks
+        executeTreeCommands();
         runTasks();
 
         {
@@ -95,7 +101,7 @@ void World::run()
                     if (!serializedObjectIt.second)
                         continue; // Error while inserting the object in the map
 
-                    threads.push_back(async(launch::async, [=, &o]() {
+                    threads.push_back(async(launch::async, [=]() {
                         // Update the local objects
                         o.second->update();
 
@@ -127,37 +133,6 @@ void World::run()
                     _link->sendBuffer(o.first, std::move(o.second));
         }
 
-        // Update the distant attributes
-        for (auto& o : _objects)
-        {
-            auto attribs = o.second->getDistantAttributes();
-            for (auto& attrib : attribs)
-            {
-                sendMessage(o.second->getName(), attrib.first, attrib.second);
-            }
-        }
-
-        // If the master scene is not an inner scene, we have to send it some information
-        if (_scenes[_masterSceneName] != -1)
-        {
-            // Send current timings to all Scenes, for display purpose
-            auto& durationMap = Timer::get().getDurationMap();
-            for (auto& d : durationMap)
-                sendMessage(_masterSceneName, "duration", {d.first, (int)d.second});
-            // Also send the master clock if needed
-            Timer::Point clock;
-            if (Timer::get().getMasterClock(clock))
-            {
-                auto clockValues = Values({clock.years, clock.months, clock.days, clock.hours, clock.mins, clock.secs, clock.frame, clock.paused});
-                sendMessage(_masterSceneName, "masterClock", clockValues);
-            }
-
-            // Send newer logs to all master Scene
-            auto logs = Log::get().getNewLogs();
-            for (auto& log : logs)
-                sendMessage(_masterSceneName, "log", {log.first, (int)log.second});
-        }
-
         if (_quit)
         {
             for (auto& s : _scenes)
@@ -165,10 +140,15 @@ void World::run()
             break;
         }
 
+        Timer::get() << "tree_propagate";
+        updateTreeFromObjects();
+        propagateTree();
+        Timer::get() >> "tree_propagate";
+
         // Sync with buffer object update
         Timer::get() >> "loop_world_inner";
         auto elapsed = Timer::get().getDuration("loop_world_inner");
-        waitSignalBufferObjectUpdated(1e6 / (float)_worldFramerate - elapsed);
+        waitSignalBufferObjectUpdated(std::max<uint64_t>(1, 1e6 / (float)_worldFramerate - elapsed));
 
         // Sync to world framerate
         Timer::get() >> "loop_world";
@@ -178,13 +158,13 @@ void World::run()
 /*************/
 void World::addToWorld(const string& type, const string& name)
 {
-    // Images and Meshes have a counterpart on this side
+    // BufferObject derived types have a counterpart on this side
     if (!_factory->isSubtype<BufferObject>(type))
         return;
 
     auto object = _factory->create(type);
     auto realName = name;
-    if (object.get() != nullptr)
+    if (object)
     {
         object->setName(name);
         _objects[name] = object;
@@ -215,9 +195,9 @@ void World::applyConfig()
         {
             string sceneAddress = scenes[sceneName].isMember("address") ? scenes[sceneName]["address"].asString() : "localhost";
             string sceneDisplay = scenes[sceneName].isMember("display") ? scenes[sceneName]["display"].asString() : "";
-            int spawn = scenes[sceneName].isMember("spawn") ? scenes[sceneName]["spawn"].asInt() : 1;
+            bool spawn = scenes[sceneName].isMember("spawn") ? scenes[sceneName]["spawn"].asBool() : true;
 
-            if (!addScene(sceneName, sceneDisplay, sceneAddress, spawn))
+            if (!addScene(sceneName, sceneDisplay, sceneAddress, spawn && _spawnSubprocesses))
                 continue;
 
             // Set the remaining parameters
@@ -227,6 +207,9 @@ void World::applyConfig()
                 sendMessage(sceneName, paramName, values);
             }
         }
+
+        // Reseeds the world branch into the Scene's trees
+        propagatePath("/world");
 
         // Configure each scenes
         // The first scene is the master one, and also receives some ghost objects
@@ -250,9 +233,6 @@ void World::applyConfig()
                 setAttribute("addObject", {objects[objectName]["type"].asString(), objectName, scene.first, false});
             }
 
-            // Set some default directories
-            sendMessage(SPLASH_ALL_PEERS, "configurationPath", {_configurationPath});
-            sendMessage(SPLASH_ALL_PEERS, "mediaPath", {_configurationPath});
             sendMessage(SPLASH_ALL_PEERS, "runInBackground", {_runInBackground});
         }
 
@@ -393,7 +373,7 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
 #endif
 
         int pid = -1;
-        if (spawn > 0)
+        if (spawn)
         {
             _sceneLaunched = false;
 
@@ -543,64 +523,31 @@ void World::saveConfig()
 {
     setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
 
-    Json::Value distantScenes;
-    distantScenes["scenes"] = Json::Value();
-
-    // Get the configuration from the different scenes
-    for (auto& s : _scenes)
-    {
-        Json::Value scene;
-        scene["name"] = s.first;
-        scene["address"] = "localhost"; // Distant scenes are not yet supported
-        distantScenes["scenes"].append(scene);
-
-        // Get this scene's configuration
-        Values answer = sendMessageWithAnswer(s.first, "config");
-
-        // Parse the string to get a json
-        Json::Value config;
-        Json::Reader reader;
-        reader.parse(answer[2].as<string>(), config);
-        distantScenes[s.first] = config;
-    }
-
     // Local objects configuration can differ from the scenes objects,
     // as their type is not necessarily identical
     for (const auto& sceneName : _config["scenes"].getMemberNames())
     {
-        //_config["scenes"][sceneName] = Json::Value();
-        if (distantScenes.isMember(sceneName))
+        if (!_tree.hasBranchAt("/" + sceneName))
+            continue;
+
+        // Set the scene configuration from what was received in the previous loop
+        auto scene = getRootConfigurationAsJson(sceneName);
+        for (const auto& attr : scene.getMemberNames())
         {
-            // Set the scene configuration from what was received in the previous loop
-            Json::Value& scene = distantScenes[sceneName];
-            for (const auto& attr : distantScenes[sceneName].getMemberNames())
+            if (attr != "objects")
             {
-                if (attr != "objects")
-                {
-                    _config["scenes"][sceneName][attr] = scene[attr];
-                }
-                else
-                {
-                    Json::Value::Members objectNames = scene["objects"].getMemberNames();
+                _config["scenes"][sceneName][attr] = scene[attr];
+            }
+            else
+            {
+                Json::Value::Members objectNames = scene["objects"].getMemberNames();
 
-                    _config["scenes"][sceneName][attr] = Json::Value();
-                    Json::Value& objects = _config["scenes"][sceneName]["objects"];
+                _config["scenes"][sceneName][attr] = Json::Value();
+                Json::Value& objects = _config["scenes"][sceneName]["objects"];
 
-                    for (auto& m : objectNames)
-                    {
-                        for (const auto& a : scene["objects"][m].getMemberNames())
-                            objects[m][a] = scene["objects"][m][a];
-
-                        const auto& obj = getObject(m);
-                        if (obj)
-                        {
-                            Json::Value worldObjValue = obj->getConfigurationAsJson();
-                            auto attributes = worldObjValue.getMemberNames();
-                            for (const auto& a : attributes)
-                                objects[m][a] = worldObjValue[a];
-                        }
-                    }
-                }
+                for (auto& m : objectNames)
+                    for (const auto& a : scene["objects"][m].getMemberNames())
+                        objects[m][a] = scene["objects"][m][a];
             }
         }
     }
@@ -608,7 +555,7 @@ void World::saveConfig()
     // Configuration from the world
     _config["description"] = SPLASH_FILE_CONFIGURATION;
     _config["version"] = string(PACKAGE_VERSION);
-    auto worldConfiguration = BaseObject::getConfigurationAsJson();
+    auto worldConfiguration = getRootConfigurationAsJson("world");
     for (const auto& attr : worldConfiguration.getMemberNames())
     {
         _config["world"][attr] = worldConfiguration[attr];
@@ -637,13 +584,7 @@ void World::saveProject()
         std::set<std::pair<string, string>> existingLinks{}; // We keep a list of already existing links
         for (auto& s : _scenes)
         {
-            // Get this scene's configuration
-            Values answer = sendMessageWithAnswer(s.first, "config");
-
-            // Parse the string to get a json
-            Json::Value config;
-            Json::Reader reader;
-            reader.parse(answer[2].as<string>(), config);
+            auto config = getRootConfigurationAsJson(s.first);
 
             for (auto& v : config["links"])
             {
@@ -674,15 +615,6 @@ void World::saveProject()
 
                 for (const auto& attr : config["objects"][member].getMemberNames())
                     root["objects"][member][attr] = config["objects"][member][attr];
-
-                // Check for configuration of this object held in the World context
-                const auto& obj = getObject(member);
-                if (obj)
-                {
-                    Json::Value worldObjValue = obj->getConfigurationAsJson();
-                    for (const auto& attr : worldObjValue.getMemberNames())
-                        root["objects"][member][attr] = worldObjValue[attr];
-                }
             }
         }
 
@@ -697,16 +629,39 @@ void World::saveProject()
 }
 
 /*************/
-Values World::getObjectsNameByType(const string& type)
+vector<string> World::getObjectsOfType(const string& type) const
 {
-    Values answer = sendMessageWithAnswer(_masterSceneName, "getObjectsNameByType", {type});
-    return answer[2].as<Values>();
+    vector<string> objectList;
+
+    for (const auto& rootName : _tree.getBranchList())
+    {
+        auto objectsPath = "/" + rootName + "/objects";
+        for (const auto& objectName : _tree.getBranchListAt(objectsPath))
+        {
+            if (type.empty())
+                objectList.push_back(objectName);
+
+            auto typePath = objectsPath + "/" + objectName + "/type";
+            assert(_tree.hasLeafAt(typePath));
+            Value typeValue;
+            _tree.getValueForLeafAt(typePath, typeValue);
+            if (typeValue[0].as<string>() == type)
+                objectList.push_back(objectName);
+        }
+    }
+
+    std::sort(objectList.begin(), objectList.end());
+    objectList.erase(std::unique(objectList.begin(), objectList.end()), objectList.end());
+
+    return objectList;
 }
 
 /*************/
-void World::handleSerializedObject(const string& name, shared_ptr<SerializedObject> obj)
+bool World::handleSerializedObject(const string& name, shared_ptr<SerializedObject> obj)
 {
-    _link->sendBuffer(name, obj);
+    if (!RootObject::handleSerializedObject(name, obj))
+        _link->sendBuffer(name, obj);
+    return true;
 }
 
 /*************/
@@ -725,7 +680,10 @@ void World::init()
 
         if (_linkSocketPrefix.empty())
             _linkSocketPrefix = to_string(static_cast<int>(getpid()));
-        _link = make_shared<Link>(this, _name);
+        _link = make_unique<Link>(this, _name);
+
+        registerAttributes();
+        initializeTree();
     }
 }
 
@@ -742,32 +700,9 @@ bool World::copyCameraParameters(const std::string& filename)
     // List of copyable types
     static vector<string> copyableTypes{"camera", "warp"};
 
-    ifstream in(filename, ios::in | ios::binary);
-    string contents;
-    if (in)
-    {
-        in.seekg(0, ios::end);
-        contents.resize(in.tellg());
-        in.seekg(0, ios::beg);
-        in.read(&contents[0], contents.size());
-        in.close();
-    }
-    else
-    {
-        Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to open file " << filename << Log::endl;
-        return false;
-    }
-
     Json::Value config;
-    Json::Reader reader;
-
-    bool success = reader.parse(contents, config);
-    if (!success)
-    {
-        Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to parse file " << filename << Log::endl;
-        Log::get() << Log::WARNING << reader.getFormattedErrorMessages() << Log::endl;
+    if (!Utils::loadJsonFile(filename, config))
         return false;
-    }
 
     // Get the scene names from this other configuration file
     for (const auto& s : config["scenes"].getMemberNames())
@@ -789,7 +724,7 @@ bool World::copyCameraParameters(const std::string& filename)
                 auto values = jsonToValues(attr);
 
                 // Send the new values for this attribute
-                sendMessage(name, attrName, values);
+                _tree.setValueForLeafAt("/" + s + "/objects/" + name + "/attributes/" + attrName, values);
             }
         }
     }
@@ -877,7 +812,6 @@ bool World::loadProject(const string& filename)
         _projectFilename = filename;
         // The configuration path is overriden with the project file path
         _configurationPath = Utils::getPathFromFilePath(_projectFilename);
-        sendMessage(SPLASH_ALL_PEERS, "configurationPath", {_configurationPath});
 
         // Now, we apply the configuration depending on the current state
         // Meaning, we replace objects with the same name, create objects with non-existing name,
@@ -920,7 +854,7 @@ bool World::loadProject(const string& filename)
                 }
                 else
                 {
-                    auto cameraNames = getObjectsNameByType("camera");
+                    auto cameraNames = getObjectsOfType("camera");
                     for (const auto& camera : cameraNames)
                         sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), camera});
                 }
@@ -998,14 +932,16 @@ void World::parseArguments(int argc, char** argv)
             {"log2file", no_argument, 0, 'l'},
             {"open", required_argument, 0, 'o'},
             {"prefix", required_argument, 0, 'p'},
+            {"python", required_argument, 0, 'P'},
             {"silent", no_argument, 0, 's'},
             {"timer", no_argument, 0, 't'},
             {"child", no_argument, 0, 'c'},
+            {"spawnProcesses", required_argument, 0, 'x'},
             {0, 0, 0, 0}
         };
 
         int optionIndex = 0;
-        auto ret = getopt_long(argc, argv, "+cdD:S:hHilo:p:P:st", longOptions, &optionIndex);
+        auto ret = getopt_long(argc, argv, "+cdD:S:hHilo:p:P:stx", longOptions, &optionIndex);
 
         if (ret == -1)
             break;
@@ -1017,7 +953,7 @@ void World::parseArguments(int argc, char** argv)
         {
             printWelcome();
 
-            cout << "Basic usage: splash [arguments] [config.json] -- [python script argument]" << endl;
+            cout << "Basic usage: splash [options] [config.json] -- [python script argument]" << endl;
             cout << "Options:" << endl;
             cout << "\t-o (--open) [filename] : set [filename] as the configuration file to open" << endl;
             cout << "\t-d (--debug) : activate debug messages (if Splash was compiled with -DDEBUG)" << endl;
@@ -1034,6 +970,7 @@ void World::parseArguments(int argc, char** argv)
             cout << "\t-l (--log2file) : write the logs to /var/log/splash.log, if possible" << endl;
             cout << "\t-p (--prefix) : set the shared memory socket paths prefix (defaults to the PID)" << endl;
             cout << "\t-c (--child): run as a child controlled by a master Splash process" << endl;
+            cout << "\t-x (--doNotSpawn): do not spawn subprocesses, which have to be ran manually" << endl;
             cout << endl;
             exit(0);
         }
@@ -1118,7 +1055,7 @@ void World::parseArguments(int argc, char** argv)
                 if (!_nameRegistry.registerName(pythonObjectName))
                     pythonObjectName = _nameRegistry.generateName("_pythonArgScript");
                 sendMessage(SPLASH_ALL_PEERS, "addObject", {"python", pythonObjectName, _masterSceneName});
-                sendMessage(pythonObjectName, "setSavable", {false});
+                sendMessage(pythonObjectName, "savable", {false});
                 sendMessage(pythonObjectName, "args", {pythonArgs});
                 sendMessage(pythonObjectName, "file", {pythonScriptPath});
             });
@@ -1160,6 +1097,11 @@ void World::parseArguments(int argc, char** argv)
         case 'c':
         {
             _runAsChild = true;
+            break;
+        }
+        case 'x':
+        {
+            _spawnSubprocesses = false;
             break;
         }
         }
@@ -1205,25 +1147,15 @@ void World::parseArguments(int argc, char** argv)
         }
     }
 
-    if (defaultFile)
+    if (defaultFile && !_runAsChild)
         Log::get() << Log::MESSAGE << "No filename specified, loading default file" << Log::endl;
-    else
+    else if (!_runAsChild)
         Log::get() << Log::MESSAGE << "Loading file " << filename << Log::endl;
-}
-
-/*************/
-void World::setAttribute(const string& name, const string& attrib, const Values& args)
-{
-    auto object = getObject(name);
-    if (object)
-        object->setAttribute(attrib, args);
 }
 
 /*************/
 void World::registerAttributes()
 {
-    RootObject::registerAttributes();
-
     addAttribute("addObject",
         [&](const Values& args) {
             addTask([=]() {
@@ -1239,19 +1171,19 @@ void World::registerAttributes()
 
                 if (scene.empty())
                 {
+                    addToWorld(type, name);
                     for (auto& s : _scenes)
                     {
                         sendMessage(s.first, "addObject", {type, name, s.first});
-                        addToWorld(type, name);
                         sendMessageWithAnswer(s.first, "sync");
                     }
                 }
                 else
                 {
+                    addToWorld(type, name);
                     sendMessage(scene, "addObject", {type, name, scene});
                     if (scene != _masterSceneName)
                         sendMessage(_masterSceneName, "addObject", {type, name, scene});
-                    addToWorld(type, name);
                     sendMessageWithAnswer(scene, "sync");
                 }
 
@@ -1311,105 +1243,6 @@ void World::registerAttributes()
         {'s', 's'});
     setAttributeDescription("unlink", "Unlink the two given objects");
 
-#if HAVE_LINUX
-    addAttribute("forceRealtime",
-        [&](const Values& args) {
-            _enforceRealtime = args[0].as<int>();
-
-            if (!_enforceRealtime)
-                return true;
-
-            addTask([=]() {
-                if (Utils::setRealTime())
-                    Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Set to realtime priority" << Log::endl;
-                else
-                    Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to set scheduling priority" << Log::endl;
-            });
-
-            return true;
-        },
-        [&]() -> Values { return {(int)_enforceRealtime}; },
-        {'n'});
-    setAttributeDescription("forceRealtime", "Ask the scheduler to run Splash with realtime priority.");
-#endif
-
-    addAttribute("framerate",
-        [&](const Values& args) {
-            _worldFramerate = std::max(1, args[0].as<int>());
-            return true;
-        },
-        [&]() -> Values { return {(int)_worldFramerate}; },
-        {'n'});
-    setAttributeDescription("framerate", "Set the minimum refresh rate for the world (adapted to video framerate)");
-
-    addAttribute("getAttribute",
-        [&](const Values& args) {
-            addTask([=]() {
-                auto objectName = args[0].as<string>();
-                auto attrName = args[1].as<string>();
-
-                auto object = getObject(objectName);
-                if (object)
-                {
-                    Values values{};
-                    object->getAttribute(attrName, values);
-
-                    values.push_front("getAttribute");
-                    sendMessage(SPLASH_ALL_PEERS, "answerMessage", values);
-                }
-                else
-                {
-                    sendMessage(SPLASH_ALL_PEERS, "answerMessage", {});
-                }
-            });
-
-            return true;
-        },
-        {'s', 's'});
-    setAttributeDescription("getAttribute", "Ask the given object for the given attribute");
-
-    addAttribute("getAttributeDescription",
-        [&](const Values& args) {
-            auto objectName = args[0].as<string>();
-            auto attrName = args[1].as<string>();
-
-            addTask([=]() {
-                lock_guard<recursive_mutex> lock(_objectsMutex);
-
-                auto object = getObject(objectName);
-                // If the object exists locally
-                if (object)
-                {
-                    Values values{"getAttributeDescription"};
-                    values.push_back(object->getAttributeDescription(attrName));
-                    sendMessage(SPLASH_ALL_PEERS, "answerMessage", values);
-                }
-                // Else, ask the Scenes for some info
-                else
-                {
-                    sendMessage(SPLASH_ALL_PEERS, "answerMessage", {""});
-                }
-            });
-
-            return true;
-        },
-        {'s', 's'});
-    setAttributeDescription("getAttributeDescription", "Ask the given object for the description of the given attribute");
-
-    addAttribute("getWorldAttribute",
-        [&](const Values& args) {
-            auto attrName = args[0].as<string>();
-            addTask([=]() {
-                Values attr;
-                getAttribute(attrName, attr);
-                attr.push_front("getWorldAttribute");
-                sendMessage(SPLASH_ALL_PEERS, "answerMessage", attr);
-            });
-            return true;
-        },
-        {'s'});
-    setAttributeDescription("getWorldAttribute", "Get a World's attribute and send it to the Scenes");
-
     addAttribute("loadConfig",
         [&](const Values& args) {
             string filename = args[0].as<string>();
@@ -1453,34 +1286,6 @@ void World::registerAttributes()
         {'s'});
     setAttributeDescription("copyCameraParameters", "Copy the camera parameters from the given configuration file (based on camera names)");
 
-#if HAVE_PORTAUDIO
-    addAttribute("clockDeviceName",
-        [&](const Values& args) {
-            addTask([=]() {
-                auto clockDeviceName = args[0].as<string>();
-                if (clockDeviceName != _clockDeviceName)
-                {
-                    _clockDeviceName = clockDeviceName;
-                    _clock.reset();
-                    _clock = unique_ptr<LtcClock>(new LtcClock(true, _clockDeviceName));
-                }
-            });
-
-            return true;
-        },
-        [&]() -> Values { return {_clockDeviceName}; },
-        {'s'});
-    setAttributeDescription("clockDeviceName", "Set the audio device name from which to read the LTC clock signal");
-#endif
-
-    addAttribute("looseClock",
-        [&](const Values& args) {
-            Timer::get().setLoose(args[0].as<bool>());
-            return true;
-        },
-        [&]() -> Values { return {static_cast<int>(Timer::get().isLoose())}; },
-        {'n'});
-
     addAttribute("pong",
         [&](const Values& args) {
             Timer::get() >> ("pingScene " + args[0].as<string>());
@@ -1493,27 +1298,6 @@ void World::registerAttributes()
         return true;
     });
     setAttributeDescription("quit", "Ask the world to quit");
-
-    addAttribute("setAlias",
-        [&](const Values& args) {
-            auto name = args[0].as<string>();
-            auto alias = args[1].as<string>();
-
-            addTask([=]() {
-                lock_guard<recursive_mutex> lock(_objectsMutex);
-
-                // Update the alias in the World
-                auto object = getObject(name);
-                if (object)
-                    object->setAlias(alias);
-
-                // Update the name in the Scenes
-                setAttribute("sendAll", {name, "alias", alias});
-            });
-
-            return true;
-        },
-        {'s', 's'});
 
     addAttribute("replaceObject",
         [&](const Values& args) {
@@ -1529,7 +1313,6 @@ void World::registerAttributes()
 
             setAttribute("deleteObject", {objName});
             setAttribute("addObject", {objType, objName, "", false});
-            setAttribute("setAlias", {objName, objAlias});
             addTask([=]() {
                 for (const auto& t : targets)
                     setAttribute("sendAllScenes", {"link", objName, t});
@@ -1545,7 +1328,7 @@ void World::registerAttributes()
             _configFilename = args[0].as<string>();
 
         addTask([=]() {
-            Log::get() << "Saving configuration" << Log::endl;
+            Log::get() << "Saving configuration to " << _configFilename << Log::endl;
             saveConfig();
         });
         return true;
@@ -1556,7 +1339,7 @@ void World::registerAttributes()
         [&](const Values& args) {
             _projectFilename = args[0].as<string>();
             addTask([=]() {
-                Log::get() << "Saving partial configuration to " << _projectFilename << Log::endl;
+                Log::get() << "Saving project to " << _projectFilename << Log::endl;
                 saveProject();
             });
             return true;
@@ -1639,7 +1422,7 @@ void World::registerAttributes()
             auto doPing = args[0].as<int>();
             if (doPing)
             {
-                addRecurringTask("pingTest", [&]() {
+                addPeriodicTask("pingTest", [&]() {
                     static auto frameIndex = 0;
                     if (frameIndex == 0)
                     {
@@ -1654,7 +1437,7 @@ void World::registerAttributes()
             }
             else
             {
-                removeRecurringTask("pingTest");
+                removePeriodicTask("pingTest");
             }
 
             return true;
@@ -1667,7 +1450,7 @@ void World::registerAttributes()
             _swapSynchronizationTesting = args[0].as<int>();
             if (_swapSynchronizationTesting)
             {
-                addRecurringTask("swapTest", [&]() {
+                addPeriodicTask("swapTest", [&]() {
                     sendMessage(SPLASH_ALL_PEERS, "swapTest", {1});
                     static auto frameNbr = 0;
                     static auto frameStatus = 0;
@@ -1692,7 +1475,7 @@ void World::registerAttributes()
             }
             else
             {
-                removeRecurringTask("swapTest");
+                removePeriodicTask("swapTest");
                 addTask([&]() { sendMessage(SPLASH_ALL_PEERS, "swapTest", {0}); });
             }
             return true;
@@ -1709,24 +1492,101 @@ void World::registerAttributes()
         {'n'});
     setAttributeDescription("wireframe", "Show all meshes as wireframes if set to 1");
 
-    addAttribute("configurationPath",
+#if HAVE_LINUX
+    addAttribute("forceRealtime",
         [&](const Values& args) {
-            _configurationPath = args[0].as<string>();
-            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "configurationPath", {_configurationPath}); });
+            _enforceRealtime = args[0].as<int>();
+
+            if (!_enforceRealtime)
+                return true;
+
+            addTask([=]() {
+                if (Utils::setRealTime())
+                    Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Set to realtime priority" << Log::endl;
+                else
+                    Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to set scheduling priority" << Log::endl;
+            });
+
             return true;
         },
-        [&]() -> Values { return {_configurationPath}; },
+        [&]() -> Values { return {(int)_enforceRealtime}; },
+        {'n'});
+    setAttributeDescription("forceRealtime", "Ask the scheduler to run Splash with realtime priority.");
+#endif
+
+    addAttribute("framerate",
+        [&](const Values& args) {
+            _worldFramerate = std::max(1, args[0].as<int>());
+            return true;
+        },
+        [&]() -> Values { return {(int)_worldFramerate}; },
+        {'n'});
+    setAttributeDescription("framerate", "Set the minimum refresh rate for the world (adapted to video framerate)");
+
+#if HAVE_PORTAUDIO
+    addAttribute("clockDeviceName",
+        [&](const Values& args) {
+            addTask([=]() {
+                auto clockDeviceName = args[0].as<string>();
+                if (clockDeviceName != _clockDeviceName)
+                {
+                    _clockDeviceName = clockDeviceName;
+                    _clock.reset();
+                    _clock = unique_ptr<LtcClock>(new LtcClock(true, _clockDeviceName));
+                }
+            });
+
+            return true;
+        },
+        [&]() -> Values { return {_clockDeviceName}; },
         {'s'});
+    setAttributeDescription("clockDeviceName", "Set the audio device name from which to read the LTC clock signal");
+#endif
+
+    addAttribute("configurationPath", [&](const Values& /*args*/) { return true; }, [&]() -> Values { return {_configurationPath}; }, {'s'});
     setAttributeDescription("configurationPath", "Path to the configuration files");
 
     addAttribute("mediaPath",
         [&](const Values& args) {
-            _mediaPath = args[0].as<string>();
-            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "mediaPath", {_mediaPath}); });
+            auto path = args[0].as<string>();
+            if (Utils::isDir(path))
+                _mediaPath = args[0].as<string>();
             return true;
         },
         [&]() -> Values { return {_mediaPath}; },
         {'s'});
     setAttributeDescription("mediaPath", "Path to the media files");
+
+    addAttribute("looseClock",
+        [&](const Values& args) {
+            Timer::get().setLoose(args[0].as<bool>());
+            return true;
+        },
+        [&]() -> Values { return {static_cast<int>(Timer::get().isLoose())}; },
+        {'n'});
+
+    addAttribute("clock", [&](const Values& /*args*/) { return true; }, [&]() -> Values { return {Timer::getTime()}; }, {});
+    setAttributeDescription("clock", "Current World clock (not settable)");
+
+    addAttribute("masterClock",
+        [&](const Values& /*args*/) { return true; },
+        [&]() -> Values {
+            Timer::Point masterClock;
+            if (Timer::get().getMasterClock(masterClock))
+                return {masterClock.years, masterClock.months, masterClock.days, masterClock.hours, masterClock.mins, masterClock.secs, masterClock.frame, masterClock.paused};
+            else
+                return {};
+        },
+        {});
+    setAttributeDescription("masterClock", "Current World master clock (not settable)");
+
+    RootObject::registerAttributes();
 }
+
+/*************/
+void World::initializeTree()
+{
+    _tree.setName(_name);
 }
+
+} // namespace Splash

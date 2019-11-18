@@ -36,6 +36,9 @@
 #include "./core/factory.h"
 #include "./core/graph_object.h"
 #include "./core/link.h"
+#include "./core/name_registry.h"
+#include "./core/tree.h"
+#include "./utils/dense_map.h"
 
 namespace Splash
 {
@@ -53,15 +56,31 @@ class RootObject : public BaseObject
     friend UserInput;
 
   public:
+    enum Command
+    {
+        callObject,
+        callRoot
+    };
+
+  public:
     /**
-     * \brief Constructor
+     * Constructor
      */
     RootObject();
 
     /**
-     * \brief Destructor
+     * Destructor
      */
-    virtual ~RootObject() override;
+    virtual ~RootObject() override = default;
+
+    /**
+     * Add a command into the tree
+     * \param root Target root object
+     * \param cmd Command type
+     * \param args Command arguments
+     * \return Return true if the command has been added successfully
+     */
+    bool addTreeCommand(const std::string& root, Command cmd, const Values& args);
 
     /**
      * Create and return an object given its type and name
@@ -76,6 +95,11 @@ class RootObject : public BaseObject
      * \param name Object name
      */
     void disposeObject(const std::string& name);
+
+    /**
+     * Execute the commands stored in the tree
+     */
+    void executeTreeCommands();
 
     /**
      * Get the object of the given name
@@ -94,13 +118,33 @@ class RootObject : public BaseObject
      * \brief Get the configuration path
      * \return Return the configuration path
      */
-    std::string getConfigurationPath() const { return _configurationPath; }
+    std::string getConfigurationPath() const
+    {
+        Value value;
+        _tree.getValueForLeafAt("/world/attributes/configurationPath", value);
+        if (value.size() > 0 && value.getType() == Value::Type::values)
+            return value[0].as<std::string>();
+        return "";
+    }
 
     /**
      * \brief Get the media path
      * \return Return the media path
      */
-    std::string getMediaPath() const { return _mediaPath; }
+    std::string getMediaPath() const
+    {
+        Value value;
+        _tree.getValueForLeafAt("/world/attributes/mediaPath", value);
+        if (value.size() > 0 && value.getType() == Value::Type::values)
+            return value[0].as<std::string>();
+        return "";
+    }
+
+    /**
+     * Get a reference to the root tree
+     * \return Return the Tree::Root
+     */
+    Tree::RootHandle getTree() { return _tree.getHandle(); }
 
     /**
      * \brief Set the attribute of the named object with the given args
@@ -130,7 +174,7 @@ class RootObject : public BaseObject
      * \brief Return a lock object list modifications (addition, deletion)
      * \return Return a lock object which unlocks the mutex upon deletion
      */
-    std::unique_lock<std::recursive_mutex> getLockOnObjects() { return std::move(std::unique_lock<std::recursive_mutex>(_objectsMutex)); }
+    std::unique_lock<std::recursive_mutex> getLockOnObjects() { return std::unique_lock<std::recursive_mutex>(_objectsMutex); }
 
     /**
      * \brief Signals that a BufferObject has been updated
@@ -138,11 +182,12 @@ class RootObject : public BaseObject
     void signalBufferObjectUpdated();
 
   protected:
-    std::string _configurationPath{""}; //!< Path to the configuration file
-    std::string _mediaPath{""};         //!< Default path to the medias
+    Tree::Root _tree{}; //!< Configuration / status tree, shared between all root objects
+    std::unordered_map<std::string, int> _treeCallbackIds{};
+    std::unordered_map<std::string, CallbackHandle> _attributeCallbackHandles{};
 
-    std::unique_ptr<Factory> _factory; //!< Object factory
-    std::shared_ptr<Link> _link;       //!< Link object for communicatin between World and Scene
+    std::unique_ptr<Factory> _factory{}; //!< Object factory
+    std::unique_ptr<Link> _link{};       //!< Link object for communicatin between World and Scene
     std::string _linkSocketPrefix{""}; //!< Prefix to add to shared memory socket paths
 
     Values _lastAnswerReceived{}; //!< Holds the last answer received through the link
@@ -157,13 +202,9 @@ class RootObject : public BaseObject
     Spinlock _bufferObjectSingleMutex{};
     bool _bufferObjectUpdated = ATOMIC_FLAG_INIT;
 
-    // Tasks queue
-    std::mutex _recurringTaskMutex{};
-    std::map<std::string, std::function<void()>> _recurringTasks{};
-
-    mutable std::recursive_mutex _objectsMutex{};                             //!< Used in registration and unregistration of objects
-    std::atomic_bool _objectsCurrentlyUpdated{false};                         //!< Prevents modification of objects from multiple places at the same time
-    std::unordered_map<std::string, std::shared_ptr<GraphObject>> _objects{}; //!< Map of all the objects
+    mutable std::recursive_mutex _objectsMutex{};                   //!< Used in registration and unregistration of objects
+    std::atomic_bool _objectsCurrentlyUpdated{false};               //!< Prevents modification of objects from multiple places at the same time
+    DenseMap<std::string, std::shared_ptr<GraphObject>> _objects{}; //!< Map of all the objects
 
     /**
      * \brief Wait for a BufferObject update. This does not prevent spurious wakeups.
@@ -176,32 +217,58 @@ class RootObject : public BaseObject
      * \brief Method to process a serialized object
      * \param name Object name to receive the serialized object
      * \param obj Serialized object
+     * \return Return true if the object has been handled
      */
-    virtual void handleSerializedObject(const std::string& /*name*/, std::shared_ptr<SerializedObject> /*obj*/) {}
+    virtual bool handleSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj);
 
     /**
-     * Add a task repeated at each frame
-     * \param name Task name
-     * \param task Task function
+     * Force the propagation of a specific path
+     * \param path Path to propagate
      */
-    void addRecurringTask(const std::string& name, const std::function<void()>& task);
+    void propagatePath(const std::string& path);
 
     /**
-     * Remove a recurring task
-     * \param name Task name
+     * Propagate the Tree to peers
      */
-    void removeRecurringTask(const std::string& name);
-
-    /**
-     * Execute all the tasks in the queue
-     * Root objects can have recursive tasks, so they get their own version of this method
-     */
-    void runTasks() final;
+    void propagateTree();
 
     /**
      * \brief Register new functors to modify attributes
      */
     void registerAttributes();
+
+    /**
+     * Update the tree from the root Objects
+     */
+    void updateTreeFromObjects();
+
+    /**
+     * Initialize the tree
+     */
+    void initializeTree();
+
+    /**
+     * \brief Converts a Value as a Json object
+     * \param values Value to convert
+     * \param asObject If true, return a Json object
+     * \return Returns a Json object
+     */
+    Json::Value getValuesAsJson(const Values& values, bool asObject = false) const;
+
+    /**
+     * Save the given objects tree in a Json::Value
+     * \param object Object name
+     * \param rootObject Root name
+     * \return Return the configuration as a Json::Value
+     */
+    Json::Value getObjectConfigurationAsJson(const std::string& object, const std::string& rootObject = "");
+
+    /**
+     * Save the given root object tree in a Json::Value
+     * \param rootName Root name
+     * \return Return the configuration as a Json::Value
+     */
+    Json::Value getRootConfigurationAsJson(const std::string& rootName);
 
     /**
      * \brief Send a message to another root object

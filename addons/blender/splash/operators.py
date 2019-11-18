@@ -181,7 +181,7 @@ class Splash:
                 try:
                     from pyshmdata import Writer
                     os.remove(target._texWriterPath)
-                except os.error as e:
+                except os.error:
                     pass
 
                 if target._texWriter is not None:
@@ -206,7 +206,7 @@ class SplashActivateSendMesh(Operator):
     def execute(self, context):
         try:
             from pyshmdata import Writer
-        except os.error as e:
+        except os.error:
             print("Module pyshmdata was not found")
             return {'FINISHED'}
 
@@ -234,7 +234,7 @@ class SplashActivateSendMesh(Operator):
             path = splash.outputPathPrefix + "_mesh_" + splash.targetObject
             try:
                 os.remove(path)
-            except os.error as e:
+            except os.error:
                 pass
 
             splashTarget._meshWriter = Writer(path=path, datatype="application/x-polymesh")
@@ -298,12 +298,12 @@ class SplashExportNodeTree(Operator):
     bl_idname = "splash.export_node_tree"
     bl_label = "Exports the node tree"
 
-    filepath = bpy.props.StringProperty(subtype='FILE_PATH')
-    filter_glob = bpy.props.StringProperty(default="*.json", options={'HIDDEN'})
+    filepath : bpy.props.StringProperty(subtype='FILE_PATH')
+    filter_glob : bpy.props.StringProperty(default="*.json", options={'HIDDEN'})
 
-    node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
-    export_project = BoolProperty(name='export_project', description='If True, the tree will contain only meshes and images data', default=False)
-    export_only_nodes = BoolProperty(name='export_only_nodes', description='If True, the tree is not exported, but nodes are evaluated anyway', default=False)
+    node_name : StringProperty(name='Node name', description='Name of the calling node', default='')
+    export_project : BoolProperty(name='export_project', description='If True, the tree will contain only meshes and images data', default=False)
+    export_only_nodes : BoolProperty(name='export_only_nodes', description='If True, the tree is not exported, but nodes are evaluated anyway', default=False)
 
     world_node = None
     scene_order = []
@@ -487,9 +487,9 @@ class SplashSelectFilePath(Operator):
     bl_idname = "splash.select_file_path"
     bl_label = "Select a file path"
 
-    filepath = bpy.props.StringProperty(subtype='FILE_PATH')
+    filepath : bpy.props.StringProperty(subtype='FILE_PATH')
 
-    node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
+    node_name : StringProperty(name='Node name', description='Name of the calling node', default='')
     current_node = None
 
     def execute(self, context):
@@ -516,7 +516,7 @@ class SplashSelectObject(Operator):
     bl_idname = "splash.select_object"
     bl_label = "Select an Object"
 
-    node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
+    node_name : StringProperty(name='Node name', description='Name of the calling node', default='')
     current_node = None
 
     def execute(self, context):
@@ -543,7 +543,7 @@ class SplashSelectCamera(Operator):
     bl_idname = "splash.select_camera"
     bl_label = "Select a camera"
 
-    node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
+    node_name : StringProperty(name='Node name', description='Name of the calling node', default='')
     current_node = None
 
     def execute(self, context):

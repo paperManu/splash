@@ -25,26 +25,35 @@
 #ifndef SPLASH_VALUE_H
 #define SPLASH_VALUE_H
 
+#include <cassert>
 #include <deque>
 #include <memory>
 #include <string>
+#include <variant>
+
+#include "./core/resizable_array.h"
+#include "./utils/dense_deque.h"
 
 namespace Splash
 {
 
 struct Value;
-using Values = std::deque<Value>;
+using Values = DenseDeque<Value>;
 
 /*************/
 struct Value
 {
   public:
-    enum Type
+    using Buffer = ResizableArray<uint8_t>;
+
+  public:
+    enum Type : uint8_t
     {
         integer = 0, // integer
         real,        // float
         string,      // string
-        values       // values
+        values,      // values
+        buffer       // buffer
     };
 
     Value() = default;
@@ -53,7 +62,7 @@ struct Value
     Value(const T& v, const std::string& name = "")
         : _name(name)
         , _type(Type::integer)
-        , _integer(v)
+        , _data(static_cast<int64_t>(v))
     {
     }
 
@@ -61,7 +70,7 @@ struct Value
     Value(const T& v, const std::string& name = "")
         : _name(name)
         , _type(Type::real)
-        , _real(v)
+        , _data(static_cast<double>(v))
     {
     }
 
@@ -69,7 +78,7 @@ struct Value
     Value(const T& v, const std::string& name = "")
         : _name(name)
         , _type(Type::string)
-        , _string(v)
+        , _data(v)
     {
     }
 
@@ -77,7 +86,7 @@ struct Value
     Value(T c, const std::string& name = "")
         : _name(name)
         , _type(Type::string)
-        , _string(c)
+        , _data(c)
     {
     }
 
@@ -85,7 +94,15 @@ struct Value
     Value(const T& v, const std::string& name = "")
         : _name(name)
         , _type(Type::values)
-        , _values(std::make_unique<Values>(v))
+        , _data(v)
+    {
+    }
+
+    template <class T, typename std::enable_if<std::is_same<T, Buffer>::value>::type* = nullptr>
+    Value(const T& v, const std::string& name = "")
+        : _name(name)
+        , _type(Type::buffer)
+        , _data(v)
     {
     }
 
@@ -96,20 +113,7 @@ struct Value
         {
             _name = v._name;
             _type = v._type;
-            _integer = v._integer;
-            _real = v._real;
-            _string = v._string;
-
-            if (v._values)
-            {
-                _values = std::make_unique<Values>();
-                if (v._values)
-                    *_values = *(v._values);
-            }
-            else
-            {
-                _values.reset(nullptr);
-            }
+            _data = v._data;
         }
 
         return *this;
@@ -123,15 +127,9 @@ struct Value
 
     template <class InputIt>
     Value(InputIt first, InputIt last)
-        : _values(std::make_unique<Values>())
-        , _type(Type::values)
+        : _type(Type::values)
+        , _data(Values(first, last))
     {
-        auto it = first;
-        while (it != last)
-        {
-            _values->push_back(Value(*it));
-            ++it;
-        }
     }
 
     bool operator==(const Value& v) const
@@ -145,31 +143,66 @@ struct Value
         switch (_type)
         {
         default:
+            assert(false);
             return false;
         case Type::integer:
-            return _integer == v._integer;
+            return std::get<int64_t>(_data) == std::get<int64_t>(v._data);
         case Type::real:
-            return _real == v._real;
+            return std::get<double>(_data) == std::get<double>(v._data);
         case Type::string:
-            return _string == v._string;
+            return std::get<std::string>(_data) == std::get<std::string>(v._data);
         case Type::values:
-            if (_values->size() != v._values->size())
+        {
+            auto& data = std::get<Values>(_data);
+            auto& other = std::get<Values>(v._data);
+            if (data.size() != other.size())
                 return false;
             bool isEqual = true;
-            for (uint32_t i = 0; i < _values->size(); ++i)
-                isEqual &= (_values->at(i) == v._values->at(i));
+            for (uint32_t i = 0; i < data.size(); ++i)
+                isEqual &= (data[i] == other[i]);
             return isEqual;
         }
+        case Type::buffer:
+        {
+            auto& data = std::get<Buffer>(_data);
+            auto& other = std::get<Buffer>(v._data);
+            if (data.size() != other.size())
+                return false;
+            for (uint32_t i = 0; i < data.size(); ++i)
+                if (data[i] != other[i])
+                    return false;
+            return true;
+        }
+        }
+    }
+
+    bool operator==(const Values v) const
+    {
+        if (_type != Type::values)
+            return false;
+
+        auto& data = std::get<Values>(_data);
+        if (data.size() != v.size())
+            return false;
+        bool isEqual = true;
+        for (uint32_t i = 0; i < data.size(); ++i)
+            isEqual &= (data[i] == v[i]);
+        return isEqual;
     }
 
     bool operator!=(const Value& v) const { return !operator==(v); }
 
     Value& operator[](int index)
     {
-        if (_type != Type::values)
-            return *this;
+        if (_type == Type::values)
+        {
+            auto& data = std::get<Values>(_data);
+            return data[index];
+        }
         else
-            return _values->at(index);
+        {
+            return *this;
+        }
     }
 
     template <class T, typename std::enable_if<std::is_same<T, std::string>::value>::type* = nullptr>
@@ -178,13 +211,39 @@ struct Value
         switch (_type)
         {
         default:
+            assert(false);
             return "";
         case Type::integer:
-            return std::to_string(_integer);
+            return std::to_string(std::get<int64_t>(_data));
         case Type::real:
-            return std::to_string(_real);
+            return std::to_string(std::get<double>(_data));
         case Type::string:
-            return _string;
+            return std::get<std::string>(_data);
+        case Type::values:
+        {
+            auto& data = std::get<Values>(_data);
+            std::string out = "[";
+            for (uint32_t i = 0; i < data.size(); ++i)
+            {
+                out += data[i].as<std::string>();
+                if (data.size() > 1 && i < data.size() - 1)
+                    out += ", ";
+            }
+            out += "]";
+            return out;
+        }
+        case Type::buffer:
+        {
+            auto& data = std::get<Buffer>(_data);
+            std::string out = "(";
+            const static size_t maxBufferPrinted = 16;
+            for (uint32_t i = 0; i < std::min(static_cast<size_t>(maxBufferPrinted), data.size()); ++i)
+                out += std::to_string(data[i]);
+            if (data.size() > maxBufferPrinted)
+                out += "...";
+            out += ")";
+            return out;
+        }
         }
     }
 
@@ -194,20 +253,25 @@ struct Value
         switch (_type)
         {
         default:
+            assert(false);
             return 0;
         case Type::integer:
-            return _integer;
+            return std::get<int64_t>(_data);
         case Type::real:
-            return _real;
+            return std::get<double>(_data);
         case Type::string:
             try
             {
-                return std::stof(_string);
+                return std::stof(std::get<std::string>(_data));
             }
             catch (...)
             {
                 return 0;
             }
+        case Type::values:
+            return 0;
+        case Type::buffer:
+            return 0;
         }
     }
 
@@ -217,16 +281,27 @@ struct Value
         switch (_type)
         {
         default:
+            assert(false);
             return {};
         case Type::integer:
-            return {_integer};
+            return {std::get<int64_t>(_data)};
         case Type::real:
-            return {_real};
+            return {std::get<double>(_data)};
         case Type::string:
-            return {_string};
+            return {std::get<std::string>(_data)};
         case Type::values:
-            return *_values;
+            return std::get<Values>(_data);
+        case Type::buffer:
+            return {};
         }
+    }
+
+    template <class T, typename std::enable_if<std::is_same<T, Buffer>::value>::type* = nullptr>
+    T as() const
+    {
+        if (_type != Type::buffer)
+            return {};
+        return std::get<Buffer>(_data);
     }
 
     void* data()
@@ -234,13 +309,38 @@ struct Value
         switch (_type)
         {
         default:
+            assert(false);
             return nullptr;
         case Type::integer:
-            return (void*)&_integer;
+            return reinterpret_cast<void*>(const_cast<int64_t*>(&std::get<int64_t>(_data)));
         case Type::real:
-            return (void*)&_real;
+            return reinterpret_cast<void*>(const_cast<double*>(&std::get<double>(_data)));
         case Type::string:
-            return (void*)_string.c_str();
+            return reinterpret_cast<void*>(const_cast<char*>(std::get<std::string>(_data).c_str()));
+        case Type::values:
+            return nullptr;
+        case Type::buffer:
+            return std::get<Buffer>(_data).data();
+        }
+    }
+
+    const void* data() const
+    {
+        switch (_type)
+        {
+        default:
+            assert(false);
+            return nullptr;
+        case Type::integer:
+            return reinterpret_cast<void*>(const_cast<int64_t*>(&std::get<int64_t>(_data)));
+        case Type::real:
+            return reinterpret_cast<void*>(const_cast<double*>(&std::get<double>(_data)));
+        case Type::string:
+            return reinterpret_cast<void*>(const_cast<char*>(std::get<std::string>(_data).c_str()));
+        case Type::values:
+            return nullptr;
+        case Type::buffer:
+            return std::get<Buffer>(_data).data();
         }
     }
 
@@ -254,6 +354,7 @@ struct Value
         switch (_type)
         {
         default:
+            assert(false);
             return ' ';
         case Type::integer:
             return 'n';
@@ -263,34 +364,36 @@ struct Value
             return 's';
         case Type::values:
             return 'v';
+        case Type::buffer:
+            return 'b';
         }
     }
 
-    uint32_t size() const
+    size_t size() const
     {
         switch (_type)
         {
         default:
+            assert(false);
             return 0;
         case Type::integer:
-            return sizeof(_integer);
+            return sizeof(int64_t);
         case Type::real:
-            return sizeof(_real);
+            return sizeof(double);
         case Type::string:
-            return _string.size();
+            return std::get<std::string>(_data).size();
         case Type::values:
-            return _values->size();
+            return std::get<Values>(_data).size();
+        case Type::buffer:
+            return std::get<Buffer>(_data).size();
         }
     }
 
   private:
     std::string _name{""};
     Type _type{Type::integer};
-    int64_t _integer{0};
-    double _real{0.0};
-    std::string _string{""};
-    std::unique_ptr<Values> _values{nullptr};
-};
+    std::variant<int64_t, double, std::string, Values, Buffer> _data;
+}; // namespace Splash
 
 } // namespace Splash
 

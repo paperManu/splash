@@ -379,13 +379,9 @@ void Camera::drawModelOnce(const std::string& modelName, const glm::dmat4& rtMat
 }
 
 /*************/
-bool Camera::linkTo(const shared_ptr<GraphObject>& obj)
+bool Camera::linkIt(const shared_ptr<GraphObject>& obj)
 {
-    // Mandatory before trying to link
-    if (!GraphObject::linkTo(obj))
-        return false;
-
-    if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Object>(obj))
     {
         auto obj3D = dynamic_pointer_cast<Object>(obj);
         _objects.push_back(obj3D);
@@ -398,7 +394,7 @@ bool Camera::linkTo(const shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void Camera::unlinkFrom(const shared_ptr<GraphObject>& obj)
+void Camera::unlinkIt(const shared_ptr<GraphObject>& obj)
 {
     auto objIterator = find_if(_objects.begin(), _objects.end(), [&](const std::weak_ptr<Object> o) {
         if (o.expired())
@@ -411,8 +407,6 @@ void Camera::unlinkFrom(const shared_ptr<GraphObject>& obj)
 
     if (objIterator != _objects.end())
         _objects.erase(objIterator);
-
-    GraphObject::unlinkFrom(obj);
 }
 
 /*************/
@@ -536,6 +530,9 @@ Values Camera::pickVertexOrCalibrationPoint(float x, float y)
 /*************/
 void Camera::render()
 {
+    // Keep the timestamp of the newest object
+    int64_t timestamp{0};
+
     if (_updateColorDepth)
     {
         _msFbo->setParameters(_multisample, _render16bits, false);
@@ -597,6 +594,7 @@ void Camera::render()
             if (!obj)
                 continue;
 
+            timestamp = std::max(timestamp, obj->getTimestamp());
             obj->activate();
 
             vec2 colorBalance = colorBalanceFromTemperature(_colorTemperature);
@@ -742,6 +740,18 @@ void Camera::render()
     {
         _outFbo->unbindDraw();
     }
+
+    if (_grabMipmapLevel >= 0)
+    {
+        auto colorTexture = _outFbo->getColorTexture();
+        colorTexture->generateMipmap();
+        _mipmapBuffer = colorTexture->grabMipmap(_grabMipmapLevel).getRawBuffer();
+        auto spec = colorTexture->getSpec();
+        _mipmapBufferSpec = {spec.width, spec.height, spec.channels, spec.bpp, spec.format};
+    }
+
+    // Set the timestamp for the output texture
+    _outFbo->getColorTexture()->setTimestamp(timestamp);
 
 #ifdef DEBUG
     GLenum error = glGetError();
@@ -952,7 +962,6 @@ double Camera::calibrationCostFunc(const gsl_vector* v, void* params)
 
     dmat4 lookM = lookAt(eye, target, up);
     dmat4 projM = dmat4(getProjectionMatrix(fov, camera._near, camera._far, camera._width, camera._height, cx, cy));
-    dmat4 modelM(1.0);
     dvec4 viewport(0, 0, camera._width, camera._height);
 
     // Project all the object points, and measure the distance between them and the image points
@@ -1001,7 +1010,9 @@ dmat4 Camera::computeViewMatrix()
 /*************/
 void Camera::loadDefaultModels()
 {
-    map<string, string> files{{"3d_marker", "3d_marker.obj"}, {"2d_marker", "2d_marker.obj"}, {"camera", "camera.obj"}, {"probe", "probe.obj"}};
+    auto datapath = string(DATADIR);
+    map<string, string> files{
+        {"3d_marker", datapath + "/3d_marker.obj"}, {"2d_marker", datapath + "/2d_marker.obj"}, {"camera", datapath + "/camera.obj"}, {"probe", datapath + "/probe.obj"}};
 
     auto scene = dynamic_cast<Scene*>(_root);
     assert(scene != nullptr);
@@ -1015,6 +1026,20 @@ void Camera::loadDefaultModels()
         assert(object != nullptr);
 
         object->setAttribute("fill", {"color"});
+    }
+}
+
+/*************/
+void Camera::removeCalibrationPointsFromObjects()
+{
+    for (auto& objWeakPtr : _objects)
+    {
+        auto object = objWeakPtr.lock();
+        if (!object)
+            continue;
+
+        for (auto& point : _calibrationPoints)
+            object->removeCalibrationPoint(point.world);
     }
 }
 
@@ -1293,6 +1318,9 @@ void Camera::registerAttributes()
     // Store / restore calibration points
     addAttribute("calibrationPoints",
         [&](const Values& args) {
+            removeCalibrationPointsFromObjects();
+            _calibrationPoints.clear();
+
             for (auto& arg : args)
             {
                 if (arg.getType() != Value::Type::values)
@@ -1311,7 +1339,6 @@ void Camera::registerAttributes()
             }
 
             sendCalibrationPointsToObjects();
-
             return true;
         },
         [&]() -> Values {
@@ -1553,6 +1580,23 @@ void Camera::registerAttributes()
         },
         {'n'});
     setAttributeDescription("showCameraCount", "If set to 1, shows visually the camera count, encoded in binary in RGB (blending has to be activated)");
+
+    //
+    // Mipmap capture
+    addAttribute("grabMipmapLevel",
+        [&](const Values& args) {
+            _grabMipmapLevel = args[0].as<int>();
+            return true;
+        },
+        [&]() -> Values { return {_grabMipmapLevel}; },
+        {'n'});
+    setAttributeDescription("grabMipmapLevel", "If set to 0 or superior, sync the rendered texture to the 'buffer' attribute, at the given mipmap level");
+
+    addAttribute("buffer", [&](const Values&) { return true; }, [&]() -> Values { return {_mipmapBuffer}; }, {});
+    setAttributeDescription("buffer", "Getter attribute which gives access to the mipmap image, if grabMipmapLevel is greater or equal to 0");
+
+    addAttribute("bufferSpec", [&](const Values&) { return true; }, [&]() -> Values { return _mipmapBufferSpec; }, {});
+    setAttributeDescription("bufferSpec", "Getter attribute to the specs of the attribute buffer");
 
     //
     // Various options

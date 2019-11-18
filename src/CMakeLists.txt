@@ -28,13 +28,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLM_ENABLE_EXPERIMENTAL")
 set_source_files_properties(
     ../external/imgui/imgui_demo.cpp
     ../external/imgui/imgui_draw.cpp
+    ../external/imgui/imgui_widgets.cpp
     ../external/imgui/imgui.cpp
-	../external/jsoncpp/jsoncpp.cpp
 	../external/hap/source/hap.c
     PROPERTIES COMPILE_FLAGS "-Wno-error -Wno-all -Wno-extra -Wno-sign-compare -Wno-deprecated-declarations"
 )
 
 set_source_files_properties(
+    controller/geometriccalibrator.cpp
     graphics/camera.cpp
     PROPERTIES COMPILE_FLAGS "-Wno-error=strict-aliasing -Wno-strict-aliasing"
 )
@@ -42,7 +43,7 @@ set_source_files_properties(
 if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
   set_source_files_properties(
       image/image.cpp
-      PROPERTIES COMPILE_FLAGS "-Wno-error=implicit-fallthrough= -Wno-implicit-fallthrough"
+      PROPERTIES COMPILE_FLAGS "-Wno-error=implicit-fallthrough -Wno-implicit-fallthrough -Wno-error=type-limits -Wno-type-limits"
   )
 endif()
 
@@ -58,7 +59,6 @@ endif()
 
 include_directories(../external/hap/source)
 include_directories(../external/imgui)
-include_directories(../external/jsoncpp)
 include_directories(../external/libltc/src)
 include_directories(../external/stb)
 include_directories(../external/syphon/build/Release/Syphon.framework/Headers)
@@ -68,15 +68,12 @@ if (HAVE_DATAPATH)
     include_directories(${DATAPATH_SDK_PATH}/utils/include)
 endif()
 
-if (APPLE)
-    include_directories(../external/glad/compatibility/include)
-else()
     include_directories(../external/glad/core/include)
-endif()
 
 include_directories(${GLFW_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIRS})
 include_directories(${ZMQ_INCLUDE_DIRS})
+include_directories(${JSONCPP_INCLUDE_DIRS})
 include_directories(${SHMDATA_INCLUDE_DIRS})
 include_directories(${GPHOTO_INCLUDE_DIRS})
 include_directories(${FFMPEG_INCLUDE_DIRS})
@@ -84,6 +81,7 @@ include_directories(${PORTAUDIO_INCLUDE_DIRS})
 include_directories(${OPENCV_INCLUDE_DIRS})
 include_directories(${SNAPPY_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
+include_directories(${SLAPS_INCLUDE_DIRS})
 
 # Distributed third parties first
 link_directories(${FFMPEG_LIBRARY_DIRS})
@@ -91,12 +89,15 @@ link_directories(${SNAPPY_LIBRARY_DIRS})
 link_directories(${ZMQ_LIBRARY_DIRS})
 link_directories(${GLFW_LIBRARY_DIRS})
 
+link_directories(${JSONCPP_LIBRARY_DIRS})
 link_directories(${GSL_LIBRARY_DIRS})
 link_directories(${SHMDATA_LIBRARY_DIRS})
 link_directories(${GPHOTO_LIBRARY_DIRS})
 link_directories(${PORTAUDIO_LIBRARY_DIRS})
 link_directories(${OPENCV_LIBRARY_DIRS})
 link_directories(${PYTHON_LIBRARY_DIRS})
+link_directories(${UUID_LIBRARY_DIRS})
+link_directories(${SLAPS_LIBRARY_DIRS})
 
 #
 # Targets
@@ -107,10 +108,6 @@ add_executable(splash splash-app.cpp)
 #
 # Splash library
 #
-if (APPLE)
-    add_dependencies(splash-${API_VERSION} Syphon)
-endif()
-
 target_sources(splash-${API_VERSION} PRIVATE
     core/attribute.cpp
     core/base_object.cpp
@@ -122,19 +119,23 @@ target_sources(splash-${API_VERSION} PRIVATE
     core/name_registry.cpp
     core/root_object.cpp
     core/scene.cpp
+    core/tree/tree_branch.cpp
+    core/tree/tree_leaf.cpp
+    core/tree/tree_root.cpp
     controller/controller.cpp
     controller/controller_blender.cpp
     controller/controller_gui.cpp
     controller/widget/widget.cpp
     controller/widget/widget_control.cpp
     controller/widget/widget_filters.cpp
-    controller/widget/widget_global_view.cpp
+    controller/widget/widget_camera.cpp
     controller/widget/widget_graph.cpp
     controller/widget/widget_node_view.cpp
     controller/widget/widget_media.cpp
     controller/widget/widget_meshes.cpp
     controller/widget/widget_text_box.cpp
     controller/widget/widget_textures_view.cpp
+    controller/widget/widget_tree.cpp
     controller/widget/widget_warp.cpp
     graphics/camera.cpp
     graphics/filter.cpp
@@ -161,32 +162,26 @@ target_sources(splash-${API_VERSION} PRIVATE
     userinput/userinput_keyboard.cpp
     userinput/userinput_mouse.cpp
     utils/cgutils.cpp
+    utils/jsonutils.cpp
     ../external/imgui/imgui_demo.cpp
     ../external/imgui/imgui_draw.cpp
+    ../external/imgui/imgui_widgets.cpp
     ../external/imgui/imgui.cpp
-	../external/jsoncpp/jsoncpp.cpp
 	../external/hap/source/hap.c
 )
 
-if (APPLE)
-    target_sources(splash-${API_VERSION} PRIVATE
-	    ../external/glad/compatibility/src/glad_compatibility.c
-        texture_syphon.cpp
-        texture_syphon_client.mm
-    )
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -F${CMAKE_CURRENT_SOURCE_DIR}/../external/syphon/build/Release -framework Syphon")
-else()
     target_sources(splash-${API_VERSION} PRIVATE
 	    ../external/glad/core/src/glad_core.c
         image/image_v4l2.cpp
     )
-endif()
 
 if (GPHOTO_FOUND AND OPENCV_FOUND)
-    set_source_files_properties(
-        controller/colorcalibrator.cpp 
-        PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized -Wno-unused-result -Wno-int-in-bool-context -Wno-sign-compare -Wno-ignored-attributes -Wno-deprecated-declarations -Wno-delete-non-virtual-dtor -Wno-unused-parameter -Wno-strict-aliasing -Wno-format -Wno-unused-but-set-variable -Wno-misleading-indentation -Wno-switch"
-    )
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        set_source_files_properties(
+            controller/colorcalibrator.cpp 
+            PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized -Wno-unused-result -Wno-int-in-bool-context -Wno-sign-compare -Wno-ignored-attributes -Wno-deprecated-declarations -Wno-delete-non-virtual-dtor -Wno-unused-parameter -Wno-strict-aliasing -Wno-format -Wno-unused-but-set-variable -Wno-misleading-indentation -Wno-switch"
+        )
+    endif()
 
     target_sources(splash-${API_VERSION} PRIVATE
         controller/colorcalibrator.cpp 
@@ -213,6 +208,12 @@ if (PORTAUDIO_FOUND)
     )
 endif()
 
+if (SLAPS_FOUND)
+    target_sources(splash-${API_VERSION} PRIVATE
+        controller/geometriccalibrator.cpp
+    )
+endif()
+
 if (SHMDATA_FOUND)
     target_sources(splash-${API_VERSION} PRIVATE
         image/image_shmdata.cpp
@@ -223,11 +224,13 @@ if (SHMDATA_FOUND)
 endif()
 
 if (PYTHONLIBS_FOUND)
-    set_source_files_properties(
-        controller/controller_pythonembedded.cpp
-        controller/python/python_sink.cpp
-	PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-cast-function-type"
-    )
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        set_source_files_properties(
+            controller/controller_pythonembedded.cpp
+            controller/python/python_sink.cpp
+	    PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-cast-function-type"
+        )
+    endif()
 
     target_sources(splash-${API_VERSION} PRIVATE
         controller/controller_pythonembedded.cpp
@@ -235,7 +238,9 @@ if (PYTHONLIBS_FOUND)
     )
 endif()
 
-# Distributed third parties first
+# Stdlib 
+target_link_libraries(splash-${API_VERSION} stdc++fs)
+# Distributed third parties
 target_link_libraries(splash-${API_VERSION} snappy)
 target_link_libraries(splash-${API_VERSION} glfw)
 if (USE_SYSTEM_LIBS)
@@ -245,15 +250,17 @@ else()
     target_link_libraries(splash-${API_VERSION} ${FFMPEG_STATIC_LIBRARIES})
     target_link_libraries(splash-${API_VERSION} zmq.a)
 endif()
-
+# System libs
 target_link_libraries(splash-${API_VERSION} pthread)
-target_link_libraries(splash-${API_VERSION} ${Boost_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} ${JSONCPP_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GSL_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${SHMDATA_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GPHOTO_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${PORTAUDIO_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${OPENCV_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${PYTHON_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} ${UUID_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} ${SLAPS_LIBRARIES})
 
 #
 # splash executable
@@ -265,6 +272,6 @@ target_link_libraries(splash splash-${API_VERSION})
 #
 install(TARGETS splash DESTINATION "bin/")
 
-if (APPLE)
-    target_link_libraries(splash "-undefined dynamic_lookup")
-endif()
+install(FILES 
+    shaders/geometric_calibration_filter.frag
+    DESTINATION "share/splash/shaders")

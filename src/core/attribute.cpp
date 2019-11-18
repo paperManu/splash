@@ -41,8 +41,6 @@ Attribute& Attribute::operator=(Attribute&& a)
         _values = move(a._values);
         _valuesTypes = move(a._valuesTypes);
         _defaultSetAndGet = a._defaultSetAndGet;
-        _doUpdateDistant = a._doUpdateDistant;
-        _savable = a._savable;
     }
 
     return *this;
@@ -138,7 +136,7 @@ bool Attribute::lock(const Values& v)
 }
 
 /*************/
-CallbackHandle Attribute::registerCallback(weak_ptr<GraphObject> caller, Callback cb)
+CallbackHandle Attribute::registerCallback(weak_ptr<BaseObject> caller, Callback cb)
 {
     lock_guard<mutex> lockCb(_callbackMutex);
     auto handle = CallbackHandle(caller, _name);

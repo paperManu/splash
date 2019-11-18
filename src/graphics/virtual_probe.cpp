@@ -48,29 +48,27 @@ void VirtualProbe::unbind()
 /*************/
 unordered_map<string, Values> VirtualProbe::getShaderUniforms() const
 {
+    auto spec = _outFbo->getColorTexture()->getSpec();
     unordered_map<string, Values> uniforms;
+    uniforms["size"] = {static_cast<float>(_spec.width), static_cast<float>(spec.height)};
     return uniforms;
 }
 
 /*************/
-bool VirtualProbe::linkTo(const shared_ptr<GraphObject>& obj)
+bool VirtualProbe::linkIt(const shared_ptr<GraphObject>& obj)
 {
-    // Mandatory before trying to link
-    if (!obj || !Texture::linkTo(obj))
-        return false;
-
-    if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Object>(obj))
     {
         auto obj3D = dynamic_pointer_cast<Object>(obj);
         _objects.push_back(obj3D);
         return true;
     }
 
-    return true;
+    return false;
 }
 
 /*************/
-void VirtualProbe::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
+void VirtualProbe::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
     auto objIterator = find_if(_objects.begin(), _objects.end(), [&](const std::weak_ptr<Object> o) {
         if (o.expired())
@@ -84,7 +82,7 @@ void VirtualProbe::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
     if (objIterator != _objects.end())
         _objects.erase(objIterator);
 
-    Texture::unlinkFrom(obj);
+    Texture::unlinkIt(obj);
 }
 
 /*************/
@@ -170,8 +168,6 @@ void VirtualProbe::setupFBO()
     _fbo = make_unique<Framebuffer>(_root);
     _fbo->setSize(_width, _height);
     _fbo->setParameters(0, false, false, true);
-    _fbo->getDepthTexture()->setName("depthCube");
-    _fbo->getColorTexture()->setName("colorCube");
     _fbo->getColorTexture()->setAttribute("clampToEdge", {1});
     _fbo->getColorTexture()->setAttribute("filtering", {0});
 

@@ -33,8 +33,8 @@
 #include "./core/attribute.h"
 #include "./core/buffer_object.h"
 #include "./core/coretypes.h"
-#include "./core/root_object.h"
 #include "./core/imagebuffer.h"
+#include "./core/root_object.h"
 
 namespace Splash
 {
@@ -61,7 +61,7 @@ class Image : public BufferObject
     virtual ~Image() override;
 
     /**
-     * No copy constructor, but a copy operator
+     * No copy constructor
      */
     Image(const Image&) = delete;
     Image& operator=(const Image&) = delete;
@@ -90,6 +90,16 @@ class Image : public BufferObject
      * \return Return the image buffer specs
      */
     ImageBufferSpec getSpec() const;
+
+    /**
+     * Get the timestamp for the current image
+     * \return Return the timestamp
+     */
+    virtual int64_t getTimestamp() const final
+    {
+        std::lock_guard<Spinlock> lock(_readMutex);
+        return _image ? _image->getSpec().timestamp : 0;
+    }
 
     /**
      * \brief Set the image from an ImageBuffer
@@ -132,9 +142,18 @@ class Image : public BufferObject
     void zero();
 
     /**
-     * \brief Update the content of the image
+     * Update the content of the image
+     * Image is double buffered, so this has to be called after
+     * any new buffer is set for changes to be effective
      */
-    virtual void update();
+    virtual void update() override;
+
+    /**
+     * Update the timestamp of the object. Also, set the update flag to true.
+     * \param timestamp Value to set the timestamp to, -1 to set to the current
+     * time
+     */
+    virtual void updateTimestamp(int64_t timestamp = -1) final;
 
     /**
      * \brief Write the current buffer to the specified file
@@ -192,6 +211,6 @@ class Image : public BufferObject
     void init();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_IMAGE_H

@@ -17,8 +17,32 @@ void BaseObject::addTask(const function<void()>& task)
 }
 
 /*************/
+void BaseObject::addPeriodicTask(const string& name, const function<void()>& task, uint32_t period)
+{
+    unique_lock<mutex> lock(_periodicTaskMutex, std::try_to_lock);
+    if (!lock.owns_lock())
+    {
+        Log::get() << Log::WARNING << "RootObject::" << __FUNCTION__ << " - A periodic task cannot add another periodic task" << Log::endl;
+        return;
+    }
+
+    auto periodicTask = _periodicTasks.find(name);
+    if (periodicTask == _periodicTasks.end())
+    {
+        _periodicTasks.emplace(make_pair(name, PeriodicTask(task, period)));
+    }
+    else
+    {
+        periodicTask->second = {task, period};
+    }
+
+    return;
+}
+
+/*************/
 bool BaseObject::setAttribute(const string& attrib, const Values& args)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     auto attribFunction = _attribFunctions.find(attrib);
     bool attribNotPresent = (attribFunction == _attribFunctions.end());
 
@@ -33,14 +57,15 @@ bool BaseObject::setAttribute(const string& attrib, const Values& args)
 
     if (!attribFunction->second.isDefault())
         _updatedParams = true;
-    bool attribResult = attribFunction->second(forward<const Values&>(args));
+    bool attribResult = attribFunction->second(args);
 
     return attribResult && attribNotPresent;
 }
 
 /*************/
-bool BaseObject::getAttribute(const string& attrib, Values& args, bool includeDistant, bool includeNonSavable) const
+bool BaseObject::getAttribute(const string& attrib, Values& args) const
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     auto attribFunction = _attribFunctions.find(attrib);
     if (attribFunction == _attribFunctions.end())
     {
@@ -50,114 +75,22 @@ bool BaseObject::getAttribute(const string& attrib, Values& args, bool includeDi
 
     args = attribFunction->second();
 
-    if ((!attribFunction->second.savable() && !includeNonSavable) || (attribFunction->second.isDefault() && !includeDistant))
-        return false;
-
     return true;
 }
 
 /*************/
-unordered_map<string, Values> BaseObject::getAttributes(bool includeDistant) const
+optional<Values> BaseObject::getAttribute(const string& attrib) const
 {
-    unordered_map<string, Values> attribs;
-    for (auto& attr : _attribFunctions)
-    {
-        Values values;
-        if (getAttribute(attr.first, values, includeDistant, true) == false || values.size() == 0)
-            continue;
-        attribs[attr.first] = values;
-    }
-
-    return attribs;
-}
-
-/*************/
-Json::Value BaseObject::getValuesAsJson(const Values& values, bool asObject) const
-{
-    Json::Value jsValue;
-    if (asObject)
-    {
-        for (auto& v : values)
-        {
-            switch (v.getType())
-            {
-            default:
-                continue;
-            case Value::integer:
-                jsValue[v.getName()] = v.as<int>();
-                break;
-            case Value::real:
-                jsValue[v.getName()] = v.as<float>();
-                break;
-            case Value::string:
-                jsValue[v.getName()] = v.as<string>();
-                break;
-            case Value::values:
-            {
-                auto vv = v.as<Values>();
-                // If the first value is named, we treat it as a Json object
-                if (!vv.empty() && vv[0].isNamed())
-                    jsValue[v.getName()] = getValuesAsJson(vv, true);
-                else
-                    jsValue[v.getName()] = getValuesAsJson(vv, false);
-                break;
-            }
-            }
-        }
-    }
-    else
-    {
-        for (auto& v : values)
-        {
-            switch (v.getType())
-            {
-            default:
-                continue;
-            case Value::integer:
-                jsValue.append(v.as<int>());
-                break;
-            case Value::real:
-                jsValue.append(v.as<float>());
-                break;
-            case Value::string:
-                jsValue.append(v.as<string>());
-                break;
-            case Value::values:
-            {
-                auto vv = v.as<Values>();
-                // If the first value is named, we treat it as a Json object
-                if (!vv.empty() && vv[0].isNamed())
-                    jsValue.append(getValuesAsJson(vv, true));
-                else
-                    jsValue.append(getValuesAsJson(vv, false));
-                break;
-            }
-            }
-        }
-    }
-    return jsValue;
-}
-
-/*************/
-Json::Value BaseObject::getConfigurationAsJson() const
-{
-    Json::Value root;
-    for (auto& attr : _attribFunctions)
-    {
-        Values values;
-        if (getAttribute(attr.first, values) == false || values.size() == 0)
-            continue;
-
-        Json::Value jsValue;
-        jsValue = getValuesAsJson(values);
-        root[attr.first] = jsValue;
-    }
-    return root;
+    Values value;
+    if (!getAttribute(attrib, value))
+        return {};
+    return value;
 }
 
 /*************/
 string BaseObject::getAttributeDescription(const string& name)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     auto attr = _attribFunctions.find(name);
     if (attr != _attribFunctions.end())
         return attr->second.getDescription();
@@ -168,6 +101,7 @@ string BaseObject::getAttributeDescription(const string& name)
 /*************/
 Values BaseObject::getAttributesDescriptions()
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     Values descriptions;
     for (const auto& attr : _attribFunctions)
         descriptions.push_back(Values({attr.first, attr.second.getDescription(), attr.second.getArgsTypes()}));
@@ -177,6 +111,7 @@ Values BaseObject::getAttributesDescriptions()
 /*************/
 Attribute::Sync BaseObject::getAttributeSyncMethod(const string& name)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     auto attr = _attribFunctions.find(name);
     if (attr != _attribFunctions.end())
         return attr->second.getSyncMethod();
@@ -194,6 +129,7 @@ void BaseObject::runAsyncTask(const function<void(void)>& func)
 /*************/
 Attribute& BaseObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const vector<char>& types)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     _attribFunctions[name] = Attribute(name, set, nullptr, types);
     _attribFunctions[name].setObjectName(_name);
     return _attribFunctions[name];
@@ -202,6 +138,7 @@ Attribute& BaseObject::addAttribute(const string& name, const function<bool(cons
 /*************/
 Attribute& BaseObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const function<const Values()>& get, const vector<char>& types)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     _attribFunctions[name] = Attribute(name, set, get, types);
     _attribFunctions[name].setObjectName(_name);
     return _attribFunctions[name];
@@ -210,6 +147,7 @@ Attribute& BaseObject::addAttribute(const string& name, const function<bool(cons
 /*************/
 void BaseObject::setAttributeDescription(const string& name, const string& description)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     auto attr = _attribFunctions.find(name);
     if (attr != _attribFunctions.end())
     {
@@ -220,6 +158,7 @@ void BaseObject::setAttributeDescription(const string& name, const string& descr
 /*************/
 void BaseObject::setAttributeSyncMethod(const string& name, const Attribute::Sync& method)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     auto attr = _attribFunctions.find(name);
     if (attr != _attribFunctions.end())
         attr->second.setSyncMethod(method);
@@ -228,28 +167,73 @@ void BaseObject::setAttributeSyncMethod(const string& name, const Attribute::Syn
 /*************/
 void BaseObject::removeAttribute(const string& name)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     auto attr = _attribFunctions.find(name);
     if (attr != _attribFunctions.end())
         _attribFunctions.erase(attr);
 }
 
 /*************/
-void BaseObject::setAttributeParameter(const string& name, bool savable, bool updateDistant)
+void BaseObject::removePeriodicTask(const string& name)
 {
-    auto attr = _attribFunctions.find(name);
-    if (attr != _attribFunctions.end())
+    unique_lock<mutex> lock(_periodicTaskMutex, std::try_to_lock);
+    if (!lock.owns_lock())
     {
-        attr->second.savable(savable);
-        attr->second.doUpdateDistant(updateDistant);
+        Log::get() << Log::WARNING << "RootObject::" << __FUNCTION__ << " - A periodic task cannot remove a periodic task" << Log::endl;
+        return;
     }
+
+    auto periodicTask = _periodicTasks.find(name);
+    if (periodicTask != _periodicTasks.end())
+        _periodicTasks.erase(periodicTask);
+}
+
+/*************/
+CallbackHandle BaseObject::registerCallback(const string& attr, Attribute::Callback cb)
+{
+    unique_lock<recursive_mutex> lock(_attribMutex);
+    auto attribute = _attribFunctions.find(attr);
+    if (attribute == _attribFunctions.end())
+        return CallbackHandle();
+
+    return attribute->second.registerCallback(shared_from_this(), cb);
+}
+
+/*************/
+bool BaseObject::unregisterCallback(const CallbackHandle& handle)
+{
+    if (!handle)
+        return false;
+
+    unique_lock<recursive_mutex> lock(_attribMutex);
+    auto attribute = _attribFunctions.find(handle.getAttribute());
+    if (attribute == _attribFunctions.end())
+        return false;
+
+    return attribute->second.unregisterCallback(handle);
 }
 
 /*************/
 void BaseObject::runTasks()
 {
-    lock_guard<recursive_mutex> lock(_taskMutex);
-    for (auto& task : _taskQueue)
-        task();
+    unique_lock<recursive_mutex> lock(_taskMutex);
+    decltype(_taskQueue) tasks;
+    std::swap(tasks, _taskQueue);
     _taskQueue.clear();
+    lock.unlock();
+
+    for (const auto& task : tasks)
+        task();
+
+    unique_lock<mutex> lockRecurrsiveTasks(_periodicTaskMutex);
+    auto currentTime = Timer::getTime() / 1000;
+    for (auto& task : _periodicTasks)
+    {
+        if (task.second.period == 0 || currentTime - task.second.lastCall > task.second.period)
+        {
+            task.second.task();
+            task.second.lastCall = currentTime;
+        }
+    }
 }
 } // namespace Splash

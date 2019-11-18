@@ -1,21 +1,21 @@
-# 
+#
 # Copyright (C) 2015 Emmanuel Durand
-# 
+#
 # This file is part of Splash (http://github.com/paperManu/splash)
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # Splash is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
-# 
+#
 
 
 import numpy
@@ -44,9 +44,9 @@ class SplashLinkSocket(NodeSocket):
 
     def draw(self, context, layout, node, text):
         if not self.is_output and self.is_linked:
-            layout.label(self.links[0].from_node.name)
+            layout.label(text=self.links[0].from_node.name)
         else:
-            layout.label(text)
+            layout.label(text=text)
 
     def draw_color(self, context, node):
         return (1.0, 0.5, 0.0, 1.0)
@@ -120,7 +120,7 @@ class SplashCameraNode(SplashBaseNode):
         'SplashObjectNodeType',
     ]
 
-    sp_objectProperty = bpy.props.StringProperty(name="Source object",
+    sp_objectProperty : bpy.props.StringProperty(name="Source object",
                                                  description="Object holding the camera",
                                                  default="",
                                                  maxlen=1024)
@@ -148,11 +148,12 @@ class SplashCameraNode(SplashBaseNode):
             object = bpy.data.objects[self.sp_objectProperty]
             camera = bpy.data.objects[self.sp_objectProperty].data
             # Get some parameters
-            rotMatrix = object.matrix_world.to_3x3()
+            rotMatrix = object.matrix_world.to_quaternion()
             targetVec = Vector((0.0, 0.0, -1.0))
-            targetVec = rotMatrix * targetVec + object.matrix_world.to_translation()
+            targetVec.rotate(rotMatrix)
+            targetVec += object.matrix_world.to_translation()
             upVec = Vector((0.0, 1.0, 0.0))
-            upVec = rotMatrix * upVec
+            upVec.rotate(rotMatrix)
 
             values['eye'] = [float(object.matrix_world[0][3]), float(object.matrix_world[1][3]), float(object.matrix_world[2][3])]
             values['target'] = [targetVec[0], targetVec[1], targetVec[2]]
@@ -228,10 +229,9 @@ class SplashImageNode(SplashBaseNode):
     sp_imageTypes = [
         ("image", "image", "Static image"),
         ("image_ffmpeg", "video", "Video file"),
-        ("image_shmdata", "shared memory", "Video through shared memory"),
-        ("texture_syphon", "syphon", "Video through Syphon (only on OSX)"),
+        ("image_shmdata", "shared memory", "Video through shared memory")
     ]
-    sp_imageTypeProperty = bpy.props.EnumProperty(name="Type",
+    sp_imageTypeProperty : bpy.props.EnumProperty(name="Type",
                                                   description="Image source type",
                                                   items=sp_imageTypes,
                                                   default="image",
@@ -304,7 +304,7 @@ class SplashMeshNode(SplashBaseNode):
         ("mesh", "OBJ file", "Mesh from OBJ file"),
         ("mesh_shmdata", "Shared memory", "Mesh from shared memory")
     ]
-    sp_meshTypeProperty = bpy.props.EnumProperty(name="Type",
+    sp_meshTypeProperty : bpy.props.EnumProperty(name="Type",
                                                  description="Mesh source type",
                                                  items=sp_meshTypes,
                                                  default="mesh",
@@ -343,7 +343,7 @@ class SplashMeshNode(SplashBaseNode):
             objectName = self.inputs['Object'].default_value
 
             bpy.ops.object.select_all(action='DESELECT')
-            bpy.data.objects[objectName].select = True
+            bpy.data.objects[objectName].select_set(True)
             path = os.path.dirname(exportPath) + "/splash_" + objectName + ".obj"
             bpy.ops.export_scene.obj(filepath=path, check_existing=False, use_selection=True, use_mesh_modifiers=True, use_materials=False,
                                      use_uvs=True, axis_forward='Y', axis_up='Z')
@@ -391,7 +391,7 @@ class SplashObjectNode(SplashBaseNode):
         ("1", "front", "Frontface culling"),
         ("2", "back", "Backface culling")
     ]
-    sp_cullingModeProperty = bpy.props.EnumProperty(name="Culling",
+    sp_cullingModeProperty : bpy.props.EnumProperty(name="Culling",
                                                     description="Face winding culling",
                                                     items=sp_cullingModes,
                                                     default="0")
@@ -433,7 +433,7 @@ class SplashProbeNode(SplashBaseNode):
         ("0", "equirectangular", "Equirectangular"),
         ("1", "spherical", "Spherical")
     ]
-    sp_projectionTypeProperty = bpy.props.EnumProperty(name="Projection",
+    sp_projectionTypeProperty : bpy.props.EnumProperty(name="Projection",
                                                        description="Projection type",
                                                        items=sp_projectionType,
                                                        default="0")

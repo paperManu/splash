@@ -59,7 +59,55 @@ class Obj : public Base
   public:
     ~Obj(){};
 
-    /**/
+    /**
+     * Remove trailing whitespaces
+     * \param str Input string
+     * \return Return the input string without trailing whitespaces
+     */
+    std::string removeTrailingSpaces(const std::string& str)
+    {
+        auto output = str;
+        while (output.back() == ' ')
+            output.pop_back();
+        return output;
+    }
+
+    /**
+     * Replace multiple consecutive spaces with a single one
+     * \param str Input string
+     * \return Return the input string without multiple consecutive spaces
+     */
+    std::string compressSpaces(const std::string& str)
+    {
+        auto output = str;
+        size_t pos{0};
+        while ((pos = output.find("  ")) != std::string::npos)
+            output.replace(pos, 2, " ");
+        return output;
+    }
+
+    /**
+     * Remove trailing slashes at the end of a face vertex definition
+     * i.e: f 1/1/ 2/2/ 3/3/
+     * \param str Input string
+     * \return Return the input string without the trailing slashes
+     */
+    std::string removeTrailingSlashes(const std::string& str)
+    {
+        auto output = str;
+        size_t pos{0};
+        while ((pos = output.find("/ ")) != std::string::npos)
+            output.replace(pos, 2, " ");
+        while (output.back() == '/')
+            output.pop_back();
+        return output;
+    }
+
+    /**
+     * Load the obj file given its filename
+     * \param filename Filename
+     * \return Return true if the file has been loaded correctly
+     */
     bool load(const std::string& filename)
     {
         std::ifstream file(filename, std::ios::in);
@@ -73,6 +121,10 @@ class Obj : public Base
 
         for (std::string line; std::getline(file, line);)
         {
+            auto fullLine = line;
+            line = removeTrailingSpaces(line);
+            line = compressSpaces(line);
+            line = removeTrailingSlashes(line);
 
             std::string::size_type pos;
             if ((pos = line.find("o ")) == 0)
@@ -157,7 +209,10 @@ class Obj : public Base
                         }
                     }
                     else
+                    {
                         nextSlash = line.find("/");
+                    }
+
                     if (nextSlash != std::string::npos && (nextSpace == std::string::npos || nextSlash < nextSpace))
                     {
                         line = line.substr(nextSlash + 1);
@@ -207,7 +262,10 @@ class Obj : public Base
         return true;
     }
 
-    /**/
+    /**
+     * Get the vertices of the loaded obj file
+     * \return Return a vector of vertices
+     */
     std::vector<glm::vec4> getVertices() const
     {
         std::vector<glm::vec4> vertices;
@@ -222,7 +280,10 @@ class Obj : public Base
         return vertices;
     }
 
-    /**/
+    /**
+     * Get the UV coordinates of the loaded obj file
+     * \return Return a vector of UVs
+     */
     std::vector<glm::vec2> getUVs() const
     {
         std::vector<glm::vec2> uvs;
@@ -243,7 +304,10 @@ class Obj : public Base
         return uvs;
     }
 
-    /**/
+    /**
+     * Get the normals of the loaded obj file
+     * \return Return a vector of normals
+     */
     std::vector<glm::vec3> getNormals() const
     {
         std::vector<glm::vec3> normals;
@@ -271,7 +335,10 @@ class Obj : public Base
         return normals;
     }
 
-    /**/
+    /**
+     * Get the face indices of the loaded obj file
+     * \return Return the face definitions
+     */
     std::vector<std::vector<int>> getFaces() const { return std::vector<std::vector<int>>(); }
 
   private:

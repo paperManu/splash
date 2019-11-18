@@ -27,10 +27,7 @@
 
 #include <mutex>
 
-// clang-format off
-#include "./glad/glad.h"
-#include <GLFW/glfw3.h>
-// clang-format on
+#include "./core/coretypes.h"
 
 namespace Splash
 {

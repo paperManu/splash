@@ -26,6 +26,7 @@
 #define SPLASH_IMAGE_OPENCV_H
 
 #include <atomic>
+#include <map>
 #include <mutex>
 #include <thread>
 
@@ -68,12 +69,16 @@ class Image_OpenCV : public Image
     bool read(const std::string& filename) final;
 
   private:
-    std::unique_ptr<cv::VideoCapture> _videoCapture;
     int _inputIndex{-1};
     unsigned int _width{640};
     unsigned int _height{480};
     float _framerate{60.0};
+    float _exposure{10000.f}; //!< Exposure time in us
 
+    std::string _cvOptions{};
+    bool _cvOptionsUpdated{false};
+
+    bool _capturing{false};
     std::thread _readLoopThread;
     std::atomic_bool _continueReading{false};
     ImageBuffer _readBuffer;
@@ -82,6 +87,13 @@ class Image_OpenCV : public Image
      * Base init for the class
      */
     void init();
+
+    /**
+     * Parse OpenCV options
+     * \param options Options to parse
+     * \return Return a map of cv::CAP_PROP indices with their value as a double
+     */
+    std::map<int, double> parseCVOptions(const std::string& options);
 
     /**
      * Input read loop
@@ -94,6 +106,6 @@ class Image_OpenCV : public Image
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_IMAGE_OPENCV_H

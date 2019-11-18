@@ -44,12 +44,8 @@ string Sink::getCaps() const
 }
 
 /*************/
-bool Sink::linkTo(const shared_ptr<GraphObject>& obj)
+bool Sink::linkIt(const shared_ptr<GraphObject>& obj)
 {
-    // Mandatory before trying to link
-    if (!GraphObject::linkTo(obj))
-        return false;
-
     auto objAsTexture = dynamic_pointer_cast<Texture>(obj);
     if (objAsTexture)
     {
@@ -61,13 +57,11 @@ bool Sink::linkTo(const shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void Sink::unlinkFrom(const shared_ptr<GraphObject>& obj)
+void Sink::unlinkIt(const shared_ptr<GraphObject>& obj)
 {
     auto objAsTexture = dynamic_pointer_cast<Texture>(obj);
     if (objAsTexture)
         _inputTexture.reset();
-
-    GraphObject::unlinkFrom(obj);
 }
 
 /*************/

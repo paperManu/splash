@@ -86,11 +86,6 @@ class Texture_Image : public Texture
     void unbind() override;
 
     /**
-     * \brief Flush the PBO copy which may still be happening. Do this before closing the current context!
-     */
-    void flushPbo();
-
-    /**
      * \brief Generate the mipmaps for the texture
      */
     void generateMipmap() const;
@@ -105,25 +100,20 @@ class Texture_Image : public Texture
      * \brief Get the id of the gl texture
      * \return Return the texture id
      */
-    GLuint getTexId() const { return _glTex; }
+    GLuint getTexId() const final { return _glTex; }
 
     /**
      * \brief Get the shader parameters related to this texture. Texture should be locked first.
      * \return Return the shader uniforms
      */
-    std::unordered_map<std::string, Values> getShaderUniforms() const { return _shaderUniforms; }
+    std::unordered_map<std::string, Values> getShaderUniforms() const final;
 
     /**
-     * \brief Get spec of the texture
-     * \return Return the spec
+     * Grab the texture to the host memory, at the given mipmap level
+     * \param level Mipmap level to grab
+     * \return Return the image data in an ImageBuffer
      */
-    ImageBufferSpec getSpec() const { return _spec; }
-
-    /**
-     * \brief Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
-     */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) final;
+    ImageBuffer grabMipmap(unsigned int level = 0) const;
 
     /**
      * \brief Lock the texture for read / write operations
@@ -170,6 +160,19 @@ class Texture_Image : public Texture
      */
     void update() final;
 
+  protected:
+    /**
+     * \brief Try to link the given GraphObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
+
+    /**
+     * \brief Unlink a given object
+     * \param obj Object to unlink from
+     */
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
+
   private:
     GLuint _glTex{0};
     GLuint _pbos[2];
@@ -178,7 +181,7 @@ class Texture_Image : public Texture
     int _multisample{0};
     bool _cubemap{false};
     int _pboUploadIndex{0};
-    std::list<std::future<void>> _pboCopyThreads;
+    int64_t _lastDrawnTimestamp{0};
 
     // Store some texture parameters
     static constexpr int _texLevels{4};

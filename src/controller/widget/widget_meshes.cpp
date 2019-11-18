@@ -26,38 +26,52 @@ GuiMeshes::GuiMeshes(Scene* scene, const string& name)
 /*************/
 void GuiMeshes::render()
 {
-    if (ImGui::CollapsingHeader(_name.c_str()))
+    auto meshList = getSceneMeshes();
+
+    ImVec2 availableSize = ImGui::GetContentRegionAvail();
+    ImGui::BeginChild("##meshes", ImVec2(availableSize.x * 0.25, availableSize.y), true);
+    ImGui::Text("Mesh list");
+
+    auto leftMargin = static_cast<int>(ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x);
+    for (auto& mesh : meshList)
     {
-        auto meshList = getSceneMeshes();
-        for (auto& mesh : meshList)
-        {
-            auto meshName = mesh->getName();
-            auto meshAlias = getObjectAlias(meshName);
-            if (ImGui::TreeNode(mesh->getAlias().c_str()))
-            {
-                ImGui::Text("Change mesh type: ");
-                ImGui::SameLine();
+        int w = ImGui::GetWindowWidth() - 2 * leftMargin;
 
-                if (_meshTypeIndex.find(meshName) == _meshTypeIndex.end())
-                    _meshTypeIndex[meshName] = 0;
-
-                vector<const char*> meshTypes;
-                for (auto& type : _meshType)
-                    meshTypes.push_back(type.first.c_str());
-
-                if (ImGui::Combo("##meshType", &_meshTypeIndex[meshName], meshTypes.data(), meshTypes.size()))
-                    replaceMesh(meshName, meshAlias, meshTypes[_meshTypeIndex[meshName]]);
-
-                ImGui::Text("Current mesh type: %s", _meshTypeReversed[mesh->getRemoteType()].c_str());
-
-                ImGui::Text("Parameters:");
-                auto attributes = mesh->getAttributes(true);
-                drawAttributes(meshName, attributes);
-
-                ImGui::TreePop();
-            }
-        }
+        if (ImGui::Button(mesh->getName().c_str(), ImVec2(w, w)))
+            _selectedMeshName = mesh->getName();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s", mesh->getName().c_str());
     }
+    ImGui::EndChild();
+
+    auto mesh = getObjectPtr(_selectedMeshName);
+    if (!mesh)
+        return;
+
+    auto meshAlias = getObjectAlias(_selectedMeshName);
+
+    ImGui::SameLine();
+    ImGui::BeginChild("##meshInfo", ImVec2(0, 0), true);
+
+    ImGui::Text("Change mesh type: ");
+    ImGui::SameLine();
+    if (_meshTypeIndex.find(_selectedMeshName) == _meshTypeIndex.end())
+        _meshTypeIndex[_selectedMeshName] = 0;
+
+    vector<const char*> meshTypes;
+    for (auto& type : _meshType)
+        meshTypes.push_back(type.first.c_str());
+
+    if (ImGui::Combo("##meshType", &_meshTypeIndex[_selectedMeshName], meshTypes.data(), meshTypes.size()))
+        replaceMesh(_selectedMeshName, meshAlias, meshTypes[_meshTypeIndex[_selectedMeshName]]);
+
+    ImGui::Text("Current mesh type: %s", _meshTypeReversed[mesh->getRemoteType()].c_str());
+
+    ImGui::Text("Parameters:");
+    auto attributes = getObjectAttributes(mesh->getName());
+    drawAttributes(_selectedMeshName, attributes);
+
+    ImGui::EndChild();
 }
 
 /*************/
@@ -65,7 +79,7 @@ void GuiMeshes::replaceMesh(const string& previousMedia, const string& alias, co
 {
     // We get the list of all objects linked to previousMedia
     auto targetObjects = list<weak_ptr<GraphObject>>();
-    auto objects = getObjectsOfType("");
+    auto objects = getObjectsPtr(getObjectList());
     for (auto& object : objects)
     {
         if (!object->getSavable())
@@ -110,7 +124,7 @@ list<shared_ptr<GraphObject>> GuiMeshes::getSceneMeshes()
 
     for (auto& type : meshTypes)
     {
-        auto objects = getObjectsOfType(type);
+        auto objects = getObjectsPtr(getObjectsOfType(type));
         for (auto& object : objects)
             if (object->getSavable())
                 meshList.push_back(object);
@@ -119,4 +133,4 @@ list<shared_ptr<GraphObject>> GuiMeshes::getSceneMeshes()
     return meshList;
 }
 
-} // end of namespace
+} // namespace Splash

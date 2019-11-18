@@ -114,7 +114,7 @@ void Mesh_Shmdata::onData(void* data, int /*data_size*/)
         intPtr += size;
     }
 
-    lock_guard<shared_timed_mutex> lock(_writeMutex);
+    lock_guard<shared_mutex> lock(_writeMutex);
     if (Timer::get().isDebug())
         Timer::get() << "mesh_shmdata " + _name;
 

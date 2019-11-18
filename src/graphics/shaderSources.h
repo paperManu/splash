@@ -45,7 +45,7 @@ struct ShaderSources
                 projected /= projected.w;
                 p = projected;
 
-                if (projected.z >= 0.0)
+                if (projected.z >= -1.0)
                 {
                     projected = abs(projected);
                     distToCenter = projected.xy;
@@ -167,18 +167,12 @@ struct ShaderSources
             }
         )"}};
 
-/**
- * Version directive, included at the start of all shaders
- */
-#if HAVE_OSX
+    /**
+     * Version directive, included at the start of all shaders
+     */
     const std::string VERSION_DIRECTIVE_GL4{R"(
-        #version 410 core
+        #version 450 core
     )"};
-#else
-    const std::string VERSION_DIRECTIVE_GL4{R"(
-        #version 430 core
-    )"};
-#endif
 
     /**************************/
     // COMPUTE
@@ -198,9 +192,9 @@ struct ShaderSources
             vec4 vertex[];
         };
 
-        layout (std430, binding = 1) buffer texcoordsBuffer
+        layout (std430, binding = 1) buffer texCoordsBuffer
         {
-            vec2 texcoords[];
+            vec2 texCoords[];
         };
 
         layout (std430, binding = 2) buffer normalBuffer
@@ -405,7 +399,7 @@ struct ShaderSources
      */
     const std::string VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
         layout (location = 0) in vec4 _vertex;
-        layout (location = 1) in vec2 _texcoord;
+        layout (location = 1) in vec2 _texCoord;
         layout (location = 2) in vec4 _normal;
         layout (location = 3) in vec4 _annexe;
 
@@ -415,7 +409,7 @@ struct ShaderSources
         out VS_OUT
         {
             smooth vec4 vertex;
-            smooth vec2 texcoord;
+            smooth vec2 texCoord;
             smooth vec4 normal;
             smooth vec4 annexe;
         } vs_out;
@@ -423,7 +417,7 @@ struct ShaderSources
         void main(void)
         {
             vs_out.vertex = _vertex;
-            vs_out.texcoord = _texcoord;
+            vs_out.texCoord = _texCoord;
             vs_out.normal = _normal;
             vs_out.annexe = _annexe;
         }
@@ -441,7 +435,7 @@ struct ShaderSources
         in VS_OUT
         {
             smooth vec4 vertex;
-            smooth vec2 texcoord;
+            smooth vec2 texCoord;
             smooth vec4 normal;
             smooth vec4 annexe;
         } tcs_in[];
@@ -449,7 +443,7 @@ struct ShaderSources
         out TCS_OUT
         {
             vec4 vertex;
-            vec2 texcoord;
+            vec2 texCoord;
             vec4 normal;
             vec4 annexe;
         } tcs_out[];
@@ -526,7 +520,7 @@ struct ShaderSources
             }
 
             tcs_out[gl_InvocationID].vertex = tcs_in[gl_InvocationID].vertex;
-            tcs_out[gl_InvocationID].texcoord = tcs_in[gl_InvocationID].texcoord;
+            tcs_out[gl_InvocationID].texCoord = tcs_in[gl_InvocationID].texCoord;
             tcs_out[gl_InvocationID].normal = tcs_in[gl_InvocationID].normal;
             tcs_out[gl_InvocationID].annexe = tcs_in[gl_InvocationID].annexe;
 
@@ -541,7 +535,7 @@ struct ShaderSources
         in TCS_OUT
         {
             vec4 vertex;
-            vec2 texcoord;
+            vec2 texCoord;
             vec4 normal;
             vec4 annexe;
         } tes_in[];
@@ -549,7 +543,7 @@ struct ShaderSources
         out TES_OUT
         {
             vec4 vertex;
-            vec2 texcoord;
+            vec2 texCoord;
             vec4 normal;
             vec4 annexe;
         } tes_out;
@@ -559,9 +553,9 @@ struct ShaderSources
             tes_out.vertex = (gl_TessCoord.x * tes_in[0].vertex) +
                              (gl_TessCoord.y * tes_in[1].vertex) +
                              (gl_TessCoord.z * tes_in[2].vertex);
-            tes_out.texcoord = (gl_TessCoord.x * tes_in[0].texcoord) +
-                               (gl_TessCoord.y * tes_in[1].texcoord) +
-                               (gl_TessCoord.z * tes_in[2].texcoord);
+            tes_out.texCoord = (gl_TessCoord.x * tes_in[0].texCoord) +
+                               (gl_TessCoord.y * tes_in[1].texCoord) +
+                               (gl_TessCoord.z * tes_in[2].texCoord);
             tes_out.normal = (gl_TessCoord.x * tes_in[0].normal) +
                              (gl_TessCoord.y * tes_in[1].normal) +
                              (gl_TessCoord.z * tes_in[2].normal);
@@ -583,7 +577,7 @@ struct ShaderSources
         in TES_OUT
         {
             vec4 vertex;
-            vec2 texcoord;
+            vec2 texCoord;
             vec4 normal;
             vec4 annexe;
         } geom_in[];
@@ -591,7 +585,7 @@ struct ShaderSources
         out GEOM_OUT
         {
             vec4 vertex;
-            vec2 texcoord;
+            vec2 texCoord;
             vec4 normal;
             vec4 annexe;
         } geom_out;
@@ -681,7 +675,7 @@ struct ShaderSources
                 {
                     gl_Position = geom_in[i].vertex;
                     geom_out.vertex = geom_in[i].vertex;
-                    geom_out.texcoord = geom_in[i].texcoord;
+                    geom_out.texCoord = geom_in[i].texCoord;
                     geom_out.normal = geom_in[i].normal;
                     geom_out.annexe = geom_in[i].annexe;
                     EmitVertex();
@@ -693,13 +687,13 @@ struct ShaderSources
             else
             {
                 vec4 vertices[6];
-                vec2 texcoords[6];
+                vec2 texCoords[6];
                 vec4 normals[6];
                 vec4 annexes[6];
                 for (int i = 0; i < 3; ++i)
                 {
                     vertices[i] = geom_in[i].vertex;
-                    texcoords[i] = geom_in[i].texcoord;
+                    texCoords[i] = geom_in[i].texCoord;
                     normals[i] = geom_in[i].normal;
                     annexes[i] = geom_in[i].annexe;
                 }
@@ -740,7 +734,7 @@ struct ShaderSources
 
                         i = i % 3;
                         vertices[nextVertex] = mix(vertices[i], vertices[nextId], ratio);
-                        texcoords[nextVertex] = mix(texcoords[i], texcoords[nextId], ratio);
+                        texCoords[nextVertex] = mix(texCoords[i], texCoords[nextId], ratio);
                         normals[nextVertex] = mix(normals[i], normals[nextId], ratio);
                         nextVertex++;
                     }
@@ -754,7 +748,7 @@ struct ShaderSources
                         int currentIndex = cutTable[cutCase * 9 + t * 3 + v];
                         gl_Position = vertices[currentIndex];
                         geom_out.vertex = vertices[currentIndex];
-                        geom_out.texcoord = texcoords[currentIndex];
+                        geom_out.texCoord = texCoords[currentIndex];
                         geom_out.normal = normals[currentIndex];
                         EmitVertex();
                     }
@@ -770,13 +764,37 @@ struct ShaderSources
     /**************************/
 
     /**
-     * Default vertex shader
+     * Vertex shader which transmits the vertex attributes as-is
      */
     const std::string VERTEX_SHADER_DEFAULT{R"(
+        layout(location = 0) in vec4 _vertex;
+        layout(location = 1) in vec2 _texCoord;
+        layout(location = 2) in vec4 _normal;
+
+        out VertexData
+        {
+            vec4 position;
+            vec2 texCoord;
+            vec4 normal;
+        } vertexOut;
+
+        void main(void)
+        {
+            vertexOut.position = vec4(_vertex.xyz, 1.0);
+            gl_Position = vertexOut.position;
+            vertexOut.normal = _normal;
+            vertexOut.texCoord = _texCoord;
+        }
+    )"};
+
+    /**
+     * Vertex shader which projects the vertices using the modelview matrix
+     */
+    const std::string VERTEX_SHADER_MODELVIEW{R"(
         #include getSmoothBlendFromVertex
 
         layout(location = 0) in vec4 _vertex;
-        layout(location = 1) in vec2 _texcoord;
+        layout(location = 1) in vec2 _texCoord;
         layout(location = 2) in vec4 _normal;
         layout(location = 3) in vec4 _annexe;
 
@@ -798,7 +816,7 @@ struct ShaderSources
             vertexOut.position = _modelViewProjectionMatrix * vertexOut.position;
             gl_Position = vertexOut.position;
             vertexOut.normal = normalize(_normalMatrix * _normal);
-            vertexOut.texCoord = _texcoord;
+            vertexOut.texCoord = _texCoord;
             vertexOut.annexe = _annexe;
         }
     )"};
@@ -808,13 +826,13 @@ struct ShaderSources
      */
     const std::string VERTEX_SHADER_FILTER{R"(
         layout(location = 0) in vec4 _vertex;
-        layout(location = 1) in vec2 _texcoord;
+        layout(location = 1) in vec2 _texCoord;
         out vec2 texCoord;
 
         void main(void)
         {
             gl_Position = vec4(_vertex.xyz, 1.0);
-            texCoord = _texcoord;
+            texCoord = _texCoord;
         }
     )"};
 
@@ -856,6 +874,7 @@ struct ShaderSources
         uniform float _saturation = 1.f;
         uniform int _invertChannels = 0;
         uniform vec2 _colorBalance = vec2(1.f, 1.f);
+        uniform vec2 _scale = vec2(1.f, 1.f);
 
     #ifdef COLOR_CURVE_COUNT
         // This is set if Filter::_colorCurves is not empty, by Filter::updateShaderParameters
@@ -891,6 +910,8 @@ struct ShaderSources
                 realCoords = vec2(1.0 - texCoord.x, 1.0 - texCoord.y);
             else
                 realCoords = texCoord;
+
+            realCoords = fma((realCoords - vec2(0.5)), vec2(1.0) / _scale, vec2(0.5));
 
     #ifdef TEXTURE_RECT
             vec4 color = texture(_tex0, realCoords * _tex0_size);
@@ -969,13 +990,13 @@ struct ShaderSources
      */
     const std::string VERTEX_SHADER_WARP{R"(
         layout(location = 0) in vec4 _vertex;
-        layout(location = 1) in vec2 _texcoord;
+        layout(location = 1) in vec2 _texCoord;
         out vec2 texCoord;
 
         void main(void)
         {
             gl_Position = vec4(_vertex.x, _vertex.y, _vertex.z, 1.0);
-            texCoord = _texcoord;
+            texCoord = _texCoord;
         }
     )"};
 
@@ -1043,7 +1064,7 @@ struct ShaderSources
         #include getSmoothBlendFromVertex
 
         layout(location = 0) in vec4 _vertex;
-        layout(location = 1) in vec2 _texcoord;
+        layout(location = 1) in vec2 _texCoord;
 
         out VertexData
         {
@@ -1058,7 +1079,7 @@ struct ShaderSources
             vertexOut.position = vec4(_vertex.xyz, 1.0);
             vertexOut.position = _modelViewMatrix * vertexOut.position;
             gl_Position = vertexOut.position;
-            vertexOut.texCoord = _texcoord;
+            vertexOut.texCoord = _texCoord;
         }
     )"};
 
@@ -1161,7 +1182,7 @@ struct ShaderSources
         #include getSmoothBlendFromVertex
 
         layout(location = 0) in vec4 _vertex;
-        layout(location = 1) in vec2 _texcoord;
+        layout(location = 1) in vec2 _texCoord;
         layout(location = 2) in vec4 _normal;
         layout(location = 3) in vec4 _annexe;
 
@@ -1184,7 +1205,7 @@ struct ShaderSources
             vertexOut.position = _modelViewProjectionMatrix * vertexOut.position;
             gl_Position = vertexOut.position;
             vertexOut.normal = normalize(_normalMatrix * _normal);
-            vertexOut.texCoord = _texcoord;
+            vertexOut.texCoord = _texCoord;
             vertexOut.annexe = _annexe;
 
             vec4 projectedVertex = vertexOut.position / vertexOut.position.w;
@@ -1415,19 +1436,19 @@ struct ShaderSources
      */
     const std::string VERTEX_SHADER_WIREFRAME{R"(
         layout(location = 0) in vec4 _vertex;
-        layout(location = 1) in vec2 _texcoord;
+        layout(location = 1) in vec2 _texCoord;
         layout(location = 2) in vec4 _normal;
 
         out VertexData
         {
             vec4 vertex;
-            vec2 texcoord;
+            vec2 texCoord;
         } vertexOut;
 
         void main()
         {
             vertexOut.vertex = _vertex;
-            vertexOut.texcoord = _texcoord;
+            vertexOut.texCoord = _texCoord;
         }
     )"};
 
@@ -1439,12 +1460,12 @@ struct ShaderSources
         in VertexData
         {
             vec4 vertex;
-            vec2 texcoord;
+            vec2 texCoord;
         } vertexIn[];
 
         out VertexData
         {
-            vec2 texcoord;
+            vec2 texCoord;
             vec3 bcoord;
             vec4 position;
         } vertexOut;
@@ -1453,21 +1474,21 @@ struct ShaderSources
         {
             vec4 v = _modelViewProjectionMatrix * vec4(vertexIn[0].vertex.xyz, 1.0);
             gl_Position = v;
-            vertexOut.texcoord = vertexIn[0].texcoord;
+            vertexOut.texCoord = vertexIn[0].texCoord;
             vertexOut.bcoord = vec3(1.0, 0.0, 0.0);
             vertexOut.position = v;
             EmitVertex();
 
             v = _modelViewProjectionMatrix * vec4(vertexIn[1].vertex.xyz, 1.0);
             gl_Position = v;
-            vertexOut.texcoord = vertexIn[1].texcoord;
+            vertexOut.texCoord = vertexIn[1].texCoord;
             vertexOut.bcoord = vec3(0.0, 1.0, 0.0);
             vertexOut.position = v;
             EmitVertex();
 
             v = _modelViewProjectionMatrix * vec4(vertexIn[2].vertex.xyz, 1.0);
             gl_Position = v;
-            vertexOut.texcoord = vertexIn[2].texcoord;
+            vertexOut.texCoord = vertexIn[2].texCoord;
             vertexOut.bcoord = vec3(0.0, 0.0, 1.0);
             vertexOut.position = v;
             EmitVertex();
@@ -1481,7 +1502,7 @@ struct ShaderSources
 
         in VertexData
         {
-            vec2 texcoord;
+            vec2 texCoord;
             vec3 bcoord;
             vec4 position;
         } vertexIn;
@@ -1514,13 +1535,13 @@ struct ShaderSources
      */
     const std::string VERTEX_SHADER_CUBEMAP_PROJECTION{R"(
         layout(location = 0) in vec4 _vertex;
-        layout(location = 1) in vec2 _texcoord;
+        layout(location = 1) in vec2 _texCoord;
         out vec2 texCoord;
 
         void main(void)
         {
             gl_Position = vec4(_vertex.xyz, 1.0);
-            texCoord = _texcoord;
+            texCoord = _texCoord;
         }
     )"};
 
@@ -1591,18 +1612,18 @@ struct ShaderSources
      */
     const std::string VERTEX_SHADER_WARP_WIREFRAME{R"(
         layout(location = 0) in vec4 _vertex;
-        layout(location = 1) in vec2 _texcoord;
+        layout(location = 1) in vec2 _texCoord;
 
         out VertexData
         {
             vec4 vertex;
-            vec2 texcoord;
+            vec2 texCoord;
         } vertexOut;
 
         void main()
         {
             vertexOut.vertex = _vertex;
-            vertexOut.texcoord = _texcoord;
+            vertexOut.texCoord = _texCoord;
         }
     )"};
 
@@ -1613,7 +1634,7 @@ struct ShaderSources
         in VertexData
         {
             vec4 vertex;
-            vec2 texcoord;
+            vec2 texCoord;
         } vertexIn[];
 
         out VertexData
@@ -1671,7 +1692,7 @@ struct ShaderSources
      */
     const std::string VERTEX_SHADER_WINDOW{R"(
         layout(location = 0) in vec4 _vertex;
-        layout(location = 1) in vec2 _texcoord;
+        layout(location = 1) in vec2 _texCoord;
         //layout(location = 2) in vec3 _normal;
         //uniform mat4 _modelViewProjectionMatrix;
         out vec2 texCoord;
@@ -1679,7 +1700,7 @@ struct ShaderSources
         void main(void)
         {
             gl_Position = vec4(_vertex.x, _vertex.y, _vertex.z, 1.0);
-            texCoord = _texcoord;
+            texCoord = _texCoord;
         }
     )"};
 
@@ -1703,53 +1724,35 @@ struct ShaderSources
         in vec2 texCoord;
         out vec4 fragColor;
 
+        const float texcount = float(TEXCOUNT);
+        const float width = 1.0 / float(TEXCOUNT);
+
         void main(void)
         {
-            float frames = float(TEXCOUNT);
+            fragColor = vec4(0.0);
+
             for (int i = 0; i < TEXCOUNT; ++i)
             {
-                int value = _layout[i];
-                for (int j = i + 1; j < TEXCOUNT; ++j)
-                {
-                    if (_layout[j] == value)
-                    {
-                        frames--;
-                        break;
-                    }
-                }
+                vec2 tc = vec2((texCoord.x - width * float(i)) * texcount, texCoord.y);
+                if (tc.x < 0.0)
+                    continue;
+                #ifdef TEX_1
+                if (_layout[i] == 0)
+                    fragColor = texture(_tex0, tc);
+                #ifdef TEX_2
+                else if (_layout[i] == 1)
+                    fragColor = texture(_tex1, tc);
+                #ifdef TEX_3
+                else if (_layout[i] == 2)
+                    fragColor = texture(_tex2, tc);
+                #ifdef TEX_4
+                else if (_layout[i] == 3)
+                    fragColor = texture(_tex3, tc);
+                #endif
+                #endif
+                #endif
+                #endif
             }
-
-            fragColor.rgba = vec4(0.0);
-    #ifdef TEX_1
-            if (texCoord.x > float(_layout[0]) / frames && texCoord.x < (float(_layout[0]) + 1.0) / frames)
-            {
-                fragColor = texture(_tex0, vec2((texCoord.x - float(_layout[0]) / frames) * frames, texCoord.y));
-            }
-    #ifdef TEX_2
-            if (texCoord.x > float(_layout[1]) / frames && texCoord.x < (float(_layout[1]) + 1.0) / frames)
-            {
-                vec4 color = texture(_tex1, vec2((texCoord.x - float(_layout[1]) / frames) * frames, texCoord.y));
-                fragColor.rgb = mix(fragColor.rgb, color.rgb, color.a);
-                fragColor.a = max(fragColor.a, color.a);
-            }
-    #ifdef TEX_3
-            if (texCoord.x > float(_layout[2]) / frames && texCoord.x < (float(_layout[2]) + 1.0) / frames)
-            {
-                vec4 color = texture(_tex2, vec2((texCoord.x - float(_layout[2]) / frames) * frames, texCoord.y));
-                fragColor.rgb = mix(fragColor.rgb, color.rgb, color.a);
-                fragColor.a = max(fragColor.a, color.a);
-            }
-    #ifdef TEX_4
-            if (texCoord.x > float(_layout[3]) / frames && texCoord.x < (float(_layout[3]) + 1.0) / frames)
-            {
-                vec4 color = texture(_tex3, vec2((texCoord.x - float(_layout[3]) / frames) * frames, texCoord.y));
-                fragColor.rgb = mix(fragColor.rgb, color.rgb, color.a);
-                fragColor.a = max(fragColor.a, color.a);
-            }
-    #endif
-    #endif
-    #endif
-    #endif
 
             if (_gamma.x != 1.0)
                 fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / _gamma.y));

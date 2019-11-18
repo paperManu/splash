@@ -18,8 +18,8 @@
  */
 
 /*
- * @widget_global_view.h
- * The global view widget, to calibrate cameras
+ * @widget_warp.h
+ * The warp view widget
  */
 
 #ifndef SPLASH_WIDGET_WARP_H
@@ -40,12 +40,13 @@ class GuiWarp : public GuiWidget
     {
     }
     void render() final;
-    void setScene(Scene* scene) { _scene = scene; }
+    void update() final;
     int updateWindowFlags() final;
 
   private:
     bool _noMove{false};
 
+    bool _rendered{false};
     uint32_t _currentWarp{0};
     std::string _currentWarpName{""};
     int _currentControlPointIndex{0};

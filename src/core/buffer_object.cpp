@@ -29,28 +29,37 @@ bool BufferObject::deserialize()
 /*************/
 void BufferObject::setSerializedObject(shared_ptr<SerializedObject> obj)
 {
-    bool expectedAtomicValue = false;
-    if (_serializedObjectWaiting.compare_exchange_strong(expectedAtomicValue, true, std::memory_order_acq_rel))
+    if (_serializedObjectWaitingMutex.try_lock())
     {
         _serializedObject = move(obj);
         _newSerializedObject = true;
 
         // Deserialize it right away, in a separate thread
         _deserializeFuture = async(launch::async, [this]() {
-            lock_guard<shared_timed_mutex> lock(_writeMutex);
+            lock_guard<shared_mutex> lock(_writeMutex);
             deserialize();
-            _serializedObjectWaiting.store(false, std::memory_order_acq_rel);
+            _serializedObjectWaitingMutex.unlock();
         });
     }
 }
 
 /*************/
-void BufferObject::updateTimestamp()
+void BufferObject::updateTimestamp(int64_t timestamp)
 {
-    _timestamp = Timer::getTime();
+    lock_guard<Spinlock> lock(_timestampMutex);
+    if (timestamp != -1)
+        _timestamp = timestamp;
+    else
+        _timestamp = Timer::getTime();
     _updatedBuffer = true;
     if (_root)
         _root->signalBufferObjectUpdated();
 }
 
-} // end of namespace
+/*************/
+void BufferObject::registerAttributes()
+{
+    GraphObject::registerAttributes();
+}
+
+} // namespace Splash

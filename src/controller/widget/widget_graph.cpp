@@ -10,42 +10,49 @@ namespace Splash
 /*************/
 void GuiGraph::render()
 {
-    if (ImGui::CollapsingHeader(_name.c_str()))
+    auto tree = _root->getTree();
+    auto width = ImGui::GetWindowSize().x;
+
+    for (const auto& branchName : tree->getBranchList())
     {
-        auto& durationMap = Timer::get().getDurationMap();
-
-        for (auto& t : durationMap)
+        if (ImGui::TreeNode(branchName.c_str()))
         {
-            if (_durationGraph.find(t.first) == _durationGraph.end())
-                _durationGraph[t.first] = deque<unsigned long long>({t.second});
-            else
+            auto branchPath = "/" + branchName + "/durations";
+            for (const auto& leafName : tree->getLeafListAt(branchPath))
             {
-                if (_durationGraph[t.first].size() == _maxHistoryLength)
-                    _durationGraph[t.first].pop_front();
-                _durationGraph[t.first].push_back(t.second);
+                auto durationName = branchName + "_" + leafName;
+                Value value;
+                tree->getValueForLeafAt(branchPath + "/" + leafName, value);
+                assert(value.size() == 1);
+                if (_durationGraph.find(durationName) == _durationGraph.end())
+                {
+                    _durationGraph[durationName] = deque<unsigned long long>(value[0].as<float>());
+                }
+                else
+                {
+                    while (_durationGraph[durationName].size() >= _maxHistoryLength)
+                        _durationGraph[durationName].pop_front();
+                    _durationGraph[durationName].push_back(value[0].as<float>());
+                }
+
+                float maxValue{0.f};
+                vector<float> values;
+                for (const auto& v : _durationGraph[durationName])
+                {
+                    auto floatValue = static_cast<float>(v);
+                    maxValue = std::max(floatValue * 0.001f, maxValue);
+                    values.push_back(floatValue * 0.001f);
+                }
+
+                maxValue = ceil(maxValue * 0.1f) * 10.f;
+
+                ImGui::PlotLines(
+                    "", values.data(), values.size(), values.size(), (leafName + " - " + to_string((int)maxValue) + "ms").c_str(), 0.f, maxValue, ImVec2(width - 30, 80));
             }
-        }
 
-        if (_durationGraph.size() == 0)
-            return;
-
-        auto width = ImGui::GetWindowSize().x;
-        for (auto& duration : _durationGraph)
-        {
-            float maxValue{0.f};
-            vector<float> values;
-            for (auto& v : duration.second)
-            {
-                maxValue = std::max((float)v * 0.001f, maxValue);
-                values.push_back((float)v * 0.001f);
-            }
-
-            maxValue = ceil(maxValue * 0.1f) * 10.f;
-
-            ImGui::PlotLines(
-                "", values.data(), values.size(), values.size(), (duration.first + " - " + to_string((int)maxValue) + "ms").c_str(), 0.f, maxValue, ImVec2(width - 30, 80));
+            ImGui::TreePop();
         }
     }
 }
 
-} // end of namespace
+} // namespace Splash

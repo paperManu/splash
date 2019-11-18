@@ -136,16 +136,10 @@ class Camera : public GraphObject
     }
 
     /**
-     * \brief Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
+     * Get the timestamp
+     * \return Return the timestamp in us
      */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) override;
-
-    /**
-     * \brief Try to unlink the given GraphObject from this object
-     * \param obj Shared pointer to the (supposed) child object
-     */
-    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) override;
+    virtual int64_t getTimestamp() const final { return _outFbo ? _outFbo->getColorTexture()->getTimestamp() : 0; }
 
     /**
      * \brief Get the coordinates of the closest vertex to the given point
@@ -217,13 +211,25 @@ class Camera : public GraphObject
      */
     bool setCalibrationPoint(const Values& screenPoint);
 
+  protected:
+    /**
+     * \brief Try to link the given GraphObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
+
+    /**
+     * \brief Try to unlink the given GraphObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
+
   private:
     std::unique_ptr<Framebuffer> _msFbo{nullptr}, _outFbo{nullptr};
     std::vector<std::weak_ptr<Object>> _objects;
 
     // Rendering parameters
     bool _drawFrame{false};
-    bool _wireframe{false};
     bool _showCameraCount{false};
     bool _hidden{false};
     bool _flashBG{false};
@@ -232,6 +238,11 @@ class Camera : public GraphObject
     bool _updateColorDepth{false}; // Set to true if the _render16bits has been updated
     glm::dvec4 _clearColor{0.6, 0.6, 0.6, 1.0};
     glm::dvec4 _wireframeColor{1.0, 1.0, 1.0, 1.0};
+
+    // Mipmap capture
+    int _grabMipmapLevel{-1};
+    Value _mipmapBuffer{};
+    Values _mipmapBufferSpec{};
 
     // Color correction
     Values _colorLUT{0};
@@ -308,6 +319,11 @@ class Camera : public GraphObject
      * \brief Send calibration points to the model
      */
     void sendCalibrationPointsToObjects();
+
+    /**
+     * Remove calibration points from the model
+     */
+    void removeCalibrationPointsFromObjects();
 
     /**
      * \brief Register new functors to modify attributes

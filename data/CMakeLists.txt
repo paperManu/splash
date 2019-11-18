@@ -23,10 +23,8 @@ add_custom_command(
     COMMAND sed -i 's!Icon=.*!Icon=${CMAKE_INSTALL_PREFIX}/share/icons/splash.png!g' ${CMAKE_CURRENT_SOURCE_DIR}/share/applications/splash.desktop
 )
 
-if(UNIX AND NOT APPLE)
-    add_custom_target(splash-launcher ALL DEPENDS splash.desktop)
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/share DESTINATION ${CMAKE_INSTALL_PREFIX})
-endif()
+add_custom_target(splash-launcher ALL DEPENDS splash.desktop)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/share DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 install(FILES 
     3d_marker.obj

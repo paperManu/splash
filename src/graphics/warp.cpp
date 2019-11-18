@@ -64,18 +64,19 @@ void Warp::bind()
 /*************/
 unordered_map<string, Values> Warp::getShaderUniforms() const
 {
+    auto spec = _fbo->getColorTexture()->getSpec();
     unordered_map<string, Values> uniforms;
+    uniforms["size"] = {static_cast<float>(_spec.width), static_cast<float>(spec.height)};
     return uniforms;
 }
 
 /*************/
-bool Warp::linkTo(const std::shared_ptr<GraphObject>& obj)
+bool Warp::linkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    // Mandatory before trying to link
-    if (!obj || !Texture::linkTo(obj))
+    if (!obj)
         return false;
 
-    if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Camera>(obj))
     {
         auto camera = _inCamera.lock();
         if (camera)
@@ -98,9 +99,9 @@ void Warp::unbind()
 }
 
 /*************/
-void Warp::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
+void Warp::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Camera>(obj))
     {
         if (!_inCamera.expired())
         {
@@ -115,8 +116,6 @@ void Warp::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
             }
         }
     }
-
-    Texture::unlinkFrom(obj);
 }
 
 /*************/
@@ -129,15 +128,15 @@ void Warp::render()
     auto input = camera->getTexture();
 
     auto inputSpec = input->getSpec();
-    if (inputSpec != _outTextureSpec)
+    if (inputSpec != _spec)
     {
-        _outTextureSpec = inputSpec;
+        _spec = inputSpec;
         _fbo->setSize(inputSpec.width, inputSpec.height);
     }
 
     _fbo->bindDraw();
     glEnable(GL_FRAMEBUFFER_SRGB);
-    glViewport(0, 0, _outTextureSpec.width, _outTextureSpec.height);
+    glViewport(0, 0, _spec.width, _spec.height);
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -160,7 +159,10 @@ void Warp::render()
 
         if (_selectedControlPointIndex != -1)
         {
-            auto& pointModel = _models["3d_marker"];
+            auto scene = dynamic_cast<Scene*>(_root);
+            assert(scene != nullptr);
+
+            auto pointModel = scene->getObjectLibrary().getModel("3d_marker");
 
             auto controlPoints = _screenMesh->getControlPoints();
             auto point = controlPoints[_selectedControlPointIndex];
@@ -178,14 +180,23 @@ void Warp::render()
     glDisable(GL_FRAMEBUFFER_SRGB);
     _fbo->unbindDraw();
 
-    _fbo->getColorTexture()->generateMipmap();
+    auto colorTexture = _fbo->getColorTexture();
+    colorTexture->generateMipmap();
+    if (_grabMipmapLevel >= 0)
+    {
+        _mipmapBuffer = colorTexture->grabMipmap(_grabMipmapLevel).getRawBuffer();
+        auto spec = colorTexture->getSpec();
+        _mipmapBufferSpec = {spec.width, spec.height, spec.channels, spec.bpp, spec.format};
+    }
+
+    colorTexture->setTimestamp(input->getTimestamp());
+    _spec.timestamp = input->getTimestamp();
 }
 
 /*************/
 int Warp::pickControlPoint(glm::vec2 p, glm::vec2& v)
 {
     float distance = numeric_limits<float>::max();
-    glm::vec2 closestVertex;
 
     _screenMesh->switchMeshes(true);
     _screenMesh->update();
@@ -197,13 +208,11 @@ int Warp::pickControlPoint(glm::vec2 p, glm::vec2& v)
         float dist = glm::length(p - vertices[i]);
         if (dist < distance)
         {
-            closestVertex = vertices[i];
+            v = vertices[i];
             distance = dist;
             index = i;
         }
     }
-
-    v = closestVertex;
 
     _screenMesh->switchMeshes(false);
 
@@ -215,41 +224,18 @@ void Warp::loadDefaultModels()
 {
     map<string, string> files{{"3d_marker", "3d_marker.obj"}};
 
+    auto scene = dynamic_cast<Scene*>(_root);
+    assert(scene != nullptr);
+
     for (auto& file : files)
     {
-        if (!ifstream(file.second, ios::in | ios::binary))
-        {
-            if (ifstream(string(DATADIR) + file.second, ios::in | ios::binary))
-                file.second = string(DATADIR) + file.second;
-#if HAVE_OSX
-            else if (ifstream("../Resources/" + file.second, ios::in | ios::binary))
-                file.second = "../Resources/" + file.second;
-#endif
-            else
-            {
-                Log::get() << Log::WARNING << "Warp::" << __FUNCTION__ << " - File " << file.second << " does not seem to be readable." << Log::endl;
-                exit(1);
-            }
-        }
+        if (!scene->getObjectLibrary().loadModel(file.first, file.second))
+            continue;
 
-        shared_ptr<Mesh> mesh = make_shared<Mesh>(_root);
-        mesh->setName(file.first);
-        mesh->setAttribute("file", {file.second});
-        _modelMeshes.push_back(mesh);
+        auto object = scene->getObjectLibrary().getModel(file.first);
+        assert(object != nullptr);
 
-        auto geom = make_shared<Geometry>(_root);
-        geom->setName(file.first);
-        geom->linkTo(mesh);
-        _modelGeometries.push_back(geom);
-
-        shared_ptr<Object> obj = make_shared<Object>(_root);
-        obj->setName(file.first);
-        obj->setAttribute("scale", {WORLDMARKER_SCALE});
-        obj->setAttribute("fill", {"color"});
-        obj->setAttribute("color", MARKER_SET);
-        obj->linkTo(geom);
-
-        _models[file.first] = obj;
+        object->setAttribute("fill", {"color"});
     }
 }
 
@@ -361,6 +347,23 @@ void Warp::registerAttributes()
         },
         {'n'});
     setAttributeDescription("showControlPoint", "Show the control point given its index");
+
+    //
+    // Mipmap capture
+    addAttribute("grabMipmapLevel",
+        [&](const Values& args) {
+            _grabMipmapLevel = args[0].as<int>();
+            return true;
+        },
+        [&]() -> Values { return {_grabMipmapLevel}; },
+        {'n'});
+    setAttributeDescription("grabMipmapLevel", "If set to 0 or superior, sync the rendered texture to the 'buffer' attribute, at the given mipmap level");
+
+    addAttribute("buffer", [&](const Values&) { return true; }, [&]() -> Values { return {_mipmapBuffer}; }, {});
+    setAttributeDescription("buffer", "Getter attribute which gives access to the mipmap image, if grabMipmapLevel is greater or equal to 0");
+
+    addAttribute("bufferSpec", [&](const Values&) { return true; }, [&]() -> Values { return _mipmapBufferSpec; }, {});
+    setAttributeDescription("bufferSpec", "Getter attribute to the specs of the attribute buffer");
 }
 
 } // end of namespace

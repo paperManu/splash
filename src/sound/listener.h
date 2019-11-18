@@ -60,7 +60,7 @@ class Listener : public GraphObject
     /**
      * \brief Safe bool idiom
      */
-    explicit operator bool() const { return _ready; }
+    explicit operator bool() const override { return _ready; }
 
     /**
      * No copy, but some move constructors
@@ -88,10 +88,7 @@ class Listener : public GraphObject
     Sound_Engine::SampleFormat _sampleFormat{Sound_Engine::SAMPLE_FMT_FLT};
     bool _planar{false};
     std::string _deviceName{""};
-
-    bool _useJack{false};
     size_t _sampleSize{2};
-
     bool _abortCallback{false};
 
     std::array<uint8_t, SPLASH_LISTENER_RINGBUFFER_SIZE> _ringBuffer;

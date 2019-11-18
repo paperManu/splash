@@ -30,8 +30,8 @@
 #include "./config.h"
 
 #include "./core/attribute.h"
-#include "./core/graph_object.h"
 #include "./core/coretypes.h"
+#include "./core/graph_object.h"
 #include "./graphics/texture_image.h"
 
 namespace Splash
@@ -149,6 +149,6 @@ class Framebuffer : public GraphObject
     int _previousFbo{0};
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_FBO_H

@@ -39,7 +39,9 @@ Framebuffer::Framebuffer(RootObject* root)
     }
     else
     {
+#ifdef DEBUG
         Log::get() << Log::DEBUGGING << "Framebuffer::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
+#endif
     }
 }
 

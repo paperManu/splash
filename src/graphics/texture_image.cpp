@@ -6,12 +6,12 @@
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
-#define SPLASH_TEXTURE_COPY_THREADS 2
-
 using namespace std;
 
 namespace Splash
 {
+
+constexpr int Texture_Image::_texLevels;
 
 /*************/
 Texture_Image::Texture_Image(RootObject* root)
@@ -54,7 +54,7 @@ Texture_Image& Texture_Image::operator=(const shared_ptr<Image>& img)
 void Texture_Image::bind()
 {
     glGetIntegerv(GL_ACTIVE_TEXTURE, &_activeTexture);
-    _activeTexture = _activeTexture - GL_TEXTURE0; // TODO: handle texture units in a modern fashion
+    _activeTexture = _activeTexture - GL_TEXTURE0;
     glBindTextureUnit(_activeTexture, _glTex);
 }
 
@@ -94,13 +94,34 @@ RgbValue Texture_Image::getMeanValue() const
 }
 
 /*************/
-bool Texture_Image::linkTo(const std::shared_ptr<GraphObject>& obj)
+unordered_map<string, Values> Texture_Image::getShaderUniforms() const
 {
-    // Mandatory before trying to link
-    if (!Texture::linkTo(obj))
-        return false;
+    auto uniforms = _shaderUniforms;
+    uniforms["size"] = {static_cast<float>(_spec.width), static_cast<float>(_spec.height)};
+    return uniforms;
+}
 
-    if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
+/*************/
+ImageBuffer Texture_Image::grabMipmap(unsigned int level) const
+{
+    int mipmapLevel = std::min<int>(level, _texLevels);
+    GLint width, height;
+    glGetTextureLevelParameteriv(_glTex, level, GL_TEXTURE_WIDTH, &width);
+    glGetTextureLevelParameteriv(_glTex, level, GL_TEXTURE_HEIGHT, &height);
+
+    auto spec = _spec;
+    spec.width = width;
+    spec.height = height;
+
+    auto image = ImageBuffer(spec);
+    glGetTextureImage(_glTex, mipmapLevel, _texFormat, _texType, image.getSize(), image.data());
+    return image;
+}
+
+/*************/
+bool Texture_Image::linkIt(const std::shared_ptr<GraphObject>& obj)
+{
+    if (dynamic_pointer_cast<Image>(obj))
     {
         auto img = dynamic_pointer_cast<Image>(obj);
         img->setDirty();
@@ -109,6 +130,17 @@ bool Texture_Image::linkTo(const std::shared_ptr<GraphObject>& obj)
     }
 
     return false;
+}
+
+/*************/
+void Texture_Image::unlinkIt(const shared_ptr<GraphObject>& obj)
+{
+    if (dynamic_pointer_cast<Image>(obj))
+    {
+        auto img = dynamic_pointer_cast<Image>(obj);
+        if (img == _img.lock())
+            _img.reset();
+    }
 }
 
 /*************/
@@ -124,7 +156,9 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
 {
     if (width == 0 || height == 0)
     {
+#ifdef DEBUG
         Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Texture size is null" << Log::endl;
+#endif
         return;
     }
 
@@ -267,6 +301,7 @@ void Texture_Image::unbind()
 #ifdef DEBUG
     glBindTextureUnit(_activeTexture, 0);
 #endif
+    _lastDrawnTimestamp = Timer::getTime();
 }
 
 /*************/
@@ -308,23 +343,25 @@ void Texture_Image::update()
         return;
     auto img = _img.lock();
 
-    if (img->getTimestamp() == _timestamp)
+    auto spec = img->getSpec();
+    Values srgb, flip, flop;
+    img->getAttribute("srgb", srgb);
+    img->getAttribute("flip", flip);
+    img->getAttribute("flop", flop);
+
+    _shaderUniforms["flip"] = flip;
+    _shaderUniforms["flop"] = flop;
+
+    if (img->getTimestamp() == _spec.timestamp)
         return;
 
     img->update();
-    _timestamp = img->getTimestamp();
 
     if (_multisample > 1)
     {
         Log::get() << Log::ERROR << "Texture_Image::" << __FUNCTION__ << " - Texture " << _name << " is multisampled, and can not be set from an image" << Log::endl;
         return;
     }
-
-    auto spec = img->getSpec();
-    Values srgb, flip, flop;
-    img->getAttribute("srgb", srgb);
-    img->getAttribute("flip", flip);
-    img->getAttribute("flop", flop);
 
     // Store the image data size
     int imageDataSize = spec.rawSize();
@@ -490,21 +527,15 @@ void Texture_Image::update()
 
         // Fill the next PBO with the image pixels
         auto pixels = _pbosPixels[_pboUploadIndex];
-        if (pixels != NULL)
+        if (pixels != nullptr)
         {
             img->lockWrite();
-
-            int stride = SPLASH_TEXTURE_COPY_THREADS;
-            int size = imageDataSize;
-            for (int i = 0; i < stride - 1; ++i)
-            {
-                _pboCopyThreads.push_back(
-                    async(launch::async, [=]() { copy((char*)img->data() + size / stride * i, (char*)img->data() + size / stride * (i + 1), (char*)pixels + size / stride * i); }));
-            }
-            _pboCopyThreads.push_back(
-                async(launch::async, [=]() { copy((char*)img->data() + size / stride * (stride - 1), (char*)img->data() + size, (char*)pixels + size / stride * (stride - 1)); }));
+            memcpy(pixels, img->data(), imageDataSize);
+            img->unlockWrite();
         }
     }
+
+    _spec.timestamp = spec.timestamp;
 
     // If needed, specify some uniforms for the shader which will use this texture
     _shaderUniforms.clear();
@@ -520,23 +551,8 @@ void Texture_Image::update()
     else
         _shaderUniforms["YUV"] = {0};
 
-    _shaderUniforms["flip"] = flip;
-    _shaderUniforms["flop"] = flop;
-    _shaderUniforms["size"] = {(float)_spec.width, (float)_spec.height};
-
     if (_filtering && !isCompressed)
         generateMipmap();
-}
-
-/*************/
-void Texture_Image::flushPbo()
-{
-    if (!_pboCopyThreads.empty())
-    {
-        _pboCopyThreads.clear(); // This waits for the threaded copies to finish
-        if (!_img.expired())
-            _img.lock()->unlockWrite();
-    }
 }
 
 /*************/
@@ -548,8 +564,6 @@ void Texture_Image::init()
     // This is used for getting documentation "offline"
     if (!_root)
         return;
-
-    _timestamp = Timer::getTime();
 }
 
 /*************/
@@ -603,8 +617,11 @@ void Texture_Image::registerAttributes()
             resize(args[0].as<int>(), args[1].as<int>());
             return true;
         },
+        [&]() -> Values {
+            return {_spec.width, _spec.height};
+        },
         {'n', 'n'});
     setAttributeDescription("size", "Change the texture size");
 }
 
-} // end of namespace
+} // namespace Splash

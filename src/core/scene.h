@@ -38,6 +38,7 @@
 #include "./core/factory.h"
 #include "./core/root_object.h"
 #include "./core/spinlock.h"
+#include "./graphics/gl_window.h"
 #include "./graphics/object_library.h"
 
 namespace Splash
@@ -83,40 +84,11 @@ class Scene : public RootObject
     void addGhost(const std::string& type, const std::string& name = "");
 
     /**
-     * \brief Get an attribute for the given object. Try locally and to the World
-     * \param name Object name
-     * \param attribute Attribute
-     * \return Return the attribute value
-     */
-    Values getAttributeFromObject(const std::string& name, const std::string& attribute);
-
-    /**
-     * \brief Get an attribute description. Try locally and to the World
-     * \param name Object name
-     * \param attribute Attribute
-     * \return Return the attribute description
-     */
-    Values getAttributeDescriptionFromObject(const std::string& name, const std::string& attribute);
-
-    /**
-     * \brief Get the current configuration of the scene as a json object
-     * \return Return a Json object holding the configuration
-     */
-    Json::Value getConfigurationAsJson();
-
-    /**
      * \brief Get a glfw window sharing the same context as _mainWindow
      * \param name Window name
      * \return Return a shared pointer to the new window
      */
     std::shared_ptr<GlWindow> getNewSharedWindow(const std::string& name = "");
-
-    /**
-     * \brief Get the list of objects by their type
-     * \param type Object type
-     * \return Return the list of objects of the given type
-     */
-    Values getObjectsNameByType(const std::string& type);
 
     /**
      * Get the found OpenGL version
@@ -223,7 +195,7 @@ class Scene : public RootObject
 
   protected:
     std::shared_ptr<GlWindow> _mainWindow;
-    bool _isRunning{false};
+    std::atomic_bool _isRunning{false};
 
     // Gui exists in master scene whatever the configuration
     std::shared_ptr<Gui> _gui;
@@ -240,15 +212,21 @@ class Scene : public RootObject
 #if HAVE_GPHOTO and HAVE_OPENCV
     std::shared_ptr<GraphObject> _colorCalibrator{nullptr};
 #endif
+#if HAVE_SLAPS
+    std::shared_ptr<GraphObject> _geometricCalibrator{nullptr};
+#endif
 
   private:
     ObjectLibrary _objectLibrary; //!< Library of 3D objects used by multiple GraphObjects
 
     static bool _hasNVSwapGroup; //!< If true, NV swap groups have been detected and are used
     static std::vector<int> _glVersion;
+    static std::string _glVendor;
+    static std::string _glRenderer;
 
     bool _runInBackground{false}; //!< If true, no window will be created
-    bool _started{false};
+    bool _threadedTextureUpload{false}; //!< If true, texture upload is done in a separate thread
+    std::atomic_bool _started{false};
 
     bool _isMaster{false}; //!< Set to true if this is the master Scene of the current config
     bool _isInitialized{false};
@@ -299,14 +277,10 @@ class Scene : public RootObject
      */
     static void glfwErrorCallback(int code, const char* msg);
 
-/**
- * \brief Callback for GL errors and warnings
- */
-#ifdef HAVE_OSX
-    static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
-#else
+    /**
+     * \brief Callback for GL errors and warnings
+     */
     static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, void*);
-#endif
 
     /**
      * \brief Texture update loop
@@ -317,6 +291,11 @@ class Scene : public RootObject
      * \brief Register new attributes
      */
     void registerAttributes();
+
+    /**
+     * Initialize the tree
+     */
+    void initializeTree();
 
     /**
      * \brief Update the various inputs (mouse, keyboard...)

@@ -75,25 +75,13 @@ class VirtualProbe : public Texture
      * \brief Get the shader parameters related to this warp. Texture should be locked first.
      * \return Return the shader uniforms
      */
-    std::unordered_map<std::string, Values> getShaderUniforms() const;
+    std::unordered_map<std::string, Values> getShaderUniforms() const override;
 
     /**
      * \brief Get spec of the texture
      * \return Return the spec
      */
-    ImageBufferSpec getSpec() const { return _outFbo->getColorTexture()->getSpec(); }
-
-    /**
-     * \brief Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
-     */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) override;
-
-    /**
-     * \brief Try to unlink the given GraphObject from this object
-     * \param obj Shared pointer to the (supposed) child object
-     */
-    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) override;
+    ImageBufferSpec getSpec() const override { return _outFbo->getColorTexture()->getSpec(); }
 
     /**
      * \brief Render this camera into its textures
@@ -126,12 +114,25 @@ class VirtualProbe : public Texture
      * \brief Get the id of the gl texture
      * \return Return the texture id
      */
-    GLuint getTexId() const { return _outFbo->getColorTexture()->getTexId(); }
+    GLuint getTexId() const override { return _outFbo->getColorTexture()->getTexId(); }
 
     /**
      * \brief Update for a VirtualProbe does nothing, it is the render() job
      */
     void update() final {}
+
+  protected:
+    /**
+     * \brief Try to link the given GraphObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
+
+    /**
+     * \brief Try to unlink the given GraphObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
   private:
     enum ProjectionType
@@ -140,7 +141,6 @@ class VirtualProbe : public Texture
         Spherical = 1
     };
 
-  private:
     std::unique_ptr<Framebuffer> _fbo{nullptr};
     std::unique_ptr<Framebuffer> _outFbo{nullptr};
     std::vector<std::weak_ptr<Object>> _objects{};

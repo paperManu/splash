@@ -131,7 +131,6 @@ class Factory
 
     RootObject* _root{nullptr};              //!< Root object, used as root for all created objects
     Scene* _scene{nullptr};                  //!< If root is a Scene, this is set
-    bool _isMasterScene{false};              //!< True if the root is the master Scene
     std::map<std::string, Page> _objectBook; //!< List of all creatable objects
 
     std::unordered_map<std::string, std::unordered_map<std::string, Values>> _defaults{}; //!< Default values

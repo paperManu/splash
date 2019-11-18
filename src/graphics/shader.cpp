@@ -221,6 +221,8 @@ bool Shader::setSource(const map<ShaderType, string>& sources)
     _shadersSource.clear();
 
     bool status = true;
+    if (sources.find(ShaderType::vertex) == sources.end())
+        status = setSource(ShaderSources.VERSION_DIRECTIVE_GL4 + ShaderSources.VERTEX_SHADER_DEFAULT, ShaderType::vertex);
     for (auto& source : sources)
         status = status && setSource(source.second, source.first);
 
@@ -754,6 +756,7 @@ void Shader::registerAttributes()
 
         return true;
     });
+    setAttribute("uniform", {"Set the shader uniform to the given value, if it exists. This has to be called while the shader is active"});
 }
 
 /*************/
@@ -811,7 +814,7 @@ void Shader::registerGraphicAttributes()
                 _currentProgramName = args[0].as<string>();
                 _fill = color;
                 _shaderOptions = options;
-                setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+                setSource(options + ShaderSources.VERTEX_SHADER_MODELVIEW, vertex);
                 resetShader(geometry);
                 setSource(options + ShaderSources.FRAGMENT_SHADER_COLOR, fragment);
                 compileProgram();
@@ -821,7 +824,7 @@ void Shader::registerGraphicAttributes()
                 _currentProgramName = args[0].as<string>();
                 _fill = primitiveId;
                 _shaderOptions = options;
-                setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+                setSource(options + ShaderSources.VERTEX_SHADER_MODELVIEW, vertex);
                 resetShader(geometry);
                 setSource(options + ShaderSources.FRAGMENT_SHADER_PRIMITIVEID, fragment);
                 compileProgram();
@@ -833,6 +836,7 @@ void Shader::registerGraphicAttributes()
                 _shaderOptions = options;
                 if (_shadersSource.find(ShaderType::vertex) == _shadersSource.end())
                     setSource(options + ShaderSources.VERTEX_SHADER_FILTER, vertex);
+                resetShader(geometry);
                 if (_shadersSource.find(ShaderType::fragment) == _shadersSource.end())
                     setSource(options + ShaderSources.FRAGMENT_SHADER_FILTER, fragment);
                 compileProgram();
@@ -842,7 +846,7 @@ void Shader::registerGraphicAttributes()
                 _currentProgramName = args[0].as<string>();
                 _fill = uv;
                 _shaderOptions = options;
-                setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+                setSource(options + ShaderSources.VERTEX_SHADER_MODELVIEW, vertex);
                 resetShader(geometry);
                 setSource(options + ShaderSources.FRAGMENT_SHADER_UV, fragment);
                 compileProgram();

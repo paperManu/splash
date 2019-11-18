@@ -1,5 +1,6 @@
 #include "./core/scene.h"
 
+#include <list>
 #include <utility>
 
 #include "./controller/controller_blender.h"
@@ -29,15 +30,15 @@
 #include "./controller/colorcalibrator.h"
 #endif
 
-#if HAVE_OSX
-#include "./graphics/texture_syphon.h"
-#else
 // clang-format off
 #define GLFW_EXPOSE_NATIVE_X11
 #define GLFW_EXPOSE_NATIVE_GLX
 #include <GLFW/glfw3native.h>
 #include <GL/glxext.h>
 // clang-format on
+
+#if HAVE_SLAPS
+#include "./controller/geometriccalibrator.h"
 #endif
 
 using namespace std;
@@ -47,6 +48,8 @@ namespace Splash
 
 bool Scene::_hasNVSwapGroup{false};
 vector<int> Scene::_glVersion{0, 0};
+std::string Scene::_glVendor{};
+std::string Scene::_glRenderer{};
 vector<string> Scene::_ghostableTypes{"camera", "warp"};
 
 /*************/
@@ -65,11 +68,16 @@ bool Scene::getHasNVSwapGroup()
 Scene::Scene(const string& name, const string& socketPrefix)
     : _objectLibrary(dynamic_cast<RootObject*>(this))
 {
+#ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
+#endif
 
     _isRunning = true;
     _name = name;
     _linkSocketPrefix = socketPrefix;
+
+    registerAttributes();
+    initializeTree();
 
     // We have to reset the factory to create a Scene factory
     _factory.reset(new Factory(this));
@@ -79,8 +87,6 @@ Scene::Scene(const string& name, const string& socketPrefix)
         _blender->setName("blender");
         _objects["blender"] = _blender;
     }
-
-    registerAttributes();
 
     init(_name);
 }
@@ -101,15 +107,17 @@ Scene::~Scene()
 
     _mainWindow->releaseContext();
 
-    _link->disconnectFrom("world");
-
+#ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
+#endif
 }
 
 /*************/
 std::shared_ptr<GraphObject> Scene::addObject(const string& type, const string& name)
 {
+#ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
+#endif
 
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
@@ -120,7 +128,9 @@ std::shared_ptr<GraphObject> Scene::addObject(const string& type, const string& 
     // Check whether an object of this name already exists
     if (getObject(name))
     {
+#ifdef DEBUG
         Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - An object named " << name << " already exists" << Log::endl;
+#endif
         return {};
     }
 
@@ -154,110 +164,19 @@ std::shared_ptr<GraphObject> Scene::addObject(const string& type, const string& 
 /*************/
 void Scene::addGhost(const string& type, const string& name)
 {
-    // Currently, only Cameras can be ghosts
     if (find(_ghostableTypes.begin(), _ghostableTypes.end(), type) == _ghostableTypes.end())
         return;
 
+#ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating ghost object of type " << type << Log::endl;
-
-    // Add the object for real ...
+#endif
     auto obj = addObject(type, name);
     if (obj)
     {
-        // And move it to _objects
-        lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-        obj->setGhost(true);
+        auto ghostPath = "/" + _name + "/objects/" + name + "/ghost";
+        _tree.createLeafAt(ghostPath);
+        _tree.setValueForLeafAt(ghostPath, true);
     }
-}
-
-/*************/
-Values Scene::getAttributeFromObject(const string& name, const string& attribute)
-{
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-    auto object = getObject(name);
-
-    Values values;
-    if (object)
-    {
-        object->getAttribute(attribute, values);
-    }
-    // Ask the World if it knows more about this object
-    else
-    {
-        auto answer = sendMessageToWorldWithAnswer("getAttribute", {name, attribute}, 1e4);
-        for (unsigned int i = 1; i < answer.size(); ++i)
-            values.push_back(answer[i]);
-    }
-
-    return values;
-}
-
-/*************/
-Values Scene::getAttributeDescriptionFromObject(const string& name, const string& attribute)
-{
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-    auto objectIt = _objects.find(name);
-
-    Values values;
-    if (objectIt != _objects.end())
-    {
-        auto& object = objectIt->second;
-        values.push_back(object->getAttributeDescription(attribute));
-    }
-
-    // Ask the World if it knows more about this object
-    if (values.size() == 0 || values[0].as<string>() == "")
-    {
-        auto answer = sendMessageToWorldWithAnswer("getAttributeDescription", {name, attribute}, 10000);
-        if (!answer.empty())
-        {
-            values.clear();
-            values.push_back(answer[1]);
-        }
-    }
-
-    return values;
-}
-
-/*************/
-Json::Value Scene::getConfigurationAsJson()
-{
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-
-    Json::Value root;
-    auto sceneConfiguration = BaseObject::getConfigurationAsJson();
-    for (const auto& attr : sceneConfiguration.getMemberNames())
-        root[attr] = sceneConfiguration[attr];
-
-    // Save objects attributes
-    for (auto& obj : _objects)
-        if (obj.second->getSavable() && !obj.second->isGhost())
-            root["objects"][obj.first] = obj.second->getConfigurationAsJson();
-
-    // Save links
-    Values links;
-    for (auto& obj : _objects)
-    {
-        if (!obj.second->getSavable() || obj.second->isGhost())
-            continue;
-
-        auto linkedObjects = obj.second->getLinkedObjects();
-        for (auto& weakLinkedObject : linkedObjects)
-        {
-            auto linkedObject = weakLinkedObject.lock();
-            if (!linkedObject)
-                continue;
-
-            if (!linkedObject->getSavable() || obj.second->isGhost())
-                continue;
-
-            links.push_back(Values({linkedObject->getName(), obj.second->getName()}));
-        }
-    }
-
-    root["links"] = getValuesAsJson(links);
-
-    return root;
 }
 
 /*************/
@@ -307,6 +226,23 @@ void Scene::remove(const string& name)
 /*************/
 void Scene::render()
 {
+    // We want to have as much time as possible for uploading the textures,
+    // so we start it right now.
+    if (!_threadedTextureUpload)
+    {
+        bool expectedAtomicValue = false;
+        if (!_doUploadTextures.compare_exchange_strong(expectedAtomicValue, false, std::memory_order_acq_rel))
+        {
+            lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+            for (auto& obj : _objects)
+            {
+                auto texture = dynamic_pointer_cast<Texture>(obj.second);
+                if (texture)
+                    texture->update();
+            }
+        }
+    }
+
     {
 #ifdef PROFILE
         PROFILEGL("Render loop")
@@ -315,16 +251,12 @@ void Scene::render()
         map<GraphObject::Priority, vector<shared_ptr<GraphObject>>> objectList{};
         {
             lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-            for (auto& obj : _objects)
+            for (auto obj = _objects.cbegin(); obj != _objects.cend(); ++obj)
             {
                 // We also run all pending tasks for every object
-                obj.second->runTasks();
+                obj->second->runTasks();
 
-                // Ghosts are not updated in the render loop
-                if (obj.second->isGhost())
-                    continue;
-
-                auto priority = obj.second->getRenderingPriority();
+                auto priority = obj->second->getRenderingPriority();
                 if (priority == GraphObject::Priority::NO_RENDER)
                     continue;
 
@@ -338,7 +270,7 @@ void Scene::render()
                         continue;
                 }
 
-                listIt->second.push_back(obj.second);
+                listIt->second.push_back(obj->second);
             }
         }
 
@@ -429,11 +361,19 @@ void Scene::render()
 /*************/
 void Scene::run()
 {
-    _textureUploadFuture = async(std::launch::async, [&]() { textureUploadRun(); });
-
     _mainWindow->setAsCurrentContext();
     while (_isRunning)
     {
+        if (_threadedTextureUpload && !_textureUploadFuture.valid())
+            _textureUploadFuture = async(std::launch::async, [&]() { textureUploadRun(); });
+        else if (!_threadedTextureUpload && _textureUploadFuture.valid())
+            _textureUploadFuture.wait();
+
+        // Process tree updates
+        Timer::get() << "tree_process";
+        _tree.processQueue();
+        Timer::get() >> "tree_process";
+
         // This gets the whole loop duration
         if (_runInBackground && _swapInterval != 0)
         {
@@ -446,26 +386,41 @@ void Scene::run()
         Timer::get() << "loop_scene";
 
         // Execute waiting tasks
+        executeTreeCommands();
         runTasks();
 
-        if (!_started)
+        if (_started)
+        {
+            Timer::get() << "rendering";
+            render();
+            Timer::get() >> "rendering";
+
+            Timer::get() << "inputsUpdate";
+            updateInputs();
+            Timer::get() >> "inputsUpdate";
+        }
+        else
         {
             this_thread::sleep_for(chrono::milliseconds(50));
-            continue;
         }
 
-        Timer::get() << "rendering";
-        render();
-        Timer::get() >> "rendering";
-
-        Timer::get() << "inputsUpdate";
-        updateInputs();
-        Timer::get() >> "inputsUpdate";
+        Timer::get() << "tree_update";
+        updateTreeFromObjects();
+        Timer::get() >> "tree_update";
+        Timer::get() << "tree_propagate";
+        propagateTree();
+        Timer::get() >> "tree_propagate";
     }
     _mainWindow->releaseContext();
 
     signalBufferObjectUpdated();
-    _textureUploadFuture.wait();
+
+    if (_textureUploadFuture.valid())
+        _textureUploadFuture.wait();
+
+    // Clean the tree from anything related to this Scene
+    _tree.cutBranchAt("/" + _name);
+    propagateTree();
 
 #ifdef PROFILE
     ProfilerGL::get().processTimings();
@@ -496,7 +451,7 @@ void Scene::textureUploadRun()
 {
     _textureUploadWindow->setAsCurrentContext();
 
-    while (_isRunning)
+    while (_isRunning && _threadedTextureUpload)
     {
         if (!_started)
         {
@@ -508,7 +463,7 @@ void Scene::textureUploadRun()
         Timer::get() >> "loop_texture";
         Timer::get() << "loop_texture";
 
-        if (!_isRunning)
+        if (!_isRunning || !_threadedTextureUpload)
             break;
 
         {
@@ -517,6 +472,7 @@ void Scene::textureUploadRun()
             bool expectedAtomicValue = false;
             if (_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true, std::memory_order_acquire))
             {
+                lock_guard<recursive_mutex> lockObjects(_objectsMutex);
                 for (auto& obj : _objects)
                 {
                     auto texture = dynamic_pointer_cast<Texture>(obj.second);
@@ -555,7 +511,7 @@ void Scene::textureUploadRun()
             for (auto& texture : textures)
             {
 #ifdef PROFILE
-                PROFILEGL("start " + texture->getName());
+                PROFILEGL("update " + texture->getName());
 #endif
                 texture->update();
             }
@@ -564,16 +520,6 @@ void Scene::textureUploadRun()
                 glDeleteSync(_textureUploadFence);
             _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
             lockTexture.unlock();
-
-            for (auto& texture : textures)
-            {
-#ifdef PROFILE
-                PROFILEGL("end " + texture->getName());
-#endif
-                auto texImage = dynamic_pointer_cast<Texture_Image>(texture);
-                if (texImage)
-                    texImage->flushPbo();
-            }
 
             Timer::get() >> "textureUpload";
         }
@@ -633,6 +579,12 @@ void Scene::setAsMaster(const string& configFilePath)
     _colorCalibrator->setName("colorCalibrator");
     _objects["colorCalibrator"] = _colorCalibrator;
 #endif
+
+#if HAVE_SLAPS
+    _geometricCalibrator = make_shared<GeometricCalibrator>(this);
+    _geometricCalibrator->setName("geometricCalibrator");
+    _objects["geometricCalibrator"] = _geometricCalibrator;
+#endif
 }
 
 /*************/
@@ -671,50 +623,36 @@ shared_ptr<GlWindow> Scene::getNewSharedWindow(const string& name)
     auto glWindow = make_shared<GlWindow>(window, _mainWindow->get());
 
     glWindow->setAsCurrentContext();
-#if not HAVE_OSX
 #ifdef DEBUGGL
     glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
 #endif
-#endif
 
-#if not HAVE_OSX
 #ifdef GLX_NV_swap_group
     if (_maxSwapGroups)
     {
         PFNGLXJOINSWAPGROUPNVPROC nvGLJoinSwapGroup = (PFNGLXJOINSWAPGROUPNVPROC)glfwGetProcAddress("glXJoinSwapGroupNV");
-        PFNGLXBINDSWAPBARRIERNVPROC nvGLBindSwapBarrier = (PFNGLXBINDSWAPBARRIERNVPROC)glfwGetProcAddress("glXBindSwapBarrierNV");
-
-        bool nvResult = true;
-        nvResult = nvGLJoinSwapGroup(glfwGetX11Display(), glfwGetGLXWindow(window), 1);
+        auto nvResult = nvGLJoinSwapGroup(glfwGetX11Display(), glfwGetGLXWindow(window), 1);
         if (nvResult)
             Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " successfully joined the NV swap group" << Log::endl;
         else
             Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " couldn't join the NV swap group" << Log::endl;
+    }
 
-        nvResult = nvGLBindSwapBarrier(glfwGetX11Display(), 1, 1);
+    if (_maxSwapBarriers)
+    {
+        PFNGLXBINDSWAPBARRIERNVPROC nvGLBindSwapBarrier = (PFNGLXBINDSWAPBARRIERNVPROC)glfwGetProcAddress("glXBindSwapBarrierNV");
+        auto nvResult = nvGLBindSwapBarrier(glfwGetX11Display(), 1, 1);
         if (nvResult)
             Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " successfully bind the NV swap barrier" << Log::endl;
         else
             Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " couldn't bind the NV swap barrier" << Log::endl;
     }
 #endif
-#endif
     glWindow->releaseContext();
 
     return glWindow;
-}
-
-/*************/
-Values Scene::getObjectsNameByType(const string& type)
-{
-    lock_guard<recursive_mutex> lock(_objectsMutex);
-    Values list;
-    for (auto& obj : _objects)
-        if (obj.second->getType() == type)
-            list.push_back(obj.second->getName());
-    return list;
 }
 
 /*************/
@@ -728,9 +666,6 @@ vector<int> Scene::findGLVersion()
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, version[0]);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, version[1]);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#if HAVE_OSX
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
         glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
         glfwWindowHint(GLFW_DEPTH_BITS, 24);
         glfwWindowHint(GLFW_VISIBLE, false);
@@ -782,9 +717,6 @@ void Scene::init(const string& name)
     glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glfwWindowHint(GLFW_VISIBLE, false);
-#if HAVE_OSX
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
 
     GLFWwindow* window = glfwCreateWindow(512, 512, name.c_str(), NULL, NULL);
 
@@ -801,17 +733,23 @@ void Scene::init(const string& name)
     _mainWindow->setAsCurrentContext();
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
+    // Get hardware information
+    _glVendor = std::string(reinterpret_cast<const char*>(glGetString(GL_VENDOR)));
+    _glRenderer = std::string(reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
+    Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - GL vendor: " << _glVendor << Log::endl;
+    Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - GL renderer: " << _glRenderer << Log::endl;
+
+    // Nvidia hardware gets a special treatment by default
+    _threadedTextureUpload = _glVendor == "NVIDIA Corporation";
+
 // Activate GL debug messages
-#if not HAVE_OSX
 #ifdef DEBUGGL
     glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
 #endif
-#endif
 
 // Check for swap groups
-#if not HAVE_OSX
 #ifdef GLX_NV_swap_group
     if (glfwExtensionSupported("GLX_NV_swap_group"))
     {
@@ -825,13 +763,12 @@ void Scene::init(const string& name)
             _hasNVSwapGroup = true;
     }
 #endif
-#endif
     _mainWindow->releaseContext();
 
     _textureUploadWindow = getNewSharedWindow();
 
     // Create the link and connect to the World
-    _link = make_shared<Link>(this, name);
+    _link = make_unique<Link>(this, name);
     _link->connectTo("world");
     sendMessageToWorld("sceneLaunched", {});
 }
@@ -861,11 +798,7 @@ void Scene::glfwErrorCallback(int /*code*/, const char* msg)
 }
 
 /*************/
-#ifdef HAVE_OSX
-void Scene::glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* /*userParam*/)
-#else
 void Scene::glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, void* /*userParam*/)
-#endif
 {
     string typeString{"OTHER"};
     string severityString{""};
@@ -923,8 +856,6 @@ void Scene::glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum 
 /*************/
 void Scene::registerAttributes()
 {
-    RootObject::registerAttributes();
-
     addAttribute("addObject",
         [&](const Values& args) {
             addTask([=]() {
@@ -943,21 +874,10 @@ void Scene::registerAttributes()
         {'s', 's'});
     setAttributeDescription("addObject", "Add an object of the given name, type, and optionally the target scene");
 
-    addAttribute("config", [&](const Values&) {
-        addTask([&]() -> void {
-            setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
-            Json::Value config = getConfigurationAsJson();
-            string configStr = config.toStyledString();
-            sendMessageToWorld("answerMessage", {"config", _name, configStr});
-        });
-        return true;
-    });
-    setAttributeDescription("config", "Ask the Scene for a JSON describing its configuration");
-
     addAttribute("deleteObject",
         [&](const Values& args) {
             addTask([=]() -> void {
-                // We wait until we can indeed deleted the object
+                // We wait until we can indeed delete the object
                 bool expectedAtomicValue = false;
                 while (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true, std::memory_order_acquire))
                     this_thread::sleep_for(chrono::milliseconds(1));
@@ -1005,19 +925,6 @@ void Scene::registerAttributes()
         {'n', 'n', 'n', 'n', 'n', 'n', 'n'});
     setAttributeDescription("masterClock", "Set the timing of the master clock");
 
-    addAttribute("getObjectsNameByType",
-        [&](const Values& args) {
-            addTask([=]() {
-                string type = args[0].as<string>();
-                Values list = getObjectsNameByType(type);
-                sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
-            });
-
-            return true;
-        },
-        {'s'});
-    setAttributeDescription("getObjectsNameByType", "Get a list of the objects having the given type");
-
     addAttribute("link",
         [&](const Values& args) {
             addTask([=]() {
@@ -1033,10 +940,10 @@ void Scene::registerAttributes()
 
     addAttribute("log",
         [&](const Values& args) {
-            Log::get().setLog(args[0].as<string>(), (Log::Priority)args[1].as<int>());
+            Log::get().setLog(args[0].as<uint64_t>(), args[1].as<string>(), (Log::Priority)args[2].as<int>());
             return true;
         },
-        {'s', 'n'});
+        {'n', 's', 'n'});
     setAttributeDescription("log", "Add an entry to the logs, given its message and priority");
 
     addAttribute("logToFile",
@@ -1072,23 +979,6 @@ void Scene::registerAttributes()
         {'s'});
     setAttributeDescription("remove", "Remove the object of the given name");
 
-    addAttribute("setAlias",
-        [&](const Values& args) {
-            auto name = args[0].as<string>();
-            auto alias = args[1].as<string>();
-
-            addTask([=]() {
-                lock_guard<recursive_mutex> lock(_objectsMutex);
-
-                auto object = getObject(name);
-                if (object)
-                    object->setAlias(alias);
-            });
-
-            return true;
-        },
-        {'s', 's'});
-
     addAttribute("setMaster", [&](const Values& args) {
         addTask([=]() {
             if (args.empty())
@@ -1112,16 +1002,6 @@ void Scene::registerAttributes()
         return true;
     });
     setAttributeDescription("stop", "Stop the Scene main loop");
-
-    addAttribute("swapInterval",
-        [&](const Values& args) {
-            _swapInterval = max(-1, args[0].as<int>());
-            _targetFrameDuration = updateTargetFrameDuration();
-            return true;
-        },
-        [&]() -> Values { return {(int)_swapInterval}; },
-        {'n'});
-    setAttributeDescription("swapInterval", "Set the interval between two video frames. 1 is synced, 0 is not, -1 to sync when possible ");
 
     addAttribute("swapTest", [&](const Values& args) {
         addTask([=]() {
@@ -1207,21 +1087,14 @@ void Scene::registerAttributes()
     setAttributeDescription("calibrateColorResponseFunction", "Launch the camera color calibration");
 #endif
 
-    addAttribute("configurationPath",
-        [&](const Values& args) {
-            _configurationPath = args[0].as<string>();
-            return true;
-        },
-        {'s'});
-    setAttributeDescription("configurationPath", "Path to the configuration files");
-
-    addAttribute("mediaPath",
-        [&](const Values& args) {
-            _mediaPath = args[0].as<string>();
-            return true;
-        },
-        {'s'});
-    setAttributeDescription("mediaPath", "Path to the media files");
+#if HAVE_SLAPS
+    addAttribute("calibrateGeometry", [&](const Values&) {
+        auto calibrator = dynamic_pointer_cast<GeometricCalibrator>(_geometricCalibrator);
+        if (calibrator)
+            calibrator->calibrate();
+        return true;
+    });
+#endif
 
     addAttribute("runInBackground",
         [&](const Values& args) {
@@ -1230,6 +1103,53 @@ void Scene::registerAttributes()
         },
         {'n'});
     setAttributeDescription("runInBackground", "If set to 1, Splash will run in the background (useful for background processing)");
+
+    addAttribute("swapInterval",
+        [&](const Values& args) {
+            _swapInterval = max(-1, args[0].as<int>());
+            _targetFrameDuration = updateTargetFrameDuration();
+            return true;
+        },
+        [&]() -> Values { return {(int)_swapInterval}; },
+        {'n'});
+    setAttributeDescription("swapInterval", "Set the interval between two video frames. 1 is synced, 0 is not, -1 to sync when possible");
+
+    addAttribute("threadedTextureUpload",
+        [&](const Values& args) {
+            _threadedTextureUpload = args[0].as<bool>();
+            return true;
+        },
+        [&]() -> Values { return {_threadedTextureUpload}; },
+        {'n'});
+    setAttributeDescription("threadedTextureUpload", "Activate threaded texture upload. This can cause freezes on some hardware");
+}
+
+/*************/
+void Scene::initializeTree()
+{
+    _tree.addCallbackToLeafAt("/world/attributes/masterClock",
+        [](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
+            auto args = value.as<Values>();
+            Timer::Point clock;
+            clock.years = args[0].as<uint32_t>();
+            clock.months = args[1].as<uint32_t>();
+            clock.days = args[2].as<uint32_t>();
+            clock.hours = args[3].as<uint32_t>();
+            clock.mins = args[4].as<uint32_t>();
+            clock.secs = args[5].as<uint32_t>();
+            clock.frame = args[6].as<uint32_t>();
+            clock.paused = args[7].as<bool>();
+            Timer::get().setMasterClock(clock);
+        },
+        true);
+
+    _tree.setName(_name);
+    _tree.createBranchAt("/" + _name);
+    _tree.createBranchAt("/" + _name + "/attributes");
+    _tree.createBranchAt("/" + _name + "/commands");
+    _tree.createBranchAt("/" + _name + "/durations");
+    _tree.createBranchAt("/" + _name + "/logs");
+    _tree.createBranchAt("/" + _name + "/objects");
 }
 
 } // namespace Splash

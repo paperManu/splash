@@ -19,7 +19,6 @@
 #include "./utils/timer.h"
 
 #define SPLASH_SHMDATA_THREADS 2
-#define SPLASH_SHMDATA_WITH_POOL 0 // FIXME: there is an issue with the threadpool in the shmdata callback
 
 using namespace std;
 
@@ -221,8 +220,6 @@ void Image_Shmdata::onData(void* data, int data_size)
 /*************/
 void Image_Shmdata::readHapFrame(void* data, int data_size)
 {
-    lock_guard<shared_timed_mutex> lock(_writeMutex);
-
     // We are using kind of a hack to store a DXT compressed image in an ImageBuffer
     // First, we check the texture format type
     auto textureFormat = string("");
@@ -254,18 +251,21 @@ void Image_Shmdata::readHapFrame(void* data, int data_size)
     if (!hapDecodeFrame(data, data_size, _readerBuffer.data(), outputBufferBytes, textureFormat))
         return;
 
-    if (!_bufferImage)
-        _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
-    std::swap(*(_bufferImage), _readerBuffer);
-    _imageUpdated = true;
+    {
+        lock_guard<shared_mutex> lock(_writeMutex);
+        if (!_bufferImage)
+            _bufferImage = make_unique<ImageBuffer>();
+        std::swap(*(_bufferImage), _readerBuffer);
+        _imageUpdated = true;
+    }
     updateTimestamp();
+    if (!_isConnectedToRemote)
+        update();
 }
 
 /*************/
 void Image_Shmdata::readUncompressedFrame(void* data, int /*data_size*/)
 {
-    lock_guard<shared_timed_mutex> lock(_writeMutex);
-
     // Check if we need to resize the reader buffer
     auto bufSpec = _readerBuffer.getSpec();
     if (bufSpec.width != _width || bufSpec.height != _height || bufSpec.channels != _channels)
@@ -332,11 +332,16 @@ void Image_Shmdata::readUncompressedFrame(void* data, int /*data_size*/)
     else
         return;
 
-    if (!_bufferImage)
-        _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
-    std::swap(*(_bufferImage), _readerBuffer);
-    _imageUpdated = true;
+    {
+        lock_guard<shared_mutex> lock(_writeMutex);
+        if (!_bufferImage)
+            _bufferImage = make_unique<ImageBuffer>();
+        std::swap(*(_bufferImage), _readerBuffer);
+        _imageUpdated = true;
+    }
     updateTimestamp();
+    if (!_isConnectedToRemote)
+        update();
 }
 
 /*************/

@@ -3,15 +3,16 @@
 #include <fstream>
 
 #include "./controller/controller.h"
+#include "./controller/widget/widget_camera.h"
 #include "./controller/widget/widget_control.h"
 #include "./controller/widget/widget_filters.h"
-#include "./controller/widget/widget_global_view.h"
 #include "./controller/widget/widget_graph.h"
 #include "./controller/widget/widget_media.h"
 #include "./controller/widget/widget_meshes.h"
 #include "./controller/widget/widget_node_view.h"
 #include "./controller/widget/widget_text_box.h"
 #include "./controller/widget/widget_textures_view.h"
+#include "./controller/widget/widget_tree.h"
 #include "./controller/widget/widget_warp.h"
 #include "./core/scene.h"
 #include "./graphics/camera.h"
@@ -62,7 +63,6 @@ Gui::Gui(shared_ptr<GlWindow> w, RootObject* s)
 
     // Create the default GUI camera
     _guiCamera = make_shared<Camera>(s);
-    _guiCamera->setName("guiCamera");
     _guiCamera->setAttribute("eye", {2.0, 2.0, 0.0});
     _guiCamera->setAttribute("target", {0.0, 0.0, 0.5});
     _guiCamera->setAttribute("size", {640, 480});
@@ -116,7 +116,6 @@ void Gui::loadIcon()
     _splashLogo = make_shared<Texture_Image>(_scene);
     _splashLogo->linkTo(image);
     _splashLogo->update();
-    _splashLogo->flushPbo();
 }
 
 /*************/
@@ -154,17 +153,6 @@ void Gui::computeBlending(bool once)
 }
 
 /*************/
-void Gui::activateLUT()
-{
-    auto cameras = getObjectsOfType("camera");
-    for (auto& cam : cameras)
-    {
-        setObjectAttribute(cam->getName(), "activateColorLUT", {2});
-        setObjectAttribute(cam->getName(), "activateColorMixMatrix", {2});
-    }
-}
-
-/*************/
 void Gui::calibrateColorResponseFunction()
 {
     if (!_scene)
@@ -181,33 +169,9 @@ void Gui::calibrateColors()
 }
 
 /*************/
-void Gui::loadConfiguration()
+void Gui::copyCameraParameters(const string& path)
 {
-    setWorldAttribute("loadConfig", {_configurationPath});
-}
-
-/*************/
-void Gui::loadProject()
-{
-    setWorldAttribute("loadProject", {_projectPath});
-}
-
-/*************/
-void Gui::copyCameraParameters()
-{
-    setWorldAttribute("copyCameraParameters", {_configurationPath});
-}
-
-/*************/
-void Gui::saveConfiguration()
-{
-    setWorldAttribute("save", {_configurationPath});
-}
-
-/*************/
-void Gui::saveProject()
-{
-    setWorldAttribute("saveProject", {_projectPath});
+    setWorldAttribute("copyCameraParameters", {path});
 }
 
 /*************/
@@ -223,13 +187,13 @@ void Gui::setJoystickState(const vector<UserInput::State>& state)
     vector<float> axes;
     vector<uint8_t> buttons;
 
-    for (auto& s : state)
+    for (const auto& s : state)
     {
         if (s.action == "joystick_0_axes")
-            for (auto& v : s.value)
+            for (const auto& v : s.value)
                 axes.push_back(v.as<float>());
         else if (s.action == "joystick_0_buttons")
-            for (auto& v : s.value)
+            for (const auto& v : s.value)
                 buttons.push_back(v.as<int>());
     }
 
@@ -239,7 +203,7 @@ void Gui::setJoystickState(const vector<UserInput::State>& state)
 /*************/
 void Gui::setKeyboardState(const vector<UserInput::State>& state)
 {
-    for (auto& s : state)
+    for (const auto& s : state)
     {
         if (s.action == "keyboard_unicodeChar")
         {
@@ -266,7 +230,7 @@ void Gui::setMouseState(const vector<UserInput::State>& state)
     if (!_window)
         return;
 
-    for (auto& s : state)
+    for (const auto& s : state)
     {
         auto parentIt = find_if(_parents.begin(), _parents.end(), [&](const GraphObject* p) { return s.window == p->getName(); });
         if (parentIt == _parents.end())
@@ -315,11 +279,7 @@ void Gui::key(int key, int action, int mods)
     }
     case GLFW_KEY_TAB:
     {
-#if HAVE_OSX
-        if (action == GLFW_PRESS && mods == GLFW_MOD_ALT)
-#else
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
-#endif
         {
             _isVisible = !_isVisible;
         }
@@ -333,34 +293,6 @@ void Gui::key(int key, int action, int mods)
             computeBlending(true);
         else if (action == GLFW_PRESS && mods == (GLFW_MOD_CONTROL + GLFW_MOD_ALT))
             computeBlending(false);
-        break;
-    }
-#if HAVE_GPHOTO and HAVE_OPENCV
-    case GLFW_KEY_L:
-    {
-        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
-            activateLUT();
-        break;
-    }
-    case GLFW_KEY_O:
-    {
-        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
-            calibrateColorResponseFunction();
-        else
-            goto sendAsDefault;
-        break;
-    }
-    case GLFW_KEY_P:
-    {
-        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
-            calibrateColors();
-        break;
-    }
-#endif
-    case GLFW_KEY_S:
-    {
-        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
-            saveConfiguration();
         break;
     }
     case GLFW_KEY_F:
@@ -380,7 +312,33 @@ void Gui::key(int key, int action, int mods)
         }
         break;
     }
-    // Switch the rendering to textured
+    case GLFW_KEY_O:
+    {
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
+        {
+            _showFileSelector = true;
+            _menuAction = MenuAction::OpenConfiguration;
+        }
+        else if (action == GLFW_PRESS && mods == (GLFW_MOD_CONTROL + GLFW_MOD_SHIFT))
+        {
+            _showFileSelector = true;
+            _menuAction = MenuAction::OpenProject;
+        }
+        break;
+    }
+    case GLFW_KEY_S:
+    {
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
+        {
+            setWorldAttribute("save", {_configurationPath});
+        }
+        else if (action == GLFW_PRESS && mods == (GLFW_MOD_CONTROL + GLFW_MOD_SHIFT))
+        {
+            _showFileSelector = true;
+            _menuAction = MenuAction::SaveConfigurationAs;
+        }
+        break;
+    }
     case GLFW_KEY_T:
     {
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
@@ -452,13 +410,9 @@ void Gui::mouseScroll(double /*xoffset*/, double yoffset)
 }
 
 /*************/
-bool Gui::linkTo(const shared_ptr<GraphObject>& obj)
+bool Gui::linkIt(const shared_ptr<GraphObject>& obj)
 {
-    // Mandatory before trying to link
-    if (!ControllerObject::linkTo(obj))
-        return false;
-
-    if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Object>(obj))
     {
         auto object = dynamic_pointer_cast<Object>(obj);
         _guiCamera->linkTo(object);
@@ -469,21 +423,314 @@ bool Gui::linkTo(const shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void Gui::unlinkFrom(const shared_ptr<GraphObject>& obj)
+void Gui::unlinkIt(const shared_ptr<GraphObject>& obj)
 {
     if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
         _guiCamera->unlinkFrom(obj);
+}
 
-    GraphObject::unlinkFrom(obj);
+/*************/
+void Gui::drawMainTab()
+{
+    ImGui::BeginChild("main");
+
+    ImVec2 availableSize = ImGui::GetContentRegionAvail();
+
+    ImGui::Text("General");
+    if (ImGui::Button("Compute blending map", ImVec2(availableSize[0] / 3.f, 32.f)))
+        computeBlending(true);
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("To use once cameras are calibrated (Ctrl+B, Ctrl+Alt+B to compute at each frames)");
+
+    ImGui::SameLine();
+    if (ImGui::Button("Flash background", ImVec2(availableSize[0] / 3.f, 32.f)))
+        setObjectsOfType("camera", "flashBG", {});
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Set the background as light gray (Ctrl+F)");
+
+    ImGui::SameLine();
+    if (ImGui::Button("Wireframe / Textured", ImVec2(availableSize[0] / 3.f, 32.f)))
+    {
+        _wireframe = !_wireframe;
+        setWorldAttribute("wireframe", {(int)_wireframe});
+    }
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Switch objects between wireframe and textured (Ctrl+T and Ctrl+W)");
+
+#if HAVE_GPHOTO and HAVE_OPENCV
+    ImGui::Separator();
+    ImGui::Text("Color calibration");
+    if (ImGui::Button("Calibrate camera response", ImVec2(availableSize[0] / 3.f, 32.f)))
+        calibrateColorResponseFunction();
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Needs to be done before projector calibration");
+
+    ImGui::SameLine();
+    if (ImGui::Button("Calibrate displays / projectors", ImVec2(availableSize[0] / 3.f, 32.f)))
+        calibrateColors();
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Calibrates all outputs");
+
+    ImGui::SameLine();
+    if (ImGui::Button("Activate correction", ImVec2(availableSize[0] / 3.f, 32.f)))
+    {
+        auto cameras = getObjectsPtr(getObjectsOfType("camera"));
+        for (auto& cam : cameras)
+        {
+            setObjectAttribute(cam->getName(), "activateColorLUT", {2});
+            setObjectAttribute(cam->getName(), "activateColorMixMatrix", {2});
+        }
+    }
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Activate color LUT, once calibrated");
+
+#endif
+
+#if HAVE_SLAPS
+    ImGui::Separator();
+    ImGui::Text("Geometric calibration");
+    if (ImGui::Button("Start calibration", ImVec2(availableSize[0] / 3.f, 32.f)))
+        setObjectAttribute("geometricCalibrator", "calibrate", {1});
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Enter the calibration mode");
+
+    ImGui::SameLine();
+    if (ImGui::Button("Capture new position", ImVec2(availableSize[0] / 3.f, 32.f)))
+        setObjectAttribute("geometricCalibrator", "nextPosition", {1});
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Capture the patterns for the current camera position");
+
+    ImGui::SameLine();
+    if (ImGui::Button("Finalize calibration", ImVec2(availableSize[0] / 3.f, 32.f)))
+        setObjectAttribute("geometricCalibrator", "finalizeCalibration", {1});
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Compute calibration from the captured patterns");
+
+    ImGui::SameLine();
+    if (ImGui::Button("Abort calibration", ImVec2(availableSize[0] / 3.f, 32.f)))
+        setObjectAttribute("geometricCalibrator", "abortCalibration", {1});
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Abort the calibration process");
+#endif
+
+    // Media directory
+    ImGui::Separator();
+    ImGui::Text("Media directory");
+    string mediaPath = _root->getMediaPath();
+    if (SplashImGui::InputText("##MediaPath", mediaPath))
+        setWorldAttribute("mediaPath", {string(mediaPath)});
+
+    ImGui::SameLine();
+    static bool showMediaFileSelector{false};
+    if (ImGui::Button("...##Media"))
+        showMediaFileSelector = true;
+    if (showMediaFileSelector)
+    {
+        static string path = _root->getMediaPath();
+        bool cancelled;
+        if (SplashImGui::FileSelector("Media path", path, cancelled, {{"json"}}))
+        {
+            if (!cancelled)
+            {
+                path = Utils::getPathFromFilePath(path);
+                setWorldAttribute("mediaPath", {Utils::getPathFromFilePath(path)});
+            }
+            else
+            {
+                path = _root->getMediaPath();
+            }
+            showMediaFileSelector = false;
+        }
+    }
+
+    ImGui::Separator();
+    // Configuration applied to multiple objects
+    ImGui::Text("Other configuration");
+    static auto looseClock = false;
+    auto looseClockValue = getWorldAttribute("looseClock");
+    if (!looseClockValue.empty())
+        looseClock = looseClockValue[0].as<bool>();
+    if (ImGui::Checkbox("Loose master clock", &looseClock))
+        setWorldAttribute("looseClock", {static_cast<int>(looseClock)});
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Loose clock: if activated, the master clock is only "
+                          "used as an indication, not a hard constraint");
+
+    static auto blendWidth = 0.05f;
+    if (ImGui::InputFloat("Blending width", &blendWidth, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
+        setObjectsOfType("camera", "blendWidth", {blendWidth});
+
+    static auto blendPrecision = 0.1f;
+    if (ImGui::InputFloat("Blending precision", &blendPrecision, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
+        setObjectsOfType("camera", "blendPrecision", {blendPrecision});
+
+    ImGui::Separator();
+    ImGui::Text("Testing tools");
+
+    static auto syncTestFrameDelay = 0;
+    if (ImGui::InputInt("Outputs synchronization test", &syncTestFrameDelay, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
+    {
+        syncTestFrameDelay = std::max(syncTestFrameDelay, 0);
+        setWorldAttribute("swapTest", {syncTestFrameDelay});
+    }
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Test frame swap synchronization by setting a black/white frames swap with the given period");
+
+    static auto showCameraCount = false;
+    if (ImGui::Checkbox("Show camera count (w/ blending)", &showCameraCount))
+    {
+        setWorldAttribute("computeBlending", {"continuous"});
+        setObjectsOfType("camera", "showCameraCount", {showCameraCount});
+    }
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Replace the objects texture with a color indicating the number of cameras displaying each pixel");
+
+    ImGui::EndChild();
+}
+
+/*************/
+void Gui::drawMenuBar()
+{
+    if (ImGui::BeginMenuBar())
+    {
+        if (ImGui::BeginMenu("File"))
+        {
+            if (ImGui::MenuItem("Open configuration (Ctrl+O)", nullptr))
+            {
+                _menuAction = MenuAction::OpenConfiguration;
+                _showFileSelector = true;
+            }
+
+            if (ImGui::MenuItem("Open project (Ctrl+Shift+O)", nullptr))
+            {
+                _menuAction = MenuAction::OpenProject;
+                _showFileSelector = true;
+            }
+            if (ImGui::MenuItem("Copy calibration from configuration", nullptr))
+            {
+                _menuAction = MenuAction::CopyCalibration;
+                _showFileSelector = true;
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Save configuration (Ctrl+S)", nullptr))
+            {
+                setWorldAttribute("save", {_configurationPath});
+            }
+            if (ImGui::MenuItem("Save configuration as... (Ctrl+Shift+S)", nullptr))
+            {
+                _menuAction = MenuAction::SaveConfigurationAs;
+                _showFileSelector = true;
+            }
+            if (ImGui::MenuItem("Save project", nullptr))
+            {
+                setWorldAttribute("saveProject", {_projectPath});
+            }
+            if (ImGui::MenuItem("Save project as ...", nullptr))
+            {
+                _menuAction = MenuAction::SaveProjectAs;
+                _showFileSelector = true;
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Quit", nullptr))
+            {
+                setWorldAttribute("quit", {});
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Help"))
+        {
+            if (ImGui::MenuItem("Shortcuts", nullptr))
+            {
+                _showHelp = true;
+            }
+            if (ImGui::MenuItem("About", nullptr))
+            {
+                _showAbout = true;
+            }
+            ImGui::EndMenu();
+        }
+        ImGui::EndMenuBar();
+    }
+
+    if (_showFileSelector)
+    {
+        static string path = _root->getConfigurationPath();
+        bool cancelled;
+
+        if (_menuAction == MenuAction::OpenConfiguration)
+        {
+            if (SplashImGui::FileSelector("Open configuration", path, cancelled, {{"json"}}))
+            {
+                _showFileSelector = false;
+                if (!cancelled)
+                {
+                    _configurationPath = path;
+                    setWorldAttribute("loadConfig", {_configurationPath});
+                }
+            }
+        }
+        else if (_menuAction == MenuAction::OpenProject)
+        {
+            if (SplashImGui::FileSelector("Open project", path, cancelled, {{"json"}}))
+            {
+                _showFileSelector = false;
+                if (!cancelled)
+                {
+                    _projectPath = path;
+                    setWorldAttribute("loadProject", {_projectPath});
+                }
+            }
+        }
+        else if (_menuAction == MenuAction::CopyCalibration)
+        {
+            if (SplashImGui::FileSelector("Copy calibration from...", path, cancelled, {{"json"}}))
+            {
+                _showFileSelector = false;
+                if (!cancelled)
+                    copyCameraParameters(path);
+            }
+        }
+        else if (_menuAction == MenuAction::SaveConfigurationAs)
+        {
+            if (SplashImGui::FileSelector("Save configuration as...", path, cancelled, {{"json"}}))
+            {
+                _showFileSelector = false;
+                if (!cancelled)
+                {
+                    _configurationPath = path;
+                    setWorldAttribute("save", {_configurationPath});
+                }
+            }
+        }
+        else if (_menuAction == MenuAction::SaveProjectAs)
+        {
+            if (SplashImGui::FileSelector("Save project as...", path, cancelled, {{"json"}}))
+            {
+                _showFileSelector = false;
+                if (!cancelled)
+                {
+                    _projectPath = path;
+                    setWorldAttribute("saveProject", {_projectPath});
+                }
+            }
+        }
+        else
+        {
+            assert(false);
+        }
+    }
 }
 
 /*************/
 void Gui::renderSplashScreen()
 {
     static bool isOpen{false};
-    static int splashWidth = 600, splashHeight = 288;
-    ImGui::SetNextWindowPos(ImVec2((_width - splashWidth) / 2, (_height - splashHeight) / 2));
-    ImGui::Begin("About Splash", &isOpen, ImVec2(splashWidth, splashHeight), 0.97f, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
+    int splashWidth = 600, splashHeight = 288;
+    auto parentWindowSize = ImGui::GetWindowSize();
+    auto parentWindowPos = ImGui::GetWindowPos();
+    ImGui::SetNextWindowPos(ImVec2(parentWindowPos[0] + (parentWindowSize[0] - splashWidth) / 2.f, parentWindowPos[1] + (parentWindowSize[1] - splashHeight) / 2.f));
+    ImGui::Begin("About Splash", &isOpen, ImVec2(splashWidth, splashHeight), 1.f, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
     if (_splashLogo)
     {
         ImGui::Columns(2, nullptr, false);
@@ -501,6 +748,65 @@ void Gui::renderSplashScreen()
         if (io.MouseClicked[0])
             _showAbout = false;
     }
+    ImGui::End();
+}
+
+/*************/
+void Gui::renderHelp()
+{
+    string helpText = R"(Tab: show / hide this GUI
+General shortcuts:
+  Ctrl+O: open a configuration
+  Ctrl+Shift+O: open a project
+  Ctrl+S: save the current configuration
+  Ctrl+Shift+S: save configuration as...
+  Ctrl+F: white background instead of black
+  Ctrl+B: compute the blending between all projectors
+  Ctrl+Alt+B: compute the blending between all projectors at every frame
+  Ctrl+M: hide/show the OS cursor
+  Ctrl+T: textured draw mode
+  Ctrl+W: wireframe draw mode
+
+Views panel:
+  Ctrl + left click on a camera thumbnail: hide / show the given camera
+  Space: switch between projectors
+  A: show / hide the target calibration point
+  C: calibrate the selected camera
+  H: hide all but the selected camera
+  O: show calibration points from all cameras
+  Ctrl+Z: revert camera to previous calibration
+
+Node view (inside Control panel):
+  Shift + left click: link the clicked node to the selected one
+  Ctrl + left click: unlink the clicked node from the selected one
+
+Camera view (inside the Camera panel):
+  Middle click: rotate camera
+  Shift + middle click: pan camera
+  Control + middle click: zoom in / out
+
+Joystick controls (may vary with the controller):
+  Directions: move the selected calibration point
+  Button 1: select previous calibration point
+  Button 2: select next calibration point
+  Button 3: hide all but the selected cameras
+  Button 4: calibrate
+  Button 5: move calibration point slower
+  Button 6: move calibration point faster
+  Button 7: flash the background to light gray)";
+
+    static bool isOpen{false};
+    int helpWidth = 400, helpHeight = 400;
+    auto parentWindowSize = ImGui::GetWindowSize();
+    auto parentWindowPos = ImGui::GetWindowPos();
+    ImGui::SetNextWindowPos(ImVec2(parentWindowPos[0] + (parentWindowSize[0] - helpWidth) / 2.f, parentWindowPos[1] + 100.f));
+    ImGui::Begin("Help", &isOpen, ImVec2(helpWidth, helpHeight), 1.f, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Text("%s", helpText.c_str());
+
+    auto& io = ImGui::GetIO();
+    if (io.MouseClicked[0])
+        _showHelp = false;
+
     ImGui::End();
 }
 
@@ -527,11 +833,10 @@ void Gui::render()
             if (linksIt != allLinks.end())
             {
                 auto links = linksIt->second;
-                bool hasOwnWindow = true;
                 for (const auto& link : links)
-                    if (link != _name)
-                        hasOwnWindow = false;
-                if (hasOwnWindow)
+                    if (link == _name)
+                        _hasOwnWindow = true;
+                if (_hasOwnWindow)
                     _isVisible = true;
             }
         }
@@ -553,200 +858,124 @@ void Gui::render()
     // Panel
     if (_isVisible)
     {
-        ImGui::Begin("Splash Control Panel", nullptr, ImVec2(700, 900), 0.95f, _windowFlags);
-        _windowFlags = ImGuiWindowFlags_NoBringToFrontOnFocus;
+        ImGui::Begin("Splash Control Panel", nullptr, ImVec2(900, 900), 0.97f, _windowFlags);
+        _windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse;
+
+        if (_showAbout)
+            renderSplashScreen();
+
+        if (_showHelp)
+            renderHelp();
 
         // Check whether the GUI is alone in its window
         auto objReversedLinks = getObjectReversedLinks();
         auto objLinks = getObjectLinks();
-        if (objLinks[objReversedLinks[_name][0]].size() == 1)
+        if (_hasOwnWindow)
         {
-            ImGui::SetWindowPos(ImVec2(0, 0), ImGuiSetCond_Once);
+            ImGui::SetWindowPos(ImVec2(0, 0), ImGuiCond_Once);
             ImGui::SetWindowSize(ImVec2(_width, _height));
             _windowFlags |= ImGuiWindowFlags_NoMove;
         }
         else
         {
-            ImGui::SetWindowPos(ImVec2(_initialGuiPos[0], _initialGuiPos[1]), ImGuiSetCond_Once);
+            ImGui::SetWindowPos(ImVec2(_initialGuiPos[0], _initialGuiPos[1]), ImGuiCond_Once);
         }
 
-        // About
-        if (ImGui::Button("About Splash", ImVec2(ImGui::GetContentRegionAvailWidth(), 0)))
-            _showAbout = true;
+        drawMenuBar();
 
-        // Some global buttons
-        if (ImGui::CollapsingHeader("General commands", nullptr, true, true))
+        ImGui::BeginChild("##controlWidgets", ImVec2(0, -256));
+        if (ImGui::BeginTabBar("Tabs", ImGuiTabBarFlags_None))
         {
-#if HAVE_GPHOTO and HAVE_OPENCV
-            ImGui::Columns(2);
-            ImGui::Text("General");
-            ImGui::NextColumn();
-            ImGui::Text("Color calibration");
-            ImGui::NextColumn();
-            ImGui::Separator();
-#endif
-            if (ImGui::Button("Compute blending map"))
-                computeBlending(true);
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("To use once cameras are calibrated (Ctrl+B, Ctrl+Alt+B to compute at each frames)");
-
-            if (ImGui::Button("Flash background"))
-                setObjectsOfType("camera", "flashBG", {});
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Set the background as light gray (Ctrl+F)");
-
-            if (ImGui::Button("Wireframe / Textured"))
+            // Main tabulation
+            if (ImGui::BeginTabItem("Main"))
             {
-                _wireframe = !_wireframe;
-                setWorldAttribute("wireframe", {(int)_wireframe});
+                drawMainTab();
+                ImGui::EndTabItem();
             }
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Switch objects between wireframe and textured (Ctrl+T and Ctrl+W)");
 
-#if HAVE_GPHOTO and HAVE_OPENCV
-            ImGui::NextColumn();
-            if (ImGui::Button("Calibrate camera response"))
-                calibrateColorResponseFunction();
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Needs to be done before projector calibration (Ctrl+O)");
-
-            if (ImGui::Button("Calibrate displays / projectors"))
-                calibrateColors();
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Calibrates all outputs (Ctrl+P)");
-
-            if (ImGui::Button("Activate correction"))
-                activateLUT();
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Activate color LUT, once calibrated (Ctrl+L)");
-
-            ImGui::Columns(1);
-#endif
-            // Configuration load
-            ImGui::Separator();
-            ImGui::Text("Configuration file");
-            char configurationPath[512];
-            strncpy(configurationPath, _configurationPath.data(), 511);
-            ImGui::InputText("##ConfigurationPath", configurationPath, 512);
-            _configurationPath = string(configurationPath);
-
-            ImGui::SameLine();
-            static bool showConfigurationFileSelector{false};
-            if (ImGui::Button("...##Configuration"))
-                showConfigurationFileSelector = true;
-            if (showConfigurationFileSelector)
+            // Controls tabulations
+            for (auto& widget : _guiWidgets)
             {
-                static string path = _root->getConfigurationPath();
-                bool cancelled;
-                if (SplashImGui::FileSelector("Configuration", path, cancelled, {{"json"}}))
+                widget->update();
+                if (ImGui::BeginTabItem(widget->getName().c_str()))
                 {
-                    if (!cancelled)
-                        _configurationPath = Utils::isDir(path) ? path + "configuration.json" : path;
-                    else
-                        path = _root->getConfigurationPath();
-                    showConfigurationFileSelector = false;
+                    ImGui::BeginChild(widget->getName().c_str());
+                    widget->render();
+                    ImGui::EndChild();
+                    ImGui::EndTabItem();
                 }
+                _windowFlags |= widget->updateWindowFlags();
             }
 
-            ImGui::SameLine();
-            if (ImGui::Button("Save##Configuration"))
-                saveConfiguration();
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Configuration is saved to the given path (Ctrl+S)");
-
-            ImGui::SameLine();
-            if (ImGui::Button("Load##Configuration"))
-                loadConfiguration();
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Load the given path");
-
-            ImGui::SameLine();
-            if (ImGui::Button("Copy"))
-                copyCameraParameters();
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Copy the camera parameters from the given file");
-
-            // Project load
-            ImGui::Separator();
-            ImGui::Text("Project file");
-            char projectPath[512];
-            strncpy(projectPath, _projectPath.data(), 511);
-            ImGui::InputText("##ProjectPath", projectPath, 512);
-            _projectPath = string(projectPath);
-
-            ImGui::SameLine();
-            static bool showProjectFileSelector{false};
-            if (ImGui::Button("...##Project"))
-                showProjectFileSelector = true;
-            if (showProjectFileSelector)
-            {
-                static string path = _root->getConfigurationPath();
-                bool cancelled;
-                if (SplashImGui::FileSelector("Project", path, cancelled, {{"json"}}))
-                {
-                    if (!cancelled)
-                        _projectPath = Utils::isDir(path) ? path + "project.json" : path;
-                    else
-                        path = _root->getConfigurationPath();
-                    showProjectFileSelector = false;
-                }
-            }
-
-            ImGui::SameLine();
-            if (ImGui::Button("Save##Project"))
-                saveProject();
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Save a project configuration (only media and meshes)");
-
-            ImGui::SameLine();
-            if (ImGui::Button("Load##Project"))
-                loadProject();
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Load a project configuration (only media and meshes)");
-
-            // Media directory
-            ImGui::Separator();
-            ImGui::Text("Media directory");
-            char mediaPath[512];
-            strncpy(mediaPath, _root->getMediaPath().data(), 511);
-            if (ImGui::InputText("##MediaPath", mediaPath, 512))
-                setWorldAttribute("mediaPath", {string(mediaPath)});
-
-            ImGui::SameLine();
-            static bool showMediaFileSelector{false};
-            if (ImGui::Button("...##Media"))
-                showMediaFileSelector = true;
-            if (showMediaFileSelector)
-            {
-                static string path = _root->getMediaPath();
-                bool cancelled;
-                if (SplashImGui::FileSelector("Media path", path, cancelled, {{"json"}}))
-                {
-                    if (!cancelled)
-                    {
-                        path = Utils::getPathFromFilePath(path);
-                        setWorldAttribute("mediaPath", {Utils::getPathFromFilePath(path)});
-                    }
-                    else
-                    {
-                        path = _root->getMediaPath();
-                    }
-                    showMediaFileSelector = false;
-                }
-            }
+            ImGui::EndTabBar();
         }
+        ImGui::EndChild();
 
-        // Specific widgets
-        for (auto& widget : _guiWidgets)
+        // Health information
+        if (!_guiBottomWidgets.empty())
         {
-            widget->render();
-            _windowFlags |= widget->updateWindowFlags();
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            ImGui::BeginChild("##bottomWidgets", ImVec2(0, -44));
+            ImVec2 availableSize = ImGui::GetContentRegionAvail();
+            for (auto& widget : _guiBottomWidgets)
+            {
+                widget->update();
+                ImGui::BeginChild(widget->getName().c_str(), ImVec2(availableSize.x / static_cast<float>(_guiBottomWidgets.size()), 0), true);
+                widget->render();
+                ImGui::EndChild();
+                ImGui::SameLine();
+            }
+            ImGui::EndChild();
         }
+
+        // Master clock
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        ImGui::BeginChild("##masterClock", ImVec2(0, 0));
+        {
+
+            int year{0}, month{0}, day{0}, hour{0}, minute{0}, second{0}, frame{0};
+            bool paused{true};
+
+            auto tree = _root->getTree();
+            Value clock;
+            if (tree->getValueForLeafAt("/world/attributes/masterClock", clock) && clock.size() == 8)
+            {
+                year = clock[0].as<int>();
+                month = clock[1].as<int>();
+                day = clock[2].as<int>();
+                hour = clock[3].as<int>();
+                minute = clock[4].as<int>();
+                second = clock[5].as<int>();
+                frame = clock[6].as<int>();
+                paused = clock[7].as<bool>();
+            }
+
+            ostringstream stream;
+            stream << setfill('0') << setw(2) << year;
+            stream << "/" << setfill('0') << setw(2) << month;
+            stream << "/" << setfill('0') << setw(2) << day;
+            stream << " - " << setfill('0') << setw(2) << hour;
+            stream << ":" << setfill('0') << setw(2) << minute;
+            stream << ":" << setfill('0') << setw(2) << second;
+            stream << ":" << setfill('0') << setw(3) << frame;
+            stream << (paused ? " - Paused" : " - Playing");
+
+            ImGui::PushFont(_guiFonts[FontType::Clock]);
+            ImGui::Text("%s", stream.str().c_str());
+            ImGui::PopFont();
+        }
+        ImGui::EndChild();
+
         ImGui::End();
     }
-
-    if (_showAbout)
-        renderSplashScreen();
 
     // Uncomment to show styling gui!
     // ImGuiStyle& style = ImGui::GetStyle();
@@ -757,7 +986,7 @@ void Gui::render()
     io.DeltaTime = static_cast<float>(currentTime - time);
     time = currentTime;
 
-    if (_isVisible || _showAbout || _wasVisible || _resized)
+    if (_isVisible || _wasVisible || _resized)
     {
         _wasVisible = _isVisible;
 
@@ -765,7 +994,7 @@ void Gui::render()
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
         glClearColor(0.0, 0.0, 0.0, 0.0);
         glClear(GL_COLOR_BUFFER_BIT);
-        if (_isVisible || _showAbout)
+        if (_isVisible)
         {
             ImGui::Render();
             imGuiRenderDrawLists(ImGui::GetDrawData());
@@ -830,8 +1059,7 @@ void Gui::initImGui(int width, int height)
         {
             Frag_UV = UV;
             Frag_Color = Color;
-            //Frag_Color.a += 0.5f;
-            gl_Position = ProjMtx * vec4(Position.xy, 0, 1);
+            gl_Position = ProjMtx * vec4(Position.xy, 0.f, 1.f);
         }
     )"};
 
@@ -870,16 +1098,14 @@ void Gui::initImGui(int width, int height)
     glGetProgramiv(_imGuiShaderHandle, GL_LINK_STATUS, &status);
     if (status == GL_FALSE)
     {
-        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
+        Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
 
         GLint length;
         glGetProgramiv(_imGuiShaderHandle, GL_INFO_LOG_LENGTH, &length);
-        char* log = (char*)malloc(length);
-        glGetProgramInfoLog(_imGuiShaderHandle, length, &length, log);
-        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
-        free(log);
+        auto log = string(static_cast<size_t>(length), '0');
+        glGetProgramInfoLog(_imGuiShaderHandle, length, &length, log.data());
+        Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error log: \n" << log << Log::endl;
 
-        // TODO: handle this case...
         return;
     }
 
@@ -908,18 +1134,19 @@ void Gui::initImGui(int width, int height)
     // Initialize ImGui
     ImGuiIO& io = GetIO();
 
-    string fontPath = "";
-    vector<string> fontPaths{string(DATADIR) + string("../fonts/Roboto-Medium.ttf")};
-    for (auto& path : fontPaths)
-        if (ifstream(path, ios::in | ios::binary))
-            fontPath = path;
-
-    if (fontPath != "")
+    // Fonts
+    static const vector<FontDefinition> fonts{{FontType::Default, "Roboto-Medium.ttf", 15}, {FontType::Clock, "DSEG14Classic-Light.ttf", 20}};
+    for (const auto& font : fonts)
     {
-        io.Fonts->Clear();
-        io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 15);
-        io.Fonts->Build();
+        assert(font.size > 0);
+
+        auto fullPath = string(DATADIR) + "../fonts/" + font.filename;
+        if (ifstream(fullPath, ios::in | ios::binary))
+        {
+            _guiFonts[font.type] = io.Fonts->AddFontFromFileTTF(fullPath.c_str(), font.size);
+        }
     }
+    io.Fonts->Build();
 
     io.IniFilename = nullptr;
 
@@ -951,49 +1178,60 @@ void Gui::initImGui(int width, int height)
     style.ChildRounding = 2.f;
     style.ChildBorderSize = 1.f;
     style.FrameRounding = 2.f;
+    style.GrabRounding = 2.f;
     style.PopupBorderSize = 0.f;
+    style.ScrollbarRounding = 2.f;
     style.ScrollbarSize = 12.f;
-    style.WindowBorderSize = 0.f;
-    style.Colors[ImGuiCol_Text] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
-    style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
-    style.Colors[ImGuiCol_WindowBg] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
-    style.Colors[ImGuiCol_ChildWindowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-    style.Colors[ImGuiCol_Border] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-    style.Colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.60f);
-    style.Colors[ImGuiCol_PopupBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.90f);
-    style.Colors[ImGuiCol_FrameBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.45f);
-    style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.79f, 0.45f, 0.17f, 0.80f);
-    style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.79f, 0.45f, 0.17f, 0.80f);
-    style.Colors[ImGuiCol_TitleBg] = ImVec4(0.98f, 0.58f, 0.12, 0.74f);
-    style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.98f, 0.58f, 0.12, 0.74f);
-    style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.98f, 0.58f, 0.12, 0.74f);
-    style.Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.98f, 0.58f, 0.12, 0.74f);
-    style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.81f, 0.40f, 0.25f, 0.27f);
-    style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.81f, 0.40f, 0.24f, 0.40f);
-    style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.80f, 0.50f, 0.50f, 0.40f);
-    style.Colors[ImGuiCol_ColumnHovered] = ImVec4(0.60f, 0.40f, 0.40f, 0.45f);
-    style.Colors[ImGuiCol_ColumnActive] = ImVec4(0.65f, 0.50f, 0.50f, 0.55f);
-    style.Colors[ImGuiCol_CheckMark] = ImVec4(0.90f, 0.90f, 0.90f, 0.50f);
-    style.Colors[ImGuiCol_SliderGrab] = ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
-    style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.80f, 0.50f, 0.50f, 1.00f);
-    style.Colors[ImGuiCol_Button] = ImVec4(0.67f, 0.40f, 0.40f, 0.60f);
-    style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.67f, 0.40f, 0.40f, 1.00f);
-    style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.80f, 0.50f, 0.50f, 1.00f);
-    style.Colors[ImGuiCol_Header] = ImVec4(0.81f, 0.40f, 0.24f, 0.45f);
-    style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.79f, 0.45f, 0.17f, 0.80f);
-    style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.79f, 0.53f, 0.21f, 0.80f);
-    style.Colors[ImGuiCol_Column] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-    style.Colors[ImGuiCol_ColumnHovered] = ImVec4(0.60f, 0.40f, 0.40f, 1.00f);
-    style.Colors[ImGuiCol_ColumnActive] = ImVec4(0.80f, 0.47f, 0.50f, 1.00f);
-    style.Colors[ImGuiCol_ResizeGrip] = ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
-    style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(1.00f, 1.00f, 1.00f, 0.60f);
-    style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(1.00f, 1.00f, 1.00f, 0.90f);
-    style.Colors[ImGuiCol_PlotLines] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-    style.Colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-    style.Colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-    style.Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
-    style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
-    style.Colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.10f, 0.90f);
+    style.WindowBorderSize = 1.f;
+    style.WindowRounding = 4.f;
+    style.Colors[ImGuiCol_Text] = ImVec4(0.89f, 0.91f, 0.96f, 1.00f);
+    style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.11f, 0.15f, 0.19f, 1.00f);
+    style.Colors[ImGuiCol_WindowBg] = ImVec4(0.01f, 0.02f, 0.02f, 1.00f);
+    style.Colors[ImGuiCol_ChildBg] = ImVec4(0.02f, 0.02f, 0.04f, 0.00f);
+    style.Colors[ImGuiCol_PopupBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.94f);
+    style.Colors[ImGuiCol_Border] = ImVec4(0.00f, 0.01f, 0.01f, 1.00f);
+    style.Colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    style.Colors[ImGuiCol_FrameBg] = ImVec4(0.03f, 0.05f, 0.07f, 1.00f);
+    style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.01f, 0.03f, 0.06f, 1.00f);
+    style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.01f, 0.01f, 0.01f, 1.00f);
+    style.Colors[ImGuiCol_TitleBg] = ImVec4(0.01f, 0.01f, 0.01f, 0.65f);
+    style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.00f, 0.01f, 0.01f, 1.00f);
+    style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.00f, 0.00f, 0.00f, 0.51f);
+    style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.02f, 0.02f, 0.04f, 1.00f);
+    style.Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.39f);
+    style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.03f, 0.05f, 0.07f, 1.00f);
+    style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.02f, 0.04f, 0.05f, 1.00f);
+    style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.01f, 0.03f, 0.08f, 1.00f);
+    style.Colors[ImGuiCol_CheckMark] = ImVec4(0.06f, 0.28f, 1.00f, 1.00f);
+    style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.06f, 0.28f, 1.00f, 1.00f);
+    style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.11f, 0.34f, 1.00f, 1.00f);
+    style.Colors[ImGuiCol_Button] = ImVec4(0.03f, 0.05f, 0.07f, 1.00f);
+    style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.06f, 0.28f, 1.00f, 1.00f);
+    style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.00f, 0.25f, 0.96f, 1.00f);
+    style.Colors[ImGuiCol_Header] = ImVec4(0.03f, 0.05f, 0.07f, 1.00f);
+    style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.05f, 0.31f, 0.96f, 0.80f);
+    style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.05f, 0.31f, 0.96f, 1.00f);
+    style.Colors[ImGuiCol_Separator] = ImVec4(0.03f, 0.05f, 0.07f, 1.00f);
+    style.Colors[ImGuiCol_SeparatorHovered] = ImVec4(0.01f, 0.13f, 0.53f, 0.78f);
+    style.Colors[ImGuiCol_SeparatorActive] = ImVec4(0.01f, 0.13f, 0.53f, 1.00f);
+    style.Colors[ImGuiCol_ResizeGrip] = ImVec4(0.05f, 0.31f, 0.96f, 0.25f);
+    style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.05f, 0.31f, 0.96f, 0.67f);
+    style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(0.05f, 0.31f, 0.96f, 0.95f);
+    style.Colors[ImGuiCol_Tab] = ImVec4(0.01f, 0.02f, 0.02f, 1.00f);
+    style.Colors[ImGuiCol_TabHovered] = ImVec4(0.05f, 0.31f, 0.96f, 0.80f);
+    style.Colors[ImGuiCol_TabActive] = ImVec4(0.03f, 0.05f, 0.07f, 1.00f);
+    style.Colors[ImGuiCol_TabUnfocused] = ImVec4(0.01f, 0.02f, 0.02f, 1.00f);
+    style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.01f, 0.02f, 0.02f, 1.00f);
+    style.Colors[ImGuiCol_PlotLines] = ImVec4(0.34f, 0.34f, 0.34f, 1.00f);
+    style.Colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.16f, 0.10f, 1.00f);
+    style.Colors[ImGuiCol_PlotHistogram] = ImVec4(0.79f, 0.46f, 0.00f, 1.00f);
+    style.Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.33f, 0.00f, 1.00f);
+    style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.05f, 0.31f, 0.96f, 0.35f);
+    style.Colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
+    style.Colors[ImGuiCol_NavHighlight] = ImVec4(0.05f, 0.31f, 0.96f, 1.00f);
+    style.Colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
+    style.Colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.61f, 0.61f, 0.61f, 0.20f);
+    style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.61f, 0.61f, 0.61f, 0.35f);
 
     unsigned char* pixels;
     int w, h;
@@ -1035,149 +1273,12 @@ void Gui::setClipboardText(void* userData, const char* text)
 /*************/
 void Gui::initImWidgets()
 {
-    // Some help regarding keyboard shortcuts
-    auto helpBox = make_shared<GuiTextBox>(_scene, "Shortcuts");
-    helpBox->setTextFunc([]() {
-        string text = R"(Tab: show / hide this GUI
-        General shortcuts:
-         Ctrl+S: save the current configuration
-         Ctrl+F: white background instead of black
-         Ctrl+B: compute the blending between all projectors
-         Ctrl+Alt+B: compute the blending between all projectors at every frame
-         Ctrl+M: hide/show the OS cursor
-         Ctrl+T: textured draw mode
-         Ctrl+W: wireframe draw mode
-        )";
-#if HAVE_GPHOTO and HAVE_OPENCV
-        text += R"(
-         Ctrl+O: launch camera color calibration
-         Ctrl+P: launch projectors color calibration
-         Ctrl+L: activate color LUT (if calibrated)
-        )";
-#endif
-        text += R"(
-        Views panel:
-         Ctrl + left click on a camera thumbnail: hide / show the given camera
-         Space: switch between projectors
-         A: show / hide the target calibration point
-         C: calibrate the selected camera
-         H: hide all but the selected camera
-         O: show calibration points from all cameras
-         Ctrl+Z: revert camera to previous calibration
-
-        Node view (inside Control panel):
-         Shift + left click: link the clicked node to the selected one
-         Ctrl + left click: unlink the clicked node from the selected one
-
-        Camera view (inside the Camera panel):
-         Middle click: rotate camera
-         Shift + middle click: pan camera
-         Control + middle click: zoom in / out
-
-        Joystick controls (may vary with the controller):
-         Directions: move the selected calibration point
-         Button 1: select previous calibration point
-         Button 2: select next calibration point
-         Button 3: hide all but the selected cameras
-         Button 4: calibrate
-         Button 5: move calibration point slower
-         Button 6: move calibration point faster
-         Button 7: flash the background to light gray
-        )";
-
-        return text;
-    });
-    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(helpBox));
-
-    // FPS and timings
-    auto timingBox = make_shared<GuiTextBox>(_scene, "Timings");
-    timingBox->setTextFunc([]() {
-        // Smooth the values
-        static float sce{0.f};
-        static float wrl{0.f};
-        static float fps{0.f};
-        static float worldFps{0.f};
-        static float upl{0.f};
-        static float tex{0.f};
-        static float ble{0.f};
-        static float flt{0.f};
-        static float cam{0.f};
-        static float wrp{0.f};
-        static float gui{0.f};
-        static float win{0.f};
-        static float buf{0.f};
-        static float evt{0.f};
-
-        sce = sce * 0.9 + Timer::get()["loop_scene"] * 0.001 * 0.1;
-        wrl = wrl * 0.9 + Timer::get()["loop_world"] * 0.001 * 0.1;
-        fps = 1e3 / std::max(1.f, sce);
-        worldFps = 1e3 / std::max(1.f, wrl);
-        upl = upl * 0.9 + Timer::get()["upload"] * 0.001 * 0.1;
-        tex = tex * 0.9 + Timer::get()["textureUpload"] * 0.001 * 0.1;
-        ble = ble * 0.9 + Timer::get()["blender"] * 0.001 * 0.1;
-        flt = flt * 0.9 + Timer::get()["filter"] * 0.001 * 0.1;
-        cam = cam * 0.9 + Timer::get()["camera"] * 0.001 * 0.1;
-        wrp = wrp * 0.9 + Timer::get()["warp"] * 0.001 * 0.1;
-        gui = gui * 0.9 + Timer::get()["gui"] * 0.001 * 0.1;
-        win = win * 0.9 + Timer::get()["window"] * 0.001 * 0.1;
-        buf = buf * 0.9 + Timer::get()["swap"] * 0.001 * 0.1;
-        evt = evt * 0.9 + Timer::get()["events"] * 0.001 * 0.1;
-
-        // Create the text message
-        ostringstream stream;
-        Timer::Point clock;
-        if (Timer::get().getMasterClock(clock))
-        {
-            stream << "Master clock: " << clock.years << "/" << clock.months << "/" << clock.days << " - " << clock.hours << ":" << clock.mins << ":" << clock.secs << ":"
-                   << clock.frame;
-            if (clock.paused)
-                stream << " - Paused";
-            stream << "\n";
-        }
-        stream << "World:\n";
-        stream << "  World framerate: " << setprecision(4) << worldFps << " fps\n";
-        stream << "  Time per world frame: " << wrl << " ms\n";
-        stream << "  Sending buffers to Scenes: " << setprecision(4) << upl << " ms\n";
-        stream << "Rendering:\n";
-        stream << "  Rendering framerate: " << setprecision(4) << fps << " fps\n";
-        stream << "  Time per rendered frame: " << sce << " ms\n";
-        stream << "  Texture upload: " << setprecision(4) << tex << " ms\n";
-        stream << "  Blending computation: " << setprecision(4) << ble << " ms\n";
-        stream << "  Filters: " << setprecision(4) << flt << " ms\n";
-        stream << "  Cameras rendering: " << setprecision(4) << cam << " ms\n";
-        stream << "  Warps: " << setprecision(4) << wrp << " ms\n";
-        stream << "  GUI rendering: " << setprecision(4) << gui << " ms\n";
-        stream << "  Windows rendering: " << setprecision(4) << win << " ms\n";
-        stream << "  Swapping and events: " << setprecision(4) << buf << " ms\n";
-
-        return stream.str();
-    });
-    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(timingBox));
-
-    // Log display
-    if (Log::get().getVerbosity() == Log::DEBUGGING)
-    {
-        auto logBox = make_shared<GuiTextBox>(_scene, "Logs");
-        logBox->setTextFunc([]() {
-            int nbrLines = 10;
-            // Convert the last lines of the text log
-            vector<string> logs = Log::get().getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
-            string text;
-            uint32_t start = std::max(0, static_cast<int>(logs.size()) - nbrLines);
-            for (uint32_t i = start; i < logs.size(); ++i)
-                text += logs[i] + string("\n");
-
-            return text;
-        });
-        _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(logBox));
-    }
-
     // Control
-    auto controlView = make_shared<GuiControl>(_scene, "Controls");
+    auto controlView = make_shared<GuiControl>(_scene, "Graph");
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(controlView));
 
     // Media
-    auto mediaSelector = make_shared<GuiMedia>(_scene, "Media");
+    auto mediaSelector = make_shared<GuiMedia>(_scene, "Medias");
     _guiWidgets.push_back(mediaSelector);
 
     // Filters
@@ -1189,23 +1290,112 @@ void Gui::initImWidgets()
     _guiWidgets.push_back(meshesSelector);
 
     // GUI camera view
-    auto globalView = make_shared<GuiGlobalView>(_scene, "Cameras");
+    auto globalView = make_shared<GuiCamera>(_scene, "Cameras");
     globalView->setCamera(_guiCamera);
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(globalView));
 
     // Warp control
-    auto warpControl = make_shared<GuiWarp>(_scene, "Warp");
+    auto warpControl = make_shared<GuiWarp>(_scene, "Warps");
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWarp>(warpControl));
 
-    // Performance graph
     if (Log::get().getVerbosity() == Log::DEBUGGING)
     {
-        auto perfGraph = make_shared<GuiGraph>(_scene, "Performance Graph");
+        // Performance graph
+        auto perfGraph = make_shared<GuiGraph>(_scene, "Performances");
         _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(perfGraph));
 
         auto texturesView = make_shared<GuiTexturesView>(_scene, "Textures");
         _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(texturesView));
+
+        // Tree view
+        auto treeView = make_shared<GuiTree>(_scene, "Tree view");
+        _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(treeView));
     }
+
+    // Bottom widgets
+    // FPS and timings
+    auto timingBox = make_shared<GuiTextBox>(_scene, "Timings");
+    timingBox->setTextFunc([this]() {
+        static unordered_map<string, float> stats;
+        ostringstream stream;
+        auto tree = _root->getTree();
+
+        auto runningAverage = [](float a, float b) { return a * 0.9 + 0.001 * b * 0.1; };
+        auto getLeafValue = [&](const string& path) {
+            Value value;
+            if (!tree->getValueForLeafAt(path, value))
+                return 0.f;
+            return value[0].as<float>();
+        };
+
+        // We process the world before the scenes
+        {
+            assert(tree->hasBranchAt("/world/durations"));
+
+            stats["world_loop_world"] = runningAverage(stats["world_loop_world"], getLeafValue("/world/durations/loop_world"));
+            stats["world_loop_world_fps"] = 1e3 / std::max(1.f, stats["world_loop_world"]);
+            stats["world_upload"] = runningAverage(stats["world_upload"], getLeafValue("/world/durations/upload"));
+
+            stream << "World:\n";
+            stream << "  World framerate: " << setprecision(4) << stats["world_loop_world_fps"] << " fps\n";
+            stream << "  Time per world frame: " << stats["world_loop_world"] << " ms\n";
+            stream << "  Sending buffers to Scenes: " << setprecision(4) << stats["world_upload"] << " ms\n";
+        }
+
+        // Then the scenes
+        stream << "Scenes:\n";
+        for (const auto& branchName : tree->getBranchList())
+        {
+            if (branchName == "world")
+                continue;
+            auto durationPath = "/" + branchName + "/durations";
+
+            stats[branchName + "_loop_scene"] = runningAverage(stats[branchName + "_loop_scene"], getLeafValue(durationPath + "/loop_scene"));
+            stats[branchName + "_loop_scene_fps"] = 1e3 / std::max(1.f, stats[branchName + "_loop_scene"]);
+            stats[branchName + "_textureUpload"] = runningAverage(stats[branchName + "_textureUpload"], getLeafValue(durationPath + "/textureUpload"));
+            stats[branchName + "_blender"] = runningAverage(stats[branchName + "_blender"], getLeafValue(durationPath + "/blender"));
+            stats[branchName + "_filter"] = runningAverage(stats[branchName + "_filter"], getLeafValue(durationPath + "/filter"));
+            stats[branchName + "_camera"] = runningAverage(stats[branchName + "_camera"], getLeafValue(durationPath + "/camera"));
+            stats[branchName + "_warp"] = runningAverage(stats[branchName + "_warp"], getLeafValue(durationPath + "/warp"));
+            stats[branchName + "_window"] = runningAverage(stats[branchName + "_window"], getLeafValue(durationPath + "/window"));
+            stats[branchName + "_swap"] = runningAverage(stats[branchName + "_swap"], getLeafValue(durationPath + "/swap"));
+
+            stream << "- " + branchName + ":\n";
+            stream << "    Framerate: " << setprecision(4) << stats[branchName + "_loop_scene_fps"] << " fps\n";
+            stream << "    Time per frame: " << stats[branchName + "_loop_scene"] << " ms\n";
+            stream << "    Texture upload: " << setprecision(4) << stats[branchName + "_textureUpload"] << " ms\n";
+            stream << "    Blending: " << setprecision(4) << stats[branchName + "_blender"] << " ms\n";
+            stream << "    Filters: " << setprecision(4) << stats[branchName + "_filter"] << " ms\n";
+            stream << "    Cameras: " << setprecision(4) << stats[branchName + "_camera"] << " ms\n";
+            stream << "    Warps: " << setprecision(4) << stats[branchName + "_warp"] << " ms\n";
+            stream << "    Windows: " << setprecision(4) << stats[branchName + "_window"] << " ms\n";
+            stream << "    Swapping: " << setprecision(4) << stats[branchName + "_swap"] << " ms\n";
+
+            if (tree->hasLeafAt(durationPath + "/gui"))
+            {
+                stats[branchName + "_gui"] = runningAverage(stats[branchName + "_gui"], getLeafValue(durationPath + "/gui"));
+                stream << "    GUI rendering: " << setprecision(4) << stats[branchName + "_gui"] << " ms\n";
+            }
+        }
+
+        return stream.str();
+    });
+    _guiBottomWidgets.push_back(dynamic_pointer_cast<GuiWidget>(timingBox));
+
+    // Log display
+    auto logBox = make_shared<GuiTextBox>(_scene, "Logs");
+    logBox->setTextFunc([]() {
+        int nbrLines = 10;
+        // Convert the last lines of the text log
+        vector<string> logs = Log::get().getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
+        string text;
+        uint32_t start = std::max(0, static_cast<int>(logs.size()) - nbrLines);
+        for (uint32_t i = start; i < logs.size(); ++i)
+            text += logs[i] + string("\n");
+
+        return text;
+    });
+    _guiBottomWidgets.push_back(dynamic_pointer_cast<GuiWidget>(logBox));
 }
 
 /*************/
@@ -1225,7 +1415,10 @@ void Gui::imGuiRenderDrawLists(ImDrawData* draw_data)
     const float width = ImGui::GetIO().DisplaySize.x;
     const float height = ImGui::GetIO().DisplaySize.y;
     const float orthoProjection[4][4] = {
-        {2.0f / width, 0.0f, 0.0f, 0.0f}, {0.0f, 2.0f / -height, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f, 0.0f}, {-1.0f, 1.0f, 0.0f, 1.0f},
+        {2.0f / width, 0.0f, 0.0f, 0.0f},
+        {0.0f, 2.0f / -height, 0.0f, 0.0f},
+        {0.0f, 0.0f, -1.0f, 0.0f},
+        {-1.0f, 1.0f, 0.0f, 1.0f},
     };
 
     glUseProgram(_imGuiShaderHandle);
@@ -1282,6 +1475,18 @@ void Gui::registerAttributes()
         },
         {'n', 'n'});
     setAttributeDescription("size", "Set the GUI render resolution");
+
+    addAttribute("hide", [&](const Values&) {
+        _isVisible = false;
+        return true;
+    });
+    setAttributeDescription("hide", "Hide the GUI");
+
+    addAttribute("show", [&](const Values&) {
+        _isVisible = true;
+        return true;
+    });
+    setAttributeDescription("show", "Show the GUI");
 }
 
-} // end of namespace
+} // namespace Splash

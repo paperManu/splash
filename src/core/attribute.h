@@ -35,11 +35,12 @@
 #include <unordered_map>
 
 #include "./core/coretypes.h"
+#include "./core/value.h"
 
 namespace Splash
 {
 
-class GraphObject;
+class BaseObject;
 
 /*************/
 // Handle to a callback for an attribute modification
@@ -47,12 +48,9 @@ class GraphObject;
 class CallbackHandle : public std::enable_shared_from_this<CallbackHandle>
 {
   public:
-    CallbackHandle()
-        : _isValid(false)
-    {
-    }
+    CallbackHandle() = default;
 
-    CallbackHandle(const std::weak_ptr<GraphObject>& owner, const std::string& attr)
+    CallbackHandle(const std::weak_ptr<BaseObject>& owner, const std::string& attr)
         : _callbackId(_nextCallbackId.fetch_add(1))
         , _isValid(true)
         , _owner(owner)
@@ -78,7 +76,7 @@ class CallbackHandle : public std::enable_shared_from_this<CallbackHandle>
 
     uint32_t _callbackId{0};
     bool _isValid{false};
-    std::weak_ptr<GraphObject> _owner;
+    std::weak_ptr<BaseObject> _owner{};
     std::string _attribute{""};
 };
 
@@ -136,22 +134,16 @@ class Attribute
     bool isDefault() const { return _defaultSetAndGet; }
 
     /**
-     * \brief Ask whether to update the Scene object (if this attribute is hosted by a World object).
-     * \return Returns true if the World should update this attribute in the distant Scene object.
-     */
-    bool doUpdateDistant() const { return _doUpdateDistant; }
-
-    /**
-     * \brief Set whether to update the Scene object (if this attribute is hosted by a World object).
-     * \return Returns true if the World should update this attribute in the distant Scene object.
-     */
-    void doUpdateDistant(bool update) { _doUpdateDistant = update; }
-
-    /**
      * \brief Get the types of the wanted arguments.
      * \return Returns the expected types in a Values.
      */
     Values getArgsTypes() const;
+
+    /**
+     * Get whether a getter is defined
+     * \return Return true if the default getter is overriden
+     */
+    bool hasGetter() const { return _getFunc != nullptr; }
 
     /**
      * \brief Ask whether the attribute is locked.
@@ -172,23 +164,12 @@ class Attribute
     void unlock() { _isLocked = false; }
 
     /**
-     * \brief Ask whether the attribute should be saved.
-     * \return Returns true if the attribute should be saved.
-     */
-    bool savable() const { return _savable; }
-
-    /**
-     * \brief Set whether the attribute should be saved.
-     * \param save If true, the attribute will be save.
-     */
-    void savable(bool save) { _savable = save; }
-
-    /**
      * Register a callback to any call to the setter
+     * \param caller Weak pointer to the caller BaseObject
      * \param cb Callback function
      * \return Return a callback handle
      */
-    CallbackHandle registerCallback(std::weak_ptr<GraphObject> caller, Callback cb);
+    CallbackHandle registerCallback(std::weak_ptr<BaseObject> caller, Callback cb);
 
     /**
      * Unregister a callback
@@ -235,8 +216,6 @@ class Attribute
     std::function<const Values()> _getFunc{};
 
     bool _defaultSetAndGet{true};
-    bool _doUpdateDistant{false}; // True if the World should send this attr values to Scenes
-    bool _savable{true};          // True if this attribute should be saved
 
     std::string _objectName{};        // Name of the object holding this attribute
     std::string _description{};       // Attribute description
@@ -250,6 +229,6 @@ class Attribute
     bool _isLocked{false};
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_ATTRIBUTE_H

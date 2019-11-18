@@ -2,11 +2,10 @@
 
 #include <algorithm>
 
-#include "./core/world.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
-#define DISTANT_NAME_SUFFIX "_source"
+#define DISTANT_NAME_SUFFIX "_queue_source"
 
 using namespace std;
 
@@ -28,9 +27,7 @@ Queue::Queue(RootObject* root)
 }
 
 /*************/
-Queue::~Queue()
-{
-}
+Queue::~Queue() {}
 
 /*************/
 shared_ptr<SerializedObject> Queue::serialize() const
@@ -115,6 +112,7 @@ void Queue::update()
         if (sourceIndex >= _playlist.size())
         {
             _currentSource = dynamic_pointer_cast<BufferObject>(_factory->create("image"));
+            _currentSource->setName(_name + DISTANT_NAME_SUFFIX);
             _root->sendMessage(_name, "source", {"image"});
         }
         else
@@ -129,7 +127,7 @@ void Queue::update()
             else
                 _currentSource = dynamic_pointer_cast<BufferObject>(_factory->create("image"));
             dynamic_pointer_cast<Image>(_currentSource)->zero();
-            dynamic_pointer_cast<Image>(_currentSource)->setName(_name + DISTANT_NAME_SUFFIX);
+            _currentSource->setName(_name + DISTANT_NAME_SUFFIX);
 
             _currentSource->setAttribute("file", {sourceParameters.filename});
 
@@ -211,7 +209,7 @@ void Queue::cleanPlaylist(vector<Source>& playlist)
     {
         if (previousEnd < source.start)
         {
-            if (source.filename == "black")
+            if (!cleanList.empty() && source.filename == "black")
             {
                 if (cleanList.back().filename == "black")
                 {
@@ -223,7 +221,7 @@ void Queue::cleanPlaylist(vector<Source>& playlist)
                     cleanList.back().start = previousEnd;
                 }
             }
-            else if (cleanList.size() > 0 && cleanList.back().filename == "black")
+            else if (!cleanList.empty() && cleanList.back().filename == "black")
             {
                 cleanList.back().stop = source.start;
                 cleanList.push_back(source);
@@ -284,7 +282,6 @@ void Queue::registerAttributes()
         },
         [&]() -> Values { return {_loop}; },
         {'n'});
-    setAttributeParameter("loop", true, true);
     setAttributeDescription("loop", "Set whether to loop through the queue or not");
 
     addAttribute("pause",
@@ -295,13 +292,12 @@ void Queue::registerAttributes()
         },
         [&]() -> Values { return {_paused}; },
         {'n'});
-    setAttributeParameter("pause", false, true);
     setAttributeDescription("pause", "Pause the queue if set to 1");
 
     addAttribute("playlist",
         [&](const Values& args) {
             lock_guard<mutex> lock(_playlistMutex);
-            _playlist.clear();
+            vector<Source> playlist;
 
             for (auto& it : args)
             {
@@ -317,7 +313,10 @@ void Queue::registerAttributes()
                     source.freeRun = src[4].as<bool>();
                     source.args = src[5].as<Values>();
 
-                    _playlist.push_back(source);
+                    if (source.start > source.stop)
+                        return false;
+
+                    playlist.push_back(source);
                 }
                 else
                 {
@@ -325,7 +324,8 @@ void Queue::registerAttributes()
                 }
             }
 
-            cleanPlaylist(_playlist);
+            cleanPlaylist(playlist);
+            _playlist = playlist;
 
             return true;
         },
@@ -348,19 +348,20 @@ void Queue::registerAttributes()
 
             return playlist;
         });
-    setAttributeParameter("playlist", true, true);
     setAttributeDescription("playlist", "Set the playlist as an array of [type, filename, start, end, (args)]");
+
+    addAttribute("elapsed", [&](const Values& /*args*/) { return true; }, [&]() -> Values { return {static_cast<float>(_currentTime / 1e6)}; }, {'n'});
+    setAttributeDescription("elapsed", "Time elapsed since the beginning of the queue");
 
     addAttribute("seek",
         [&](const Values& args) {
-            int64_t seekTime = args[0].as<float>() * 1e6;
-            _startTime = Timer::getTime() - seekTime;
+            _seekTime = args[0].as<float>();
+            _startTime = Timer::getTime() - static_cast<int64_t>(_seekTime * 1e6);
             _seeked = true;
             return true;
         },
-        [&]() -> Values { return {(float)_currentTime / 1e6}; },
+        [&]() -> Values { return {_seekTime}; },
         {'n'});
-    setAttributeParameter("seek", false, true);
     setAttributeDescription("seek", "Seek through the playlist");
 
     addAttribute("useClock",
@@ -373,7 +374,6 @@ void Queue::registerAttributes()
         },
         [&]() -> Values { return {(int)_useClock}; },
         {'n'});
-    setAttributeParameter("useClock", true, true);
     setAttributeDescription("useClock", "Use the master clock if set to 1");
 }
 
@@ -386,7 +386,7 @@ QueueSurrogate::QueueSurrogate(RootObject* root)
     , _filter(make_shared<Filter>(root))
 {
     _filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", "queueFilter_" + _name + to_string(_filterIndex++)).lock());
-    _filter->_savable = false;
+    _filter->setAttribute("savable", {false});
 
     registerAttributes();
 }
@@ -447,22 +447,18 @@ void QueueSurrogate::registerAttributes()
 
             if (type.find("image") != string::npos)
             {
-                auto image = dynamic_pointer_cast<Image>(_root->createObject("image", _name + "_source").lock());
+                auto image = dynamic_pointer_cast<Image>(_root->createObject("image", _name + DISTANT_NAME_SUFFIX).lock());
                 image->zero();
                 image->setRemoteType(type);
                 object = image;
             }
-            // TODO: add Texture_Syphon type
-            // else if (type.find("texture_syphon") != string::npos)
-            //{
-            //    object = make_shared<Texture_Syphon>();
-            //}
             else
             {
                 return;
             }
 
             object->setName(sourceName);
+            object->setAttribute("savable", {false});
             _source.swap(object);
             _filter->linkTo(_source);
         });
@@ -471,4 +467,4 @@ void QueueSurrogate::registerAttributes()
     });
 }
 
-} // end of namespace
+} // namespace Splash

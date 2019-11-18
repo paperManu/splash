@@ -42,8 +42,6 @@ void Image_FFmpeg::init()
     // This is used for getting documentation "offline"
     if (!_root)
         return;
-
-    av_register_all();
 }
 
 /*************/
@@ -81,28 +79,30 @@ float Image_FFmpeg::getMediaDuration() const
 /*************/
 bool Image_FFmpeg::read(const string& filename)
 {
+    const auto filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
+
     // First: cleanup
     freeFFmpegObjects();
 
-    if (avformat_open_input(&_avContext, filename.c_str(), nullptr, nullptr) != 0)
+    if (avformat_open_input(&_avContext, filepath.c_str(), nullptr, nullptr) != 0)
     {
-        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Couldn't read file " << filename << Log::endl;
+        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Couldn't read file " << filepath << Log::endl;
         return false;
     }
 
     if (avformat_find_stream_info(_avContext, NULL) < 0)
     {
-        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Couldn't retrieve information for file " << filename << Log::endl;
+        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Couldn't retrieve information for file " << filepath << Log::endl;
         avformat_close_input(&_avContext);
         return false;
     }
 
-    Log::get() << Log::MESSAGE << "Image_FFmpeg::" << __FUNCTION__ << " - Successfully loaded file " << filename << Log::endl;
-    av_dump_format(_avContext, 0, filename.c_str(), 0);
+    Log::get() << Log::MESSAGE << "Image_FFmpeg::" << __FUNCTION__ << " - Successfully loaded file " << filepath << Log::endl;
+    av_dump_format(_avContext, 0, filepath.c_str(), 0);
 
 #if HAVE_LINUX
     // Give the kernel hints about how to read the file
-    auto fd = Utils::getFileDescriptorForOpenedFile(filename);
+    auto fd = Utils::getFileDescriptorForOpenedFile(filepath);
     if (fd)
     {
         bool success = true;
@@ -392,7 +392,7 @@ void Image_FFmpeg::readLoop()
                         copy(buffer.begin(), buffer.end(), pixels);
 
                         if (packet.pts != AV_NOPTS_VALUE)
-                            timing = static_cast<uint64_t>((double)av_frame_get_best_effort_timestamp(frame) * _videoTimeBase * 1e6);
+                            timing = static_cast<uint64_t>((double)frame->best_effort_timestamp * _videoTimeBase * 1e6);
                         else
                             timing = 0.0;
                         // This handles repeated frames
@@ -760,12 +760,17 @@ void Image_FFmpeg::videoDisplayLoop()
 
                 _elapsedTime = timedFrame.timing;
 
-                lock_guard<shared_timed_mutex> lock(_writeMutex);
-                if (!_bufferImage)
-                    _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
-                std::swap(_bufferImage, timedFrame.frame);
-                _imageUpdated = true;
-                updateTimestamp();
+                {
+                    lock_guard<shared_mutex> lock(_writeMutex);
+                    if (!_bufferImage)
+                        _bufferImage = make_unique<ImageBuffer>();
+                    std::swap(_bufferImage, timedFrame.frame);
+                    _imageUpdated = true;
+                }
+
+                updateTimestamp(_bufferImage->getSpec().timestamp);
+                if (!_isConnectedToRemote)
+                    update();
             }
 
             localQueue.pop_front();
@@ -793,7 +798,6 @@ void Image_FFmpeg::registerAttributes()
         },
         [&]() -> Values { return {_maximumBufferSize / (int64_t)1048576}; },
         {'n'});
-    setAttributeParameter("bufferSize", true, true);
     setAttributeDescription("bufferSize", "Set the maximum buffer size for the video (in MB)");
 
     addAttribute("duration",
@@ -804,7 +808,6 @@ void Image_FFmpeg::registerAttributes()
 
             return {getMediaDuration()};
         });
-    setAttributeParameter("duration", false, true);
 
 #if HAVE_PORTAUDIO
     addAttribute("audioDeviceOutput",
@@ -815,7 +818,6 @@ void Image_FFmpeg::registerAttributes()
         },
         [&]() -> Values { return {_audioDeviceOutput}; },
         {'s'});
-    setAttributeParameter("audioDeviceOutput", true, true);
     setAttributeDescription("audioDeviceOutput", "Name of the audio device to send the audio to (i.e. Jack writable client)");
 #endif
 
@@ -829,18 +831,17 @@ void Image_FFmpeg::registerAttributes()
             return {loop};
         },
         {'n'});
-    setAttributeParameter("loop", true, true);
 
-    addAttribute("remaining",
+    addAttribute("elapsed",
         [&](const Values&) { return false; },
         [&]() -> Values {
             if (_avContext == nullptr)
                 return {0.f};
 
-            float duration = std::max(0.f, getMediaDuration() - static_cast<float>(_elapsedTime) / 1e6f);
+            float duration = std::max(0.f, static_cast<float>(_elapsedTime) / 1e6f);
             return {duration};
         });
-    setAttributeParameter("remaining", false, true);
+    setAttributeDescription("elapsed", "Time elapsed since the beginning of the video");
 
     addAttribute("pause",
         [&](const Values& args) {
@@ -849,7 +850,6 @@ void Image_FFmpeg::registerAttributes()
         },
         [&]() -> Values { return {_paused}; },
         {'n'});
-    setAttributeParameter("pause", false, true);
 
     addAttribute("seek",
         [&](const Values& args) {
@@ -860,7 +860,6 @@ void Image_FFmpeg::registerAttributes()
         },
         [&]() -> Values { return {_seekTime}; },
         {'n'});
-    setAttributeParameter("seek", false, true);
     setAttributeDescription("seek", "Change the read position in the video file");
 
     addAttribute("trim",
@@ -887,7 +886,6 @@ void Image_FFmpeg::registerAttributes()
             return {static_cast<double>(_trimStart) / 1e6, static_cast<double>(_trimEnd / 1e6)};
         },
         {'n', 'n'});
-    setAttributeParameter("trim", true, true);
     setAttributeDescription("trim", "Trim the video by setting the start and end times");
 
     addAttribute("useClock",
@@ -902,7 +900,6 @@ void Image_FFmpeg::registerAttributes()
         },
         [&]() -> Values { return {(int)_useClock}; },
         {'n'});
-    setAttributeParameter("useClock", true, true);
 
     addAttribute("videoFormat",
         [&](const Values&) {
@@ -911,7 +908,6 @@ void Image_FFmpeg::registerAttributes()
         },
         [&]() -> Values { return {_videoFormat}; },
         {'s'});
-    setAttributeParameter("videoFormat", false, true);
 
     addAttribute("timeShift",
         [&](const Values& args) {

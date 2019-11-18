@@ -2,16 +2,47 @@
 
 #include <algorithm>
 
+#include "./core/root_object.h"
+
 using namespace std;
 
 namespace Splash
 {
 
 /*************/
+GraphObject::GraphObject(RootObject* root)
+    : _root(root)
+{
+    initializeTree();
+    registerAttributes();
+}
+
+/*************/
+GraphObject::~GraphObject()
+{
+    uninitializeTree();
+}
+
+/*************/
 Attribute& GraphObject::operator[](const string& attr)
 {
+    unique_lock<recursive_mutex> lock(_attribMutex);
     auto attribFunction = _attribFunctions.find(attr);
     return attribFunction->second;
+}
+
+/*************/
+Attribute& GraphObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const vector<char>& types)
+{
+    return BaseObject::addAttribute(name, set, types);
+}
+
+/*************/
+Attribute& GraphObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const function<const Values()>& get, const vector<char>& types)
+{
+    auto& attribute = BaseObject::addAttribute(name, set, get, types);
+    initializeTree();
+    return attribute;
 }
 
 /*************/
@@ -20,7 +51,23 @@ void GraphObject::linkToParent(GraphObject* obj)
     auto parentIt = find(_parents.begin(), _parents.end(), obj);
     if (parentIt == _parents.end())
         _parents.push_back(obj);
-    return;
+
+    if (_root && !_name.empty() && !obj->getName().empty())
+    {
+        auto rootName = _root->getName();
+        auto tree = _root->getTree();
+        auto path = "/" + rootName + "/objects/" + _name + "/links/parents";
+        assert(tree->hasLeafAt(path));
+
+        Value value;
+        tree->getValueForLeafAt(path, value);
+        auto parents = value.as<Values>();
+        if (find_if(parents.begin(), parents.end(), [&](const Value& a) { return a.as<string>() == obj->getName(); }) == parents.end())
+        {
+            parents.emplace_back(obj->getName());
+            tree->setValueForLeafAt(path, parents);
+        }
+    }
 }
 
 /*************/
@@ -29,12 +76,28 @@ void GraphObject::unlinkFromParent(GraphObject* obj)
     auto parentIt = find(_parents.begin(), _parents.end(), obj);
     if (parentIt != _parents.end())
         _parents.erase(parentIt);
-    return;
+
+    if (_root && !_name.empty() && !obj->getName().empty())
+    {
+        auto rootName = _root->getName();
+        auto tree = _root->getTree();
+        auto path = "/" + rootName + "/objects/" + _name + "/links/parents";
+        assert(tree->hasLeafAt(path));
+
+        Value value;
+        tree->getValueForLeafAt(path, value);
+        auto parents = value.as<Values>();
+        parents.erase(remove_if(parents.begin(), parents.end(), [&](const Value& a) { return a.as<string>() == obj->getName(); }), parents.end());
+        tree->setValueForLeafAt(path, parents);
+    }
 }
 
 /*************/
 bool GraphObject::linkTo(const shared_ptr<GraphObject>& obj)
 {
+    if (obj.get() == this)
+        return false;
+
     auto objectIt = find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const weak_ptr<GraphObject>& o) {
         auto object = o.lock();
         if (!object)
@@ -44,13 +107,36 @@ bool GraphObject::linkTo(const shared_ptr<GraphObject>& obj)
         return false;
     });
 
-    if (objectIt == _linkedObjects.end())
+    if (objectIt != _linkedObjects.end())
+        return false;
+
+    if (!linkIt(obj))
     {
-        _linkedObjects.push_back(obj);
-        obj->linkToParent(this);
-        return true;
+        Log::get() << Log::WARNING << "GraphObject::" << __FUNCTION__ << " - Unable to link objects of type " << _type << " and " << obj->getType() << Log::endl;
+        return false;
     }
-    return false;
+
+    _linkedObjects.push_back(obj);
+    obj->linkToParent(this);
+
+    if (_root && !_name.empty() && !obj->getName().empty())
+    {
+        auto rootName = _root->getName();
+        auto tree = _root->getTree();
+        auto path = "/" + rootName + "/objects/" + _name + "/links/children";
+        assert(tree->hasLeafAt(path));
+
+        Value value;
+        tree->getValueForLeafAt(path, value);
+        auto children = value.as<Values>();
+        if (find_if(children.begin(), children.end(), [&](const Value& a) { return a.as<string>() == obj->getName(); }) == children.end())
+        {
+            children.emplace_back(obj->getName());
+            tree->setValueForLeafAt(path, children);
+        }
+    }
+
+    return true;
 }
 
 /*************/
@@ -65,52 +151,51 @@ void GraphObject::unlinkFrom(const shared_ptr<GraphObject>& obj)
         return false;
     });
 
-    if (objectIt != _linkedObjects.end())
+    if (objectIt == _linkedObjects.end())
+        return;
+
+    unlinkIt(obj);
+    _linkedObjects.erase(objectIt);
+    obj->unlinkFromParent(this);
+
+    if (_root && !_name.empty() && !obj->getName().empty())
     {
-        _linkedObjects.erase(objectIt);
-        obj->unlinkFromParent(this);
+        auto rootName = _root->getName();
+        auto tree = _root->getTree();
+        auto path = "/" + rootName + "/objects/" + _name + "/links/children";
+        assert(tree->hasLeafAt(path));
+
+        Value value;
+        tree->getValueForLeafAt(path, value);
+        auto children = value.as<Values>();
+        children.erase(remove_if(children.begin(), children.end(), [&](const Value& a) { return a.as<string>() == obj->getName(); }), children.end());
+        tree->setValueForLeafAt(path, children);
     }
 }
 
 /*************/
-Json::Value GraphObject::getConfigurationAsJson() const
+void GraphObject::setName(const string& name)
 {
-    Json::Value root;
-    if (_remoteType == "")
-        root["type"] = _type;
+    if (name.empty())
+        return;
+
+    auto oldName = _name;
+    _name = name;
+
+    if (!_root)
+        return;
+
+    if (oldName.empty())
+    {
+        initializeTree();
+    }
     else
-        root["type"] = _remoteType;
-
-    for (auto& attr : _attribFunctions)
     {
-        Values values;
-        if (getAttribute(attr.first, values) == false || values.size() == 0)
-            continue;
-
-        Json::Value jsValue;
-        jsValue = getValuesAsJson(values);
-        root[attr.first] = jsValue;
+        auto tree = _root->getTree();
+        auto path = "/" + _root->getName() + "/objects/" + oldName;
+        if (tree->hasBranchAt(path))
+            tree->renameBranchAt(path, name);
     }
-    return root;
-}
-
-/*************/
-unordered_map<string, Values> GraphObject::getDistantAttributes() const
-{
-    unordered_map<string, Values> attribs;
-    for (auto& attr : _attribFunctions)
-    {
-        if (!attr.second.doUpdateDistant())
-            continue;
-
-        Values values;
-        if (getAttribute(attr.first, values, false, true) == false || values.size() == 0)
-            continue;
-
-        attribs[attr.first] = values;
-    }
-
-    return attribs;
 }
 
 /*************/
@@ -121,30 +206,6 @@ bool GraphObject::setRenderingPriority(Priority priority)
     _renderingPriority = priority;
     return true;
 }
-
-/*************/
-CallbackHandle GraphObject::registerCallback(const string& attr, Attribute::Callback cb)
-{
-    auto attribute = _attribFunctions.find(attr);
-    if (attribute == _attribFunctions.end())
-        return CallbackHandle();
-
-    return attribute->second.registerCallback(shared_from_this(), cb);
-}
-
-/*************/
-bool GraphObject::unregisterCallback(const CallbackHandle& handle)
-{
-    if (!handle)
-        return false;
-
-    auto attribute = _attribFunctions.find(handle.getAttribute());
-    if (attribute == _attribFunctions.end())
-        return false;
-
-    return attribute->second.unregisterCallback(handle);
-}
-
 /*************/
 void GraphObject::registerAttributes()
 {
@@ -158,13 +219,15 @@ void GraphObject::registerAttributes()
         {'s'});
     setAttributeDescription("alias", "Alias name");
 
-    addAttribute("setSavable",
+    addAttribute("savable",
         [&](const Values& args) {
             auto savable = args[0].as<bool>();
             setSavable(savable);
             return true;
         },
+        [&]() -> Values { return {_savable}; },
         {'n'});
+    setAttributeDescription("savable", "If true, the object will be saved in the configuration file. This should NOT be modified by hand");
 
     addAttribute("priorityShift",
         [&](const Values& args) {
@@ -178,6 +241,7 @@ void GraphObject::registerAttributes()
 
     addAttribute("switchLock",
         [&](const Values& args) {
+            unique_lock<recursive_mutex> lock(_attribMutex);
             auto attribIterator = _attribFunctions.find(args[0].as<string>());
             if (attribIterator == _attribFunctions.end())
                 return false;
@@ -199,6 +263,106 @@ void GraphObject::registerAttributes()
             return true;
         },
         {'s'});
+
+    addAttribute("timestamp", [](const Values&) { return true; }, [&]() -> Values { return {getTimestamp()}; });
+    setAttributeDescription("timestamp", "Timestamp (in µs) for the current buffer, based on the latest image data created/received");
+}
+
+/*************/
+void GraphObject::initializeTree()
+{
+    if (!_root || _name.empty())
+        return;
+
+    auto tree = _root->getTree();
+    auto path = "/" + _root->getName() + "/objects/" + _name;
+    if (!tree->hasBranchAt(path))
+        tree->createBranchAt(path);
+    if (!tree->hasBranchAt(path + "/attributes"))
+        tree->createBranchAt(path + "/attributes");
+    if (!tree->hasBranchAt(path + "/attributes"))
+        tree->createBranchAt(path + "/attributes");
+    if (!tree->hasBranchAt(path + "/documentation"))
+        tree->createBranchAt(path + "/documentation");
+    if (!tree->hasBranchAt(path + "/links"))
+    {
+        tree->createBranchAt(path + "/links");
+        tree->createLeafAt(path + "/links/children");
+        tree->createLeafAt(path + "/links/parents");
+    }
+
+    if (!tree->hasLeafAt(path + "/type"))
+        tree->createLeafAt(path + "/type");
+    tree->setValueForLeafAt(path + "/type", _type);
+
+    // Create the leaves for the attributes in the tree
+    {
+        auto attrPath = path + "/attributes/";
+        lock_guard<recursive_mutex> lock(_attribMutex);
+        for (const auto& attribute : _attribFunctions)
+        {
+            if (!attribute.second.hasGetter())
+                continue;
+            auto attributeName = attribute.first;
+            auto leafPath = attrPath + attributeName;
+            if (tree->hasLeafAt(leafPath))
+                continue;
+
+            tree->createLeafAt(leafPath);
+            _treeCallbackIds[attributeName] = tree->addCallbackToLeafAt(leafPath, [=](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
+                auto attribIt = _attribFunctions.find(attributeName);
+                if (attribIt == _attribFunctions.end())
+                    return;
+                if (value == attribIt->second())
+                    return;
+                setAttribute(attributeName, value.as<Values>());
+            });
+        }
+    }
+
+    // Store the documentation inside the tree
+    {
+        auto docPath = path + "/documentation/";
+        auto attributesDescriptions = getAttributesDescriptions();
+        for (auto& d : attributesDescriptions)
+        {
+            if (d[1].size() == 0)
+                continue;
+            auto attrName = d[0].as<string>();
+            auto attrPath = docPath + attrName;
+            if (tree->hasBranchAt(attrPath))
+                continue;
+            tree->createBranchAt(attrPath);
+            tree->createLeafAt(attrPath + "/description");
+            tree->createLeafAt(attrPath + "/arguments");
+
+            auto description = d[1].as<string>();
+            auto arguments = d[2].as<Values>();
+            tree->setValueForLeafAt(attrPath + "/description", description);
+            tree->setValueForLeafAt(attrPath + "/arguments", arguments);
+        }
+    }
+
+    // Remove leaves for attributes which do not exist anymore
+    lock_guard<recursive_mutex> lock(_attribMutex);
+    for (const auto& leafName : tree->getLeafListAt(path + "/attributes"))
+    {
+        if (_attribFunctions.find(leafName) != _attribFunctions.end())
+            continue;
+        tree->removeLeafAt(path + "/attributes/" + leafName);
+    }
+}
+
+/*************/
+void GraphObject::uninitializeTree()
+{
+    if (!_root || _name.empty())
+        return;
+
+    auto tree = _root->getTree();
+    auto path = "/" + _root->getName() + "/objects/" + _name;
+    if (tree->hasBranchAt(path))
+        tree->removeBranchAt(path);
 }
 
 } // namespace Splash

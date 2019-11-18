@@ -18,8 +18,8 @@
  */
 
 /*
- * @widget_global_view.h
- * The global view widget, to calibrate cameras
+ * @widget_camera.h
+ * The camera widget, to calibrate cameras
  */
 
 #ifndef SPLASH_WIDGET_GLOBAL_VIEW_H
@@ -32,24 +32,24 @@ namespace Splash
 {
 
 /*************/
-class GuiGlobalView : public GuiWidget
+class GuiCamera : public GuiWidget
 {
   public:
-    GuiGlobalView(Scene* scene, const std::string& name = "")
+    GuiCamera(Scene* scene, const std::string& name = "")
         : GuiWidget(scene, name)
     {
     }
     void render() final;
+    void update() final;
     int updateWindowFlags() final;
     void setCamera(const std::shared_ptr<Camera>& cam);
     void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons);
-    void setScene(Scene* scene) { _scene = scene; }
 
   private:
     std::shared_ptr<Camera> _camera{nullptr};
     std::shared_ptr<Camera> _guiCamera{nullptr};
+    bool _rendered{false};
     bool _camerasHidden{false};
-    bool _beginDrag{true};
     bool _noMove{false};
 
     bool _hideCameras{false};

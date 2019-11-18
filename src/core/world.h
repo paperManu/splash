@@ -41,8 +41,8 @@
 #if HAVE_PORTAUDIO
 #include "./sound/ltcclock.h"
 #endif
-#include "./core/name_registry.h"
 #include "./core/root_object.h"
+#include "./core/tree.h"
 
 namespace Splash
 {
@@ -105,18 +105,21 @@ class World : public RootObject
     bool _runInBackground{false};     //!< If true, no window will be created
 
     bool _runAsChild{false}; //!< If true, runs as a child process
+    bool _spawnSubprocesses{true}; //!< If true, spawns subprocesses if needed
     std::string _childSceneName{"scene"};
 
-    NameRegistry _nameRegistry{};       //!< Object name registry
     std::map<std::string, int> _scenes; //!< Map holding the PID of the Scene processes
     std::string _masterSceneName{""};   //!< Name of the master Scene
     std::string _displayServer{"0"};    //!< Display server.
     std::string _forcedDisplay{""};     //!< Set to force an output display
 
-    std::string _configFilename;  //!< Configuration file path
-    std::string _projectFilename; //!< Project configuration file path
-    Json::Value _config;          //!< Configuration as JSon
+    std::string _configurationPath{""}; //!< Path to the configuration file
+    std::string _mediaPath{""};         //!< Default path to the medias
+    std::string _configFilename;        //!< Configuration file path
+    std::string _projectFilename;       //!< Project configuration file path
+    Json::Value _config;                //!< Configuration as JSon
 
+    NameRegistry _nameRegistry{}; //!< Object name registry
     bool _sceneLaunched{false};
     std::mutex _childProcessMutex;
     std::condition_variable _childProcessConditionVariable;
@@ -171,18 +174,19 @@ class World : public RootObject
     void saveProject();
 
     /**
-     * \brief Get the list of objects by their type
-     * \param type Object type
-     * \return Return a Values holding all the objects of the given type
+     * \brief Get all object of given type.
+     * \param type Type to look for. If empty, get all objects.
+     * \return Return a list of all objects of the given type
      */
-    Values getObjectsNameByType(const std::string& type);
+    std::vector<std::string> getObjectsOfType(const std::string& type) const;
 
     /**
      * \brief Redefinition of a method from RootObject. Send the input buffers back to all pairs
      * \param name Object name
      * \param obj Serialized object
+     * \return Return true if the object has been handled
      */
-    void handleSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj) override;
+    bool handleSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj) override;
 
     /**
      * \brief Initializes the World
@@ -224,15 +228,6 @@ class World : public RootObject
     Values jsonToValues(const Json::Value& values);
 
     /**
-     * \brief Set a parameter for an object, given its name
-     * \param name Object name
-     * \param attrib Attribute name
-     * \param args Value to set the attribute to
-     */
-    void setAttribute(const std::string& name, const std::string& attrib, const Values& args);
-    using BaseObject::setAttribute;
-
-    /**
      * \brief Callback for GLFW errors
      */
     static void glfwErrorCallback(int code, const char* msg);
@@ -241,8 +236,13 @@ class World : public RootObject
      * \brief Register new functors to modify attributes
      */
     void registerAttributes();
+
+    /**
+     * Initialize the tree
+     */
+    void initializeTree();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_WORLD_H

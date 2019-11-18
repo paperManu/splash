@@ -18,8 +18,8 @@
  */
 
 /*
- * @widget_global_view.h
- * The global view widget, to calibrate cameras
+ * @widget_text_box.h
+ * The text box widget, to display texts based on a given function
  */
 
 #ifndef SPLASH_WIDGET_TEXT_BOX_H

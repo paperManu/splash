@@ -33,19 +33,3 @@ if (NOT USE_SYSTEM_LIBS)
   set(SNAPPY_BUILD_TESTS OFF CACHE BOOL "" FORCE)
   add_subdirectory(snappy EXCLUDE_FROM_ALL)
 endif()
-
-if(APPLE)
-    add_custom_command(
-        OUTPUT SyphonBuild
-        COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/syphon && xcodebuild -project Syphon.xcodeproj -configuration Release SYMROOT=./build DSTROOT=/
-    )
-
-    add_custom_target(Syphon DEPENDS SyphonBuild)
-
-    add_custom_command(
-        OUTPUT macdylibbundlerBuild
-        COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/macdylibbundler && make
-    )
-
-    add_custom_target(macdylibbundler DEPENDS macdylibbundlerBuild)
-endif()

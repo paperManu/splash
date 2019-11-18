@@ -32,7 +32,7 @@ deque<pair<GLFWwindow*, vector<double>>> Window::_scroll;
 vector<string> Window::_pathDropped;
 atomic_bool Window::_quitFlag;
 
-atomic_int Window::_swappableWindowsCount{0};
+int Window::_swappableWindowsCount{0};
 
 /*************/
 Window::Window(RootObject* root)
@@ -176,19 +176,15 @@ vector<string> Window::getPathDropped()
 }
 
 /*************/
-bool Window::linkTo(const shared_ptr<GraphObject>& obj)
+bool Window::linkIt(const shared_ptr<GraphObject>& obj)
 {
-    // Mandatory before trying to link
-    if (!GraphObject::linkTo(obj))
-        return false;
-
-    if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Texture>(obj))
     {
         auto tex = dynamic_pointer_cast<Texture>(obj);
         setTexture(tex);
         return true;
     }
-    else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
+    else if (dynamic_pointer_cast<Image>(obj))
     {
         auto tex = dynamic_pointer_cast<Texture_Image>(_root->createObject("texture_image", getName() + "_" + obj->getName() + "_tex").lock());
         tex->setResizable(0);
@@ -197,7 +193,7 @@ bool Window::linkTo(const shared_ptr<GraphObject>& obj)
         else
             return false;
     }
-    else if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
+    else if (dynamic_pointer_cast<Camera>(obj))
     {
         auto scene = dynamic_cast<Scene*>(_root);
         if (!scene)
@@ -211,7 +207,7 @@ bool Window::linkTo(const shared_ptr<GraphObject>& obj)
 
         return true;
     }
-    else if (dynamic_pointer_cast<Gui>(obj).get() != nullptr)
+    else if (dynamic_pointer_cast<Gui>(obj))
     {
         if (_guiTexture != nullptr)
             _screenGui->removeTexture(_guiTexture);
@@ -225,14 +221,14 @@ bool Window::linkTo(const shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void Window::unlinkFrom(const shared_ptr<GraphObject>& obj)
+void Window::unlinkIt(const shared_ptr<GraphObject>& obj)
 {
-    if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Texture>(obj))
     {
         auto tex = dynamic_pointer_cast<Texture>(obj);
         unsetTexture(tex);
     }
-    else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
+    else if (dynamic_pointer_cast<Image>(obj))
     {
         // Look for the corresponding texture
         string texName = getName() + "_" + obj->getName() + "_tex";
@@ -248,12 +244,11 @@ void Window::unlinkFrom(const shared_ptr<GraphObject>& obj)
         if (tex != nullptr)
         {
             tex->unlinkFrom(obj);
-            unsetTexture(tex);
-            tex.reset();
+            unlinkFrom(tex);
             _root->disposeObject(texName);
         }
     }
-    else if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
+    else if (dynamic_pointer_cast<Camera>(obj))
     {
         auto warpName = getName() + "_" + obj->getName() + "_warp";
 
@@ -261,14 +256,10 @@ void Window::unlinkFrom(const shared_ptr<GraphObject>& obj)
         {
             warp->unlinkFrom(obj);
             unlinkFrom(warp);
+            _root->disposeObject(warpName);
         }
-
-        _root->disposeObject(warpName);
-
-        auto cam = dynamic_pointer_cast<Camera>(obj);
-        unsetTexture(cam->getTexture());
     }
-    else if (dynamic_pointer_cast<Gui>(obj).get() != nullptr)
+    else if (dynamic_pointer_cast<Gui>(obj))
     {
         auto gui = dynamic_pointer_cast<Gui>(obj);
         if (gui->getTexture() == _guiTexture)
@@ -277,8 +268,6 @@ void Window::unlinkFrom(const shared_ptr<GraphObject>& obj)
             _guiTexture = nullptr;
         }
     }
-
-    return GraphObject::unlinkFrom(obj);
 }
 
 /*************/
@@ -330,10 +319,10 @@ void Window::render()
         glClear(GL_COLOR_BUFFER_BIT);
 
         auto layout = _layout;
-        layout.push_front("layout");
+        layout.push_front("_layout");
+        _screen->activate();
         _screen->getShader()->setAttribute("uniform", layout);
         _screen->getShader()->setAttribute("uniform", {"_gamma", (float)_srgb, _gammaCorrection});
-        _screen->activate();
         _screen->draw();
         _screen->deactivate();
     }
@@ -347,7 +336,7 @@ void Window::render()
 
     glDeleteSync(_renderFence);
     _renderFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-    _swappableWindowsCount.store(0, std::memory_order_acq_rel); // Reset the window number
+    _swappableWindowsCount = 0; // Reset the window number
 
     // Resize the input textures accordingly to the window size.
     // This goes upstream to the cameras and gui
@@ -371,6 +360,17 @@ void Window::render()
     }
     if (_guiTexture != nullptr)
         _guiTexture->setAttribute("size", {w, h});
+
+    // Update the timestamp based on the input textures
+    int64_t timestamp{0};
+    for (auto& t : _inTextures)
+    {
+        auto tex = t.lock();
+        if (!tex)
+            continue;
+        timestamp = std::max(timestamp, tex->getTimestamp());
+    }
+    _backBufferTimestamp = timestamp;
 
 #ifdef DEBUG
     GLenum error = glGetError();
@@ -408,8 +408,10 @@ void Window::setupFBOs()
     GLenum _status = glCheckNamedFramebufferStatus(_renderFbo, GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing render framebuffer object: " << _status << Log::endl;
+#ifdef DEBUG
     else
         Log::get() << Log::DEBUGGING << "Window::" << __FUNCTION__ << " - Render framebuffer object successfully initialized" << Log::endl;
+#endif
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
     glClearColor(0.0, 0.0, 0.0, 0.0);
@@ -426,8 +428,10 @@ void Window::setupFBOs()
     _status = glCheckNamedFramebufferStatus(_readFbo, GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing read framebuffer object: " << _status << Log::endl;
+#ifdef DEBUG
     else
         Log::get() << Log::DEBUGGING << "Window::" << __FUNCTION__ << " - Read framebuffer object successfully initialized" << Log::endl;
+#endif
 }
 
 /*************/
@@ -439,31 +443,28 @@ void Window::swapBuffers()
     glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
 
     // Only one window will wait for vblank, the others draws directly into front buffer
-    auto windowIndex = _swappableWindowsCount.fetch_add(1, std::memory_order_acq_rel);
+    auto windowIndex = _swappableWindowsCount++;
 
-// If swap interval is null (meaning no vsync), draw directly to the front buffer in any case
-#if not HAVE_OSX
+    // If swap interval is null (meaning no vsync), draw directly to the front buffer in any case
     bool drawToFront = false;
     if (!Scene::getHasNVSwapGroup() && windowIndex != 0)
     {
         drawToFront = true;
         glDrawBuffer(GL_FRONT);
     }
-#endif
 
     glBlitNamedFramebuffer(_readFbo, 0, 0, 0, _windowRect[2], _windowRect[3], 0, 0, _windowRect[2], _windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-#if HAVE_OSX
-    glfwSwapBuffers(_window->get());
-#else
     if (Scene::getHasNVSwapGroup())
         glfwSwapBuffers(_window->get());
     else if (windowIndex == 0)
         glfwSwapBuffers(_window->get());
-#endif
 
     if (drawToFront)
         glDrawBuffer(GL_BACK);
+
+    _frontBufferTimestamp = _backBufferTimestamp;
+    _presentationDelay = Timer::getTime() - _frontBufferTimestamp;
 
     _window->releaseContext();
 }
@@ -643,7 +644,7 @@ void Window::setWindowDecoration(bool hasDecoration)
         return;
     }
 
-    _window = move(make_shared<GlWindow>(window, _window->getMainWindow()));
+    _window = make_shared<GlWindow>(window, _window->getMainWindow());
     updateSwapInterval(_swapInterval);
     _resized = true;
 
@@ -788,6 +789,32 @@ void Window::registerAttributes()
         },
         {'n', 'n', 'n', 'n'});
     setAttributeDescription("swapTestColor", "Set the swap test color");
+
+    addAttribute("textureList",
+        [](const Values&) { return true; },
+        [&]() -> Values {
+            Values textureList;
+            for (const auto& layout_index : _layout)
+            {
+                auto index = layout_index.as<size_t>();
+                if (index >= _inTextures.size())
+                    continue;
+
+                auto texture = _inTextures[index].lock();
+                if (!texture)
+                {
+                    textureList.push_back("");
+                    continue;
+                }
+
+                textureList.push_back(texture->getName());
+            }
+            return textureList;
+        });
+    setAttributeDescription("textureList", "Get the list of the textures linked to the window");
+
+    addAttribute("presentationDelay", [&](const Values&) { return true; }, [&]() -> Values { return {_presentationDelay}; });
+    setAttributeDescription("presentationDelay", "Delay between the update of an image and its display");
 }
 
-} // end of namespace
+} // namespace Splash

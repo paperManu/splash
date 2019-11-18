@@ -33,7 +33,7 @@ namespace Splash
 class RootObject;
 
 /*************/
-class GraphObject : public BaseObject, public std::enable_shared_from_this<GraphObject>
+class GraphObject : public BaseObject
 {
   public:
     enum class Priority
@@ -74,16 +74,12 @@ class GraphObject : public BaseObject, public std::enable_shared_from_this<Graph
      * \brief Constructor.
      * \param root Specify the root object.
      */
-    explicit GraphObject(RootObject* root)
-        : _root(root)
-    {
-        registerAttributes();
-    }
+    explicit GraphObject(RootObject* root);
 
     /**
      * \brief Destructor.
      */
-    virtual ~GraphObject(){};
+    virtual ~GraphObject();
 
     /**
      * \brief Safe bool idiom.
@@ -96,6 +92,26 @@ class GraphObject : public BaseObject, public std::enable_shared_from_this<Graph
      * \return Returns a reference to the attribute.
      */
     Attribute& operator[](const std::string& attr);
+
+    /**
+     * \brief Add a new attribute to this object
+     * \param name Attribute name
+     * \param set Set function
+     * \param types Vector of char holding the expected parameters for the set function
+     * \return Return a reference to the created attribute
+     */
+    Attribute& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types = {}) override;
+
+    /**
+     * \brief Add a new attribute to this object
+     * \param name Attribute name
+     * \param set Set function
+     * \param get Get function
+     * \param types Vector of char holding the expected parameters for the set function
+     * \return Return a reference to the created attribute
+     */
+    Attribute& addAttribute(
+        const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types = {}) override;
 
     /**
      * \brief Get the real type of this BaseObject, as a std::string.
@@ -120,6 +136,12 @@ class GraphObject : public BaseObject, public std::enable_shared_from_this<Graph
      * \return Return the alias
      */
     inline std::string getAlias() const { return _alias.empty() ? _name : _alias; }
+
+    /**
+     * \brief Set the name of the object.
+     * \param name name of the object.
+     */
+    void setName(const std::string& name) override;
 
     /**
      * \brief Set the remote type of the object. This implies that this object gets data streamed from a World object
@@ -151,13 +173,6 @@ class GraphObject : public BaseObject, public std::enable_shared_from_this<Graph
     virtual void unlinkFrom(const std::shared_ptr<GraphObject>& obj);
 
     /**
-     * \brief Get the map of the attributes which should be updated from World to Scene
-     * \brief This is the case when the distant object is different from the World one
-     * \return Returns a map of the distant attributes
-     */
-    std::unordered_map<std::string, Values> getDistantAttributes() const;
-
-    /**
      * \brief Return a vector of the linked objects
      * \return Returns a vector of the linked objects
      */
@@ -185,24 +200,6 @@ class GraphObject : public BaseObject, public std::enable_shared_from_this<Graph
      * \param savable Desired savability
      */
     inline virtual void setSavable(bool savable) { _savable = savable; }
-
-    /**
-     * \brief Set the name of the object.
-     * \param name name of the object.
-     */
-    inline void setName(const std::string& name) { _name = name; }
-
-    /**
-     * Set the object as a ghost, meaning it mimics an object in another scene
-     * \param ghost If true, set as ghost
-     */
-    inline void setGhost(bool ghost) { _ghost = ghost; }
-
-    /**
-     * Get whether the object ghosts an object in another scene
-     * \return Return true if this object is a ghost
-     */
-    inline bool isGhost() const { return _ghost; }
 
     /**
      * \brief Update the content of the object
@@ -234,10 +231,16 @@ class GraphObject : public BaseObject, public std::enable_shared_from_this<Graph
     Category getCategory() const { return _category; }
 
     /**
-     * \brief Get the object's configuration as a Json object
-     * \return Returns a Json object
+     * Get the timestamp for the last update of this graph object, or 0
+     * \return Return the timestamp in us
      */
-    Json::Value getConfigurationAsJson() const override;
+    virtual int64_t getTimestamp() const { return 0; }
+
+    /**
+     * Set the timestamp
+     * \param timestamp Timestamp, in us
+     */
+    virtual void setTimestamp(int64_t) {}
 
     /**
      * \brief Set the rendering priority for this object
@@ -248,27 +251,9 @@ class GraphObject : public BaseObject, public std::enable_shared_from_this<Graph
     bool setRenderingPriority(Priority priority);
 
     /**
-     * Register a callback to any call to the setter
-     * \param attr Attribute to add a callback to
-     * \param cb Callback function
-     * \return Return a callback handle
-     */
-    CallbackHandle registerCallback(const std::string& attr, Attribute::Callback cb);
-
-    /**
-     * Unregister a callback
-     * \param handle A handle to the callback to remove
-     * \return True if the callback has been successfully removed
-     */
-    bool unregisterCallback(const CallbackHandle& handle);
-
-    /**
      * \brief Virtual method to render the object
      */
     virtual void render() {}
-
-  public:
-    bool _savable{true}; //!< True if the object should be saved
 
   protected:
     Category _category{Category::MISC};   //!< Object category, updated by the factory
@@ -276,15 +261,28 @@ class GraphObject : public BaseObject, public std::enable_shared_from_this<Graph
     std::string _remoteType{""};          //!< When the object root is a Scene, this is the type of the corresponding object in the World
     std::string _alias{""};               //!< Alias name
     std::vector<GraphObject*> _parents{}; //!< Objects parents
+    std::unordered_map<std::string, int> _treeCallbackIds{};
 
     Priority _renderingPriority{Priority::NO_RENDER}; //!< Rendering priority, if negative the object won't be rendered
+    bool _savable{true};                              //!< True if the object should be saved
     int _priorityShift{0};                            //!< Shift applied to rendering priority
-    bool _ghost{false};                               //!< True if the object ghosts an object in another scene
 
     bool _isConnectedToRemote{false}; //!< True if the object gets data from a World object
 
     RootObject* _root;                                      //!< Root object, Scene or World
     std::vector<std::weak_ptr<GraphObject>> _linkedObjects; //!< Linked objects
+
+    /**
+     * Linking method to be defined by derived types
+     * \param obj Object to link to
+     */
+    virtual bool linkIt(const std::shared_ptr<GraphObject>&) { return false; }
+
+    /**
+     * Unlinking method to be defined by derived types
+     * \param obj Object to unlink from
+     */
+    virtual void unlinkIt(const std::shared_ptr<GraphObject>&) {}
 
     /**
      * Inform that the given object is a parent
@@ -302,6 +300,18 @@ class GraphObject : public BaseObject, public std::enable_shared_from_this<Graph
      * \brief Register new attributes
      */
     void registerAttributes();
+
+    /**
+     * Initialize the tree
+     * This is called at object creation, or during setName
+     */
+    void initializeTree();
+
+    /**
+     * Uninitialize the tree
+     * This is called at object destruction
+     */
+    virtual void uninitializeTree();
 };
 
 } // namespace Splash

@@ -27,7 +27,6 @@
 
 #include <atomic>
 #include <deque>
-#include <list>
 #include <memory>
 #include <mutex>
 #include <utility>
@@ -40,6 +39,7 @@
 #include "./core/attribute.h"
 #include "./core/coretypes.h"
 #include "./core/graph_object.h"
+#include "./graphics/gl_window.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"
@@ -127,6 +127,12 @@ class Window : public GraphObject
     static int getQuitFlag() { return _quitFlag; }
 
     /**
+     * Get the timestamp
+     * \return Return the timestamp in us
+     */
+    virtual int64_t getTimestamp() const final { return _frontBufferTimestamp; }
+
+    /**
      * \brief Check whether the window is initialized
      * \return Return true if the window is initialized
      */
@@ -137,18 +143,6 @@ class Window : public GraphObject
      * \return Return true if the GLFW window is held by this object
      */
     bool isWindow(GLFWwindow* w) const { return (w == _window->get() ? true : false); }
-
-    /**
-     * \brief Try to link the given GraphObject to this object
-     * \param obj Shared pointer to the (wannabe) child object
-     */
-    bool linkTo(const std::shared_ptr<GraphObject>& obj) final;
-
-    /**
-     * \brief Try to unlink the given GraphObject from this object
-     * \param obj Shared pointer to the (supposed) child object
-     */
-    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) final;
 
     /**
      * \brief Render this window to screen
@@ -178,23 +172,41 @@ class Window : public GraphObject
      */
     void swapBuffers();
 
+  protected:
+    /**
+     * \brief Try to link the given GraphObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
+
+    /**
+     * \brief Try to unlink the given GraphObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
+
   private:
     bool _isInitialized{false};
     std::shared_ptr<GlWindow> _window;
+
+    int64_t _backBufferTimestamp{0};
+    int64_t _frontBufferTimestamp{0};
+    int64_t _presentationDelay{0};
+
     int _screenId{-1};
     bool _withDecoration{true};
     int _windowRect[4];
     bool _resized{true};
     bool _srgb{true};
     float _gammaCorrection{2.2f};
-    Values _layout{0, 0, 0, 0};
+    Values _layout{0, 1, 2, 3};
     int _swapInterval{1};
 
     // Swap synchronization test
     bool _swapSynchronizationTesting{false};
     glm::vec4 _swapSynchronizationColor{0.0, 0.0, 0.0, 1.0};
 
-    static std::atomic_int _swappableWindowsCount;
+    static int _swappableWindowsCount;
 
     // Offscreen rendering related objects
     GLuint _renderFbo{0};
@@ -206,7 +218,7 @@ class Window : public GraphObject
     std::shared_ptr<Object> _screen;
     std::shared_ptr<Object> _screenGui;
     glm::dmat4 _viewProjectionMatrix;
-    std::list<std::weak_ptr<Texture>> _inTextures;
+    std::vector<std::weak_ptr<Texture>> _inTextures;
     std::shared_ptr<Texture> _guiTexture{nullptr}; // The gui has its own texture
 
     static std::mutex _callbackMutex;

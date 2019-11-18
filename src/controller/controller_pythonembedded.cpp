@@ -242,7 +242,7 @@ PyObject* PythonEmbedded::pythonGetObjectList(PyObject* /*self*/, PyObject* /*ar
         return PyList_New(0);
     }
 
-    auto objects = that->getObjectNames();
+    auto objects = that->getObjectList();
     PyObject* pythonObjectList = PyList_New(objects.size());
     for (uint32_t i = 0; i < objects.size(); ++i)
         PyList_SetItem(pythonObjectList, i, Py_BuildValue("s", objects[i].c_str()));
@@ -400,7 +400,7 @@ PyObject* PythonEmbedded::pythonGetObjectType(PyObject* /*self*/, PyObject* args
         return PyList_New(0);
     }
 
-    return convertFromValue(that->getObject(string(strName))->getType());
+    return convertFromValue(that->getObjectPtr(string(strName))->getType());
 }
 
 /*************/
@@ -436,7 +436,7 @@ PyObject* PythonEmbedded::pythonGetObjectsOfType(PyObject* /*self*/, PyObject* a
         return PyList_New(0);
     }
 
-    auto objects = that->getObjectsOfType(strType);
+    auto objects = that->getObjectsPtr(that->getObjectsOfType(strType));
     PyObject* pythonObjectList = PyList_New(objects.size());
 
     int i = 0;
@@ -966,7 +966,7 @@ PyObject* PythonEmbedded::pythonRegisterAttributeCallback(PyObject* /*self*/, Py
         return Py_BuildValue("I", 0);
     }
 
-    auto splashObject = that->getObject(objectName);
+    auto splashObject = that->getObjectPtr(objectName);
     if (!splashObject)
     {
         PyErr_Warn(PyExc_Warning, "There is no Splash object with the given name");
@@ -1334,11 +1334,22 @@ PyObject* PythonEmbedded::convertFromValue(const Value& value, bool toDict)
     parseValue = [&](const Value& v) -> PyObject* {
         PyObject* pyValue = nullptr;
         if (v.getType() == Value::Type::integer)
+        {
             pyValue = Py_BuildValue("i", v.as<long>());
+        }
         else if (v.getType() == Value::Type::real)
+        {
             pyValue = Py_BuildValue("f", v.as<float>());
+        }
         else if (v.getType() == Value::Type::string)
+        {
             pyValue = Py_BuildValue("s", v.as<string>().c_str());
+        }
+        else if (v.getType() == Value::Type::buffer)
+        {
+            auto buffer = v.as<Value::Buffer>();
+            pyValue = Py_BuildValue("y#", reinterpret_cast<char*>(buffer.data()), buffer.size());
+        }
         else if (v.getType() == Value::Type::values)
         {
             auto values = v.as<Values>();
@@ -1384,6 +1395,13 @@ Value PythonEmbedded::convertToValue(PyObject* pyObject)
         else if (PyFloat_Check(obj))
         {
             value = PyFloat_AsDouble(obj);
+        }
+        else if (PyBytes_Check(obj))
+        {
+            uint8_t* bytes;
+            Py_ssize_t size;
+            if (PyBytes_AsStringAndSize(obj, reinterpret_cast<char**>(&bytes), &size) != -1)
+                value = Value::Buffer(bytes, bytes + size);
         }
         else
         {

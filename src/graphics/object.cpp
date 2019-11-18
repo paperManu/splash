@@ -38,7 +38,6 @@ void Object::init()
     if (!_root)
         return;
 
-    _shader = make_shared<Shader>();
     _modelMatrix = glm::dmat4(0.0);
 }
 
@@ -60,11 +59,7 @@ void Object::activate()
 
     // Create and store the shader depending on its type
     auto shaderIt = _graphicsShaders.find(_fill);
-    if (shaderIt == _graphicsShaders.end() && _fill == "userDefined")
-    {
-        _graphicsShaders["userDefined"] = _shader;
-    }
-    else if (shaderIt == _graphicsShaders.end())
+    if (shaderIt == _graphicsShaders.end())
     {
         _shader = make_shared<Shader>();
         _graphicsShaders[_fill] = _shader;
@@ -169,7 +164,7 @@ void Object::deactivate()
 }
 
 /**************/
-void Object::addCalibrationPoint(glm::dvec3 point)
+void Object::addCalibrationPoint(const glm::dvec3& point)
 {
     for (auto& p : _calibrationPoints)
         if (p == point)
@@ -179,7 +174,16 @@ void Object::addCalibrationPoint(glm::dvec3 point)
 }
 
 /**************/
-void Object::removeCalibrationPoint(glm::dvec3 point)
+int64_t Object::getTimestamp() const
+{
+    int64_t timestamp = 0;
+    for (const auto& texture : _textures)
+        timestamp = std::max(timestamp, texture->getTimestamp());
+    return timestamp;
+}
+
+/**************/
+void Object::removeCalibrationPoint(const glm::dvec3& point)
 {
     for (auto it = _calibrationPoints.begin(), itEnd = _calibrationPoints.end(); it != itEnd; ++it)
     {
@@ -211,15 +215,12 @@ int Object::getVerticesNumber() const
 }
 
 /*************/
-bool Object::linkTo(const shared_ptr<GraphObject>& obj)
+bool Object::linkIt(const shared_ptr<GraphObject>& obj)
 {
-    // Mandatory before trying to link
-    if (!GraphObject::linkTo(obj))
-        return false;
-
     if (obj->getType().find("texture") != string::npos)
     {
         auto filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", getName() + "_" + obj->getName() + "_filter").lock());
+        filter->setSavable(true); // We always save the filters as they hold user-specified values
         if (filter->linkTo(obj))
             return linkTo(filter);
         else
@@ -270,7 +271,7 @@ bool Object::linkTo(const shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void Object::unlinkFrom(const shared_ptr<GraphObject>& obj)
+void Object::unlinkIt(const shared_ptr<GraphObject>& obj)
 {
     auto type = obj->getType();
     if (type.find("texture") != string::npos)
@@ -329,8 +330,6 @@ void Object::unlinkFrom(const shared_ptr<GraphObject>& obj)
         auto tex = dynamic_pointer_cast<Texture>(obj);
         removeTexture(tex);
     }
-
-    GraphObject::unlinkFrom(obj);
 }
 
 /*************/
@@ -440,7 +439,7 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
     {
         _feedbackShaderSubdivideCamera = make_shared<Shader>(Shader::prgFeedback);
         _feedbackShaderSubdivideCamera->setAttribute("feedbackPhase", {"tessellateFromCamera"});
-        _feedbackShaderSubdivideCamera->setAttribute("feedbackVaryings", {"GEOM_OUT.vertex", "GEOM_OUT.texcoord", "GEOM_OUT.normal", "GEOM_OUT.annexe"});
+        _feedbackShaderSubdivideCamera->setAttribute("feedbackVaryings", {"GEOM_OUT.vertex", "GEOM_OUT.texCoord", "GEOM_OUT.normal", "GEOM_OUT.annexe"});
     }
 
     if (_feedbackShaderSubdivideCamera)
@@ -561,6 +560,13 @@ void Object::setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 }
 
 /*************/
+void Object::setShader(const std::shared_ptr<Shader>& shader)
+{
+    _graphicsShaders["userDefined"] = shader;
+    _fill = "userDefined";
+}
+
+/*************/
 void Object::registerAttributes()
 {
     GraphObject::registerAttributes();
@@ -632,7 +638,7 @@ void Object::registerAttributes()
         [&]() -> Values { return {_fill}; },
         {'s'});
     setAttributeDescription("fill",
-        "Set the fill type (texture, wireframe, or color). A fourth choice is available: userDefinedFilter. The fragment shader has to be defined "
+        "Set the fill type (texture, wireframe, or color). A fourth choice is available: userDefined. The fragment shader has to be defined "
         "manually then. Additional parameters are sent as #define directives to the shader compiler.");
 
     addAttribute("color",
