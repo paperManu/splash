@@ -2,6 +2,7 @@ variables:
   DOCKER_DRIVER: overlay2
 
 stages:
+  - test
   - package
 
 cache:
@@ -26,39 +27,39 @@ before_script:
   - export CCACHE_DIR=${PWD}/ccache
   - export PATH="/usr/lib/ccache:${PATH}"
 
-test:18.04:
-  stage: test
-  image: ubuntu:18.04
-  script: 
-    - git submodule update --init
-    - ./make_deps.sh
-    - rm -rf build && mkdir build && cd build
-    - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
-    - make -j$(nproc)
-    - make test
-
-test:18.04-clang:
-  stage: test
-  image: ubuntu:18.04
-  script: 
-    - git submodule update --init
-    - ./make_deps.sh
-    - rm -rf build && mkdir build && cd build
-    - CC=clang CXX=clang++ cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
-    - make -j$(nproc)
-    - make test
-
-test:18.04-syslibs:
-  stage: test
-  image: ubuntu:18.04
-  script:
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
-      libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev
-    - git submodule update --init
-    - rm -rf build && mkdir build && cd build
-    - cmake -DBUILD_GENERIC_ARCH=ON -DUSE_SYSTEM_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr ..
-    - make -j$(nproc)
-    - make test
+# test:18.04:
+#   stage: test
+#   image: ubuntu:18.04
+#   script: 
+#     - git submodule update --init
+#     - ./make_deps.sh
+#     - rm -rf build && mkdir build && cd build
+#     - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
+#     - make -j$(nproc)
+#     - make test
+# 
+# test:18.04-clang:
+#   stage: test
+#   image: ubuntu:18.04
+#   script: 
+#     - git submodule update --init
+#     - ./make_deps.sh
+#     - rm -rf build && mkdir build && cd build
+#     - CC=clang CXX=clang++ cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
+#     - make -j$(nproc)
+#     - make test
+# 
+# test:18.04-syslibs:
+#   stage: test
+#   image: ubuntu:18.04
+#   script:
+#     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
+#       libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev
+#     - git submodule update --init
+#     - rm -rf build && mkdir build && cd build
+#     - cmake -DBUILD_GENERIC_ARCH=ON -DUSE_SYSTEM_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr ..
+#     - make -j$(nproc)
+#     - make test
 
 test:archlinux:
   stage: test
