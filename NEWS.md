@@ -1,6 +1,39 @@
 Splash release notes
 ===================
 
+Splash 0.8.0 (2019-11-18)
+-------------------------
+New features:
+- Refactored the GUI!
+- Communication between processes is now mainly done through a synchronized tree
+- GUI is able to display all the information about all processes
+- Completely removed OSX support (at this point, it is a feature)
+
+Improvements:
+- Updated Blender addon for version 2.8x
+- Updated GLM, ZMQ, LTC, FFmpeg, Hap, GLFW and STB image
+- Added possility for Camera, Warp and Filters to output color buffers as an attribute
+- Removed distant attributes
+- Improved V4L2 support
+- Added support for Value::Buffer in the Python interpreter
+- Added a 'elapsed' attribute to Queue
+- Removed TextureImage::flushPbo which is not necessary anymore
+- Fixed banding in input video by converting all inputs to 16bits
+- Added live shader update for Filter
+- Added support for SLAPS automatic geometric calibration
+- Added timestamp propagation from Images and Meshes to Windows
+- Added some CLI options
+
+Bugs fixed:
+- Fixed texture upload sync blocking render loop too soon
+- Fixed hang issue with AMD hardware and RadeonSI driver
+- Fixed a bug with blending
+- Fixed medias appearing multiple times in the media widget
+- Fixed OBJ loader
+- Fixed copying calibration from another file
+- Fixed issue with NV swap groups
+- Fixed offscreen mode
+
 Splash 0.7.20 (2018-09-10)
 --------------------------
 New features:
