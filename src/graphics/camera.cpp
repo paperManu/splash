@@ -962,7 +962,6 @@ double Camera::calibrationCostFunc(const gsl_vector* v, void* params)
 
     dmat4 lookM = lookAt(eye, target, up);
     dmat4 projM = dmat4(getProjectionMatrix(fov, camera._near, camera._far, camera._width, camera._height, cx, cy));
-    dmat4 modelM(1.0);
     dvec4 viewport(0, 0, camera._width, camera._height);
 
     // Project all the object points, and measure the distance between them and the image points

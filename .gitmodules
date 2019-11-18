@@ -4,9 +4,6 @@
 [submodule "external/imgui"]
 	path = external/imgui
 	url = https://github.com/ocornut/imgui.git
-[submodule "external/syphon"]
-	path = external/syphon
-	url = https://github.com/Syphon/Syphon-Framework.git
 [submodule "external/cppzmq"]
 	path = external/cppzmq
 	url = https://github.com/zeromq/cppzmq.git

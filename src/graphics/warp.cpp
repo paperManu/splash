@@ -197,7 +197,6 @@ void Warp::render()
 int Warp::pickControlPoint(glm::vec2 p, glm::vec2& v)
 {
     float distance = numeric_limits<float>::max();
-    glm::vec2 closestVertex;
 
     _screenMesh->switchMeshes(true);
     _screenMesh->update();
