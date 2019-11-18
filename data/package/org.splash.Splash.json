@@ -53,6 +53,17 @@
             ]
         },
         {
+            "name": "jsoncpp",
+            "buildsystem": "cmake",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/open-source-parsers/jsoncpp",
+                    "tag": "1.8.4"
+                }
+            ]
+        }
+        {
             "name": "splash",
             "buildsystem": "cmake",
             "builddir": true,
