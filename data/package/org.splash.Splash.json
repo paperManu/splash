@@ -62,7 +62,7 @@
                     "tag": "1.8.4"
                 }
             ]
-        }
+        },
         {
             "name": "splash",
             "buildsystem": "cmake",
