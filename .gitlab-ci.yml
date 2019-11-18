@@ -88,6 +88,9 @@ package:debian:
   stage: package
   image: ubuntu:18.04
   script:
+    - git submodule update --init
+    - ./make_deps.sh
+    - rm -rf build && mkdir build && cd build
     - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make package
@@ -108,9 +111,10 @@ package:flatpak:
   stage: package
   image: ubuntu:18.04
   before_script:
+    - apt update -qq
     - DEBIAN_FRONTEND=noninteractive apt install -y flatpak-builder
     - flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-    - flatpak install flathub org.freedesktop.Platform//1.6 org.freedesktop.Sdk//1.6
+    - flatpak install --assumeyes flathub org.freedesktop.Platform//1.6 org.freedesktop.Sdk//1.6
   script:
     - flatpak-builder --repo=flatpak_repo build --force-clean data/package/org.splash.Splash.json
     - flatpak build-bundle flatpak_repo splash.flatpak org.splash.Splash
