@@ -39,16 +39,6 @@
             ]
         },
         {
-            "name": "glm",
-            "buildsystem": "cmake",
-            "sources": [
-                {
-                    "type": "git",
-                    "url": "https://github.com/g-truc/glm.git"
-                }
-            ]
-        },
-        {
             "name": "gsl",
             "config-opts": [
                 "--enable-shared",
@@ -59,15 +49,6 @@
                     "type": "archive",
                     "url": "http://mirror.sergal.org/gnu/gsl/gsl-2.5.tar.gz",
                     "sha256": "0460ad7c2542caaddc6729762952d345374784100223995eb14d614861f2258d"
-                }
-            ]
-        },
-        {
-            "name": "libzmq",
-            "sources": [
-                {
-                    "type": "git",
-                    "url": "https://github.com/zeromq/libzmq.git"
                 }
             ]
         },
