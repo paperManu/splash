@@ -113,9 +113,11 @@ package:flatpak:
   image: ubuntu:18.04
   before_script:
     - apt update -qq
-    - DEBIAN_FRONTEND=noninteractive apt install -y flatpak-builder
+    - DEBIAN_FRONTEND=noninteractive apt install -y flatpak-builder gcc-8 g++-8
+    - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 700 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+    - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
     - flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-    - flatpak install --assumeyes flathub org.freedesktop.Platform//1.6 org.freedesktop.Sdk//1.6
+    - flatpak install --assumeyes flathub org.freedesktop.Platform//1.6 org.freedesktop.Sdk//1.6 org.freedesktop.Sdk.Extension.gcc8
   script:
     - flatpak-builder --repo=flatpak_repo build --force-clean data/package/org.splash.Splash.json
     - flatpak build-bundle flatpak_repo splash.flatpak org.splash.Splash
