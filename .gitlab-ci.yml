@@ -113,7 +113,7 @@ package:flatpak:
   image: ubuntu:18.04
   before_script:
     - apt update -qq
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommands flatpak-builder
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends flatpak-builder
     - flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
     - flatpak install --assumeyes flathub org.freedesktop.Platform//1.6 org.freedesktop.Sdk//1.6
   script:
