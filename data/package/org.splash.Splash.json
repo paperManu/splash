@@ -39,16 +39,6 @@
             ]
         },
         {
-            "name": "glm",
-            "buildsystem": "cmake",
-            "sources": [
-                {
-                    "type": "git",
-                    "url": "https://github.com/g-truc/glm.git"
-                }
-            ]
-        },
-        {
             "name": "gsl",
             "config-opts": [
                 "--enable-shared",
