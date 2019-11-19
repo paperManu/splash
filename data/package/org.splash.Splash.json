@@ -1,7 +1,7 @@
 {
     "app-id": "org.splash.Splash",
     "runtime": "org.freedesktop.Platform",
-    "runtime-version": "1.6",
+    "runtime-version": "19.08",
     "sdk": "org.freedesktop.Sdk",
     "command": "splash",
     "rename-desktop-file": "splash.desktop",
@@ -39,16 +39,6 @@
             ]
         },
         {
-            "name": "glm",
-            "buildsystem": "cmake",
-            "sources": [
-                {
-                    "type": "git",
-                    "url": "https://github.com/g-truc/glm.git"
-                }
-            ]
-        },
-        {
             "name": "gsl",
             "config-opts": [
                 "--enable-shared",
@@ -68,6 +58,17 @@
                 {
                     "type": "git",
                     "url": "https://github.com/zeromq/libzmq.git"
+                }
+            ]
+        },
+        {
+            "name": "jsoncpp",
+            "buildsystem": "cmake",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/open-source-parsers/jsoncpp",
+                    "tag": "1.8.4"
                 }
             ]
         },

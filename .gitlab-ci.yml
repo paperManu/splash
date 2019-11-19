@@ -18,8 +18,7 @@ before_script:
   - apt update -qq
   - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends ca-certificates ccache wget curl build-essential git-core libjsoncpp-dev
     zip cmake automake libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev 
-    libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python clang libopencv-dev libglfw3-dev libglm-dev
-    libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev gcc-8 g++-8
+    libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python clang libopencv-dev gcc-8 g++-8
   - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 700 --slave /usr/bin/g++ g++ /usr/bin/g++-7
   - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
   # CCache stuff
@@ -54,6 +53,8 @@ test:18.04-syslibs:
   stage: test
   image: ubuntu:18.04
   script:
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
+      libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev
     - git submodule update --init
     - rm -rf build && mkdir build && cd build
     - cmake -DBUILD_GENERIC_ARCH=ON -DUSE_SYSTEM_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr ..
@@ -88,6 +89,9 @@ package:debian:
   stage: package
   image: ubuntu:18.04
   script:
+    - git submodule update --init
+    - ./make_deps.sh
+    - rm -rf build && mkdir build && cd build
     - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make package
@@ -108,11 +112,17 @@ package:flatpak:
   stage: package
   image: ubuntu:18.04
   before_script:
-    - DEBIAN_FRONTEND=noninteractive apt install -y flatpak-builder
+    - apt update -qq
+    - DEBIAN_FRONTEND=noninteractive apt install -y flatpak-builder ccache
     - flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-    - flatpak install flathub org.freedesktop.Platform//1.6 org.freedesktop.Sdk//1.6
+    - flatpak install --assumeyes flathub org.freedesktop.Platform//19.08 org.freedesktop.Sdk//19.08
+    # CCache stuff
+    - mkdir -p ccache
+    - export CCACHE_BASEDIR=${PWD}
+    - export CCACHE_DIR=${PWD}/ccache
+    - export PATH="/usr/lib/ccache:${PATH}"
   script:
-    - flatpak-builder --repo=flatpak_repo build --force-clean data/package/org.splash.Splash.json
+    - flatpak-builder --ccache --repo=flatpak_repo build --force-clean data/package/org.splash.Splash.json
     - flatpak build-bundle flatpak_repo splash.flatpak org.splash.Splash
   only:
     - tags
