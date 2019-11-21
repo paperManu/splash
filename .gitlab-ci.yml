@@ -18,7 +18,7 @@ before_script:
   - apt update -qq
   - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends ca-certificates ccache wget curl build-essential git-core libjsoncpp-dev
     zip cmake automake libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev 
-    libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python clang libopencv-dev gcc-8 g++-8
+    libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python libopencv-dev gcc-8 g++-8
   - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 700 --slave /usr/bin/g++ g++ /usr/bin/g++-7
   - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
   # CCache stuff
@@ -42,8 +42,9 @@ test:18.04-clang:
   stage: test
   image: ubuntu:18.04
   script: 
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends clang
     - git submodule update --init
-    - ./make_deps.sh
+    - CC=clang CXX=clang++ ./make_deps.sh
     - rm -rf build && mkdir build && cd build
     - CC=clang CXX=clang++ cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
@@ -122,6 +123,7 @@ package:flatpak:
     - export CCACHE_DIR=${PWD}/ccache
     - export PATH="/usr/lib/ccache:${PATH}"
   script:
+    - sed -i "s<PACKAGED_COMMIT<$(git rev-parse HEAD)<g" data/package/org.splash.Splash.json
     - flatpak-builder --ccache --repo=flatpak_repo build --force-clean data/package/org.splash.Splash.json
     - flatpak build-bundle flatpak_repo splash.flatpak org.splash.Splash
   only:

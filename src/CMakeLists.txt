@@ -239,7 +239,14 @@ if (PYTHONLIBS_FOUND)
 endif()
 
 # Stdlib 
-target_link_libraries(splash-${API_VERSION} stdc++fs)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0.0")
+    target_link_libraries(splash-${API_VERSION} stdc++fs)
+   endif()
+else()
+  target_link_libraries(splash-${API_VERSION} stdc++fs)
+endif()
+
 # Distributed third parties
 target_link_libraries(splash-${API_VERSION} snappy)
 target_link_libraries(splash-${API_VERSION} glfw)

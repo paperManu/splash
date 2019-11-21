@@ -53,15 +53,6 @@
             ]
         },
         {
-            "name": "libzmq",
-            "sources": [
-                {
-                    "type": "git",
-                    "url": "https://github.com/zeromq/libzmq.git"
-                }
-            ]
-        },
-        {
             "name": "jsoncpp",
             "buildsystem": "cmake",
             "sources": [
@@ -74,16 +65,25 @@
         },
         {
             "name": "splash",
-            "buildsystem": "cmake",
-            "builddir": true,
+            "buildsystem": "simple",
             "config-opts": [
                 "-DBUILD_GENERIC_ARCH=ON"
+            ],
+            "build-commands": [
+                "./make_deps.sh",
+                "cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/app .",
+                "make -j$(nproc)",
+                "install -Dm755 ./src/splash /app/bin/splash",
+                "install -Dm644 ./data/splash.json /app/share/splash/splash.json",
+                "install -Dm644 ./data/color_map.png /app/share/splash/color_map.png",
+                "install -Dm644 ./data/cubes.obj /app/share/splash/cubes.obj",
+                "cp -R ./data/share/* /app/share/"
             ],
             "sources": [
                 {
                     "type": "git",
                     "url": "https://gitlab.com/sat-metalab/splash.git",
-                    "branch": "develop"
+                    "branch": "PACKAGED_COMMIT"
                 }
             ]
         }
