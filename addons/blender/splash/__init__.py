@@ -34,7 +34,6 @@ sys.path.insert(0, '/usr/local/lib/python3/dist-packages')
 
 if "bpy" in locals():
     import imp
-    imp.reload(ui)
     imp.reload(operators)
     imp.reload(nodes)
 else:
@@ -48,7 +47,6 @@ else:
     from bpy.types import (Operator,
                            PropertyGroup,
                            )
-    from . import ui
     from . import operators
     from . import nodes
 
@@ -123,13 +121,6 @@ class SplashSettings(PropertyGroup):
 
 
 classes = (
-    ui.SplashToolbarObject,
-    ui.SplashToolbarMesh,
-
-    operators.SplashActivateSendMesh,
-    operators.SplashSendTexture,
-    operators.SplashStopSelected,
-
     nodes.SplashTree,
     nodes.SplashLinkSocket,
     nodes.SplashBaseNode,
@@ -170,7 +161,7 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.types.Scene.splash : PointerProperty(type=SplashSettings)
+    bpy.types.Scene.splash: PointerProperty(type=SplashSettings)
 
     import nodeitems_utils
     nodeitems_utils.register_node_categories("SPLASH_NODES", nodes.node_categories)
@@ -179,8 +170,6 @@ def register():
 def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
-
-    del bpy.types.Scene.splash
 
     import nodeitems_utils
     nodeitems_utils.unregister_node_categories("SPLASH_NODES")
