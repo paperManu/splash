@@ -107,36 +107,6 @@ package:debian:
       - "*.tar.bz2"
 
 #
-# Flatpak
-#
-package:flatpak:
-  stage: package
-  image: ubuntu:18.04
-  before_script:
-    - apt update -qq
-    - DEBIAN_FRONTEND=noninteractive apt install -y flatpak-builder ccache
-    - flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-    - flatpak install --assumeyes flathub org.freedesktop.Platform//19.08 org.freedesktop.Sdk//19.08
-    # CCache stuff
-    - mkdir -p ccache
-    - export CCACHE_BASEDIR=${PWD}
-    - export CCACHE_DIR=${PWD}/ccache
-    - export PATH="/usr/lib/ccache:${PATH}"
-  script:
-    - sed -i "s<PACKAGED_COMMIT<$(git rev-parse HEAD)<g" data/package/org.splash.Splash.json
-    - flatpak-builder --ccache --repo=flatpak_repo build --force-clean data/package/org.splash.Splash.json
-    - flatpak build-bundle flatpak_repo splash.flatpak org.splash.Splash
-  only:
-    - tags
-  artifacts:
-    name: "splash_flatpak_${CI_BUILD_REF_NAME}"
-    paths:
-      - "splash.flatpak"
-  cache:
-    paths:
-      - ".flatpak-builder/cache"
-
-#
 # Static analysis
 #
 static_analysis:
