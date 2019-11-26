@@ -25,9 +25,9 @@
 #ifndef SPLASH_OBJECT_LIBRARY_H
 #define SPLASH_OBJECT_LIBRARY_H
 
+#include <map>
 #include <memory>
 #include <string>
-#include <unordered_map>
 
 #include "./graphics/geometry.h"
 #include "./graphics/object.h"
@@ -65,9 +65,8 @@ class ObjectLibrary
 
   private:
     RootObject* _root;
-    std::unordered_map<std::string, std::shared_ptr<Mesh>> _meshes{};
-    std::unordered_map<std::string, std::shared_ptr<Geometry>> _geometries{};
-    std::unordered_map<std::string, std::unique_ptr<Object>> _library{};
+    std::unique_ptr<Object> _defaultObject{nullptr};
+    std::map<std::string, std::unique_ptr<Object>> _library{};
 };
 
 } // namespace Splash

@@ -24,22 +24,20 @@ bool ObjectLibrary::loadModel(const string& name, const string& filename)
         }
         else
         {
-            Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - File " << filename << " does not seem to be readable." << Log::endl;
+            Log::get() << Log::WARNING << "ObjectLibrary::" << __FUNCTION__ << " - File " << filename << " does not seem to be readable." << Log::endl;
             return false;
         }
     }
 
     auto mesh = make_shared<Mesh>(_root);
     mesh->setAttribute("file", {filepath});
-    _meshes.emplace(make_pair(name, mesh));
-    auto obj = make_unique<Object>(_root);
 
     // We create the geometry manually for it not to be registered in the root
     auto geometry = make_shared<Geometry>(_root);
-    _geometries.emplace(make_pair(name, geometry));
+    geometry->setMesh(mesh);
 
-    geometry->linkTo(mesh);
-    obj->linkTo(geometry);
+    auto obj = make_unique<Object>(_root);
+    obj->addGeometry(geometry);
 
     _library[name] = move(obj);
     return true;
@@ -50,7 +48,19 @@ Object* ObjectLibrary::getModel(const string& name)
 {
     auto objectIt = _library.find(name);
     if (objectIt == _library.end())
-        return nullptr;
+    {
+        // The default object must be created in a GL context, so it
+        // can not be created in the constructor of the library
+        if (!_defaultObject)
+        {
+            auto geometry = make_shared<Geometry>(_root);
+            _defaultObject = make_unique<Object>(_root);
+            _defaultObject->addGeometry(geometry);
+        }
+
+        Log::get() << Log::WARNING << "ObjectLibrary::" << __FUNCTION__ << " - No object named " << name << " in the library" << Log::endl;
+        return _defaultObject.get();
+    }
     return objectIt->second.get();
 }
 

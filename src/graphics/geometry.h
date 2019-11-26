@@ -110,7 +110,7 @@ class Geometry : public BufferObject
      * Get the timestamp
      * \return Return the timestamp
      */
-    virtual int64_t getTimestamp() const final { return _defaultMesh ? _defaultMesh->getTimestamp() : 0; }
+    virtual int64_t getTimestamp() const final { return _mesh ? _mesh->getTimestamp() : 0; }
 
     /**
      * \brief Get whether the alternative buffers have been resized during the last feedback call
@@ -130,7 +130,11 @@ class Geometry : public BufferObject
      * \brief Set the mesh for this object
      * \param mesh Mesh
      */
-    void setMesh(const std::shared_ptr<Mesh>& mesh) { _mesh = std::weak_ptr<Mesh>(mesh); }
+    void setMesh(const std::shared_ptr<Mesh>& mesh)
+    {
+        if (mesh)
+            _mesh = mesh;
+    }
 
     /**
      * \brief Swap between temporary and alternative buffers
@@ -159,8 +163,7 @@ class Geometry : public BufferObject
     mutable std::mutex _mutex;
     bool _onMasterScene{false};
 
-    std::shared_ptr<Mesh> _defaultMesh;
-    std::weak_ptr<Mesh> _mesh;
+    std::shared_ptr<Mesh> _mesh;
 
     std::map<GLFWwindow*, GLuint> _vertexArray;
     std::vector<std::shared_ptr<GpuBuffer>> _glBuffers{};
@@ -193,6 +196,6 @@ class Geometry : public BufferObject
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_GEOMETRY_H
