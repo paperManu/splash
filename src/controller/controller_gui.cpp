@@ -820,28 +820,6 @@ void Gui::render()
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
 
-    // If the gui is alone in its window, make it visible at startup
-    if (_firstRender)
-    {
-        auto reversedLinks = getObjectReversedLinks();
-        // If the GUI has multiple parents, hide it anyway
-        if (reversedLinks[_name].size() == 1)
-        {
-            auto parent = reversedLinks[_name][0];
-            auto allLinks = getObjectLinks();
-            auto linksIt = allLinks.find(parent);
-            if (linksIt != allLinks.end())
-            {
-                auto links = linksIt->second;
-                for (const auto& link : links)
-                    if (link == _name)
-                        _hasOwnWindow = true;
-                if (_hasOwnWindow)
-                    _isVisible = true;
-            }
-        }
-    }
-
 #ifdef DEBUG
     GLenum error = glGetError();
 #endif
@@ -870,9 +848,9 @@ void Gui::render()
         // Check whether the GUI is alone in its window
         auto objReversedLinks = getObjectReversedLinks();
         auto objLinks = getObjectLinks();
-        if (_hasOwnWindow)
+        if (_fullscreen)
         {
-            ImGui::SetWindowPos(ImVec2(0, 0), ImGuiCond_Once);
+            ImGui::SetWindowPos(ImVec2(0, 0));
             ImGui::SetWindowSize(ImVec2(_width, _height));
             _windowFlags |= ImGuiWindowFlags_NoMove;
         }
@@ -1011,7 +989,6 @@ void Gui::render()
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the gui: " << error << Log::endl;
 #endif
 
-    _firstRender = false;
     _resized = false;
 
     return;
@@ -1487,6 +1464,17 @@ void Gui::registerAttributes()
         return true;
     });
     setAttributeDescription("show", "Show the GUI");
+
+    addAttribute("fullscreen",
+        [&](const Values& args) {
+            _fullscreen = args[0].as<bool>();
+            if (_fullscreen)
+                _isVisible = true;
+            return true;
+        },
+        [&]() -> Values { return {_fullscreen}; },
+        {'n'});
+    setAttributeDescription("fullscreen", "The GUI will take the whole window if set to true");
 }
 
 } // namespace Splash

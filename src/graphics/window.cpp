@@ -178,6 +178,19 @@ vector<string> Window::getPathDropped()
 /*************/
 bool Window::linkIt(const shared_ptr<GraphObject>& obj)
 {
+    if (dynamic_pointer_cast<Gui>(obj))
+    {
+        if (_guiTexture != nullptr)
+            _screenGui->removeTexture(_guiTexture);
+        _gui = dynamic_pointer_cast<Gui>(obj);
+        _guiTexture = _gui->getTexture();
+        _screenGui->addTexture(_guiTexture);
+        return true;
+    }
+
+    if (_guiOnly)
+        return false;
+
     if (dynamic_pointer_cast<Texture>(obj))
     {
         auto tex = dynamic_pointer_cast<Texture>(obj);
@@ -205,15 +218,6 @@ bool Window::linkIt(const shared_ptr<GraphObject>& obj)
         scene->sendMessageToWorld("sendAllScenes", {"link", obj->getName(), warpName});
         scene->sendMessageToWorld("sendAllScenes", {"link", warpName, _name});
 
-        return true;
-    }
-    else if (dynamic_pointer_cast<Gui>(obj))
-    {
-        if (_guiTexture != nullptr)
-            _screenGui->removeTexture(_guiTexture);
-        auto gui = dynamic_pointer_cast<Gui>(obj);
-        _guiTexture = gui->getTexture();
-        _screenGui->addTexture(_guiTexture);
         return true;
     }
 
@@ -329,6 +333,8 @@ void Window::render()
 
     if (_guiTexture != nullptr)
     {
+        if (_guiOnly)
+            _gui->setAttribute("fullscreen", {true});
         _screenGui->activate();
         _screenGui->draw();
         _screenGui->deactivate();
@@ -681,8 +687,7 @@ void Window::registerAttributes()
 {
     GraphObject::registerAttributes();
 
-    addAttribute(
-        "decorated",
+    addAttribute("decorated",
         [&](const Values& args) {
             _withDecoration = args[0].as<int>() == 0 ? false : true;
             setWindowDecoration(_withDecoration);
@@ -693,8 +698,16 @@ void Window::registerAttributes()
         {'n'});
     setAttributeDescription("decorated", "If set to 0, the window is drawn without decoration");
 
-    addAttribute(
-        "srgb",
+    addAttribute("guiOnly",
+        [&](const Values& args) {
+            _guiOnly = args[0].as<bool>();
+            return true;
+        },
+        [&]() -> Values { return {_guiOnly}; },
+        {'n'});
+    setAttributeDescription("guiOnly", "If true, only the GUI will be able to link to this window. Does not affect pre-existing links.");
+
+    addAttribute("srgb",
         [&](const Values& args) {
             if (args[0].as<int>() != 0)
                 _srgb = true;
@@ -706,8 +719,7 @@ void Window::registerAttributes()
         {'n'});
     setAttributeDescription("srgb", "If set to 1, the window is drawn in the sRGB color space");
 
-    addAttribute(
-        "gamma",
+    addAttribute("gamma",
         [&](const Values& args) {
             _gammaCorrection = args[0].as<float>();
             return true;
@@ -717,8 +729,7 @@ void Window::registerAttributes()
     setAttributeDescription("gamma", "Set the gamma correction for this window");
 
     // Attribute to configure the placement of the various texture input
-    addAttribute(
-        "layout",
+    addAttribute("layout",
         [&](const Values& args) {
             _layout.clear();
             for (auto& arg : args)
@@ -736,8 +747,7 @@ void Window::registerAttributes()
         {'n'});
     setAttributeDescription("layout", "Set the placement of the various input textures");
 
-    addAttribute(
-        "position",
+    addAttribute("position",
         [&](const Values& args) {
             _windowRect[0] = args[0].as<int>();
             _windowRect[1] = args[1].as<int>();
@@ -757,8 +767,7 @@ void Window::registerAttributes()
         },
         {'n'});
 
-    addAttribute(
-        "size",
+    addAttribute("size",
         [&](const Values& args) {
             _windowRect[2] = args[0].as<int>();
             _windowRect[3] = args[1].as<int>();
@@ -796,8 +805,7 @@ void Window::registerAttributes()
         {'n', 'n', 'n', 'n'});
     setAttributeDescription("swapTestColor", "Set the swap test color");
 
-    addAttribute(
-        "textureList",
+    addAttribute("textureList",
         [](const Values&) { return true; },
         [&]() -> Values {
             Values textureList;
@@ -820,8 +828,7 @@ void Window::registerAttributes()
         });
     setAttributeDescription("textureList", "Get the list of the textures linked to the window");
 
-    addAttribute(
-        "presentationDelay", [&](const Values&) { return true; }, [&]() -> Values { return {_presentationDelay}; });
+    addAttribute("presentationDelay", [&](const Values&) { return true; }, [&]() -> Values { return {_presentationDelay}; });
     setAttributeDescription("presentationDelay", "Delay between the update of an image and its display");
 }
 
