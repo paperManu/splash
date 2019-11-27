@@ -186,21 +186,28 @@ void GuiCamera::render()
 
     if (_camera != nullptr)
     {
+        Values reprojectionError;
+        _camera->getAttribute("getReprojectionError", reprojectionError);
+        ImGui::Text("Current camera: %s - Reprojection error: %f", _camera->getAlias().c_str(), reprojectionError[0].as<float>());
+
         Values size;
         _camera->getAttribute("size", size);
 
-        int sizeX = size[0].as<int>();
-        int sizeY = size[1].as<int>();
+        auto sizeX = size[0].as<int>();
+        auto sizeY = size[1].as<int>();
 
         int w = ImGui::GetWindowWidth() - 2 * leftMargin;
         int h = sizeX != 0 ? w * sizeY / sizeX : 1;
 
+        availableSize = ImGui::GetContentRegionAvail();
+        if (h > availableSize.y)
+        {
+            h = availableSize.y;
+            w = sizeY != 0 ? h * sizeX / sizeY : 1;
+        }
+
         _camWidth = w;
         _camHeight = h;
-
-        Values reprojectionError;
-        _camera->getAttribute("getReprojectionError", reprojectionError);
-        ImGui::Text("Current camera: %s - Reprojection error: %f", _camera->getAlias().c_str(), reprojectionError[0].as<float>());
 
         ImGui::Image((void*)(intptr_t)_camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly))

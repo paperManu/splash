@@ -18,10 +18,12 @@ void GuiWarp::render()
     std::transform(objects.cbegin(), objects.cend(), std::back_inserter(warps), [](const auto& warp) { return dynamic_pointer_cast<Warp>(warp); });
     _currentWarpName = _currentWarp < warps.size() ? warps[_currentWarp]->getName() : "";
 
-    auto leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
+    ImVec2 availableSize = ImGui::GetContentRegionAvail();
 
-    ImGui::BeginChild("Warps", ImVec2(ImGui::GetWindowWidth() * 0.25, ImGui::GetWindowWidth() * 0.67), true);
+    ImGui::BeginChild("Warps", ImVec2(ImGui::GetWindowWidth() * 0.25, availableSize.y), true);
     ImGui::Text("Warp list");
+
+    auto leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
     for (uint32_t i = 0; i < warps.size(); ++i)
     {
         auto& warp = warps[i];
@@ -86,6 +88,13 @@ void GuiWarp::render()
             auto warpSpec = warp->getSpec();
             int w = ImGui::GetWindowWidth() - 2 * leftMargin;
             int h = w * warpSpec.height / warpSpec.width;
+
+            availableSize = ImGui::GetContentRegionAvail();
+            if (h > availableSize.y)
+            {
+                h = availableSize.y;
+                w = h * warpSpec.width / warpSpec.height;
+            }
 
             ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(texture->getTexId())), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
 

@@ -52,46 +52,64 @@ void GuiFilters::render()
     {
         const int curveHeight = 128;
 
-        ImGui::BeginChild(colorCurves->first.c_str(), ImVec2(0, curveHeight + 4), false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
-
-        int w = ImGui::GetWindowWidth() - 3 * leftMargin;
-
-        const vector<string> channels{"Red", "Green", "Blue"};
-        int curveId = 0;
+        // Check that the attribute has real values in it
+        bool hasCurves = false;
         for (const auto& curve : colorCurves->second)
         {
-            vector<float> samples;
-            for (const auto& v : curve.as<Values>())
-                samples.push_back(v.as<float>());
-
-            if (curveId != 0)
-                ImGui::SameLine();
-
-            ImGui::PlotLines(("##" + channels[curveId]).c_str(), samples.data(), samples.size(), samples.size(), channels[curveId].c_str(), 0.0, 1.0, ImVec2(w / 3, curveHeight));
-
-            ImGuiIO& io = ImGui::GetIO();
-            if (io.MouseDownDuration[0] > 0.0)
-            {
-                if (ImGui::IsItemHovered())
-                {
-                    ImVec2 delta = io.MouseDelta;
-                    ImVec2 size = ImGui::GetItemRectSize();
-                    ImVec2 curvePos = ImGui::GetItemRectMin();
-                    ImVec2 mousePos = ImGui::GetMousePos();
-
-                    float deltaY = (float)delta.y / (float)size.y;
-                    int id = (mousePos.x - curvePos.x) * curve.size() / size.x;
-
-                    auto newCurves = colorCurves->second;
-                    newCurves[curveId][id] = max(0.f, min(1.f, newCurves[curveId][id].as<float>() - deltaY));
-                    setObjectAttribute(_selectedFilterName, colorCurves->first, newCurves);
-                }
-            }
-
-            ++curveId;
+            if (!curve.as<Values>().empty())
+                hasCurves = true;
         }
 
-        ImGui::EndChild();
+        if (hasCurves)
+        {
+            ImGui::BeginChild(colorCurves->first.c_str(), ImVec2(0, curveHeight + 4), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
+
+            int curveCount = colorCurves->second.size();
+            int w = ImGui::GetWindowWidth() - 3 * leftMargin;
+
+            const vector<string> channels{"Red", "Green", "Blue"};
+            int curveId = 0;
+            for (const auto& curve : colorCurves->second)
+            {
+                vector<float> samples;
+                for (const auto& v : curve.as<Values>())
+                    samples.push_back(v.as<float>());
+
+                if (curveId != 0)
+                    ImGui::SameLine();
+
+                ImGui::PlotLines(("##" + channels[curveId]).c_str(),
+                    samples.data(),
+                    samples.size(),
+                    samples.size(),
+                    channels[curveId].c_str(),
+                    0.0,
+                    1.0,
+                    ImVec2(w / static_cast<float>(curveCount), curveHeight));
+
+                ImGuiIO& io = ImGui::GetIO();
+                if (io.MouseDownDuration[0] > 0.0)
+                {
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImVec2 size = ImGui::GetItemRectSize();
+                        ImVec2 curvePos = ImGui::GetItemRectMin();
+                        ImVec2 mousePos = ImGui::GetMousePos();
+
+                        float deltaY = static_cast<float>(io.MouseDelta.y) / static_cast<float>(size.y);
+                        int id = (mousePos.x - curvePos.x) * curve.size() / size.x;
+
+                        auto newCurves = colorCurves->second;
+                        newCurves[curveId][id] = max(0.f, min(1.f, newCurves[curveId][id].as<float>() - deltaY));
+                        setObjectAttribute(_selectedFilterName, colorCurves->first, newCurves);
+                    }
+                }
+
+                ++curveId;
+            }
+
+            ImGui::EndChild();
+        }
     }
 
     if (ImGui::TreeNode(("Filter preview: " + _selectedFilterName).c_str()))
