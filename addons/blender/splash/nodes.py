@@ -191,6 +191,7 @@ class SplashGuiNode(SplashBaseNode):
         values['decorated'] = int(self.inputs['Decorated'].default_value)
         values['position'] = [self.inputs['Position'].default_value[0], self.inputs['Position'].default_value[1]]
         values['size'] = [self.inputs['Width'].default_value, self.inputs['Height'].default_value]
+        values['guiOnly'] = 1
 
         return values
 

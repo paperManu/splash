@@ -47,6 +47,8 @@
 namespace Splash
 {
 
+class Gui;
+
 /*************/
 //! Window class, holding the GL context
 class Window : public GraphObject
@@ -201,6 +203,7 @@ class Window : public GraphObject
     float _gammaCorrection{2.2f};
     Values _layout{0, 1, 2, 3};
     int _swapInterval{1};
+    bool _guiOnly{false};
 
     // Swap synchronization test
     bool _swapSynchronizationTesting{false};
@@ -219,6 +222,7 @@ class Window : public GraphObject
     std::shared_ptr<Object> _screenGui;
     glm::dmat4 _viewProjectionMatrix;
     std::vector<std::weak_ptr<Texture>> _inTextures;
+    std::shared_ptr<Gui> _gui{nullptr};
     std::shared_ptr<Texture> _guiTexture{nullptr}; // The gui has its own texture
 
     static std::mutex _callbackMutex;

@@ -178,6 +178,19 @@ vector<string> Window::getPathDropped()
 /*************/
 bool Window::linkIt(const shared_ptr<GraphObject>& obj)
 {
+    if (dynamic_pointer_cast<Gui>(obj))
+    {
+        if (_guiTexture != nullptr)
+            _screenGui->removeTexture(_guiTexture);
+        _gui = dynamic_pointer_cast<Gui>(obj);
+        _guiTexture = _gui->getTexture();
+        _screenGui->addTexture(_guiTexture);
+        return true;
+    }
+
+    if (_guiOnly)
+        return false;
+
     if (dynamic_pointer_cast<Texture>(obj))
     {
         auto tex = dynamic_pointer_cast<Texture>(obj);
@@ -205,15 +218,6 @@ bool Window::linkIt(const shared_ptr<GraphObject>& obj)
         scene->sendMessageToWorld("sendAllScenes", {"link", obj->getName(), warpName});
         scene->sendMessageToWorld("sendAllScenes", {"link", warpName, _name});
 
-        return true;
-    }
-    else if (dynamic_pointer_cast<Gui>(obj))
-    {
-        if (_guiTexture != nullptr)
-            _screenGui->removeTexture(_guiTexture);
-        auto gui = dynamic_pointer_cast<Gui>(obj);
-        _guiTexture = gui->getTexture();
-        _screenGui->addTexture(_guiTexture);
         return true;
     }
 
@@ -329,6 +333,8 @@ void Window::render()
 
     if (_guiTexture != nullptr)
     {
+        if (_guiOnly)
+            _gui->setAttribute("fullscreen", {true});
         _screenGui->activate();
         _screenGui->draw();
         _screenGui->deactivate();
@@ -691,6 +697,15 @@ void Window::registerAttributes()
         [&]() -> Values { return {static_cast<int>(_withDecoration)}; },
         {'n'});
     setAttributeDescription("decorated", "If set to 0, the window is drawn without decoration");
+
+    addAttribute("guiOnly",
+        [&](const Values& args) {
+            _guiOnly = args[0].as<bool>();
+            return true;
+        },
+        [&]() -> Values { return {_guiOnly}; },
+        {'n'});
+    setAttributeDescription("guiOnly", "If true, only the GUI will be able to link to this window. Does not affect pre-existing links.");
 
     addAttribute("srgb",
         [&](const Values& args) {

@@ -145,7 +145,7 @@ void GraphObject::unlinkFrom(const shared_ptr<GraphObject>& obj)
     auto objectIt = find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const weak_ptr<GraphObject>& o) {
         auto object = o.lock();
         if (!object)
-            return false;
+            return true;
         if (object == obj)
             return true;
         return false;

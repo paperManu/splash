@@ -20,19 +20,8 @@
 add_custom_command(
     OUTPUT splash.desktop
     COMMAND sed -i 's/Version=.*/Version=${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}/g' ${CMAKE_CURRENT_SOURCE_DIR}/share/applications/splash.desktop
-    COMMAND sed -i 's!Icon=.*!Icon=${CMAKE_INSTALL_PREFIX}/share/icons/splash.png!g' ${CMAKE_CURRENT_SOURCE_DIR}/share/applications/splash.desktop
 )
 
 add_custom_target(splash-launcher ALL DEPENDS splash.desktop)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/share DESTINATION ${CMAKE_INSTALL_PREFIX})
-
-install(FILES 
-    3d_marker.obj
-    2d_marker.obj
-    camera.obj
-    color_map.png
-    cubes.obj
-    probe.obj
-    splash.json
-    share/icons/hicolor/512x512/apps/splash.png
-    DESTINATION "share/splash/")
+install(FILES share/icons/hicolor/512x512/apps/splash.png DESTINATION "share/splash/")

@@ -220,7 +220,7 @@ bool Object::linkIt(const shared_ptr<GraphObject>& obj)
     if (obj->getType().find("texture") != string::npos)
     {
         auto filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", getName() + "_" + obj->getName() + "_filter").lock());
-        filter->setSavable(true); // We always save the filters as they hold user-specified values
+        filter->setSavable(_savable); // We always save the filters as they hold user-specified values, if this is savable
         if (filter->linkTo(obj))
             return linkTo(filter);
         else
@@ -247,6 +247,7 @@ bool Object::linkIt(const shared_ptr<GraphObject>& obj)
     else if (obj->getType().find("image") != string::npos)
     {
         auto filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", getName() + "_" + obj->getName() + "_filter").lock());
+        filter->setSavable(_savable); // We always save the filters as they hold user-specified values, if this is savable
         if (filter->linkTo(obj))
             return linkTo(filter);
         else

@@ -241,7 +241,6 @@ class Gui : public ControllerObject
     // Gui related attributes
     std::string _configurationPath;
     std::string _projectPath;
-    bool _firstRender{true};
     bool _mouseHoveringWindow{false};
     bool _isVisible{false};
     bool _wasVisible{true};
@@ -249,7 +248,7 @@ class Gui : public ControllerObject
     bool _blendingActive{false};
     bool _showAbout{false};
     bool _showHelp{false};
-    bool _hasOwnWindow{false};
+    bool _fullscreen{false};
 
     /**
      * \brief Initialize ImGui

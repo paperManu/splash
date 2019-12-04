@@ -116,11 +116,6 @@ class Texture_Image : public Texture
     ImageBuffer grabMipmap(unsigned int level = 0) const;
 
     /**
-     * \brief Lock the texture for read / write operations
-     */
-    void lock() const { _mutex.lock(); }
-
-    /**
      * \brief Read the texture and returns an Image
      * \return Return the image
      */
@@ -149,11 +144,6 @@ class Texture_Image : public Texture
      * \param active If true, enables clamping
      */
     void setClampToEdge(bool active) { _glTextureWrap = active ? GL_CLAMP_TO_EDGE : GL_REPEAT; }
-
-    /**
-     * \brief Unlock the texture for read / write operations
-     */
-    void unlock() const { _mutex.unlock(); }
 
     /**
      * \brief Update the texture according to the owned Image

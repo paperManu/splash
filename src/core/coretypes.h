@@ -56,7 +56,7 @@
         nptrs = backtrace(buffers, size);                                                                                                                                          \
         strings = backtrace_symbols(buffers, nptrs);                                                                                                                               \
         for (j = 0; j < nptrs; ++j)                                                                                                                                                \
-            std::cout << strings[j] << endl;                                                                                                                                       \
+            std::cout << strings[j] << std::endl;                                                                                                                                  \
                                                                                                                                                                                    \
         free(strings);                                                                                                                                                             \
     }

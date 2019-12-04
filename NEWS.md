@@ -1,6 +1,25 @@
 Splash release notes
 ===================
 
+Splash 0.8.2 (2019-12-04)
+-------------------------
+New features:
+- Added a default object to the ObjectLibrary, and cleaned it up a bit
+- Added an AppData metainfo file
+
+Improvements:
+- Cleaned up data subdirectory
+- Removed GUI loneliness autodetection, replaced by a flag in it and its parent window
+- Removed Shmdata related stuff in the Blender addon, as a separate addon now exists for this
+- Removed Flatpak generation from the CI, a [separate repo](https://github.com/flathub/com.gitlab.sat_metalab.Splash) is dedicated to that
+
+Bugs fixed:
+- Fixed Flatpak package generation
+- Fixed Flatpak package generation, up to a limitation in Freedesktop SDK which does not support stdc++fs yet...
+- Fixed Filter not being savable when Object linked directly to Image
+- Fixed a freeze when replacing a media after replacing a mesh
+- Fixed behavior of textures shown in GUI, leading to less scrollbars
+
 Splash 0.8.0 (2019-11-18)
 -------------------------
 New features:
