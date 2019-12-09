@@ -137,6 +137,7 @@ class Filter : public Texture
     std::shared_ptr<Object> _screen;
 
     // Filter parameters
+    static constexpr int _defaultSize[2]{512, 512};
     int _sizeOverride[2]{-1, -1}; //!< If set to positive values, overrides the size given by input textures
     bool _keepRatio{false};
     std::unordered_map<std::string, Values> _filterUniforms; //!< Contains all filter uniforms

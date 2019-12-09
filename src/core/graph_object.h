@@ -114,6 +114,13 @@ class GraphObject : public BaseObject
         const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types = {}) override;
 
     /**
+     * \brief Set and the description for the given attribute, if it exists
+     * \param name Attribute name
+     * \param description Attribute description
+     */
+    void setAttributeDescription(const std::string& name, const std::string& description);
+
+    /**
      * \brief Get the real type of this BaseObject, as a std::string.
      * \return Returns the type.
      */

@@ -173,25 +173,40 @@ void Filter::updateSizeWrtRatio()
 /*************/
 void Filter::render()
 {
-    if (_inTextures.empty() || _inTextures[0].expired())
-        return;
-
-    auto input = _inTextures[0].lock();
-    auto inputSpec = input->getSpec();
-
-    if (inputSpec != _spec || (_sizeOverride[0] > 0 && _sizeOverride[1] > 0))
+    if (!_inTextures.empty() && !_inTextures[0].expired())
     {
-        auto newOutTextureSpec = inputSpec;
-        if (_sizeOverride[0] > 0 || _sizeOverride[1] > 0)
+        auto input = _inTextures[0].lock();
+        auto inputSpec = input->getSpec();
+
+        if (inputSpec != _spec || (_sizeOverride[0] > 0 && _sizeOverride[1] > 0))
         {
-            updateSizeWrtRatio();
-            newOutTextureSpec.width = _sizeOverride[0] ? _sizeOverride[0] : _sizeOverride[1];
-            newOutTextureSpec.height = _sizeOverride[1] ? _sizeOverride[1] : _sizeOverride[0];
+            auto newOutTextureSpec = inputSpec;
+            if (_sizeOverride[0] > 0 || _sizeOverride[1] > 0)
+            {
+                updateSizeWrtRatio();
+                newOutTextureSpec.width = _sizeOverride[0] ? _sizeOverride[0] : _sizeOverride[1];
+                newOutTextureSpec.height = _sizeOverride[1] ? _sizeOverride[1] : _sizeOverride[0];
+            }
+
+            if (_spec != newOutTextureSpec)
+            {
+                _spec = newOutTextureSpec;
+                _fbo->setSize(_spec.width, _spec.height);
+            }
+        }
+    }
+    else
+    {
+        if (_sizeOverride[0] == -1 && _sizeOverride[1] == -1)
+        {
+            _sizeOverride[0] = _defaultSize[0];
+            _sizeOverride[1] = _defaultSize[1];
         }
 
-        if (_spec != newOutTextureSpec)
+        if (_sizeOverride[0] != static_cast<int>(_spec.width) || _sizeOverride[1] != static_cast<int>(_spec.height))
         {
-            _spec = newOutTextureSpec;
+            _spec.width = _sizeOverride[0];
+            _spec.height = _sizeOverride[1];
             _fbo->setSize(_spec.width, _spec.height);
         }
     }
@@ -209,6 +224,8 @@ void Filter::render()
 
     _fbo->bindDraw();
     glViewport(0, 0, _spec.width, _spec.height);
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     _screen->activate();
     updateUniforms();
@@ -254,6 +271,7 @@ void Filter::updateUniforms()
 
     // Built-in uniforms
     _filterUniforms["_time"] = {static_cast<int>(Timer::getTime() / 1000)};
+    _filterUniforms["_resolution"] = {static_cast<float>(_spec.width), static_cast<float>(_spec.height)};
 
     int64_t masterClock;
     bool paused;
@@ -346,19 +364,31 @@ bool Filter::setFilterSource(const string& source)
         Log::get() << Log::WARNING << "Filter::" << __FUNCTION__ << " - Could not apply shader filter" << Log::endl;
         return false;
     }
+    Log::get() << Log::MESSAGE << "Filter::" << __FUNCTION__ << " - Shader filter updated" << Log::endl;
     _screen->setShader(shader);
 
     // This is a trick to force the shader compilation
     _screen->activate();
     _screen->deactivate();
 
-    // Unregister previous automatically added uniforms
+    // Unregister previously added uniforms
+    // We remove the associated attribute fonction if it exists
     for (const auto& uniform : _filterUniforms)
-        _attribFunctions.erase(uniform.first);
+    {
+        auto uniformName = uniform.first;
+        assert(uniformName.length() != 0);
+
+        // Uniforms for the default shader start with an underscore
+        if (uniformName[0] == '_')
+            uniformName = std::string(uniformName, 1, uniformName.length() - 1);
+        removeAttribute(uniformName);
+    }
+    _filterUniforms.clear();
 
     // Register the attributes corresponding to the shader uniforms
     auto uniforms = shader->getUniforms();
     auto uniformsDocumentation = shader->getUniformsDocumentation();
+
     for (const auto& u : uniforms)
     {
         // Uniforms starting with a underscore are kept hidden

@@ -145,6 +145,15 @@ Attribute& BaseObject::addAttribute(const string& name, const function<bool(cons
 }
 
 /*************/
+bool BaseObject::hasAttribute(const string& name) const
+{
+    unique_lock<recursive_mutex> lock(_attribMutex);
+    if (_attribFunctions.find(name) == _attribFunctions.end())
+        return false;
+    return true;
+}
+
+/*************/
 void BaseObject::setAttributeDescription(const string& name, const string& description)
 {
     unique_lock<recursive_mutex> lock(_attribMutex);

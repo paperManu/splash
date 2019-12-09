@@ -298,12 +298,21 @@ void RootObject::updateTreeFromObjects()
 
         attributePath = string("/" + _name + "/objects/" + objectName + "/attributes");
         assert(_tree.hasBranchAt(attributePath));
-
         for (const auto& leafName : _tree.getLeafListAt(attributePath))
         {
-            Values attribValue;
-            object->getAttribute(leafName, attribValue);
-            _tree.setValueForLeafAt(attributePath + "/" + leafName, attribValue);
+            auto attribValue = object->getAttribute(leafName);
+            if (attribValue)
+                _tree.setValueForLeafAt(attributePath + "/" + leafName, attribValue.value());
+            else
+                _tree.removeLeafAt(attributePath + "/" + leafName);
+        }
+
+        auto docPath = string("/" + _name + "/objects/" + objectName + "/documentation");
+        assert(_tree.hasBranchAt(docPath));
+        for (const auto& docBranchName : _tree.getBranchListAt(docPath))
+        {
+            if (!object->hasAttribute(docBranchName))
+                _tree.removeBranchAt(docPath + "/" + docBranchName);
         }
     }
 }

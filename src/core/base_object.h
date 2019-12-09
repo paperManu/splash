@@ -70,6 +70,13 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     inline std::string getName() const { return _name; }
 
     /**
+     * Check whether the object has an attribute of the given name
+     * \param name Attribute name
+     * \return Return true if the attribute exists
+     */
+    bool hasAttribute(const std::string& name) const;
+
+    /**
      * \brief Set the specified attribute
      * \param attrib Attribute name
      * \param args Values object which holds attribute values
