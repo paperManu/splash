@@ -47,6 +47,7 @@ set(DATAPATH_SDK_PATH "" CACHE PATH "Path to the Datapath SDK")
 set(DEBUG_OPENGL OFF CACHE BOOL "Enable OpenGL debugging")
 set(PROFILE_OPENGL OFF CACHE BOOL "Enable OpenGL profiling")
 set(USE_SYSTEM_LIBS OFF CACHE BOOL "Enable using system libraries instead of bundle ones")
+set(TEST_COVERAGE OFF CACHE BOOL "Enable test coverage")
 
 # Force color output (useful when building with Ninja)
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -93,6 +94,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLM_FORCE_RADIANS")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDATADIR=\\\"${CMAKE_INSTALL_PREFIX}/share/splash/\\\"")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSPLASHPREFIX=\\\"${CMAKE_INSTALL_PREFIX}\\\"")
+
+if (TEST_COVERAGE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 --coverage")
+endif()
 
 set(HAVE_GPHOTO ${GPHOTO_FOUND})
 set(HAVE_OPENCV ${OPENCV_FOUND})

@@ -95,6 +95,37 @@ add_custom_command(OUTPUT tests COMMAND unitTests)
 add_custom_target(check DEPENDS update_assets tests)
 
 #
+# Code coverage
+#
+if (TEST_COVERAGE)
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        add_custom_command(OUTPUT test_coverage_initial
+            COMMAND mkdir -p ${CMAKE_BINARY_DIR}/coverage
+            COMMAND lcov --no-external --capture --initial 
+                --directory ${CMAKE_SOURCE_DIR} 
+                --exclude '${CMAKE_SOURCE_DIR}/external/*'
+                --exclude '${CMAKE_SOURCE_DIR}/tests/*'
+                --output-file coverage/splash_base.info
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            )
+
+        add_custom_command(OUTPUT test_coverage
+            COMMAND lcov --no-external --capture
+                --directory ${CMAKE_SOURCE_DIR}
+                --exclude '${CMAKE_SOURCE_DIR}/external/*'
+                --exclude '${CMAKE_SOURCE_DIR}/tests/*'
+                --output-file coverage/splash.info
+            COMMAND lcov --add-tracefile ${CMAKE_BINARY_DIR}/coverage/splash_base.info
+                --add-tracefile ${CMAKE_BINARY_DIR}/coverage/splash.info
+                --output-file ${CMAKE_BINARY_DIR}/coverage/splash_total.info
+            COMMAND genhtml --output-directory ${CMAKE_BINARY_DIR}/coverage ${CMAKE_BINARY_DIR}/coverage/splash_total.info
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            )
+        add_custom_target(check_coverage DEPENDS test_coverage_initial tests test_coverage)
+    endif()
+endif()
+
+#
 # Integration tests (executed by launching Splash and checking its behavior)
 #
 add_custom_command(OUTPUT integration_tests
