@@ -38,13 +38,13 @@ class ResizableArray
 {
   public:
     /**
-     * \brief Constructor with an initial size
+     * Constructor with an initial size
      * \param size Initial array size
      */
     ResizableArray(size_t size = 0) { resize(size); }
 
     /**
-     * \brief Constructor from two iterators
+     * Constructor from two iterators
      * \param start Begin iterator
      * \param end End iterator
      */
@@ -66,7 +66,7 @@ class ResizableArray
     }
 
     /**
-     * \brief Copy constructor
+     * Copy constructor
      * \param a ResizableArray to copy
      */
     ResizableArray(const ResizableArray& a)
@@ -78,7 +78,7 @@ class ResizableArray
     }
 
     /**
-     * \brief Move constructor
+     * Move constructor
      * \param a ResizableArray to move
      */
     ResizableArray(ResizableArray&& a)
@@ -89,7 +89,7 @@ class ResizableArray
     }
 
     /**
-     * \brief Copy operator
+     * Copy operator
      * \param a ResizableArray to copy from
      */
     ResizableArray& operator=(const ResizableArray& a)
@@ -106,7 +106,7 @@ class ResizableArray
     }
 
     /**
-     * \brief Move operator
+     * Move operator
      * \param a ResizableArray to move from
      */
     ResizableArray& operator=(ResizableArray&& a)
@@ -122,7 +122,7 @@ class ResizableArray
     }
 
     /**
-     * \brief Access operator
+     * Access operator
      * \param i Index
      * \return Return value at i
      */
@@ -130,14 +130,14 @@ class ResizableArray
     const T& operator[](unsigned int i) const { return *(data() + i); }
 
     /**
-     * \brief Get a pointer to the data
+     * Get a pointer to the data
      * \return Return a pointer to the data
      */
     inline T* data() { return _buffer.get() + _shift; }
     inline const T* data() const { return _buffer.get() + _shift; }
 
     /**
-     * \brief Shift the data, for example to get rid of a header without copying
+     * Shift the data, for example to get rid of a header without copying
      * \param shift Shift in size(T)
      */
     inline void shift(size_t shift)
@@ -150,13 +150,13 @@ class ResizableArray
     }
 
     /**
-     * \brief Get the size of the buffer
+     * Get the size of the buffer
      * \return Return the size of the buffer
      */
     inline size_t size() const { return _size; }
 
     /**
-     * \brief Resize the buffer
+     * Resize the buffer
      * \param size New size
      */
     inline void resize(size_t size)

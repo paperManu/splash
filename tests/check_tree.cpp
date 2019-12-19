@@ -64,6 +64,38 @@ TEST_CASE("Testing the basic functionnalities of the Tree")
 }
 
 /*************/
+TEST_CASE("Testing tree printing")
+{
+    Log::get().setVerbosity(Log::ERROR);
+
+    Tree::Root tree;
+    tree.createBranchAt("/first/branch");
+    tree.createBranchAt("/second/branch");
+    tree.createLeafAt("/first/branch/leaf_1");
+    tree.setValueForLeafAt("/first/branch/leaf_1", Values({1.0, "One"}), chrono::system_clock::now());
+    tree.createLeafAt("/first/branch/leaf_2");
+    tree.setValueForLeafAt("/first/branch/leaf_2", Value("Some interesting stuff"), chrono::system_clock::now());
+    tree.createLeafAt("/second/branch/leaf_1");
+    tree.setValueForLeafAt("/second/branch/leaf_1", Value(false), chrono::system_clock::now());
+
+    auto treeAsString = tree.print();
+    auto correctString = std::string(R"(|-- 
+| |-- first
+| | |-- branch
+| | | |-- leaf_1
+| | | | |-- 1.000000
+| | | | |-- One
+| | | |-- leaf_2
+| | | | |-- Some interesting stuff
+| |-- second
+| | |-- branch
+| | | |-- leaf_1
+| | | | |-- 0
+)");
+    CHECK(treeAsString == correctString);
+}
+
+/*************/
 TEST_CASE("Testing the Seed queue")
 {
     Tree::Root tree;

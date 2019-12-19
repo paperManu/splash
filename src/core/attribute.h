@@ -88,20 +88,20 @@ class Attribute
 
     enum class Sync
     {
-        no_sync,
+        auto_sync,
         force_sync,
         force_async
     };
 
     /**
-     * \brief Default constructor.
+     * Default constructor.
      */
     Attribute() = default;
     explicit Attribute(const std::string& name)
         : _name(name){};
 
     /**
-     * \brief Constructor.
+     * Constructor.
      * \param name Name of the attribute.
      * \param setFunc Setter function. Can be nullptr
      * \param getFunc Getter function. Can be nullptr
@@ -115,26 +115,28 @@ class Attribute
     Attribute& operator=(Attribute&& a);
 
     /**
-     * \brief Parenthesis operator which calls the setter function if defined, otherwise calls a default setter function which only stores the arguments if the have the right type.
+     * Parenthesis operator which calls the setter function if defined, otherwise calls a default setter function which only stores the arguments if the have the right type.
      * \param args Arguments as a queue of Value.
      * \return Returns true if the set did occur.
      */
     bool operator()(const Values& args);
 
     /**
-     * \brief Parenthesis operator which calls the getter function if defined, otherwise simply returns the stored values.
+     * Parenthesis operator which calls the getter function if defined.
+     * If a setter is set and not the getter, returns an empty Values.
+     * Otherwise simply returns the stored values.
      * \return Returns the stored values.
      */
     Values operator()() const;
 
     /**
-     * \brief Tells whether the setter and getters are the default ones or not.
+     * Tells whether the setter and getters are the default ones or not.
      * \return Returns true if the setter and getter are the default ones.
      */
     bool isDefault() const { return _defaultSetAndGet; }
 
     /**
-     * \brief Get the types of the wanted arguments.
+     * Get the types of the wanted arguments.
      * \return Returns the expected types in a Values.
      */
     Values getArgsTypes() const;
@@ -146,20 +148,20 @@ class Attribute
     bool hasGetter() const { return _getFunc != nullptr; }
 
     /**
-     * \brief Ask whether the attribute is locked.
+     * Ask whether the attribute is locked.
      * \return Returns true if the attribute is locked.
      */
     bool isLocked() const { return _isLocked; }
 
     /**
-     * \brief Lock the attribute to the given value.
+     * Lock the attribute to the given value.
      * \param v The value to set the attribute to. If empty, uses the stored value.
      * \return Returns true if the value could be locked.
      */
     bool lock(const Values& v = {});
 
     /**
-     * \brief Unlock the attribute.
+     * Unlock the attribute.
      */
     void unlock() { _isLocked = false; }
 
@@ -179,32 +181,34 @@ class Attribute
     bool unregisterCallback(const CallbackHandle& handle);
 
     /**
-     * \brief Set the description.
+     * Set the description.
      * \param desc Description.
      */
     void setDescription(const std::string& desc) { _description = desc; }
 
     /**
-     * \brief Get the description.
+     * Get the description.
      * \return Returns the description.
      */
     std::string getDescription() const { return _description; }
 
     /**
-     * \brief Set the name of the object holding this attribute
+     * Set the name of the object holding this attribute
      * \param objectName Name of the parent object
      */
     void setObjectName(const std::string& objectName) { _objectName = objectName; }
 
     /**
-     * \brief Get the synchronization method for this attribute
+     * Get the synchronization method for this attribute
      * \return Return the synchronization method
      */
     Sync getSyncMethod() const { return _syncMethod; }
 
     /**
-     * \brief Set the prefered synchronization method for this attribute
-     * \param method Can be Sync::no_sync, Sync::force_sync, Sync::force_async
+     * Set the prefered synchronization method for this attribute.
+     * If set to Sync::force_sync or Sync::force_async, it will override the
+     * synchronization mode of the calling RootObject::set method.
+     * \param method Can be Sync::auto_sync, Sync::force_sync, Sync::force_async
      */
     void setSyncMethod(const Sync& method) { _syncMethod = method; }
 
@@ -221,7 +225,7 @@ class Attribute
     std::string _description{};       // Attribute description
     Values _values{};                 // Holds the values for the default set and get functions
     std::vector<char> _valuesTypes{}; // List of the types held in _values
-    Sync _syncMethod{Sync::no_sync};  //!< Synchronization to consider while setting this attribute
+    Sync _syncMethod{Sync::auto_sync}; //!< Synchronization to consider while setting this attribute
 
     std::mutex _callbackMutex{};
     std::map<uint32_t, Callback> _callbacks{};

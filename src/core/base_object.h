@@ -48,23 +48,23 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
 {
   public:
     /**
-     * \brief Constructor.
+     * Constructor.
      */
     BaseObject() { registerAttributes(); }
 
     /**
-     * \brief Destructor.
+     * Destructor.
      */
     virtual ~BaseObject() {}
 
     /**
-     * \brief Set the name of the object.
+     * Set the name of the object.
      * \param name name of the object.
      */
     virtual void setName(const std::string& name) { _name = name; }
 
     /**
-     * \brief Get the name of the object.
+     * Get the name of the object.
      * \return Returns the name of the object.
      */
     inline std::string getName() const { return _name; }
@@ -77,7 +77,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     bool hasAttribute(const std::string& name) const;
 
     /**
-     * \brief Set the specified attribute
+     * Set the specified attribute
      * \param attrib Attribute name
      * \param args Values object which holds attribute values
      * \return Returns true if the parameter exists and was set
@@ -85,7 +85,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     bool setAttribute(const std::string& attrib, const Values& args = {});
 
     /**
-     * \brief Get the specified attribute
+     * Get the specified attribute
      * \param attrib Attribute name
      * \param args Values object which will hold the attribute values
      * \return Return true if the parameter exists
@@ -94,20 +94,26 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     std::optional<Values> getAttribute(const std::string& attrib) const;
 
     /**
-     * \brief Get the description for the given attribute, if it exists
+     * Get a list of the object attributes
+     * \return Returns a vector holding all the attributes
+     */
+    std::vector<std::string> getAttributesList() const;
+
+    /**
+     * Get the description for the given attribute, if it exists
      * \param name Name of the attribute
      * \return Returns the description for the attribute
      */
-    std::string getAttributeDescription(const std::string& name);
+    std::string getAttributeDescription(const std::string& name) const;
 
     /**
-     * \brief Get a Values holding the description of all of this object's attributes
+     * Get a Values holding the description of all of this object's attributes
      * \return Returns all the descriptions as a Values
      */
-    Values getAttributesDescriptions();
+    Values getAttributesDescriptions() const;
 
     /**
-     * \brief Get the attribute synchronization method
+     * Get the attribute synchronization method
      * \param name Attribute name
      * \return Return the synchronization method
      */
@@ -139,7 +145,8 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     mutable std::recursive_mutex _attribMutex;
     bool _updatedParams{true};                         //!< True if the parameters have been updated and the object needs to reflect these changes
 
-    std::future<void> _asyncTask{};
+    uint32_t _nextAsyncTaskId{0};
+    std::map<uint32_t, std::future<void>> _asyncTasks{};
     std::mutex _asyncTaskMutex{};
 
     std::list<std::function<void()>> _taskQueue;
@@ -175,7 +182,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     void addPeriodicTask(const std::string& name, const std::function<void()>& task, uint32_t period = 0);
 
     /**
-     * \brief Add a new attribute to this object
+     * Add a new attribute to this object
      * \param name Attribute name
      * \param set Set function
      * \param types Vector of char holding the expected parameters for the set function
@@ -184,7 +191,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     virtual Attribute& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types = {});
 
     /**
-     * \brief Add a new attribute to this object
+     * Add a new attribute to this object
      * \param name Attribute name
      * \param set Set function
      * \param get Get function
@@ -195,26 +202,26 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
         const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types = {});
 
     /**
-     * Run a task asynchronously, one task at a time
+     * Run a task asynchronously
      * \param func Function to run
      */
     void runAsyncTask(const std::function<void(void)>& func);
 
     /**
-     * \brief Set and the description for the given attribute, if it exists
+     * Set and the description for the given attribute, if it exists
      * \param name Attribute name
      * \param description Attribute description
      */
     void setAttributeDescription(const std::string& name, const std::string& description);
 
     /**
-     * \brief Set attribute synchronization method
+     * Set attribute synchronization method
      * \param Method Synchronization method, can be any of the Attribute::Sync values
      */
     void setAttributeSyncMethod(const std::string& name, const Attribute::Sync& method);
 
     /**
-     * \brief Remove the specified attribute
+     * Remove the specified attribute
      * \param name Attribute name
      */
     void removeAttribute(const std::string& name);
@@ -226,7 +233,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     void removePeriodicTask(const std::string& name);
 
     /**
-     * \brief Register new attributes
+     * Register new attributes
      */
     void registerAttributes() {}
 };
