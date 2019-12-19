@@ -173,19 +173,24 @@ bool RootObject::set(const string& name, const string& attrib, const Values& arg
 }
 
 /*************/
-void RootObject::setFromSerializedObject(const string& name, shared_ptr<SerializedObject> obj)
+bool RootObject::setFromSerializedObject(const string& name, const shared_ptr<SerializedObject>& obj)
 {
     auto object = getObject(name);
     if (object)
     {
         auto objectAsBuffer = dynamic_pointer_cast<BufferObject>(object);
         if (objectAsBuffer)
-            objectAsBuffer->setSerializedObject(move(obj));
+        {
+            objectAsBuffer->setSerializedObject(obj);
+            return true;
+        }
     }
     else
     {
-        handleSerializedObject(name, move(obj));
+        return handleSerializedObject(name, obj);
     }
+
+    return false;
 }
 
 /*************/
@@ -228,7 +233,7 @@ bool RootObject::waitSignalBufferObjectUpdated(uint64_t timeout)
 }
 
 /*************/
-bool RootObject::handleSerializedObject(const string& name, shared_ptr<SerializedObject> obj)
+bool RootObject::handleSerializedObject(const string& name, const shared_ptr<SerializedObject>& obj)
 {
     if (name == "_tree")
     {
@@ -320,6 +325,8 @@ void RootObject::updateTreeFromObjects()
 /*************/
 void RootObject::propagateTree()
 {
+    assert(_link);
+
     auto treeSeeds = _tree.getUpdateSeedList();
     if (treeSeeds.empty())
         return;
@@ -332,6 +339,8 @@ void RootObject::propagateTree()
 /*************/
 void RootObject::propagatePath(const string& path)
 {
+    assert(_link);
+
     auto seeds = _tree.getSeedsForPath(path);
     if (seeds.empty())
         return;
@@ -578,8 +587,7 @@ Json::Value RootObject::getRootConfigurationAsJson(const string& rootName)
 /*************/
 Values RootObject::sendMessageWithAnswer(const string& name, const string& attribute, const Values& message, const unsigned long long timeout)
 {
-    if (!_link)
-        return {};
+    assert(_link);
 
     lock_guard<mutex> lock(_answerMutex);
     _answerExpected = attribute;

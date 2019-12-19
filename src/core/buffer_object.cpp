@@ -27,11 +27,11 @@ bool BufferObject::deserialize()
 }
 
 /*************/
-void BufferObject::setSerializedObject(shared_ptr<SerializedObject> obj)
+void BufferObject::setSerializedObject(const shared_ptr<SerializedObject>& obj)
 {
     if (_serializedObjectWaitingMutex.try_lock())
     {
-        _serializedObject = move(obj);
+        _serializedObject = obj;
         _newSerializedObject = true;
 
         // Deserialize it right away, in a separate thread

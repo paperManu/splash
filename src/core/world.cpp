@@ -657,7 +657,7 @@ vector<string> World::getObjectsOfType(const string& type) const
 }
 
 /*************/
-bool World::handleSerializedObject(const string& name, shared_ptr<SerializedObject> obj)
+bool World::handleSerializedObject(const string& name, const shared_ptr<SerializedObject>& obj)
 {
     if (!RootObject::handleSerializedObject(name, obj))
         _link->sendBuffer(name, obj);

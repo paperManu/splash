@@ -67,6 +67,7 @@ add_executable(unitTests unit_tests/unitTests.cpp)
 target_sources(unitTests PRIVATE
     unit_tests/core/attribute.cpp
     unit_tests/core/base_object.cpp
+    unit_tests/core/root_object.cpp
     unit_tests/core/serializer.cpp
     unit_tests/core/tree.cpp
     unit_tests/core/value.cpp

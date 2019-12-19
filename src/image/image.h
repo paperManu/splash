@@ -102,6 +102,16 @@ class Image : public BufferObject
     }
 
     /**
+     * Set the timestamp
+     * \param timestamp Timestamp, in us
+     */
+    void setTimestamp(int64_t timestamp) override
+    {
+        std::lock_guard<std::shared_mutex> lock(_writeMutex);
+        _image->getSpec().timestamp = timestamp;
+    }
+
+    /**
      * \brief Set the image from an ImageBuffer
      * \param img Image buffer
      */

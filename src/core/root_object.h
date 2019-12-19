@@ -160,8 +160,9 @@ class RootObject : public BaseObject
      * \brief Set an object from its serialized form. If non existant, it is handled by the handleSerializedObject method.
      * \param name Object name
      * \param obj Serialized object
+     * \return Return true if the object has been set
      */
-    void setFromSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj);
+    bool setFromSerializedObject(const std::string& name, const std::shared_ptr<SerializedObject>& obj);
 
     /**
      * \brief Send the given serialized buffer through the link
@@ -188,7 +189,7 @@ class RootObject : public BaseObject
 
     std::unique_ptr<Factory> _factory{}; //!< Object factory
     std::unique_ptr<Link> _link{};       //!< Link object for communicatin between World and Scene
-    std::string _linkSocketPrefix{""}; //!< Prefix to add to shared memory socket paths
+    std::string _linkSocketPrefix{""};   //!< Prefix to add to shared memory socket paths
 
     Values _lastAnswerReceived{}; //!< Holds the last answer received through the link
     std::condition_variable _answerCondition{};
@@ -219,7 +220,7 @@ class RootObject : public BaseObject
      * \param obj Serialized object
      * \return Return true if the object has been handled
      */
-    virtual bool handleSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj);
+    virtual bool handleSerializedObject(const std::string& name, const std::shared_ptr<SerializedObject>& obj);
 
     /**
      * Force the propagation of a specific path
