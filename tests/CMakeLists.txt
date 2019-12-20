@@ -63,18 +63,18 @@ link_directories(${PYTHON_LIBRARY_DIRS})
 #
 # Unit tests (executed through 'make check' or 'make test')
 #
-add_executable(unitTests unitTests.cpp)
+add_executable(unitTests unit_tests/unitTests.cpp)
 target_sources(unitTests PRIVATE
-    check_attributefunctor.cpp
-    check_base_object.cpp
-    check_dense_deque.cpp
-    check_dense_map.cpp
-    check_dense_set.cpp
-    check_resizablearray.cpp
-    check_serialization.cpp
-    check_tree.cpp
-    check_upgrade_configuration.cpp
-    check_value.cpp
+    unit_tests/core/attribute.cpp
+    unit_tests/core/base_object.cpp
+    unit_tests/core/serializer.cpp
+    unit_tests/core/tree.cpp
+    unit_tests/core/value.cpp
+    unit_tests/utils/dense_deque.cpp
+    unit_tests/utils/dense_map.cpp
+    unit_tests/utils/dense_set.cpp
+    unit_tests/utils/resizable_array.cpp
+    unit_tests/utils/jsonutils.cpp
 )
 
 if (NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
@@ -131,7 +131,7 @@ endif()
 add_custom_command(OUTPUT integration_tests
     COMMAND if [ ! -d ${CMAKE_CURRENT_SOURCE_DIR}/assets ]; then $(git clone https://gitlab.com/sat-metalab/splash-assets ${CMAKE_CURRENT_SOURCE_DIR}/assets); fi
     COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/assets && git pull origin master
-    COMMAND ../src/splash ${CMAKE_CURRENT_SOURCE_DIR}/integrationTests.json
+    COMMAND ../src/splash ${CMAKE_CURRENT_SOURCE_DIR}/integration_tests/integrationTests.json
     DEPENDS splash
     )
 add_custom_target(check_integration DEPENDS integration_tests)
@@ -140,15 +140,14 @@ add_custom_target(check_integration DEPENDS integration_tests)
 # Static analysis through CppCheck
 #
 add_custom_command(OUTPUT cppcheck_analysis
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/build_cppcheck.sh
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/cppcheck/cppcheck --enable=warning,performance,unusedFunction --project=${CMAKE_CURRENT_BINARY_DIR}/../compile_commands.json 2> ${CMAKE_CURRENT_BINARY_DIR}/static_analysis_result.txt
+    COMMAND cppcheck --enable=warning,performance,unusedFunction --project=${CMAKE_CURRENT_BINARY_DIR}/../compile_commands.json 2> ${CMAKE_CURRENT_BINARY_DIR}/static_analysis_result.txt
 )
 add_custom_target(static_analysis DEPENDS cppcheck_analysis)
 
 #
 # Performance tests
 #
-add_executable(perf_dense_map perf_dense_map.cpp)
+add_executable(perf_dense_map performance_tests/perf_dense_map.cpp)
 add_custom_command(OUTPUT run_perf_tests
     COMMAND ./perf_dense_map
     DEPENDS perf_dense_map

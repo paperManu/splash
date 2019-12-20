@@ -30,7 +30,7 @@
       },
       "image" : {
          "benchmark" : 0,
-         "file" : [ "../data/color_map.png" ],
+         "file" : [ "../../data/share/splash/color_map.png" ],
          "flip" : [ 0 ],
          "flop" : [ 0 ],
          "srgb" : [ 1 ],
@@ -48,7 +48,7 @@
       },
       "mesh" : {
          "benchmark" : 0,
-         "file" : [ "../data/cubes.obj" ],
+         "file" : [ "../../data/share/splash/cubes.obj" ],
          "type" : "mesh"
       },
       "object" : {

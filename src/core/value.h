@@ -31,8 +31,8 @@
 #include <string>
 #include <variant>
 
-#include "./core/resizable_array.h"
 #include "./utils/dense_deque.h"
+#include "./utils/resizable_array.h"
 
 namespace Splash
 {

@@ -130,7 +130,7 @@ static_analysis:
     - tar caf splash-cov.bz2 cov-int
     - curl --form token=zkRfEWYxyAeJDlYYg9Hkkg --form email=emmanueldurand@gmail.com --form file=@splash-cov.bz2
       --form description="Splash" https://scan.coverity.com/builds?project=paperManu%2Fsplash
-    - apt install -y libpcre3-dev
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libpcre3-dev cppcheck
     - make static_analysis
     - mv tests/static_analysis_result.txt ../
   only:

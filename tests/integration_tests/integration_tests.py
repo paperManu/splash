@@ -37,7 +37,7 @@ def runTests():
         input()
 
         filepath = path + "/" + name
-        src = imp.load_source("data", path, open(filepath))
+        src = imp.load_source("data", filepath, open(filepath))
 
         if 'run' not in dir(src):
             print("File " + name + " has no run() method")
