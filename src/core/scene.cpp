@@ -278,7 +278,7 @@ void Scene::render()
         // See GraphObject::getRenderingPriority() for precision about priorities
         bool firstTextureSync = true; // Sync with the texture upload the first time we need textures
         bool firstWindowSync = true;  // Sync with the texture upload the last time we need textures
-        auto textureLock = unique_lock<Spinlock>(_textureMutex, defer_lock);
+        auto textureLock = unique_lock<mutex>(_textureMutex, defer_lock);
         for (auto& objPriority : objectList)
         {
             // If the objects needs some Textures, we need to sync
@@ -491,7 +491,7 @@ void Scene::textureUploadRun()
                 _doUploadTextures = false;
             }
 
-            unique_lock<Spinlock> lockTexture(_textureMutex);
+            unique_lock<mutex> lockTexture(_textureMutex);
 
 #ifdef PROFILE
             PROFILEGL("Texture upload loop");

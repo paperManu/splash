@@ -31,12 +31,12 @@
 #include <json/json.h>
 #include <list>
 #include <map>
+#include <mutex>
 #include <shared_mutex>
 #include <unordered_map>
 
 #include "./core/graph_object.h"
 #include "./core/serialized_object.h"
-#include "./core/spinlock.h"
 
 namespace Splash
 {
@@ -108,7 +108,7 @@ class BufferObject : public GraphObject
      */
     virtual int64_t getTimestamp() const override
     {
-        std::lock_guard<Spinlock> lock(_timestampMutex);
+        std::lock_guard<std::mutex> lock(_timestampMutex);
         return _timestamp;
     }
 
@@ -118,7 +118,7 @@ class BufferObject : public GraphObject
      */
     virtual void setTimestamp(int64_t timestamp) override
     {
-        std::lock_guard<Spinlock> lock(_timestampMutex);
+        std::lock_guard<std::mutex> lock(_timestampMutex);
         _timestamp = timestamp;
     }
 
@@ -135,11 +135,11 @@ class BufferObject : public GraphObject
     void setSerializedObject(std::shared_ptr<SerializedObject> obj);
 
   protected:
-    mutable Spinlock _readMutex;                //!< Read mutex locked when the object is read from
+    mutable std::mutex _readMutex;              //!< Read mutex locked when the object is read from
     mutable std::shared_mutex _writeMutex;      //!< Write mutex locked when the object is written to
     std::mutex _serializedObjectWaitingMutex{}; //!< Mutex is locked if a serialized object has been set and waits for processing
     std::future<void> _deserializeFuture{};     //!< Holds the deserialization thread
-    mutable Spinlock _timestampMutex;
+    mutable std::mutex _timestampMutex;
     int64_t _timestamp{0};      //!< Timestamp
     bool _updatedBuffer{false}; //!< True if the BufferObject has been updated
 

@@ -46,7 +46,7 @@ void BufferObject::setSerializedObject(shared_ptr<SerializedObject> obj)
 /*************/
 void BufferObject::updateTimestamp(int64_t timestamp)
 {
-    lock_guard<Spinlock> lock(_timestampMutex);
+    lock_guard<mutex> lock(_timestampMutex);
     if (timestamp != -1)
         _timestamp = timestamp;
     else

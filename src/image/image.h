@@ -97,7 +97,7 @@ class Image : public BufferObject
      */
     virtual int64_t getTimestamp() const final
     {
-        std::lock_guard<Spinlock> lock(_readMutex);
+        std::lock_guard<std::mutex> lock(_readMutex);
         return _image ? _image->getSpec().timestamp : 0;
     }
 

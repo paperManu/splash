@@ -38,7 +38,6 @@
 #include "./config.h"
 #include "./core/coretypes.h"
 #include "./core/serialized_object.h"
-#include "./core/spinlock.h"
 #include "./core/value.h"
 
 namespace Splash
@@ -140,11 +139,11 @@ class Link
     bool _connectedToOuter{false};
     bool _running{false};
 
-    Spinlock _msgSendMutex;
-    Spinlock _bufferSendMutex;
+    std::mutex _msgSendMutex;
+    std::mutex _bufferSendMutex;
 
     std::deque<std::shared_ptr<SerializedObject>> _otgBuffers;
-    Spinlock _otgMutex;
+    std::mutex _otgMutex;
     std::atomic_int _otgNumber{0};
 
     std::thread _bufferInThread;
