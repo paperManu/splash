@@ -3,6 +3,7 @@ variables:
 
 stages:
   - test
+  - coverage
   - package
 
 cache:
@@ -64,10 +65,6 @@ test:19.10:
     - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make test
-  artifacts:
-    name: "splash_coverge_${CI_BUILD_REF_NAME}"
-    paths:
-    - "coverage.zip"
 
 test:archlinux:
   stage: test
@@ -89,6 +86,27 @@ test:archlinux:
     - cmake -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make test
+
+#
+# Test coverage
+#
+coverage:
+  stage: coverage
+  image: ubuntu:19.10
+  script: 
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends lcov zip
+    - git submodule update --init
+    - ./make_deps.sh
+    - rm -rf build && mkdir build && cd build
+    - cmake -DTEST_COVERAGE=ON -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
+    - make -j$(nproc)
+    - make check_coverage
+    - zip -r coverage.zip coverage
+    - mv coverage.zip ../
+  artifacts:
+    name: "splash_coverage_${CI_BUILD_REF_NAME}"
+    paths:
+    - "coverage.zip"
 
 #
 # Package
@@ -139,26 +157,3 @@ static_analysis:
     name: "splash_static_analysis_${CI_BUILD_REF_NAME}"
     paths:
     - "static_analysis_result.txt"
-
-#
-# Test coverage
-#
-coverage:
-  stage: test
-  image: ubuntu:19.10
-  script: 
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends lcov zip
-    - git submodule update --init
-    - ./make_deps.sh
-    - rm -rf build && mkdir build && cd build
-    - cmake -DTEST_COVERAGE=ON -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
-    - make -j$(nproc)
-    - make check_coverage
-    - zip -r coverage.zip coverage
-    - mv coverage.zip ../
-  only:
-    - schedules
-  artifacts:
-    name: "splash_coverge_${CI_BUILD_REF_NAME}"
-    paths:
-    - "coverage.zip"
