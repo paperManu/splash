@@ -1,0 +1,33 @@
+site_name: Splash
+site_description: Video mapping tool
+repo_url: https://gitlab.com/sat-metalab/splash
+edit_uri: ""
+
+docs_dir: ./wiki
+site_dir: ../static
+
+theme: yeti
+
+markdown_extensions:
+  - admonition
+  - markdown_include.include:
+      base_path: docs
+
+nav:
+  - Home: index.md
+  - Guides:
+    - Installation: Installation.md
+    - User interface: User_Interface.md
+    - Tutorials: Walkthrough.md
+  - Docs:
+    - Architecture: Technical_Information.md
+    - Cookbook: FAQ.md
+    - API: ./doxygen/index.html
+  - Community:
+    - Release notes: News.md
+    - Contributing: Contributing.md
+    - Code of conduct: Code_of_conduct.md
+    - Live chat: http://webchat.freenode.net/?randomnick=1&channels=%23%23splash&uio=d4
+  - About:
+    - Authors: Authors.md
+    - License: License.md

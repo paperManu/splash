@@ -4,7 +4,7 @@ variables:
 stages:
   - test
   - coverage
-  - package
+  - deploy
 
 cache:
   paths:
@@ -112,7 +112,7 @@ coverage:
 # Package
 #
 package:debian:
-  stage: package
+  stage: deploy
   image: ubuntu:18.04
   script:
     - git submodule update --init
@@ -157,3 +157,28 @@ static_analysis:
     name: "splash_static_analysis_${CI_BUILD_REF_NAME}"
     paths:
     - "static_analysis_result.txt"
+
+#
+# Gitlab pages
+#
+pages:
+  stage: deploy
+  image: ubuntu:18.04
+  script:
+    - DEBIAN_FRONTEND=noninteractive apt install -y python3-pip doxygen graphviz
+    - pip3 install mkdocs markdown-include mkdocs-bootswatch
+    - git clone https://gitlab.com/sat-metalab/splash.wiki docs/wiki
+    - export LC_ALL=C.UTF-8
+    - export LANG=C.UTF-8
+    - mkdocs build -f docs/mkdocs.yml
+    - ./make_deps.sh
+    - mkdir build && cd build
+    - cmake .. && make doc && cp -r docs/html ../static/doxygen
+    - cd ..
+    - mv static public
+  artifacts:
+    paths:
+      - public
+  only:
+    - master
+    - website
