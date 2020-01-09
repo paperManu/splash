@@ -1,10 +1,12 @@
 Splash, a multi-projector video-mapping software
 ================================================
 
-[![Build status](https://gitlab.com/sat-metalab/splash/badges/develop/build.svg)](https://gitlab.com/sat-metalab/splash/commits/develop)
+[![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
+[![pipeline status](https://gitlab.com/sat-metalab/splash/badges/master/pipeline.svg)](https://gitlab.com/sat-metalab/splash/commits/develop)
+[![coverage report](https://gitlab.com/sat-metalab/splash/badges/develop/coverage.svg)](https://gitlab.com/sat-metalab/splash/commits/develop)
 [![Coverity Scan Build Status](https://img.shields.io/coverity/scan/3544.svg)](https://scan.coverity.com/projects/papermanu-splash)
 
-For a more complete documentation, go visit the [wiki](https://gitlab.com/sat-metalab/splash/wikis/home).
+For a more complete documentation, go visit the [official website](https://sat-metalab.gitlab.io/splash).
 
 Table of Contents
 -----------------
@@ -38,13 +40,13 @@ This program is free software; you can redistribute it and/or modify it under th
 ### Authors
 * Emmanuel Durand ([Github](https://github.com/paperManu))([Website](https://emmanueldurand.net))
 * Jérémie Soria ([Github](https://github.com/eldaranne))
+* Marie-Ève Dumas ([Github](https://github.com/mxrie-eve))
 
 ### Projet URL
-This project can be found either on the [SAT Metalab repository](https://gitlab.com/sat-metalab/splash) or on [Github](https://github.com/paperManu/splash).
+This project can be found either on [its official website](https://sat-metalab.gitlab.io/splash), on the [SAT Metalab repository](https://gitlab.com/sat-metalab/splash) or on [Github](https://github.com/paperManu/splash).
 
 ### Sponsors
 This project is made possible thanks to the [Society for Arts and Technologies](http://www.sat.qc.ca) (also known as SAT).
-Thanks to the Ministère de l'Économie, des Sciences et de l'Innovation (MESI).
 
 
 <a name="installation"/></a>
@@ -180,10 +182,10 @@ Then log out and log back in.
 
 If you want to specify some defaults values for the objects, you can set the environment variable SPLASH_DEFAULTS with the path to a file defining default values for given types. An example of such a file can be found in [data/config/splashrc](data/config/splashrc)
 
-And that's it, you can move on the the [Walkthrough](https://gitlab.com/sat-metalab/splash/wikis/Walkthrough) page.
+And that's it, you can move on the the [Walkthrough](https://sat-metalab.gitlab.io/splash/Walkthrough/) page.
 
 <a name="goingforward"/></a>
 Going forward
 -------------
 
-To learn how to configure and use Splash, the best resource currently is the Wiki page on [Gitlab](https://gitlab.com/sat-metalab/splash/wikis/home).
+To learn how to configure and use Splash, the best resource is [its official website](https://sat-metalab.gitlab.io/splash).

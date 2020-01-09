@@ -741,7 +741,7 @@ void Gui::renderSplashScreen()
         ImGui::Text("Version %s", PACKAGE_VERSION);
         ImGui::Spacing();
         ImGui::Text("Developed at the Société des Arts Technologiques");
-        ImGui::Text("https://gitlab.com/sat-metalab/splash/wikis");
+        ImGui::Text("https://sat-metalab.gitlab.io/splash");
         ImGui::Columns(1);
 
         auto& io = ImGui::GetIO();
