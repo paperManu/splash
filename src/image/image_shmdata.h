@@ -28,7 +28,7 @@
 #include <shmdata/console-logger.hpp>
 #include <shmdata/follower.hpp>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./image/image.h"
 #include "./utils/osutils.h"

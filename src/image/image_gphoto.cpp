@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include "./utils/log.h"
+#include "./utils/scope_guard.h"
 #include "./utils/timer.h"
 
 using namespace std;

@@ -33,9 +33,9 @@
 #include <ltc.h>
 #include <portaudio.h>
 
-#include "./config.h"
+#include "./core/constants.h"
+
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./core/graph_object.h"
 #include "./sound/listener.h"
 #include "./utils/timer.h"

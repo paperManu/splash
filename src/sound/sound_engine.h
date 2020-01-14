@@ -29,7 +29,7 @@
 #include <portaudio.h>
 #include <string>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 namespace Splash
 {

@@ -27,7 +27,7 @@
 
 #include <mutex>
 
-#include "./core/coretypes.h"
+#include "./core/constants.h"
 
 namespace Splash
 {

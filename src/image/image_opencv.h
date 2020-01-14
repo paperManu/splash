@@ -30,10 +30,9 @@
 #include <mutex>
 #include <thread>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./image/image.h"
 
 namespace cv

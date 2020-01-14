@@ -24,6 +24,7 @@
 #include "./userinput/userinput_mouse.h"
 #include "./utils/log.h"
 #include "./utils/osutils.h"
+#include "./utils/scope_guard.h"
 #include "./utils/timer.h"
 
 #if HAVE_GPHOTO and HAVE_OPENCV

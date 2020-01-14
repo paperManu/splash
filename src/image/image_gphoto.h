@@ -31,7 +31,7 @@
 
 #include <gphoto2/gphoto2.h>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./image/image.h"
 

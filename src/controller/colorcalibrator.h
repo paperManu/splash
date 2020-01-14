@@ -32,11 +32,10 @@
 #include <glm/glm.hpp>
 #include <opencv2/photo.hpp>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./controller/controller.h"
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./image/image_gphoto.h"
 #include "./utils/cgutils.h"
 

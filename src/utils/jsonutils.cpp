@@ -1,7 +1,5 @@
 #include "./utils/jsonutils.h"
 
-#include "./core/coretypes.h"
-
 namespace Splash
 {
 namespace Utils

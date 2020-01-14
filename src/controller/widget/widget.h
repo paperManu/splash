@@ -37,11 +37,10 @@
 #include <memory>
 #include <unordered_map>
 
-#include "./config.h"
+#include "./core/constants.h"
 
-#include "./core/attribute.h"
 #include "./controller/controller.h"
-#include "./core/coretypes.h"
+#include "./core/attribute.h"
 #include "./image/image.h"
 
 namespace Splash

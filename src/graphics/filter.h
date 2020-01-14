@@ -32,10 +32,9 @@
 
 #include <glm/glm.hpp>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./graphics/framebuffer.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"

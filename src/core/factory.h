@@ -143,7 +143,7 @@ class Factory
     Values jsonToValues(const Json::Value& values);
 
     /**
-     * Load default values from the file set in envvar SPLASH_DEFAULTS_FILE_ENV (set in coretypes.h)
+     * Load default values from the file set in envvar SPLASH_DEFAULTS_FILE_ENV (set in constants.h)
      */
     void loadDefaults();
 

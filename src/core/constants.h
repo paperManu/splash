@@ -18,9 +18,12 @@
  */
 
 /*
- * @coretypes.h
- * A few, mostly basic, types
+ * @constants.h
+ * Splash-wide constants, and useful defines
  */
+
+#ifndef SPLASH_CONSTANTS_H
+#define SPLASH_CONSTANTS_H
 
 #include "./config.h"
 
@@ -33,16 +36,13 @@
 #define SPLASH_FILE_CONFIGURATION "splashConfiguration"
 #define SPLASH_FILE_PROJECT "splashProject"
 
-#include <iostream>
 #include <execinfo.h>
+#include <iostream>
 
 // clang-format off
 #include "./glad/glad.h"
 #include <GLFW/glfw3.h>
 // clang-format on
-
-#ifndef SPLASH_CORETYPES_H
-#define SPLASH_CORETYPES_H
 
 #define PRINT_FUNCTION_LINE std::cout << "------> " << __PRETTY_FUNCTION__ << "::" << __LINE__ << std::endl;
 
@@ -61,37 +61,4 @@
         free(strings);                                                                                                                                                             \
     }
 
-namespace Splash
-{
-
-/*************/
-//! OnScopeExit, taken from Switcher (https://github.com/nicobou/switcher)
-template <typename F>
-class ScopeGuard
-{
-  public:
-    explicit ScopeGuard(F&& f)
-        : f_(std::move(f))
-    {
-    }
-    ~ScopeGuard() { f_(); }
-  private:
-    F f_;
-};
-
-enum class ScopeGuardOnExit
-{
-};
-template <typename F>
-ScopeGuard<F> operator+(ScopeGuardOnExit, F&& f)
-{
-    return ScopeGuard<F>(std::forward<F>(f));
-}
-
-#define CONCATENATE_IMPL(s1, s2) s1##s2
-#define CONCATENATE(s1, s2) CONCATENATE_IMPL(s1, s2)
-#define OnScopeExit auto CONCATENATE(on_scope_exit_var, __LINE__) = ScopeGuardOnExit() + [&]()
-
-} // end of namespace
-
-#endif // SPLASH_CORETYPES_H
+#endif // SPLASH_CONSTANTS_H

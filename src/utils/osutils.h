@@ -39,6 +39,8 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 
+#include "./core/constants.h"
+
 #include "./utils/log.h"
 
 namespace Splash

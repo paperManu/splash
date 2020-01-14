@@ -33,9 +33,10 @@
 
 #include <Python.h>
 
+#include "./core/constants.h"
+
 #include "./controller.h"
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./graphics/filter.h"
 
 namespace Splash

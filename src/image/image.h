@@ -28,11 +28,10 @@
 #include <chrono>
 #include <mutex>
 
-#include "config.h"
+#include "./core/constants.h"
 
 #include "./core/attribute.h"
 #include "./core/buffer_object.h"
-#include "./core/coretypes.h"
 #include "./core/imagebuffer.h"
 #include "./core/root_object.h"
 

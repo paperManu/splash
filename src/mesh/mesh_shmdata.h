@@ -32,7 +32,7 @@
 #include <string>
 #include <vector>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./mesh/mesh.h"
 #include "./utils/osutils.h"

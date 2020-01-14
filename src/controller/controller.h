@@ -28,8 +28,9 @@
 #include <string>
 #include <vector>
 
+#include "./core/constants.h"
+
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./core/graph_object.h"
 #include "./core/scene.h"
 #include "./userinput/userinput.h"

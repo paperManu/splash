@@ -35,8 +35,8 @@
 #include <vector>
 #include <zmq.hpp>
 
-#include "./config.h"
-#include "./core/coretypes.h"
+#include "./core/constants.h"
+
 #include "./core/serialized_object.h"
 #include "./core/value.h"
 

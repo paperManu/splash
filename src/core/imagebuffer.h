@@ -29,9 +29,8 @@
 #include <memory>
 #include <mutex>
 
-#include "./config.h"
+#include "./core/constants.h"
 
-#include "./core/coretypes.h"
 #include "./utils/resizable_array.h"
 
 namespace Splash

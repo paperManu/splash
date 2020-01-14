@@ -28,10 +28,9 @@
 #include <memory>
 #include <thread>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./core/graph_object.h"
 #include "./graphics/window.h"
 #include "./utils/timer.h"

@@ -40,10 +40,9 @@
 #include <gsl/gsl_deriv.h>
 #include <gsl/gsl_multimin.h>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./core/graph_object.h"
 #include "./graphics/framebuffer.h"
 #include "./graphics/geometry.h"

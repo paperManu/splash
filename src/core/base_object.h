@@ -34,8 +34,9 @@
 #include <optional>
 #include <unordered_map>
 
+#include "./core/constants.h"
+
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./utils/dense_map.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"

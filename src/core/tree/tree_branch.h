@@ -36,7 +36,7 @@
 #include <set>
 #include <utility>
 
-#include "./config.h"
+#include "./core/constants.h"
 #include "./utils/dense_map.h"
 
 namespace Splash

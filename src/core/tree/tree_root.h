@@ -35,7 +35,7 @@
 #include <unordered_map>
 #include <utility>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./core/tree/tree_branch.h"
 #include "./core/tree/tree_leaf.h"

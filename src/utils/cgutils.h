@@ -32,8 +32,8 @@
 
 #include "./hap.h"
 
-#include "./config.h"
-#include "./core/coretypes.h"
+#include "./core/constants.h"
+
 #include "./utils/log.h"
 
 namespace Splash

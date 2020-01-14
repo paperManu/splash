@@ -20,7 +20,7 @@
 #ifndef SPLASH_H
 #define SPLASH_H
 
-#include "./config.h"
+#include "./core/constants.h"
 #include "./core/scene.h"
 #include "./core/world.h"
 #include "./utils/log.h"

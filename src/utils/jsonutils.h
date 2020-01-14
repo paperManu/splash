@@ -31,7 +31,8 @@
 
 #include <json/json.h>
 
-#include "./config.h"
+#include "./core/constants.h"
+
 #include "./utils/log.h"
 
 namespace Splash

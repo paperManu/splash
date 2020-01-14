@@ -30,16 +30,15 @@
 #include <string>
 #include <vector>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./core/attribute.h"
 #include "./graphics/camera.h"
-#include "./core/coretypes.h"
 #include "./graphics/framebuffer.h"
-#include "./mesh/mesh_bezierpatch.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"
+#include "./mesh/mesh_bezierpatch.h"
 
 namespace Splash
 {

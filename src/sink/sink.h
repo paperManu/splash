@@ -29,10 +29,9 @@
 #include <memory>
 #include <mutex>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./core/graph_object.h"
 #include "./graphics/texture.h"
 #include "./utils/resizable_array.h"

@@ -31,10 +31,9 @@
 #include <list>
 #include <memory>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./graphics/texture.h"
 #include "./image/image.h"
 #include "./utils/cgutils.h"
