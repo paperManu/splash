@@ -33,6 +33,7 @@
 
 #include "./core/constants.h"
 
+#include "./core/value.h"
 #include "./utils/log.h"
 
 namespace Splash
@@ -54,6 +55,13 @@ bool checkAndUpgradeConfiguration(Json::Value& configuration);
  * \return Return true if everything went well
  */
 bool loadJsonFile(const std::string& filename, Json::Value& configuration);
+
+/**
+ * Helper function to convert Json::Value to Splash::Values
+ * \param values JSon to be processed
+ * \return Return a Values converted from the JSon
+ */
+Values jsonToValues(const Json::Value& values);
 
 } // end of namespace
 } // end of namespace

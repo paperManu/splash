@@ -203,7 +203,7 @@ void World::applyConfig()
             // Set the remaining parameters
             for (const auto& paramName : scenes[sceneName].getMemberNames())
             {
-                auto values = jsonToValues(scenes[sceneName][paramName]);
+                auto values = Utils::jsonToValues(scenes[sceneName][paramName]);
                 sendMessage(sceneName, paramName, values);
             }
         }
@@ -281,7 +281,7 @@ void World::applyConfig()
                             continue;
                         }
 
-                        auto values = jsonToValues(attr);
+                        auto values = Utils::jsonToValues(attr);
                         values.push_front(objMembers[idxAttr]);
                         values.push_front(objectName);
                         setAttribute("sendAll", values);
@@ -301,7 +301,7 @@ void World::applyConfig()
             int idx{0};
             for (const auto& attr : jsWorld)
             {
-                auto values = jsonToValues(attr);
+                auto values = Utils::jsonToValues(attr);
                 string paramName = worldMember[idx];
                 setAttribute(paramName, values);
                 idx++;
@@ -721,7 +721,7 @@ bool World::copyCameraParameters(const std::string& filename)
                 if (attrName == "type")
                     continue;
 
-                auto values = jsonToValues(attr);
+                auto values = Utils::jsonToValues(attr);
 
                 // Send the new values for this attribute
                 _tree.setValueForLeafAt("/" + s + "/objects/" + name + "/attributes/" + attrName, values);
@@ -730,56 +730,6 @@ bool World::copyCameraParameters(const std::string& filename)
     }
 
     return true;
-}
-
-/*************/
-Values World::jsonToValues(const Json::Value& values)
-{
-    Values outValues;
-
-    if (values.isInt())
-        outValues.emplace_back(values.asInt());
-    else if (values.isDouble())
-        outValues.emplace_back(values.asFloat());
-    else if (values.isArray())
-    {
-        for (const auto& v : values)
-        {
-            if (v.isInt())
-                outValues.emplace_back(v.asInt());
-            else if (v.isDouble())
-                outValues.emplace_back(v.asFloat());
-            else if (v.isArray() || v.isObject())
-                outValues.emplace_back(jsonToValues(v));
-            else
-                outValues.emplace_back(v.asString());
-        }
-    }
-    else if (values.isObject())
-    {
-        auto names = values.getMemberNames();
-        int index = 0;
-        for (const auto& v : values)
-        {
-            if (v.isInt())
-                outValues.emplace_back(v.asInt(), names[index]);
-            else if (v.isDouble())
-                outValues.emplace_back(v.asFloat(), names[index]);
-            else if (v.isArray() || v.isObject())
-                outValues.emplace_back(jsonToValues(v), names[index]);
-            else
-            {
-                outValues.emplace_back(v.asString());
-                outValues.back().setName(names[index]);
-            }
-
-            ++index;
-        }
-    }
-    else
-        outValues.emplace_back(values.asString());
-
-    return outValues;
 }
 
 /*************/
@@ -879,7 +829,7 @@ bool World::loadProject(const string& filename)
                         continue;
                     }
 
-                    auto values = jsonToValues(attr);
+                    auto values = Utils::jsonToValues(attr);
                     values.push_front(objMembers[idxAttr]);
                     values.push_front(objectName);
                     setAttribute("sendAll", values);

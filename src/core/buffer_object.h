@@ -88,7 +88,7 @@ class BufferObject : public GraphObject
      * \param obj Serialized object to use as source
      * \return Return true if everything went well
      */
-    virtual bool deserialize(const std::shared_ptr<SerializedObject>& /*obj*/) { return false; };
+    virtual bool deserialize(const std::shared_ptr<SerializedObject>& /*obj*/) = 0;
 
     /**
      * \brief Update the BufferObject from the inner serialized object, set with setSerializedObject

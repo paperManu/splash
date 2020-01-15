@@ -53,6 +53,7 @@ namespace Splash
 Factory::Factory()
     : _root(nullptr)
 {
+    loadDefaults();
     registerObjects();
 }
 
@@ -85,38 +86,11 @@ void Factory::loadDefaults()
         auto attrNames = config[name].getMemberNames();
         for (const auto& attrName : attrNames)
         {
-            auto value = jsonToValues(config[name][attrName]);
+            auto value = Utils::jsonToValues(config[name][attrName]);
             defaults[attrName] = value;
         }
         _defaults[name] = defaults;
     }
-}
-
-/*************/
-Values Factory::jsonToValues(const Json::Value& values)
-{
-    Values outValues;
-
-    if (values.isInt())
-        outValues.emplace_back(values.asInt());
-    else if (values.isDouble())
-        outValues.emplace_back(values.asFloat());
-    else if (values.isArray())
-        for (const auto& v : values)
-        {
-            if (v.isInt())
-                outValues.emplace_back(v.asInt());
-            else if (v.isDouble())
-                outValues.emplace_back(v.asFloat());
-            else if (v.isArray())
-                outValues.emplace_back(jsonToValues(v));
-            else
-                outValues.emplace_back(v.asString());
-        }
-    else
-        outValues.emplace_back(values.asString());
-
-    return outValues;
 }
 
 /*************/

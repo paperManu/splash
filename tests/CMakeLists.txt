@@ -67,15 +67,19 @@ add_executable(unitTests unit_tests/unitTests.cpp)
 target_sources(unitTests PRIVATE
     unit_tests/core/attribute.cpp
     unit_tests/core/base_object.cpp
+    unit_tests/core/factory.cpp
+    unit_tests/core/imagebuffer.cpp
     unit_tests/core/root_object.cpp
+    unit_tests/core/buffer_object.cpp
     unit_tests/core/serializer.cpp
     unit_tests/core/tree.cpp
     unit_tests/core/value.cpp
     unit_tests/utils/dense_deque.cpp
     unit_tests/utils/dense_map.cpp
     unit_tests/utils/dense_set.cpp
-    unit_tests/utils/resizable_array.cpp
     unit_tests/utils/jsonutils.cpp
+    unit_tests/utils/resizable_array.cpp
+    unit_tests/utils/scope_guard.cpp
 )
 
 if (NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")

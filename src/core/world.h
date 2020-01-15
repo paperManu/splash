@@ -220,13 +220,6 @@ class World : public RootObject
     void parseArguments(int argc, char** argv);
 
     /**
-     * \brief Helper function to convert Json::Value to Splash::Values
-     * \param values JSon to be processed
-     * \return Return a Values converted from the JSon
-     */
-    Values jsonToValues(const Json::Value& values);
-
-    /**
      * \brief Callback for GLFW errors
      */
     static void glfwErrorCallback(int code, const char* msg);
