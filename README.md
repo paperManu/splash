@@ -94,15 +94,21 @@ Splash can be installed from a pre-built package, or compiled by hand. Newcomers
 
 ##### Packages
 
-The easiest way to install and test Splash is by using the [Flatpak](https://flatpak.org) archive, which is compatible with most Linux distributions. It can be downloaded from the [tags page](https://gitlab.com/sat-metalab/splash/tags), and installed as follows on Ubuntu:
+The easiest way to install and test Splash is by using the [Flatpak](https://flatpak.org) archive, which is compatible with most Linux distributions. Splash is available on [Flathub](https://flathub.org/apps/details/com.gitlab.sat_metalab.Splash), and can be installed as follows on Ubuntu:
 
 ```bash
 sudo apt install flatpak
 sudo flatpak install flathub org.freedesktop.Platform//1.6
-sudo flatpak install splash.flatpak
+sudo flatpak install flathub com.gitlab.sat_metalab.Splash
 ```
 
-Splash should now be available from your application menu (this may require to logout / log back in). A known limitation of the Flatpak package is that it has no access to Jack, and cannot use multiple GPUs.
+Splash should now be accessible from your application menu (this may require to logout / log back in), or it can be run directly from the terminal as well:
+
+```bash
+flatpak run com.gitlab.sat_metalab.Splash
+```
+
+A known limitation of the Flatpak package is that it has no access to Jack.
 
 The current release of Splash is also packaged for Ubuntu (version 18.04) and derived. This is done through a Debian archive available on the [tags page](https://gitlab.com/sat-metalab/splash/tags), and install it with :
 
