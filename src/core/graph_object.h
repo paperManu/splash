@@ -82,11 +82,6 @@ class GraphObject : public BaseObject
     virtual ~GraphObject();
 
     /**
-     * \brief Safe bool idiom.
-     */
-    virtual explicit operator bool() const { return true; }
-
-    /**
      * \brief Access the attributes through operator[].
      * \param attr Name of the attribute.
      * \return Returns a reference to the attribute.

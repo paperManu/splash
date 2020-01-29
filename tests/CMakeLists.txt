@@ -68,7 +68,9 @@ target_sources(unitTests PRIVATE
     unit_tests/core/attribute.cpp
     unit_tests/core/base_object.cpp
     unit_tests/core/factory.cpp
+    unit_tests/core/graph_object.cpp
     unit_tests/core/imagebuffer.cpp
+    unit_tests/core/name_registry.cpp
     unit_tests/core/root_object.cpp
     unit_tests/core/buffer_object.cpp
     unit_tests/core/serializer.cpp

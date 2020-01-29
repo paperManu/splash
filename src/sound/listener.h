@@ -61,7 +61,7 @@ class Listener : public GraphObject
     /**
      * \brief Safe bool idiom
      */
-    explicit operator bool() const override { return _ready; }
+    explicit operator bool() const { return _ready; }
 
     /**
      * No copy, but some move constructors
