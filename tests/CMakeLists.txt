@@ -45,6 +45,7 @@ include_directories(${PORTAUDIO_INCLUDE_DIRS})
 include_directories(${OPENCV_INCLUDE_DIRS})
 include_directories(${SNAPPY_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
+include_directories(${SLAPS_INCLUDE_DIRS})
 
 # Distributed third parties first
 link_directories(${FFMPEG_LIBRARY_DIRS})
@@ -88,7 +89,7 @@ if (NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
     add_custom_command(OUTPUT update_assets
         COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/data
         COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/data/*.json ${CMAKE_CURRENT_BINARY_DIR}/data/
-    
+
         )
     add_custom_target(assets DEPENDS update_assets)
     add_dependencies(unitTests assets)
@@ -108,8 +109,8 @@ if (TEST_COVERAGE)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         add_custom_command(OUTPUT test_coverage_initial
             COMMAND mkdir -p ${CMAKE_BINARY_DIR}/coverage
-            COMMAND lcov --no-external --capture --initial 
-                --directory ${CMAKE_SOURCE_DIR} 
+            COMMAND lcov --no-external --capture --initial
+                --directory ${CMAKE_SOURCE_DIR}
                 --exclude '${CMAKE_SOURCE_DIR}/external/*'
                 --exclude '${CMAKE_SOURCE_DIR}/tests/*'
                 --output-file coverage/splash_base.info

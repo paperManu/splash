@@ -19,7 +19,7 @@
 
 cmake_minimum_required(VERSION 3.5)
 project(
-    splash 
+    splash
     VERSION 0.8.3
     LANGUAGES C CXX
 )
@@ -204,21 +204,21 @@ set(_config_msg "\nSplash Configuration\n=====================")
 function(info_cfg_option
     _setting
     )
-    
+
     set(_msg "  - ${_setting}")
     string(LENGTH "${_msg}" _len)
     while("32" GREATER "${_len}")
         set(_msg "${_msg} ")
          math(EXPR _len "${_len} + 1")
     endwhile()
-    
+
     set(_config_msg "${_config_msg}\n${_msg}${${_setting}}" PARENT_SCOPE)
 endfunction()
 
 function(info_cfg_text
     _text
     )
-    
+
     set(_config_msg "${_config_msg}\n\n  ${_text}" PARENT_SCOPE)
 endfunction()
 

@@ -35,6 +35,7 @@
 #include "./core/constants.h"
 
 #include "./controller/controller.h"
+#include "./utils/osutils.h"
 
 namespace Splash
 {
@@ -121,6 +122,7 @@ class GeometricCalibrator : public ControllerObject
     static inline const std::string _worldFilterPrefix{"__pattern_filter_"};
     static inline const std::string _finalMeshName{"final_mesh.obj"};
 
+    Utils::SlapsLogger _logger;
     bool _running{false};             //!< True if calibration is currently running
     bool _nextPosition{false};        //!< Set to true to capture from next camera position
     bool _finalizeCalibration{false}; //!< Set to true to finalize calibration

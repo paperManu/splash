@@ -178,19 +178,19 @@ target_sources(splash-${API_VERSION} PRIVATE
 if (GPHOTO_FOUND AND OPENCV_FOUND)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         set_source_files_properties(
-            controller/colorcalibrator.cpp 
+            controller/colorcalibrator.cpp
             PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized -Wno-unused-result -Wno-int-in-bool-context -Wno-sign-compare -Wno-ignored-attributes -Wno-deprecated-declarations -Wno-delete-non-virtual-dtor -Wno-unused-parameter -Wno-strict-aliasing -Wno-format -Wno-unused-but-set-variable -Wno-misleading-indentation -Wno-switch"
         )
     endif()
 
     target_sources(splash-${API_VERSION} PRIVATE
-        controller/colorcalibrator.cpp 
+        controller/colorcalibrator.cpp
         image/image_gphoto.cpp
     )
 endif()
 
 if (OPENCV_FOUND)
-    target_sources(splash-${API_VERSION} PRIVATE 
+    target_sources(splash-${API_VERSION} PRIVATE
         image/image_opencv.cpp
     )
 endif()
@@ -208,13 +208,13 @@ if (PORTAUDIO_FOUND)
     )
 endif()
 
-if (SLAPS_FOUND)
+if (HAVE_SLAPS)
     target_sources(splash-${API_VERSION} PRIVATE
         controller/geometriccalibrator.cpp
     )
 endif()
 
-if (SHMDATA_FOUND)
+if (HAVE_SHMDATA)
     target_sources(splash-${API_VERSION} PRIVATE
         image/image_shmdata.cpp
         mesh/mesh_shmdata.cpp
@@ -238,7 +238,7 @@ if (PYTHONLIBS_FOUND)
     )
 endif()
 
-# Stdlib 
+# Stdlib
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0.0")
     target_link_libraries(splash-${API_VERSION} stdc++fs)
@@ -279,6 +279,6 @@ target_link_libraries(splash splash-${API_VERSION})
 #
 install(TARGETS splash DESTINATION "bin/")
 
-install(FILES 
+install(FILES
     shaders/geometric_calibration_filter.frag
     DESTINATION "share/splash/shaders")
