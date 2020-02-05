@@ -2,7 +2,7 @@ Splash, a multi-projector video-mapping software
 ================================================
 
 [![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
-[![pipeline status](https://gitlab.com/sat-metalab/splash/badges/master/pipeline.svg)](https://gitlab.com/sat-metalab/splash/commits/develop)
+[![pipeline status](https://gitlab.com/sat-metalab/splash/badges/develop/pipeline.svg)](https://gitlab.com/sat-metalab/splash/commits/develop)
 [![coverage report](https://gitlab.com/sat-metalab/splash/badges/develop/coverage.svg)](https://gitlab.com/sat-metalab/splash/commits/develop)
 [![Coverity Scan Build Status](https://img.shields.io/coverity/scan/3544.svg)](https://scan.coverity.com/projects/papermanu-splash)
 
@@ -38,11 +38,9 @@ Splash can read videos from various sources amoung which video files (most commo
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
 
 ### Authors
-* Emmanuel Durand ([Github](https://github.com/paperManu))([Website](https://emmanueldurand.net))
-* Jérémie Soria ([Github](https://github.com/eldaranne))
-* Marie-Ève Dumas ([Github](https://github.com/mxrie-eve))
+See [AUTHORS.md](AUTHORS.md)
 
-### Projet URL
+### Project URL
 This project can be found either on [its official website](https://sat-metalab.gitlab.io/splash), on the [SAT Metalab repository](https://gitlab.com/sat-metalab/splash) or on [Github](https://github.com/paperManu/splash).
 
 ### Sponsors

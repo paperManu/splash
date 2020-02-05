@@ -3,10 +3,9 @@
    "links" : [
       [ "object", "gui" ],
       [ "object", "__camera_link" ],
+      [ "image", "object_image_filter" ],
       [ "mesh", "object" ],
-      [ "object_image_filter", "object" ],
-      [ "image", "object" ],
-      [ "image", "object_image_filter" ]
+      [ "object_image_filter", "object" ]
    ],
    "objects" : {
       "image" : {
@@ -19,7 +18,7 @@
          "priorityShift" : [ 0 ],
          "savable" : [ 1 ],
          "srgb" : [ 1 ],
-         "timestamp" : [ 2124454423 ],
+         "timestamp" : [ 1233431143 ],
          "type" : "image"
       },
       "mesh" : {
@@ -27,7 +26,7 @@
          "file" : [ "../../data/share/splash/cubes.obj" ],
          "priorityShift" : [ 0 ],
          "savable" : [ 1 ],
-         "timestamp" : [ 2124454684 ],
+         "timestamp" : [ 1233431451 ],
          "type" : "mesh"
       },
       "object" : {
@@ -41,7 +40,7 @@
          "savable" : [ 1 ],
          "scale" : [ 1, 1, 1 ],
          "sideness" : [ 0 ],
-         "timestamp" : [ 2124454423 ],
+         "timestamp" : [ 1233178611 ],
          "type" : "object"
       },
       "object_image_filter" : {
@@ -62,9 +61,9 @@
          "saturation" : [ 1 ],
          "savable" : [ 1 ],
          "scale" : [ 1, 1 ],
-         "size" : [ 4096, 4096 ],
+         "size" : [ 128, 128 ],
          "sizeOverride" : [ -1, -1 ],
-         "timestamp" : [ 2124454423 ],
+         "timestamp" : [ 1233178611 ],
          "type" : "filter",
          "watchShaderFile" : [ 0 ]
       }

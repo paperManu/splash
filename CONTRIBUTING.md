@@ -19,10 +19,12 @@ sudo apt-get install clang-format exuberant-ctags
 rm -rf hooks && ln -s $(pwd)/.hooks $(pwd)/.git/hooks
 ```
 
+
 Contributing
 ------------
 
 Please send your pull request at the [SAT-Metalab's Gitlab repository](https://gitlab.com/sat-metalab/splash). If you do not know how to make a pull request, Gitlab provides some [help about collaborating on projects using issues and pull requests](https://docs.gitlab.com/ee/gitlab-basics/add-merge-request.html).
+
 
 Branching strategy with git
 ---------------------------
@@ -42,6 +44,7 @@ git pull origin develop
 git checkout NAME_OF_YOUR_BRANCH
 git rebase -i develop
 ```
+
 
 Debugging
 ---------
@@ -80,3 +83,25 @@ gdb --args splash --doNotSpawn --prefix debug ./data/splash.json
 ```
 
 Then run each process in `gdb` using the `run` command.
+
+
+Adding tests
+------------
+
+Two types of test are used in this project:
+- unit tests, meant to check that single functions work as designed, are written in C++ and use the [doctest](https://github.com/onqtam/doctest) unit test framework.
+- integration tests, which test the overall behavior of Splash, are written in Python and use the [unittest](https://docs.python.org/3.7/library/unittest.html) module of Python.
+
+Unit tests are evaluated in the CI whenever a new commit is sent to Gitlab. Integration tests on the other hand, can (sadly, for now) not be ran in the CI as they require an OpenGL 4.5 context. They should be run manually, at least before doing a new release.
+
+To add a unit test, the steps are:
+- add the source file for the test in `./tests/unit_tests/`, preferably keeping the same file structure as the source files in `./src` unless a very good reason is given
+- fill in the source file with the test, see the other tests for reference
+- add the source file to the source list in `./tests/CMakeLists.txt`, in the `target_sources` of the target `unitTests`
+- call `make check` (after having built successfully Splash) to run all the unit tests.
+
+To add an integration test, the steps are:
+- add a source file for the test in `./tests/integration_tests/test_cases/`, named `test_TEST_SUBJECT.py`
+- fill in the source file with a new class deriving from `SplashTestCase`. See the sample test file in `./tests/integration_tests/test_cases/test_sample.py` for reference.
+- the source file will be automatically detected by the `unittest` module
+- call `make check_integration` (after having built successfully Splash) to run all the integration tests.

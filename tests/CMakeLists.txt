@@ -129,6 +129,7 @@ if (TEST_COVERAGE)
             COMMAND genhtml --output-directory ${CMAKE_BINARY_DIR}/coverage ${CMAKE_BINARY_DIR}/coverage/splash_total.info
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
             )
+
         add_custom_target(check_coverage DEPENDS test_coverage_initial tests test_coverage)
     endif()
 endif()
@@ -139,7 +140,7 @@ endif()
 add_custom_command(OUTPUT integration_tests
     COMMAND if [ ! -d ${CMAKE_CURRENT_SOURCE_DIR}/assets ]; then $(git clone https://gitlab.com/sat-metalab/splash-assets ${CMAKE_CURRENT_SOURCE_DIR}/assets); fi
     COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/assets && git pull origin master
-    COMMAND ../src/splash ${CMAKE_CURRENT_SOURCE_DIR}/integration_tests/integrationTests.json
+    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/../src/splash ${CMAKE_CURRENT_SOURCE_DIR}/integration_tests/integrationTests.json
     DEPENDS splash
     )
 add_custom_target(check_integration DEPENDS integration_tests)
