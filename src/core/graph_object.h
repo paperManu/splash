@@ -62,7 +62,7 @@ class GraphObject : public BaseObject
 
   public:
     /**
-     * \brief Constructor.
+     * Constructor.
      */
     GraphObject()
         : _root(nullptr)
@@ -71,25 +71,25 @@ class GraphObject : public BaseObject
     }
 
     /**
-     * \brief Constructor.
+     * Constructor.
      * \param root Specify the root object.
      */
     explicit GraphObject(RootObject* root);
 
     /**
-     * \brief Destructor.
+     * Destructor.
      */
     virtual ~GraphObject();
 
     /**
-     * \brief Access the attributes through operator[].
+     * Access the attributes through operator[].
      * \param attr Name of the attribute.
      * \return Returns a reference to the attribute.
      */
     Attribute& operator[](const std::string& attr);
 
     /**
-     * \brief Add a new attribute to this object
+     * Add a new attribute to this object
      * \param name Attribute name
      * \param set Set function
      * \param types Vector of char holding the expected parameters for the set function
@@ -98,7 +98,7 @@ class GraphObject : public BaseObject
     Attribute& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types = {}) override;
 
     /**
-     * \brief Add a new attribute to this object
+     * Add a new attribute to this object
      * \param name Attribute name
      * \param set Set function
      * \param get Get function
@@ -109,14 +109,14 @@ class GraphObject : public BaseObject
         const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types = {}) override;
 
     /**
-     * \brief Set and the description for the given attribute, if it exists
+     * Set the description for the given attribute, if it exists
      * \param name Attribute name
      * \param description Attribute description
      */
     void setAttributeDescription(const std::string& name, const std::string& description);
 
     /**
-     * \brief Get the real type of this BaseObject, as a std::string.
+     * Get the real type of this BaseObject, as a std::string.
      * \return Returns the type.
      */
     inline std::string getType() const { return _type; }
@@ -140,13 +140,13 @@ class GraphObject : public BaseObject
     inline std::string getAlias() const { return _alias.empty() ? _name : _alias; }
 
     /**
-     * \brief Set the name of the object.
+     * Set the name of the object.
      * \param name name of the object.
      */
     void setName(const std::string& name) override;
 
     /**
-     * \brief Set the remote type of the object. This implies that this object gets data streamed from a World object
+     * Set the remote type of the object. This implies that this object gets data streamed from a World object
      * \param type Remote type
      */
     inline void setRemoteType(const std::string& type)
@@ -156,60 +156,60 @@ class GraphObject : public BaseObject
     }
 
     /**
-     * \brief Get the remote type of the object.
+     * Get the remote type of the object.
      * \return Returns the remote type.
      */
     inline std::string getRemoteType() const { return _remoteType; }
 
     /**
-     * \brief Try to link / unlink the given GraphObject to this
+     * Try to link / unlink the given GraphObject to this
      * \param obj Object to link to
-     * \return Returns true if the linking succeeded
+     * \return Returns true if the linking succeeded, or if the object was already linked
      */
     virtual bool linkTo(const std::shared_ptr<GraphObject>& obj);
 
     /**
-     * \brief Unlink a given object
+     * Unlink a given object
      * \param obj Object to unlink from
      */
     virtual void unlinkFrom(const std::shared_ptr<GraphObject>& obj);
 
     /**
-     * \brief Return a vector of the linked objects
+     * Return a vector of the linked objects
      * \return Returns a vector of the linked objects
      */
     const std::vector<std::weak_ptr<GraphObject>> getLinkedObjects() { return _linkedObjects; }
 
     /**
-     * \brief Get the savability for this object
+     * Get the savability for this object
      * \return Returns true if the object should be saved
      */
     inline bool getSavable() { return _savable; }
 
     /**
-     * \brief Check whether the object's buffer was updated and needs to be re-rendered
+     * Check whether the object's buffer was updated and needs to be re-rendered
      * \return Returns true if the object was updated
      */
     inline virtual bool wasUpdated() const { return _updatedParams; }
 
     /**
-     * \brief Reset the "was updated" status, if needed
+     * Reset the "was updated" status, if needed
      */
     inline virtual void setNotUpdated() { _updatedParams = false; }
 
     /**
-     * \brief Set the object savability
+     * Set the object savability
      * \param savable Desired savability
      */
     inline virtual void setSavable(bool savable) { _savable = savable; }
 
     /**
-     * \brief Update the content of the object
+     * Update the content of the object
      */
     virtual void update() {}
 
     /**
-     * \brief Get the rendering priority for this object
+     * Get the rendering priority for this object
      * The priorities have the following values:
      * - negative value: object not rendered
      * - 10 to 19: pre-cameras rendering
@@ -245,7 +245,7 @@ class GraphObject : public BaseObject
     virtual void setTimestamp(int64_t) {}
 
     /**
-     * \brief Set the rendering priority for this object
+     * Set the rendering priority for this object
      * Set GraphObject::getRenderingPriority() for precision about priority
      * \param int Desired priority
      * \return Return true if the priority was set
@@ -253,7 +253,7 @@ class GraphObject : public BaseObject
     bool setRenderingPriority(Priority priority);
 
     /**
-     * \brief Virtual method to render the object
+     * Virtual method to render the object
      */
     virtual void render() {}
 
@@ -299,7 +299,7 @@ class GraphObject : public BaseObject
     void unlinkFromParent(GraphObject* obj);
 
     /**
-     * \brief Register new attributes
+     * Register new attributes
      */
     void registerAttributes();
 

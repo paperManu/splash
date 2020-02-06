@@ -115,7 +115,7 @@ bool GraphObject::linkTo(const shared_ptr<GraphObject>& obj)
     });
 
     if (objectIt != _linkedObjects.end())
-        return false;
+        return true;
 
     if (!linkIt(obj))
     {

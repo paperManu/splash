@@ -67,6 +67,8 @@ TEST_CASE("Testing GraphObject linking and unlinking")
     });
     CHECK(foundObject != linkedObjects.end());
 
+    CHECK(firstObject->linkTo(secondObject));
+
     firstObject->unlinkFrom(secondObject);
     linkedObjects = firstObject->getLinkedObjects();
     foundObject = std::find_if(linkedObjects.cbegin(), linkedObjects.cend(), [&](auto linkedObject) -> bool {
