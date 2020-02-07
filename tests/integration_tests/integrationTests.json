@@ -68,10 +68,6 @@
          "size" : [ 1280, 1024 ],
          "srgb" : [ 1 ],
          "type" : "window"
-      },
-      "pythonScript" : {
-        "type" : "python",
-        "file" : ["./integration_tests.py"]
       }
    },
    "scenes" : [

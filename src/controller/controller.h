@@ -62,7 +62,7 @@ class ControllerObject : public GraphObject
      * \param name Object name
      * \return Return true if the object exists, false otherwise
      */
-    bool checkObject(const std::string& name) const;
+    bool checkObjectExists(const std::string& name) const;
 
     /**
      * Get a ptr to the named object

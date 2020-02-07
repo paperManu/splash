@@ -41,18 +41,19 @@ class PythonSink
   public:
     struct PythonSinkObject
     {
+        PyObject_HEAD
         static std::atomic_int sinkIndex;
-        PyObject_HEAD std::string sourceName{""};
-        uint32_t width{512};
-        uint32_t height{512};
-        bool keepRatio{false};
-        uint32_t framerate{30};
-        std::string sinkName{""};
-        std::string filterName{""};
-        std::shared_ptr<Splash::Sink> sink{nullptr};
-        bool linked{false};
-        bool opened{false};
-        PyObject* lastBuffer{nullptr};
+        uint32_t width;
+        uint32_t height;
+        bool keepRatio;
+        uint32_t framerate;
+        std::unique_ptr<std::string> sourceName;
+        std::unique_ptr<std::string> sinkName;
+        std::unique_ptr<std::string> filterName;
+        std::shared_ptr<Splash::Sink> sink;
+        bool linked;
+        bool opened;
+        PyObject* lastBuffer;
     };
     PythonSinkObject pythonSinkObject;
 

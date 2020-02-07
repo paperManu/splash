@@ -9,10 +9,9 @@ class TestWrappedSink(SplashTestCase):
         print("Test the wrapped sink")
 
         sink = splash.Sink()
+        sink.link_to("image")
         sink.set_size(8, 8)
         sink.set_framerate(15)
-        sink.link_to("image")
-        sink.link_to("image")
         sink.open()
         sleep(0.5)
         image = sink.grab()

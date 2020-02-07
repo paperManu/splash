@@ -172,7 +172,7 @@ class GeometricCalibrator : public ControllerObject
      */
     void waitForObjectCreation(const std::string& name)
     {
-        while (!checkObject(name))
+        while (!checkObjectExists(name))
             std::this_thread::sleep_for(15ms);
     }
 

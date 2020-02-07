@@ -154,6 +154,16 @@ void Filter::setKeepRatio(bool keepRatio)
 }
 
 /*************/
+void Filter::setSixteenBpc(bool active)
+{
+    _sixteenBpc = active;
+    if (!_fbo)
+        return;
+
+    _fbo->setParameters(false, active);
+}
+
+/*************/
 void Filter::updateSizeWrtRatio()
 {
     if (_keepRatio && (_sizeOverride[0] || _sizeOverride[1]))
@@ -324,7 +334,7 @@ void Filter::setOutput()
 {
     _fbo = make_unique<Framebuffer>(_root);
     _fbo->getColorTexture()->setAttribute("filtering", {1});
-    _fbo->setParameters(false, true);
+    _fbo->setParameters(false, _sixteenBpc);
 
     // Setup the virtual screen
     _screen = make_shared<Object>(_root);
@@ -719,8 +729,12 @@ void Filter::registerDefaultShaderAttributes()
 
     addAttribute("sizeOverride",
         [&](const Values& args) {
-            _sizeOverride[0] = args[0].as<int>();
-            _sizeOverride[1] = args[1].as<int>();
+            auto width = args[0].as<int>();
+            auto height = args[1].as<int>();
+            addTask([=]() {
+                _sizeOverride[0] = width;
+                _sizeOverride[1] = height;
+            });
             return true;
         },
         [&]() -> Values {

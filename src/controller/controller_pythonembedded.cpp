@@ -17,13 +17,20 @@ namespace Splash
 atomic_int PythonEmbedded::_pythonInstances{0};
 PyThreadState* PythonEmbedded::_pythonGlobalThreadState{nullptr};
 PyObject* PythonEmbedded::SplashError{nullptr};
+std::string PythonEmbedded::_capsuleName{"splash._splash"};
 
 /*******************/
 // Embedded Python //
 /*******************/
 PythonEmbedded* PythonEmbedded::getInstance()
 {
-    auto that = static_cast<PythonEmbedded*>(PyCapsule_Import("splash._splash", 0));
+    auto that = static_cast<PythonEmbedded*>(PyCapsule_Import(_capsuleName.c_str(), 0));
+    if (!that)
+    {
+        PyErr_SetString(SplashError, "Could not load Splash capsule");
+        return nullptr;
+    }
+
     if (!that->_pythonModule)
     {
         // If _pythonModule is not set, it is most certainly because the Splash Python method
@@ -1214,7 +1221,7 @@ void PythonEmbedded::loop()
 
     // Set the current instance in a capsule
     auto module = PyImport_ImportModule("splash");
-    auto capsule = PyCapsule_New((void*)this, "splash._splash", nullptr);
+    auto capsule = PyCapsule_New((void*)this, _capsuleName.c_str(), nullptr);
     PyDict_SetItemString(PyModule_GetDict(module), "_splash", capsule);
     Py_DECREF(capsule);
 

@@ -21,7 +21,7 @@ shared_ptr<GraphObject> ControllerObject::getObjectPtr(const string& name) const
 }
 
 /*************/
-bool ControllerObject::checkObject(const std::string& name) const
+bool ControllerObject::checkObjectExists(const std::string& name) const
 {
     auto objects = getObjectList();
     if (std::find(objects.cbegin(), objects.cend(), name) != objects.cend())
@@ -349,9 +349,10 @@ void ControllerObject::setInScene(const string& name, const Values& values) cons
 {
     auto tree = _root->getTree();
     auto attrPath = "/" + _root->getName() + "/attributes/" + name;
-    if (!tree->hasLeafAt(attrPath))
-        return;
-    tree->setValueForLeafAt(attrPath, values);
+    if (tree->hasLeafAt(attrPath))
+        tree->setValueForLeafAt(attrPath, values);
+    else
+        _root->addTreeCommand(_root->getName(), RootObject::Command::callRoot, {name, values});
 }
 
 /*************/

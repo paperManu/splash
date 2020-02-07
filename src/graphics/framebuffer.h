@@ -70,6 +70,12 @@ class Framebuffer : public GraphObject
     static void blit(const Framebuffer& src, const Framebuffer& dst);
 
     /**
+     * Get bit depth
+     * \return Return the bit depth for each channel
+     */
+    uint32_t getBitDepth() const { return _16bits ? 16 : 8; }
+
+    /**
      * Get the color texture
      * \return The color texture
      */

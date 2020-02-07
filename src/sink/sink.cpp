@@ -2,6 +2,7 @@
 
 #include <fstream>
 
+#include "./graphics/filter.h"
 #include "./utils/timer.h"
 
 using namespace std;
@@ -46,8 +47,13 @@ string Sink::getCaps() const
 /*************/
 bool Sink::linkIt(const shared_ptr<GraphObject>& obj)
 {
-    auto objAsTexture = dynamic_pointer_cast<Texture>(obj);
-    if (objAsTexture)
+    if (auto objAsFilter = dynamic_pointer_cast<Filter>(obj); objAsFilter)
+    {
+        objAsFilter->setSixteenBpc(false);
+        _inputTexture = dynamic_pointer_cast<Texture>(obj);
+        return true;
+    }
+    else if (auto objAsTexture = dynamic_pointer_cast<Texture>(obj); objAsTexture)
     {
         _inputTexture = objAsTexture;
         return true;
@@ -59,9 +65,15 @@ bool Sink::linkIt(const shared_ptr<GraphObject>& obj)
 /*************/
 void Sink::unlinkIt(const shared_ptr<GraphObject>& obj)
 {
-    auto objAsTexture = dynamic_pointer_cast<Texture>(obj);
-    if (objAsTexture)
+    if (auto objAsFilter = dynamic_pointer_cast<Filter>(obj); objAsFilter)
+    {
+        objAsFilter->setSixteenBpc(true);
         _inputTexture.reset();
+    }
+    else if (auto objAsTexture = dynamic_pointer_cast<Texture>(obj); objAsTexture)
+    {
+        _inputTexture.reset();
+    }
 }
 
 /*************/
