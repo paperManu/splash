@@ -568,7 +568,7 @@ void World::saveConfig()
 }
 
 /*************/
-void World::saveProject()
+void World::saveProject(const string& filename)
 {
     try
     {
@@ -618,13 +618,13 @@ void World::saveProject()
             }
         }
 
-        ofstream out(_projectFilename, ios::binary);
+        ofstream out(filename, ios::binary);
         out << root.toStyledString();
         out.close();
     }
     catch (...)
     {
-        Log::get() << Log::ERROR << "Exception caught while saving file " << _projectFilename << Log::endl;
+        Log::get() << Log::ERROR << "Exception caught while saving file " << filename << Log::endl;
     }
 }
 
@@ -761,7 +761,7 @@ bool World::loadProject(const string& filename)
 
         _projectFilename = filename;
         // The configuration path is overriden with the project file path
-        _configurationPath = Utils::getPathFromFilePath(_projectFilename);
+        _configurationPath = Utils::getPathFromFilePath(filename);
 
         // Now, we apply the configuration depending on the current state
         // Meaning, we replace objects with the same name, create objects with non-existing name,
@@ -1287,10 +1287,10 @@ void World::registerAttributes()
 
     addAttribute("saveProject",
         [&](const Values& args) {
-            _projectFilename = args[0].as<string>();
-            addTask([=]() {
-                Log::get() << "Saving project to " << _projectFilename << Log::endl;
-                saveProject();
+            auto filename = args[0].as<string>();
+            addTask([this, filename]() {
+                Log::get() << "Saving project to " << filename << Log::endl;
+                saveProject(filename);
             });
             return true;
         },
@@ -1299,10 +1299,10 @@ void World::registerAttributes()
 
     addAttribute("loadProject",
         [&](const Values& args) {
-            _projectFilename = args[0].as<string>();
-            addTask([=]() {
-                Log::get() << "Loading partial configuration from " << _projectFilename << Log::endl;
-                loadProject(_projectFilename);
+            auto filename = args[0].as<string>();
+            addTask([this, filename]() {
+                Log::get() << "Loading partial configuration from " << filename << Log::endl;
+                loadProject(filename);
             });
             return true;
         },

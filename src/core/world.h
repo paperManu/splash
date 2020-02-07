@@ -55,25 +55,25 @@ class World : public RootObject
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param argc Argument count
      * \param argv Arguments value
      */
     World(int argc, char** argv);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~World() override;
 
     /**
-     * \brief Get the status of the world after begin ran
+     * Get the status of the world after begin ran
      * \return Return true if all went well
      */
     bool getStatus() const { return !_status; }
 
     /**
-     * \brief Run the world
+     * Run the world
      */
     void run();
 
@@ -127,14 +127,14 @@ class World : public RootObject
     int _swapSynchronizationTesting{0}; //!< If not 0, number of frames to keep the same color
 
     /**
-     * \brief Add an object to the world (used for Images and Meshes currently)
+     * Add an object to the world (used for Images and Meshes currently)
      * \param type Object type
      * \param name Object name
      */
     void addToWorld(const std::string& type, const std::string& name);
 
     /**
-     * \brief Apply the configuration
+     * Apply the configuration
      */
     void applyConfig();
 
@@ -148,39 +148,40 @@ class World : public RootObject
     bool addScene(const std::string& sceneName, const std::string& sceneDisplay, const std::string& sceneAddress, bool spawn = true);
 
     /**
-     * \brief Copies the camera calibration from the given file to the current configuration
+     * Copies the camera calibration from the given file to the current configuration
      * \param filename Source configuration file
      * \return Return true if everything went well
      */
     bool copyCameraParameters(const std::string& filename);
 
     /**
-     * \brief Get a JSon string describing the attributes of all object types
+     * Get a JSon string describing the attributes of all object types
      * \return Return a JSon string
      */
     std::string getObjectsAttributesDescriptions();
 
     /**
-     * \brief Save the configuration
+     * Save the configuration
      */
     void saveConfig();
 
     /**
-     * \brief Partially save the configuration
+     * Partially save the configuration
      * This saves only the modifications to images, textures and meshes
      * (in fact, all objects not related to projector calibration)
+     * \param filename Path to the project file
      */
-    void saveProject();
+    void saveProject(const std::string& filename);
 
     /**
-     * \brief Get all object of given type.
+     * Get all object of given type.
      * \param type Type to look for. If empty, get all objects.
      * \return Return a list of all objects of the given type
      */
     std::vector<std::string> getObjectsOfType(const std::string& type) const;
 
     /**
-     * \brief Redefinition of a method from RootObject. Send the input buffers back to all pairs
+     * Redefinition of a method from RootObject. Send the input buffers back to all pairs
      * \param name Object name
      * \param obj Serialized object
      * \return Return true if the object has been handled
@@ -188,17 +189,17 @@ class World : public RootObject
     bool handleSerializedObject(const std::string& name, const std::shared_ptr<SerializedObject>& obj) override;
 
     /**
-     * \brief Initializes the World
+     * Initializes the World
      */
     void init();
 
     /**
-     * \brief Handle the exit signal messages
+     * Handle the exit signal messages
      */
     static void leave(int signal_value);
 
     /**
-     * \brief Load the specified configuration file
+     * Load the specified configuration file
      * \param filename Configuration file path
      * \param configuration JSon where the configuration will be stored
      * \return Return true if everything went well
@@ -206,26 +207,26 @@ class World : public RootObject
     bool loadConfig(const std::string& filename, Json::Value& configuration);
 
     /**
-     * \brief Load a partial configuration file, updating existing configuration
+     * Load a partial configuration file, updating existing configuration
      * \param filename Configuration file path
      * \return Return true if everything went well
      */
     bool loadProject(const std::string& filename);
 
     /**
-     * \brief Parse the given arguments
+     * Parse the given arguments
      * \param argc Argument count
      * \param argv Argument values
      */
     void parseArguments(int argc, char** argv);
 
     /**
-     * \brief Callback for GLFW errors
+     * Callback for GLFW errors
      */
     static void glfwErrorCallback(int code, const char* msg);
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 
