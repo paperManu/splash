@@ -85,14 +85,42 @@ gdb --args splash --doNotSpawn --prefix debug ./data/splash.json
 Then run each process in `gdb` using the `run` command.
 
 
-Adding tests
-------------
+Testing
+-------
 
 Two types of test are used in this project:
 - unit tests, meant to check that single functions work as designed, are written in C++ and use the [doctest](https://github.com/onqtam/doctest) unit test framework.
 - integration tests, which test the overall behavior of Splash, are written in Python and use the [unittest](https://docs.python.org/3.7/library/unittest.html) module of Python.
 
 Unit tests are evaluated in the CI whenever a new commit is sent to Gitlab. Integration tests on the other hand, can (sadly, for now) not be ran in the CI as they require an OpenGL 4.5 context. They should be run manually, at least before doing a new release.
+
+### Executing tests
+
+To run the unit tests locally, considering that Splash has already been installed once by following the dedicated documentation:
+```bash
+cd build
+make check
+```
+
+Similarly to run the integration tests:
+```bash
+cd build
+make check_integration
+```
+
+It is also possible to select which tests to run based on their filename. For example to run all tests mentionning images:
+```bash
+cd tests/integration_tests
+splash -P integration_tests.py -- --pattern 'test*image*.py'
+```
+
+To run a single test:
+```bash
+cd tests/integration_tests
+splash -P integration_tests.py -- --pattern 'test_sample.py'
+```
+
+### Adding tests
 
 To add a unit test, the steps are:
 - add the source file for the test in `./tests/unit_tests/`, preferably keeping the same file structure as the source files in `./src` unless a very good reason is given
