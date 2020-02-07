@@ -24,7 +24,7 @@ add_custom_command(
     COMMAND ${UPDATE_BLENDER_VERSION}
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/splash ./splash
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/templates ./templates
-    COMMAND zip blenderSplash.zip -r splash/* -x *.swp splash/Makefile*
+    COMMAND zip blenderSplash.zip -r splash/* -x *.swp -x *.pyc splash/Makefile*
     COMMAND ${CMAKE_COMMAND} -E remove -f templates/*.blend1
     COMMAND tar cvjf blender_splash_addon.tar.bz2 --exclude='Makefile*' --exclude='*.swp' blenderSplash.zip templates
     COMMAND ${CMAKE_COMMAND} -E remove_directory splash
