@@ -167,16 +167,6 @@ class GeometricCalibrator : public ControllerObject
     void applyCalibration(const ConfigurationState& state, const Calibration& calibration);
 
     /**
-     * Wait for an object to be created
-     * \param name Object name
-     */
-    void waitForObjectCreation(const std::string& name)
-    {
-        while (!checkObjectExists(name))
-            std::this_thread::sleep_for(15ms);
-    }
-
-    /**
      * Register new functors to modify attributes
      */
     void registerAttributes();

@@ -25,6 +25,7 @@
 #ifndef SPLASH_CONTROLLER_H
 #define SPLASH_CONTROLLER_H
 
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -169,6 +170,17 @@ class ControllerObject : public GraphObject
      */
     template<typename T>
     std::vector<std::shared_ptr<T>> getObjectsOfBaseType() const;
+
+    /**
+     * Wait for an object to be created
+     * \param name Object name
+     * \param wait time as uint32. Will be cast to milliseconds
+     */
+    void waitForObjectCreation(const std::string& name, uint32_t waitTime=15)
+    {
+        while (!checkObjectExists(name))
+            std::this_thread::sleep_for(static_cast<std::chrono::milliseconds>(waitTime));
+    }
 
     /**
      * \brief Send a serialized buffer to the given BufferObject

@@ -185,8 +185,7 @@ PyObject* PythonSink::pythonSinkLink(PythonSinkObject* self, PyObject* args, PyO
     // Filter is added locally, we don't need (nor want) it in any other Scene
     that->setInScene("addObject", {"filter", *self->filterName, root->getName()});
     // Wait for the object to be created
-    while (!that->checkObjectExists(*self->filterName))
-        this_thread::sleep_for(50ms);
+    that->waitForObjectCreation(*self->filterName, 50);
     that->setInScene("link", {*self->sourceName, *self->filterName});
     that->setInScene("link", {*self->filterName, *self->sinkName});
     that->setObjectAttribute(*self->sinkName, "framerate", {self->framerate});
