@@ -21,9 +21,12 @@ class RootObjectMock : public RootObject
 
   public:
     RootObjectMock()
+        : RootObject()
     {
         registerAttributes();
         _link = std::make_unique<Link>(this, "mock");
+        _name = "world";
+        _tree.setName(_name);
     }
 
     void step()
@@ -104,10 +107,9 @@ TEST_CASE("Testing RootObject object creation and lifetime handling")
 TEST_CASE("Testing RootObject attribute set")
 {
     auto root = RootObjectMock();
-    root.setName("rootName");
 
     auto value = Values({1, "one"});
-    root.set("rootName", "testValue", value);
+    root.set("world", "testValue", value);
     root.step();
     CHECK_EQ(root._testValue, value);
 
