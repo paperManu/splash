@@ -400,7 +400,7 @@ void Link::handleInputMessages()
 // We don't display broadcast messages, for visibility
 #ifdef DEBUG
             if (name != SPLASH_ALL_PEERS)
-                Log::get() << Log::DEBUGGING << "Link::" << __FUNCTION__ << " (" << root->getName() << ")"
+                Log::get() << Log::DEBUGGING << "Link::" << __FUNCTION__ << " (" << _rootObject->getName() << ")"
                            << " - Receiving message for " << name << "::" << attribute << Log::endl;
 #endif
         }
