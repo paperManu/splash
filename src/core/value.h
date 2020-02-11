@@ -369,7 +369,11 @@ struct Value
         }
     }
 
-    size_t size() const
+    /**
+     * Return the size of the data in bytes
+     * \return The data size in byte
+     */
+    size_t byte_size() const
     {
         switch (_type)
         {
@@ -380,6 +384,35 @@ struct Value
             return sizeof(int64_t);
         case Type::real:
             return sizeof(double);
+        case Type::string:
+            return std::get<std::string>(_data).size();
+        case Type::values:
+        {
+            size_t size = 0;
+            for (const auto& value : std::get<Values>(_data))
+                size += value.byte_size();
+            return size;
+        }
+        case Type::buffer:
+            return std::get<Buffer>(_data).size();
+        }
+    }
+
+    /**
+     * Return the number of elements held in this object
+     * \return Return the element count
+     */
+    size_t size() const
+    {
+        switch (_type)
+        {
+        default:
+            assert(false);
+            return 0;
+        case Type::integer:
+            return 1;
+        case Type::real:
+            return 1;
         case Type::string:
             return std::get<std::string>(_data).size();
         case Type::values:
