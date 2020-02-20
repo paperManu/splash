@@ -68,7 +68,7 @@ class Image_FFmpeg : public Image
     ~Image_FFmpeg() final;
 
     /**
-     * No copy, but some move constructors
+     * No copy constructor
      */
     Image_FFmpeg(const Image_FFmpeg&) = delete;
     Image_FFmpeg& operator=(const Image_FFmpeg&) = delete;

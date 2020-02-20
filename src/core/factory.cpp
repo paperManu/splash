@@ -14,6 +14,7 @@
 #include "./graphics/window.h"
 #include "./image/image.h"
 #include "./image/image_ffmpeg.h"
+#include "./image/image_list.h"
 #include "./image/queue.h"
 #include "./mesh/mesh.h"
 #include "./sink/sink.h"
@@ -212,6 +213,20 @@ void Factory::registerObjects()
         GraphObject::Category::IMAGE,
         "image",
         "Static image read from a file.",
+        true);
+
+    _objectBook["image_list"] = Page(
+        [&](RootObject* root) {
+            shared_ptr<GraphObject> object;
+            if (!_scene)
+                object = dynamic_pointer_cast<GraphObject>(make_shared<Image_List>(root));
+            else
+                object = dynamic_pointer_cast<GraphObject>(make_shared<Image>(root));
+            return object;
+        },
+        GraphObject::Category::IMAGE,
+        "Images from a list",
+        "Static images read from a directory.",
         true);
 
 #if HAVE_LINUX

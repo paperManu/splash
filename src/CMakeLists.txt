@@ -152,6 +152,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/window.cpp
     image/image.cpp
     image/image_ffmpeg.cpp
+    image/image_list.cpp
     image/queue.cpp
     mesh/mesh.cpp
     mesh/mesh_bezierpatch.cpp
@@ -208,7 +209,7 @@ if (PORTAUDIO_FOUND)
     )
 endif()
 
-if (HAVE_SLAPS)
+if (HAVE_SLAPS AND OPENCV_FOUND)
     target_sources(splash-${API_VERSION} PRIVATE
         controller/geometriccalibrator.cpp
     )

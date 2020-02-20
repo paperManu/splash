@@ -54,7 +54,7 @@ class Image_GPhoto : public Image
     ~Image_GPhoto() override;
 
     /**
-     * No copy constructor, only move
+     * No copy constructor
      */
     Image_GPhoto(const Image_GPhoto&) = delete;
     Image_GPhoto& operator=(const Image_GPhoto&) = delete;

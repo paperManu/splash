@@ -50,7 +50,7 @@ class Image_Shmdata : public Image
     ~Image_Shmdata() final;
 
     /**
-     * No copy constructor, only move
+     * No copy constructor
      */
     Image_Shmdata(const Image_Shmdata&) = delete;
     Image_Shmdata& operator=(const Image_Shmdata&) = delete;

@@ -57,7 +57,7 @@ class Image_OpenCV : public Image
     ~Image_OpenCV() final;
 
     /**
-     * No copy, but some move constructors
+     * No copy constructor
      */
     Image_OpenCV(const Image_OpenCV&) = delete;
     Image_OpenCV& operator=(const Image_OpenCV&) = delete;

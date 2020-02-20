@@ -58,7 +58,7 @@ class Queue : public BufferObject
     ~Queue() override;
 
     /**
-     * No copy constructor, but a move one
+     * No copy constructor
      */
     Queue(const Queue&) = delete;
     Queue(Queue&&) = default;

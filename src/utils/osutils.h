@@ -25,6 +25,7 @@
 #ifndef SPLASH_OSUTILS_H
 #define SPLASH_OSUTILS_H
 
+#include <algorithm>
 #include <dirent.h>
 #include <pwd.h>
 #include <sched.h>
@@ -133,6 +134,16 @@ inline int xioctl(int fd, int request, void* arg)
     } while(res == -1 && errno == EINTR);
 
     return res;
+}
+
+/**
+ * Converts a string to lower case
+ * \param input string to convert
+ * \return the string in lower case format
+ */
+inline void toLower(std::string& input)
+{
+    std::transform(input.begin(), input.end(), input.begin(), ::tolower);
 }
 
 /**
