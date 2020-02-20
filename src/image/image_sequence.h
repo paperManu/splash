@@ -37,7 +37,7 @@ class Image_Sequence : public Image
      * Constructor
      * \param root Root object
      */
-    Image_Sequence(RootObject* root) : Image(root){};
+    Image_Sequence(RootObject* root) : Image(root){ init(); };
 
     /**
      * No copy constructors
@@ -57,6 +57,15 @@ class Image_Sequence : public Image
     virtual bool capture() = 0;
 
   protected:
+    /**
+     * Base init for the class
+     */
+    void init()
+    {
+        _type = "image_sequence";
+        registerAttributes();
+    }
+
     /**
      * Register new functors to modify attributes
      */

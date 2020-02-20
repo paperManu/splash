@@ -15,7 +15,7 @@ namespace Splash
 
 /*************/
 Image_GPhoto::Image_GPhoto(RootObject* root, const std::string& cameraName)
-    : Image(root)
+    : Image_Sequence(root)
 {
     init();
     read(cameraName);
@@ -452,13 +452,6 @@ void Image_GPhoto::registerAttributes()
         },
         {});
     setAttributeDescription("shutterspeed", "Set the camera shutter speed");
-
-    // Actions
-    addAttribute("capture", [&](const Values&) {
-        runAsyncTask([=]() { capture(); });
-        return true;
-    });
-    setAttributeDescription("capture", "Ask for the camera to shoot");
 
     addAttribute("detect", [&](const Values&) {
         runAsyncTask([=]() { detectCameras(); });
