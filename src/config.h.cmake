@@ -16,8 +16,11 @@
 /* Defined to 1 if jack is detected */
 #cmakedefine01 HAVE_JACK
 
-/* Defined to 1 if shmdata-1.0 is detected */
+/* Defined to 1 if shmdata is detected */
 #cmakedefine01 HAVE_SHMDATA
+
+/* Defined to 1 if sys/shm.h is available */
+#cmakedefine01 HAVE_SYS_SHM_H
 
 /* Defined to 1 if python3.x is detected */
 #cmakedefine01 HAVE_PYTHON

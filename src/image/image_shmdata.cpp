@@ -62,10 +62,6 @@ void Image_Shmdata::init()
 {
     _type = "image_shmdata";
     registerAttributes();
-
-    // This is used for getting documentation "offline"
-    if (!_root)
-        return;
 }
 
 /*************/

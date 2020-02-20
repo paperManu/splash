@@ -224,6 +224,12 @@ if (HAVE_SHMDATA)
     )
 endif()
 
+if (HAVE_SYS_SHM_H)
+    target_sources(splash-${API_VERSION} PRIVATE
+        image/image_shmv.cpp
+    )
+endif()
+
 if (PYTHONLIBS_FOUND)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         set_source_files_properties(

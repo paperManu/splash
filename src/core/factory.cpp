@@ -37,6 +37,10 @@
 #include "./sink/sink_shmdata_encoded.h"
 #endif
 
+#if HAVE_SYS_SHM_H
+#include "./image/image_shmv.h"
+#endif
+
 #if HAVE_PYTHON
 #include "./controller/controller_pythonembedded.h"
 #endif
@@ -286,8 +290,24 @@ void Factory::registerObjects()
             return object;
         },
         GraphObject::Category::IMAGE,
-        "video through shared memory",
+        "video through shmdata shared memory",
         "Image object reading frames from a Shmdata shared memory.",
+        true);
+#endif
+
+#if HAVE_SYS_SHM_H
+    _objectBook["image_shmv"] = Page(
+        [&](RootObject* root) {
+            shared_ptr<GraphObject> object;
+            if (!_scene)
+                object = dynamic_pointer_cast<GraphObject>(make_shared<Image_ShmV>(root));
+            else
+                object = dynamic_pointer_cast<GraphObject>(make_shared<Image>(root));
+            return object;
+        },
+        GraphObject::Category::IMAGE,
+        "video through System V shared memory",
+        "Image object reading frames from a System V shared memory.",
         true);
 #endif
 
@@ -324,7 +344,7 @@ void Factory::registerObjects()
             return object;
         },
         GraphObject::Category::MESH,
-        "mesh through shared memory",
+        "mesh through shmdata shared memory",
         "Mesh object reading data from a Shmdata shared memory.",
         true);
 #endif

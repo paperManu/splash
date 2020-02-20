@@ -33,14 +33,14 @@
 
 #include "./core/constants.h"
 
-#include "./image/image.h"
+#include "./image/image_sequence.h"
 
 typedef Camera GpCamera;
 
 namespace Splash
 {
 
-class Image_GPhoto : public Image
+class Image_GPhoto : public Image_Sequence
 {
   public:
     /**
@@ -62,7 +62,7 @@ class Image_GPhoto : public Image
     /**
      * Capture a new photo
      */
-    bool capture();
+    bool capture() final;
 
     /**
      * Set the camera to read from

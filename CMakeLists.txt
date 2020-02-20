@@ -25,6 +25,7 @@ project(
 )
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+include(CheckIncludeFile)
 
 # Set default build type to Release
 if(NOT CMAKE_BUILD_TYPE)
@@ -83,6 +84,7 @@ pkg_search_module(JACK jack)
 pkg_search_module(PORTAUDIO portaudio-2.0)
 pkg_search_module(SHMDATA shmdata-1.3)
 pkg_search_module(SLAPS slaps-0.0)
+check_include_file("sys/shm.h" HAVE_SYS_SHM_H)
 
 #
 # Configuration
@@ -236,6 +238,7 @@ info_cfg_option(SHMDATA_VERSION)
 info_cfg_option(SLAPS_VERSION)
 info_cfg_option(ZMQ_VERSION)
 info_cfg_option(DATAPATH_SDK_PATH)
+info_cfg_option(HAVE_SYS_SHM_H)
 info_cfg_option(DOXYGEN_FOUND)
 info_cfg_option(DEBUG_OPENGL)
 info_cfg_option(PROFILE_OPENGL)

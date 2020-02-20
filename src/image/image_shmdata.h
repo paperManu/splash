@@ -121,14 +121,6 @@ class Image_Shmdata : public Image
     void registerAttributes();
 };
 
-/**
- * Utility function to clamp quickly a value
- */
-inline int clamp(int v, int a, int b)
-{
-    return v < a ? a : v > b ? b : v;
-}
-
 } // end of namespace
 
 #endif // SPLASH_IMAGE_SHMDATA_H
