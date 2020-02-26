@@ -51,7 +51,7 @@ Debugging
 
 As Splash runs multiple processes on a single computer (and hopefully someday on multiple computers), debugging its behavior can be a bit tricky. The main reason is that the rendering can be run in a subprocess executed when calling Splash from the command line. Therefore, when the software is invoked from `gdb`, `gdb` will not catch the issues in the subprocess.
 
-A workaround is to run the subprocesses manually and to tell the main executable to communicate with these processes instead of spawning its own. We will use the default configuration as an example, located in `./data/splash.json` and installed in `${PREFIX}/share/splash/`
+A workaround is to run the subprocesses manually and to tell the main executable to communicate with these processes instead of spawning its own. We will use the default configuration as an example, located in `./data/share/splash/splash.json` and installed in `${PREFIX}/share/splash/`
 
 Splash processes communicate locally through IPC, and use a socket file to initiate the communication. By default this socket is named based on the main process ID, but it can be overriden from the command line. So first we will run the child process:
 
@@ -67,19 +67,19 @@ In this command line:
 We can now run the server:
 
 ```bash
-splash --doNotSpawn --prefix debug ./data/splash.json
+splash --doNotSpawn --prefix debug ./data/share/splash/splash.json
 ```
 
 In this command line:
-- `--spawnProcesses 0`: do not spawn any child process (it has been run manually)
+- `--doNotSpawn`: do not spawn any child process (it has been run manually)
 - `--prefix debug`: the prefix must be the same as the child process, otherwise they will not be able to communicate
-- `./data/splash.json`: the path to the file to run
+- `./data/share/splash/splash.json`: the path to the file to run
 
 Splash should then run as usual, except that you have total control over all executed processes. It is then possible to run both processes through `gdb`:
 
 ```bash
 gdb --args splash --child --prefix debug local
-gdb --args splash --doNotSpawn --prefix debug ./data/splash.json
+gdb --args splash --doNotSpawn --prefix debug ./data/share/splash/splash.json
 ```
 
 Then run each process in `gdb` using the `run` command.

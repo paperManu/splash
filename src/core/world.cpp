@@ -886,7 +886,7 @@ void World::parseArguments(int argc, char** argv)
             {"silent", no_argument, 0, 's'},
             {"timer", no_argument, 0, 't'},
             {"child", no_argument, 0, 'c'},
-            {"spawnProcesses", required_argument, 0, 'x'},
+            {"doNotSpawn", no_argument, 0, 'x'},
             {0, 0, 0, 0}
         };
 
