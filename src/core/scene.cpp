@@ -96,17 +96,18 @@ Scene::Scene(const string& name, const string& socketPrefix)
 Scene::~Scene()
 {
     // Cleanup every object
-    _mainWindow->setAsCurrentContext();
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex); // We don't want any friend to try accessing the objects
+    if (_mainWindow)
+    {
+        _mainWindow->setAsCurrentContext();
+        lock_guard<recursive_mutex> lockObjects(_objectsMutex); // We don't want any friend to try accessing the objects
 
-    // Free objects cleanly
-    for (auto& obj : _objects)
-        obj.second.reset();
-    _objects.clear();
-    for (auto& obj : _objects)
-        obj.second.reset();
+        // Free objects cleanly
+        for (auto& obj : _objects)
+            obj.second.reset();
+        _objects.clear();
 
-    _mainWindow->releaseContext();
+        _mainWindow->releaseContext();
+    }
 
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
@@ -362,6 +363,12 @@ void Scene::render()
 /*************/
 void Scene::run()
 {
+    if (!_mainWindow)
+    {
+        Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - No rendering context has been created" << Log::endl;
+        return;
+    }
+
     _mainWindow->setAsCurrentContext();
     while (_isRunning)
     {
