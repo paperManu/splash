@@ -224,26 +224,14 @@ class Scene : public RootObject
     static std::string _glRenderer;
 
     bool _runInBackground{false}; //!< If true, no window will be created
-    bool _threadedTextureUpload{false}; //!< If true, texture upload is done in a separate thread
     std::atomic_bool _started{false};
 
     bool _isMaster{false}; //!< Set to true if this is the master Scene of the current config
     bool _isInitialized{false};
     bool _status{false};                        //!< Set to true if an error occured during rendering
     int _swapInterval{1};                       //!< Global value for the swap interval, default for all windows
-    unsigned long long _targetFrameDuration{0}; //!< Duration in microseconds of a frame at the refresh rate of the
-                                                //!< primary monitor
-
-    // Texture upload context
-    std::future<void> _textureUploadFuture;
-    std::shared_ptr<GlWindow> _textureUploadWindow;
-    std::atomic_bool _textureUploadDone{false};
-    Spinlock _textureMutex; //!< Sync between texture and render loops
-    GLsync _textureUploadFence{nullptr}, _cameraDrawnFence{nullptr};
-
+    unsigned long long _targetFrameDuration{0}; //!< Duration in microseconds of a frame at the refresh rate of the primary monitor
     std::atomic_bool _doUploadTextures{false};
-    std::condition_variable _doUploadTexturesCondition{};
-    std::mutex _doUploadTexturesMutex{};
 
     // NV Swap group specific
     GLuint _maxSwapGroups{0};
@@ -280,11 +268,6 @@ class Scene : public RootObject
      * \brief Callback for GL errors and warnings
      */
     static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, void*);
-
-    /**
-     * \brief Texture update loop
-     */
-    void textureUploadRun();
 
     /**
      * \brief Register new attributes

@@ -230,18 +230,15 @@ void Scene::render()
 {
     // We want to have as much time as possible for uploading the textures,
     // so we start it right now.
-    if (!_threadedTextureUpload)
+    bool expectedAtomicValue = false;
+    if (!_doUploadTextures.compare_exchange_strong(expectedAtomicValue, false, std::memory_order_acq_rel))
     {
-        bool expectedAtomicValue = false;
-        if (!_doUploadTextures.compare_exchange_strong(expectedAtomicValue, false, std::memory_order_acq_rel))
+        lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+        for (auto& obj : _objects)
         {
-            lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-            for (auto& obj : _objects)
-            {
-                auto texture = dynamic_pointer_cast<Texture>(obj.second);
-                if (texture)
-                    texture->update();
-            }
+            auto texture = dynamic_pointer_cast<Texture>(obj.second);
+            if (texture)
+                texture->update();
         }
     }
 
@@ -278,28 +275,8 @@ void Scene::render()
 
         // Update and render the objects
         // See GraphObject::getRenderingPriority() for precision about priorities
-        bool firstTextureSync = true; // Sync with the texture upload the first time we need textures
-        bool firstWindowSync = true;  // Sync with the texture upload the last time we need textures
-        auto textureLock = unique_lock<Spinlock>(_textureMutex, defer_lock);
         for (auto& objPriority : objectList)
         {
-            // If the objects needs some Textures, we need to sync
-            if (firstTextureSync && objPriority.first > GraphObject::Priority::BLENDING && objPriority.first < GraphObject::Priority::POST_CAMERA)
-            {
-#ifdef PROFILE
-                PROFILEGL("texture upload lock");
-#endif
-                // We wait for textures to be uploaded, and we prevent any upload while rendering
-                // cameras to prevent tearing
-                textureLock.lock();
-                if (glIsSync(_textureUploadFence) == GL_TRUE)
-                {
-                    glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
-                    glDeleteSync(_textureUploadFence);
-                }
-                firstTextureSync = false;
-            }
-
             if (objPriority.second.size() != 0)
                 Timer::get() << objPriority.second[0]->getType();
 
@@ -327,19 +304,6 @@ void Scene::render()
 
             if (objPriority.second.size() != 0)
                 Timer::get() >> objPriority.second[0]->getType();
-
-            if (firstWindowSync && objPriority.first >= GraphObject::Priority::POST_CAMERA)
-            {
-#ifdef PROFILE
-                PROFILEGL("texture upload unlock");
-#endif
-                if (glIsSync(_cameraDrawnFence) == GL_TRUE)
-                    glDeleteSync(_cameraDrawnFence);
-                _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-                if (textureLock.owns_lock())
-                    textureLock.unlock();
-                firstWindowSync = false;
-            }
         }
 
         {
@@ -372,11 +336,6 @@ void Scene::run()
     _mainWindow->setAsCurrentContext();
     while (_isRunning)
     {
-        if (_threadedTextureUpload && !_textureUploadFuture.valid())
-            _textureUploadFuture = async(std::launch::async, [&]() { textureUploadRun(); });
-        else if (!_threadedTextureUpload && _textureUploadFuture.valid())
-            _textureUploadFuture.wait();
-
         // Process tree updates
         Timer::get() << "tree_process";
         _tree.processQueue();
@@ -423,9 +382,6 @@ void Scene::run()
 
     signalBufferObjectUpdated();
 
-    if (_textureUploadFuture.valid())
-        _textureUploadFuture.wait();
-
     // Clean the tree from anything related to this Scene
     _tree.cutBranchAt("/" + _name);
     propagateTree();
@@ -452,92 +408,6 @@ void Scene::updateInputs()
     // Check if we should quit.
     if (Window::getQuitFlag())
         sendMessageToWorld("quit");
-}
-
-/*************/
-void Scene::textureUploadRun()
-{
-    _textureUploadWindow->setAsCurrentContext();
-
-    while (_isRunning && _threadedTextureUpload)
-    {
-        if (!_started)
-        {
-            this_thread::sleep_for(chrono::milliseconds(50));
-            continue;
-        }
-
-        waitSignalBufferObjectUpdated();
-        Timer::get() >> "loop_texture";
-        Timer::get() << "loop_texture";
-
-        if (!_isRunning || !_threadedTextureUpload)
-            break;
-
-        {
-
-            vector<shared_ptr<Texture>> textures;
-            bool expectedAtomicValue = false;
-            if (_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true, std::memory_order_acquire))
-            {
-                lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-                for (auto& obj : _objects)
-                {
-                    auto texture = dynamic_pointer_cast<Texture>(obj.second);
-                    if (texture)
-                        textures.emplace_back(texture);
-                }
-                _objectsCurrentlyUpdated.store(false, std::memory_order_release);
-            }
-
-            // Wait for Scene's signal that the texture can be uploaded
-            expectedAtomicValue = true;
-            if (!_doUploadTextures.compare_exchange_strong(expectedAtomicValue, false, std::memory_order_acq_rel))
-            {
-                unique_lock<mutex> lockCondition(_doUploadTexturesMutex);
-                _doUploadTexturesCondition.wait_for(lockCondition, chrono::milliseconds(50));
-                _doUploadTextures = false;
-            }
-
-            unique_lock<Spinlock> lockTexture(_textureMutex);
-
-#ifdef PROFILE
-            PROFILEGL("Texture upload loop");
-#endif
-
-            if (glIsSync(_cameraDrawnFence) == GL_TRUE)
-            {
-#ifdef PROFILE
-                PROFILEGL("texture sync");
-#endif
-                glWaitSync(_cameraDrawnFence, 0, GL_TIMEOUT_IGNORED);
-                glDeleteSync(_cameraDrawnFence);
-            }
-
-            Timer::get() << "textureUpload";
-
-            for (auto& texture : textures)
-            {
-#ifdef PROFILE
-                PROFILEGL("update " + texture->getName());
-#endif
-                texture->update();
-            }
-
-            if (glIsSync(_textureUploadFence) == GL_TRUE)
-                glDeleteSync(_textureUploadFence);
-            _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-            lockTexture.unlock();
-
-            Timer::get() >> "textureUpload";
-        }
-
-#ifdef PROFILE
-        ProfilerGL::get().gatherTimings();
-#endif
-    }
-
-    _textureUploadWindow->releaseContext();
 }
 
 /*************/
@@ -747,9 +617,6 @@ void Scene::init(const string& name)
     Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - GL vendor: " << _glVendor << Log::endl;
     Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - GL renderer: " << _glRenderer << Log::endl;
 
-    // Nvidia hardware gets a special treatment by default
-    _threadedTextureUpload = _glVendor == "NVIDIA Corporation";
-
 // Activate GL debug messages
 #ifdef DEBUGGL
     glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
@@ -772,8 +639,6 @@ void Scene::init(const string& name)
     }
 #endif
     _mainWindow->releaseContext();
-
-    _textureUploadWindow = getNewSharedWindow();
 
     // Create the link and connect to the World
     _link = make_unique<Link>(this, name);
@@ -1034,9 +899,7 @@ void Scene::registerAttributes()
     setAttributeDescription("swapTestColor", "Set the swap test color");
 
     addAttribute("uploadTextures", [&](const Values& /*args*/) {
-        unique_lock<mutex> lockCondition(_doUploadTexturesMutex);
         _doUploadTextures = true;
-        _doUploadTexturesCondition.notify_all();
         return true;
     });
     setAttributeDescription("uploadTextures", "Signal that textures should be uploaded right away");
@@ -1122,16 +985,6 @@ void Scene::registerAttributes()
         [&]() -> Values { return {(int)_swapInterval}; },
         {'n'});
     setAttributeDescription("swapInterval", "Set the interval between two video frames. 1 is synced, 0 is not, -1 to sync when possible");
-
-    addAttribute(
-        "threadedTextureUpload",
-        [&](const Values& args) {
-            _threadedTextureUpload = args[0].as<bool>();
-            return true;
-        },
-        [&]() -> Values { return {_threadedTextureUpload}; },
-        {'n'});
-    setAttributeDescription("threadedTextureUpload", "Activate threaded texture upload. This can cause freezes on some hardware");
 }
 
 /*************/
