@@ -88,35 +88,18 @@ void World::run()
             // Read and serialize new buffers
             Timer::get() << "serialize";
             unordered_map<string, shared_ptr<SerializedObject>> serializedObjects;
+            for (auto& [name, object] : _objects)
             {
-                vector<future<void>> threads;
-                for (auto& o : _objects)
+                object->runTasks();
+                object->update();
+                if (auto bufferObject = dynamic_pointer_cast<BufferObject>(object); bufferObject)
                 {
-                    // Run object tasks
-                    o.second->runTasks();
-
-                    auto bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
-                    // This prevents the map structure to be modified in the threads
-                    auto serializedObjectIt = serializedObjects.emplace(std::make_pair(bufferObj->getDistantName(), shared_ptr<SerializedObject>(nullptr)));
-                    if (!serializedObjectIt.second)
-                        continue; // Error while inserting the object in the map
-
-                    threads.push_back(async(launch::async, [=]() {
-                        // Update the local objects
-                        o.second->update();
-
-                        // Send them the their destinations
-                        if (bufferObj.get() != nullptr)
-                        {
-                            if (bufferObj->wasUpdated()) // if the buffer has been updated
-                            {
-                                auto obj = bufferObj->serialize();
-                                bufferObj->setNotUpdated();
-                                if (obj)
-                                    serializedObjectIt.first->second = obj;
-                            }
-                        }
-                    }));
+                    if (bufferObject->wasUpdated())
+                    {
+                        auto serializedObject = bufferObject->serialize();
+                        bufferObject->setNotUpdated();
+                        serializedObjects[name] = serializedObject;
+                    }
                 }
             }
             Timer::get() >> "serialize";
@@ -128,9 +111,11 @@ void World::run()
 
             // Ask for the upload of the new buffers, during the next world loop
             Timer::get() << "upload";
-            for (auto& o : serializedObjects)
-                if (o.second)
-                    _link->sendBuffer(o.first, std::move(o.second));
+            for (auto& [name, serializedObject] : serializedObjects)
+            {
+                assert(serializedObject);
+                _link->sendBuffer(name, serializedObject);
+            }
         }
 
         if (_quit)
