@@ -56,10 +56,9 @@ class World : public RootObject
   public:
     /**
      * Constructor
-     * \param argc Argument count
-     * \param argv Arguments value
+     * \param context Context for the creation of this World object
      */
-    World(int argc, char** argv);
+    explicit World(Context context);
 
     /**
      * Destructor
@@ -78,9 +77,6 @@ class World : public RootObject
     void run();
 
   private:
-    std::string _splashExecutable{"splash"};
-    std::string _currentExePath{""};
-
 #if HAVE_PORTAUDIO
     std::unique_ptr<LtcClock> _clock{nullptr}; //!< Master clock from a LTC signal
     std::string _clockDeviceName{""};          //!< Name of the input sound source for the master clock
@@ -93,7 +89,6 @@ class World : public RootObject
     bool _quit{false};         //!< True if the World should quit
     static World* _that;       //!< Pointer to the World
     struct sigaction _signals; //!< System signals
-    std::string _executionPath{""};
     std::mutex _configurationMutex;
     bool _enforceCoreAffinity{false}; //!< If true, World and Scenes have their affinity fixed in specific, separate cores
     bool _enforceRealtime{false};     //!< If true, realtime scheduling is asked to the system, if possible
@@ -109,8 +104,6 @@ class World : public RootObject
 
     std::map<std::string, int> _scenes; //!< Map holding the PID of the Scene processes
     std::string _masterSceneName{""};   //!< Name of the master Scene
-    std::string _displayServer{"0"};    //!< Display server.
-    std::string _forcedDisplay{""};     //!< Set to force an output display
 
     std::string _configurationPath{""}; //!< Path to the configuration file
     std::string _mediaPath{""};         //!< Default path to the medias
@@ -134,9 +127,16 @@ class World : public RootObject
     void addToWorld(const std::string& type, const std::string& name);
 
     /**
-     * Apply the configuration
+     * Match the current context
+     * \return Return true if the context was applied successfully
      */
-    void applyConfig();
+    bool applyContext();
+
+    /**
+     * Apply the configuration
+     * \return Return true if the configuration was applied successfully
+     */
+    bool applyConfig();
 
     /**
      * Spawn a scene given its parameters
@@ -189,11 +189,6 @@ class World : public RootObject
     bool handleSerializedObject(const std::string& name, const std::shared_ptr<SerializedObject>& obj) override;
 
     /**
-     * Initializes the World
-     */
-    void init();
-
-    /**
      * Handle the exit signal messages
      */
     static void leave(int signal_value);
@@ -212,13 +207,6 @@ class World : public RootObject
      * \return Return true if everything went well
      */
     bool loadProject(const std::string& filename);
-
-    /**
-     * Parse the given arguments
-     * \param argc Argument count
-     * \param argv Argument values
-     */
-    void parseArguments(int argc, char** argv);
 
     /**
      * Callback for GLFW errors

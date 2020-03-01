@@ -26,18 +26,29 @@
 using namespace glm;
 using namespace std;
 
-#define SPLASH_CAMERA_LINK "__camera_link"
-
 namespace Splash
 {
 /*************/
 World* World::_that;
 
 /*************/
-World::World(int argc, char** argv)
+World::World(Context context)
+    : RootObject(context)
 {
-    parseArguments(argc, argv);
-    init();
+    _name = "world";
+
+    _that = this;
+    _signals.sa_handler = leave;
+    _signals.sa_flags = 0;
+    sigaction(SIGINT, &_signals, nullptr);
+    sigaction(SIGTERM, &_signals, nullptr);
+
+    if (_context.socketPrefix.empty())
+        _context.socketPrefix = to_string(static_cast<int>(getpid()));
+    _link = make_unique<Link>(this, _name);
+
+    registerAttributes();
+    initializeTree();
 }
 
 /*************/
@@ -51,21 +62,65 @@ World::~World()
 }
 
 /*************/
-void World::run()
+bool World::applyContext()
 {
-    // If set to run as a child process, only create a scene which will wait for instructions
-    // from the master process
-    if (_runAsChild)
+    if (_context.info)
     {
-        Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Creating child Scene with name " << _childSceneName << Log::endl;
-
-        Scene scene(_childSceneName, _linkSocketPrefix);
-        scene.run();
-
-        return;
+        auto descriptions = getObjectsAttributesDescriptions();
+        cout << descriptions << endl;
+        return false;
     }
 
-    applyConfig();
+    if (_context.pythonScriptPath)
+    {
+        auto pythonScriptPath = *_context.pythonScriptPath;
+        auto pythonArgs = _context.pythonArgs;
+
+        // The Python script will be added once the loop runs
+        addTask([=]() {
+            Log::get() << Log::MESSAGE
+                       << "World::parseArguments - Adding Python script from command "
+                          "line argument: "
+                       << pythonScriptPath << Log::endl;
+
+            auto pythonObjectName = string("_pythonArgScript");
+            if (!_nameRegistry.registerName(pythonObjectName))
+                pythonObjectName = _nameRegistry.generateName("_pythonArgScript");
+
+            sendMessage(SPLASH_ALL_PEERS, "addObject", {"python", pythonObjectName, _masterSceneName});
+            sendMessage(pythonObjectName, "savable", {false});
+            sendMessage(pythonObjectName, "args", {pythonArgs});
+            sendMessage(pythonObjectName, "file", {pythonScriptPath});
+        });
+    }
+
+    if (_context.log2file)
+        addTask([=] { setAttribute("logToFile", {_context.log2file}); });
+
+    if (_context.defaultConfigurationFile)
+        Log::get() << Log::MESSAGE << "No filename specified, loading default file" << Log::endl;
+    else
+        Log::get() << Log::MESSAGE << "Loading file " << _context.configurationFile << Log::endl;
+
+    Json::Value config;
+    _status &= loadConfig(_context.configurationFile, config);
+
+    if (_status)
+        _config = config;
+    else if (!_context.unitTest)
+        return false;
+
+    return true;
+}
+
+/*************/
+void World::run()
+{
+    if (!applyContext())
+        return;
+
+    if (!applyConfig())
+        return;
 
     while (true)
     {
@@ -157,7 +212,7 @@ void World::addToWorld(const string& type, const string& name)
 }
 
 /*************/
-void World::applyConfig()
+bool World::applyConfig()
 {
     lock_guard<mutex> lockConfiguration(_configurationMutex);
 
@@ -172,7 +227,7 @@ void World::applyConfig()
         if (!_config.isMember("scenes"))
         {
             Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while getting scenes configuration" << Log::endl;
-            return;
+            return false;
         }
 
         const Json::Value& scenes = _config["scenes"];
@@ -182,7 +237,7 @@ void World::applyConfig()
             string sceneDisplay = scenes[sceneName].isMember("display") ? scenes[sceneName]["display"].asString() : "";
             bool spawn = scenes[sceneName].isMember("spawn") ? scenes[sceneName]["spawn"].asBool() : true;
 
-            if (!addScene(sceneName, sceneDisplay, sceneAddress, spawn && _spawnSubprocesses))
+            if (!addScene(sceneName, sceneDisplay, sceneAddress, spawn && _context.spawnSubprocesses))
                 continue;
 
             // Set the remaining parameters
@@ -218,10 +273,11 @@ void World::applyConfig()
                 setAttribute("addObject", {objects[objectName]["type"].asString(), objectName, scene.first, false});
             }
 
-            sendMessage(SPLASH_ALL_PEERS, "runInBackground", {_runInBackground});
+            sendMessage(SPLASH_ALL_PEERS, "runInBackground", {_context.hide});
         }
 
-        // Make sure all objects have been created in every Scene, by sending a sync message
+        // Make sure all objects have been created in every Scene, by sending a sync
+        // message
         for (const auto& s : _scenes)
             sendMessageWithAnswer(s.first, "sync");
 
@@ -278,7 +334,8 @@ void World::applyConfig()
         }
 
         // Lastly, configure this very World
-        // This happens last as some parameters are sent to Scenes (like blending computation)
+        // This happens last as some parameters are sent to Scenes (like blending
+        // computation)
         if (_config.isMember("world"))
         {
             const Json::Value jsWorld = _config["world"];
@@ -296,7 +353,7 @@ void World::applyConfig()
     catch (...)
     {
         Log::get() << Log::ERROR << "Exception caught while applying configuration from file " << _configFilename << Log::endl;
-        return;
+        return false;
     }
 
 // Also, enable the master clock if it was not enabled
@@ -318,6 +375,8 @@ void World::applyConfig()
             break;
         }
     }
+
+    return true;
 }
 
 /*************/
@@ -345,15 +404,15 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
             if (regex_match(sceneDisplay, match, regDisplayFull))
                 display = "DISPLAY=" + sceneDisplay;
             else if (regex_match(sceneDisplay, match, regDisplayInt))
-                display = "DISPLAY=:" + _displayServer + "." + sceneDisplay;
+                display = "DISPLAY=:" + _context.displayServer + "." + sceneDisplay;
         }
 
-        if (!_forcedDisplay.empty())
+        if (_context.forcedDisplay)
         {
-            if (regex_match(_forcedDisplay, match, regDisplayFull))
-                display = "DISPLAY=" + _forcedDisplay;
-            else if (regex_match(_forcedDisplay, match, regDisplayInt))
-                display = "DISPLAY=:" + _displayServer + "." + _forcedDisplay;
+            if (regex_match(*_context.forcedDisplay, match, regDisplayFull))
+                display = "DISPLAY=" + *_context.forcedDisplay;
+            else if (regex_match(*_context.forcedDisplay, match, regDisplayInt))
+                display = "DISPLAY=:" + _context.displayServer + "." + *_context.forcedDisplay;
         }
 #endif
 
@@ -366,7 +425,9 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
             if (worldDisplay.size() > 0 && display.find(worldDisplay) == display.size() - worldDisplay.size() && !_innerScene)
             {
                 Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an inner Scene" << Log::endl;
-                _innerScene = make_shared<Scene>(sceneName, _linkSocketPrefix);
+                auto sceneContext = _context;
+                sceneContext.childSceneName = sceneName;
+                _innerScene = make_shared<Scene>(sceneContext);
                 _innerSceneThread = thread([&]() { _innerScene->run(); });
             }
             else
@@ -374,17 +435,17 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
                 // Spawn a new process containing this Scene
                 Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting a Scene in another process" << Log::endl;
 
-                string cmd = _currentExePath;
+                string cmd = _context.executablePath;
                 string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
                 string timer = Timer::get().isDebug() ? "-t" : "";
                 string slave = "--child";
                 string xauth = "XAUTHORITY=" + Utils::getHomePath() + "/.Xauthority";
 
                 vector<char*> argv = {const_cast<char*>(cmd.c_str()), const_cast<char*>(slave.c_str())};
-                if (!_linkSocketPrefix.empty())
+                if (!_context.socketPrefix.empty())
                 {
                     argv.push_back((char*)"--prefix");
-                    argv.push_back(const_cast<char*>(_linkSocketPrefix.c_str()));
+                    argv.push_back(const_cast<char*>(_context.socketPrefix.c_str()));
                 }
                 if (!debug.empty())
                     argv.push_back(const_cast<char*>(debug.c_str()));
@@ -496,7 +557,8 @@ string World::getObjectsAttributesDescriptions()
         root["world"][d[0].as<string>()] = formatDescription(d[1].as<string>(), d[2].as<Values>());
     }
 
-    setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
+    setlocale(LC_NUMERIC,
+        "C"); // Needed to make sure numbers are written with commas
     string jsonString;
     jsonString = root.toStyledString();
 
@@ -506,7 +568,8 @@ string World::getObjectsAttributesDescriptions()
 /*************/
 void World::saveConfig()
 {
-    setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
+    setlocale(LC_NUMERIC,
+        "C"); // Needed to make sure numbers are written with commas
 
     // Local objects configuration can differ from the scenes objects,
     // as their type is not necessarily identical
@@ -546,7 +609,8 @@ void World::saveConfig()
         _config["world"][attr] = worldConfiguration[attr];
     }
 
-    setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
+    setlocale(LC_NUMERIC,
+        "C"); // Needed to make sure numbers are written with commas
     ofstream out(_configFilename, ios::binary);
     out << _config.toStyledString();
     out.close();
@@ -557,15 +621,16 @@ void World::saveProject(const string& filename)
 {
     try
     {
-        setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
+        setlocale(LC_NUMERIC,
+            "C"); // Needed to make sure numbers are written with commas
 
         auto root = Json::Value(); // Haha, auto root...
         root["description"] = SPLASH_FILE_PROJECT;
         root["version"] = string(PACKAGE_VERSION);
         root["links"] = Json::Value();
 
-        // Here, we don't care about which Scene holds which object, as objects with the
-        // same name in different Scenes are necessarily clones
+        // Here, we don't care about which Scene holds which object, as objects with
+        // the same name in different Scenes are necessarily clones
         std::set<std::pair<string, string>> existingLinks{}; // We keep a list of already existing links
         for (auto& s : _scenes)
         {
@@ -594,7 +659,8 @@ void World::saveProject(const string& filename)
 
             for (const auto& member : config["objects"].getMemberNames())
             {
-                // We only save configuration for non Scene-specific objects, which are one of the following:
+                // We only save configuration for non Scene-specific objects, which are
+                // one of the following:
                 if (!_factory->isProjectSavable(config["objects"][member]["type"].asString()))
                     continue;
 
@@ -647,29 +713,6 @@ bool World::handleSerializedObject(const string& name, const shared_ptr<Serializ
     if (!RootObject::handleSerializedObject(name, obj))
         _link->sendBuffer(name, obj);
     return true;
-}
-
-/*************/
-void World::init()
-{
-    // If set to run as a child process, we do not initialize anything
-    if (!_runAsChild)
-    {
-        _name = "world";
-
-        _that = this;
-        _signals.sa_handler = leave;
-        _signals.sa_flags = 0;
-        sigaction(SIGINT, &_signals, nullptr);
-        sigaction(SIGTERM, &_signals, nullptr);
-
-        if (_linkSocketPrefix.empty())
-            _linkSocketPrefix = to_string(static_cast<int>(getpid()));
-        _link = make_unique<Link>(this, _name);
-
-        registerAttributes();
-        initializeTree();
-    }
 }
 
 /*************/
@@ -749,8 +792,8 @@ bool World::loadProject(const string& filename)
         _configurationPath = Utils::getPathFromFilePath(filename);
 
         // Now, we apply the configuration depending on the current state
-        // Meaning, we replace objects with the same name, create objects with non-existing name,
-        // and delete objects which are not in the partial config
+        // Meaning, we replace objects with the same name, create objects with
+        // non-existing name, and delete objects which are not in the partial config
 
         // Delete existing objects
         for (const auto& s : _scenes)
@@ -831,261 +874,6 @@ bool World::loadProject(const string& filename)
         Log::get() << Log::ERROR << "Exception caught while loading file " << filename << Log::endl;
         return false;
     }
-}
-
-/*************/
-void World::parseArguments(int argc, char** argv)
-{
-    auto printWelcome = []() {
-        cout << endl;
-        cout << "\t             \033[33;1m- Splash -\033[0m" << endl;
-        cout << "\t\033[1m- Modular multi-output video mapper -\033[0m" << endl;
-        cout << "\t          \033[1m- Version " << PACKAGE_VERSION << " -\033[0m" << endl;
-        cout << endl;
-    };
-
-    // Get the executable directory
-    _splashExecutable = argv[0];
-    _currentExePath = Utils::getCurrentExecutablePath();
-    _executionPath = Utils::getPathFromExecutablePath(_splashExecutable);
-
-    // Parse the other args
-    string filename = string(DATADIR) + "splash.json";
-    bool defaultFile = true;
-
-    while (true)
-    {
-        static struct option longOptions[] = {
-            {"debug", no_argument, 0, 'd'},
-#if HAVE_LINUX
-            {"forceDisplay", required_argument, 0, 'D'},
-            {"displayServer", required_argument, 0, 'S'},
-#endif
-            {"help", no_argument, 0, 'h'},
-            {"hide", no_argument, 0, 'H'},
-            {"info", no_argument, 0, 'i'},
-            {"log2file", no_argument, 0, 'l'},
-            {"open", required_argument, 0, 'o'},
-            {"prefix", required_argument, 0, 'p'},
-            {"python", required_argument, 0, 'P'},
-            {"silent", no_argument, 0, 's'},
-            {"timer", no_argument, 0, 't'},
-            {"child", no_argument, 0, 'c'},
-            {"doNotSpawn", no_argument, 0, 'x'},
-            {0, 0, 0, 0}
-        };
-
-        int optionIndex = 0;
-        auto ret = getopt_long(argc, argv, "+cdD:S:hHilo:p:P:stx", longOptions, &optionIndex);
-
-        if (ret == -1)
-            break;
-
-        switch (ret)
-        {
-        default:
-        case 'h':
-        {
-            printWelcome();
-
-            cout << "Basic usage: splash [options] [config.json] -- [python script argument]" << endl;
-            cout << "Options:" << endl;
-            cout << "\t-o (--open) [filename] : set [filename] as the configuration file to open" << endl;
-            cout << "\t-d (--debug) : activate debug messages (if Splash was compiled with -DDEBUG)" << endl;
-            cout << "\t-t (--timer) : activate more timers, at the cost of performance" << endl;
-#if HAVE_LINUX
-            cout << "\t-D (--forceDisplay) : force the display on which to show all windows" << endl;
-            cout << "\t-S (--displayServer) : set the display server ID" << endl;
-#endif
-            cout << "\t-s (--silent) : disable all messages" << endl;
-            cout << "\t-i (--info) : get description for all objects attributes" << endl;
-            cout << "\t-H (--hide) : run Splash in background" << endl;
-            cout << "\t-P (--python) : add the given Python script to the loaded configuration" << endl;
-            cout << "                  any argument after -- will be sent to the script" << endl;
-            cout << "\t-l (--log2file) : write the logs to /var/log/splash.log, if possible" << endl;
-            cout << "\t-p (--prefix) : set the shared memory socket paths prefix (defaults to the PID)" << endl;
-            cout << "\t-c (--child): run as a child controlled by a master Splash process" << endl;
-            cout << "\t-x (--doNotSpawn): do not spawn subprocesses, which have to be ran manually" << endl;
-            cout << endl;
-            exit(0);
-        }
-        case 'd':
-        {
-            Log::get().setVerbosity(Log::DEBUGGING);
-            break;
-        }
-        case 'D':
-        {
-            auto regDisplayFull = regex("(:[0-9]\\.[0-9])", regex_constants::extended);
-            auto regDisplayInt = regex("[0-9]", regex_constants::extended);
-            smatch match;
-
-            _forcedDisplay = string(optarg);
-            if (regex_match(_forcedDisplay, match, regDisplayFull))
-            {
-                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Display forced to " << _forcedDisplay << Log::endl;
-            }
-            else if (regex_match(_forcedDisplay, match, regDisplayInt))
-            {
-                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Display forced to :0." << _forcedDisplay << Log::endl;
-            }
-            else
-            {
-                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - " << string(optarg) << ": argument expects a positive integer, or a string in the form of \":x.y\""
-                           << Log::endl;
-                exit(0);
-            }
-            break;
-        }
-        case 'S':
-        {
-            auto regInt = regex("[0-9]+", regex_constants::extended);
-            smatch match;
-
-            _displayServer = string(optarg);
-            if (regex_match(_displayServer, match, regInt))
-            {
-                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Display server forced to :" << _displayServer << Log::endl;
-            }
-            else
-            {
-                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - " << string(optarg) << ": argument expects a positive integer" << Log::endl;
-                exit(0);
-            }
-            break;
-        }
-        case 'H':
-        {
-            _runInBackground = true;
-            break;
-        }
-        case 'P':
-        {
-            auto pythonScriptPath = Utils::getFullPathFromFilePath(string(optarg), Utils::getCurrentWorkingDirectory());
-
-            // Build the Python arg list
-            auto pythonArgs = Values({pythonScriptPath});
-            bool isPythonArg = false;
-            for (int i = 0; i < argc; ++i)
-            {
-                if (!isPythonArg && "--" == string(argv[i]))
-                {
-                    isPythonArg = true;
-                    continue;
-                }
-                else if (!isPythonArg)
-                {
-                    continue;
-                }
-                else
-                {
-                    pythonArgs.push_back(string(argv[i]));
-                }
-            }
-
-            // The Python script will be added once the loop runs
-            addTask([=]() {
-                Log::get() << Log::MESSAGE << "World::parseArguments - Adding Python script from command line argument: " << pythonScriptPath << Log::endl;
-                auto pythonObjectName = string("_pythonArgScript");
-                if (!_nameRegistry.registerName(pythonObjectName))
-                    pythonObjectName = _nameRegistry.generateName("_pythonArgScript");
-                sendMessage(SPLASH_ALL_PEERS, "addObject", {"python", pythonObjectName, _masterSceneName});
-                sendMessage(pythonObjectName, "savable", {false});
-                sendMessage(pythonObjectName, "args", {pythonArgs});
-                sendMessage(pythonObjectName, "file", {pythonScriptPath});
-            });
-            break;
-        }
-        case 'i':
-        {
-            auto descriptions = getObjectsAttributesDescriptions();
-            cout << descriptions << endl;
-            exit(0);
-        }
-        case 'l':
-        {
-            setAttribute("logToFile", {1});
-            addTask([&]() { setAttribute("logToFile", {1}); });
-            break;
-        }
-        case 'o':
-        {
-            defaultFile = false;
-            filename = string(optarg);
-            break;
-        }
-        case 'p':
-        {
-            _linkSocketPrefix = string(optarg);
-            break;
-        }
-        case 's':
-        {
-            Log::get().setVerbosity(Log::NONE);
-            break;
-        }
-        case 't':
-        {
-            Timer::get().setDebug(true);
-            break;
-        }
-        case 'c':
-        {
-            _runAsChild = true;
-            break;
-        }
-        case 'x':
-        {
-            _spawnSubprocesses = false;
-            break;
-        }
-        }
-    }
-
-    // Find last argument index, or "--"
-    int lastArgIndex = 0;
-    for (; lastArgIndex < argc; ++lastArgIndex)
-        if (string(argv[lastArgIndex]) == "--")
-            break;
-
-    string lastArg = "";
-    if (optind < lastArgIndex)
-        lastArg = string(argv[optind]);
-
-    if (_runAsChild)
-    {
-        if (!lastArg.empty())
-            _childSceneName = lastArg;
-    }
-    else
-    {
-        printWelcome();
-
-        if (!lastArg.empty())
-        {
-            filename = lastArg;
-            defaultFile = false;
-        }
-        if (filename != "")
-        {
-            Json::Value config;
-            _status &= loadConfig(filename, config);
-
-            if (_status)
-                _config = config;
-            else
-                exit(0);
-        }
-        else
-        {
-            exit(0);
-        }
-    }
-
-    if (defaultFile && !_runAsChild)
-        Log::get() << Log::MESSAGE << "No filename specified, loading default file" << Log::endl;
-    else if (!_runAsChild)
-        Log::get() << Log::MESSAGE << "Loading file " << filename << Log::endl;
 }
 
 /*************/
@@ -1219,7 +1007,9 @@ void World::registerAttributes()
             return true;
         },
         {'s'});
-    setAttributeDescription("copyCameraParameters", "Copy the camera parameters from the given configuration file (based on camera names)");
+    setAttributeDescription("copyCameraParameters",
+        "Copy the camera parameters from the given "
+        "configuration file (based on camera names)");
 
     addAttribute("pong",
         [&](const Values& args) {

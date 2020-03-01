@@ -56,19 +56,18 @@ class Scene : public RootObject
 
   public:
     /**
-     * \brief Constructor
-     * \param name Scene name
-     * \param autoRun If true, the Scene will start without waiting for a start message from the World
+     * Constructor
+     * \param context Context for the creation of this Scene object
      */
-    Scene(const std::string& name = "Splash", const std::string& socketPrefix = "");
+    explicit Scene(Context context);
 
     /**
-     * \brief Destructor
+     *  Destructor
      */
     ~Scene() override;
 
     /**
-     * \brief Add an object of the given type, with the given name
+     *  Add an object of the given type, with the given name
      * \param type Object type
      * \param name Object name
      * \return Return a shared pointer to the created object
@@ -76,14 +75,14 @@ class Scene : public RootObject
     std::shared_ptr<GraphObject> addObject(const std::string& type, const std::string& name = "");
 
     /**
-     * \brief Add an object ghosting one in another Scene. Used in master Scene for controlling purposes
+     *  Add an object ghosting one in another Scene. Used in master Scene for controlling purposes
      * \param type Object type
      * \param name Object name
      */
     void addGhost(const std::string& type, const std::string& name = "");
 
     /**
-     * \brief Get a glfw window sharing the same context as _mainWindow
+     *  Get a glfw window sharing the same context as _mainWindow
      * \param name Window name
      * \return Return a shared pointer to the new window
      */
@@ -108,7 +107,7 @@ class Scene : public RootObject
     ObjectLibrary& getObjectLibrary() { return _objectLibrary; }
 
     /**
-     * \brief Get the status of the scene
+     *  Get the status of the scene
      * \return Return true if all is well
      */
     bool getStatus() const { return _status; }
@@ -120,25 +119,25 @@ class Scene : public RootObject
     int getSwapInterval() const { return _swapInterval; }
 
     /**
-     * \brief Check whether it is initialized
+     *  Check whether it is initialized
      * \return Return true if the Scene is initialized
      */
     bool isInitialized() const { return _isInitialized; }
 
     /**
-     * \brief Ask whether the scene is Master or not
+     *  Ask whether the scene is Master or not
      * \return Return true if the Scene is master
      */
     bool isMaster() const { return _isMaster; }
 
     /**
-     * \brief Check wether the scene is running
+     *  Check wether the scene is running
      * \return Return true if the scene runs
      */
     bool isRunning() const { return _isRunning; }
 
     /**
-     * \brief Link an object to another, base on their types
+     *  Link an object to another, base on their types
      * \param first Child object
      * \param second Parent object
      * \return Return true if the linking succeeded
@@ -147,7 +146,7 @@ class Scene : public RootObject
     bool link(const std::shared_ptr<GraphObject>& first, const std::shared_ptr<GraphObject>& second);
 
     /**
-     * \brief Unlink two objects. This always succeeds
+     *  Unlink two objects. This always succeeds
      * \param first Child object
      * \param second Parent object
      */
@@ -155,36 +154,36 @@ class Scene : public RootObject
     void unlink(const std::shared_ptr<GraphObject>& first, const std::shared_ptr<GraphObject>& second);
 
     /**
-     * \brief Remove an object
+     *  Remove an object
      * \param name Object name
      */
     void remove(const std::string& name);
 
     /**
-     * \brief Render everything
+     *  Render everything
      */
     void render();
 
     /**
-     * \brief Main loop for the scene
+     *  Main loop for the scene
      */
     void run();
 
     /**
-     * \brief Set the Scene as the master one
+     *  Set the Scene as the master one
      * \param configFilePath File path for the loaded configuration
      */
     void setAsMaster(const std::string& configFilePath = "");
 
     /**
-     * \brief Set a message to be sent to the world
+     *  Set a message to be sent to the world
      * \param message Message type to send, which should correspond to a World attribute
      * \param value Message content
      */
     void sendMessageToWorld(const std::string& message, const Values& value = {});
 
     /**
-     * \brief Set a message to be sent to the world, and wait for the World to send an answer
+     *  Set a message to be sent to the world, and wait for the World to send an answer
      * \param message Message type to send, which should correspond to a World attribute
      * \param value Message content
      * \param timeout Timeout in microseconds
@@ -240,37 +239,37 @@ class Scene : public RootObject
     static std::vector<std::string> _ghostableTypes;
 
     /**
-     * \brief Find which OpenGL version is available (from a predefined list)
+     *  Find which OpenGL version is available (from a predefined list)
      * \return Return MAJOR and MINOR
      */
     std::vector<int> findGLVersion();
 
     /**
-     * \brief Set up the context and everything
+     *  Set up the context and everything
      * \param name Scene name
      */
     void init(const std::string& name);
 
     /**
-     * \brief Computes and store the duration of a frame at the refresh rate of the primary monitor
+     *  Computes and store the duration of a frame at the refresh rate of the primary monitor
      * \return The duration of a frame at the refresh rate of the primary monitor in microseconds
      */
     unsigned long long updateTargetFrameDuration();
 
     /**
-     * \brief Callback for GLFW errors
+     *  Callback for GLFW errors
      * \param code Error code
      * \param msg Associated error message
      */
     static void glfwErrorCallback(int code, const char* msg);
 
     /**
-     * \brief Callback for GL errors and warnings
+     *  Callback for GL errors and warnings
      */
     static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, void*);
 
     /**
-     * \brief Register new attributes
+     *  Register new attributes
      */
     void registerAttributes();
 
@@ -280,7 +279,7 @@ class Scene : public RootObject
     void initializeTree();
 
     /**
-     * \brief Update the various inputs (mouse, keyboard...)
+     *  Update the various inputs (mouse, keyboard...)
      */
     void updateInputs();
 };

@@ -3,7 +3,6 @@
 #include <doctest.h>
 #include <json/json.h>
 
-#include "./splash.h"
 #include "./utils/jsonutils.h"
 #include "./utils/osutils.h"
 

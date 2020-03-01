@@ -66,16 +66,16 @@ bool Scene::getHasNVSwapGroup()
 }
 
 /*************/
-Scene::Scene(const string& name, const string& socketPrefix)
-    : _objectLibrary(dynamic_cast<RootObject*>(this))
+Scene::Scene(Context context)
+    : RootObject(context)
+    , _objectLibrary(dynamic_cast<RootObject*>(this))
 {
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
 #endif
 
     _isRunning = true;
-    _name = name;
-    _linkSocketPrefix = socketPrefix;
+    _name = _context.childSceneName;
 
     registerAttributes();
     initializeTree();

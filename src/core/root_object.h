@@ -29,6 +29,7 @@
 #include <condition_variable>
 #include <json/json.h>
 #include <list>
+#include <string>
 #include <map>
 #include <unordered_map>
 
@@ -56,6 +57,28 @@ class RootObject : public BaseObject
     friend UserInput;
 
   public:
+    struct Context
+    {
+        bool defaultConfigurationFile{true};
+        bool hide{false};
+        bool info{false};
+        bool log2file{false};
+        bool childProcess{false};
+        bool spawnSubprocesses{true};
+        bool unitTest{false};
+        std::string executableName{""};
+        std::string executablePath{""};
+        std::string socketPrefix{""};
+        std::string childSceneName{"scene"};
+        std::string configurationFile{std::string(DATADIR) + "splash.json"};
+        std::optional<std::string> pythonScriptPath{};
+        Values pythonArgs{};
+#if HAVE_LINUX
+        std::optional<std::string> forcedDisplay{};
+        std::string displayServer{"0"};
+#endif
+    };
+
     enum Command
     {
         callObject,
@@ -67,6 +90,12 @@ class RootObject : public BaseObject
      * Constructor
      */
     RootObject();
+
+    /**
+     * Constructor
+     * \param context Context for the creation of this RootObject
+     */
+    explicit RootObject(Context context);
 
     /**
      * Destructor
@@ -112,7 +141,7 @@ class RootObject : public BaseObject
      * Get the socket prefix
      * \return Return the socket prefx
      */
-    std::string getSocketPrefix() const { return _linkSocketPrefix; }
+    std::string getSocketPrefix() const { return _context.socketPrefix; }
 
     /**
      * \brief Get the configuration path
@@ -183,13 +212,14 @@ class RootObject : public BaseObject
     void signalBufferObjectUpdated();
 
   protected:
+    Context _context{};
+
     Tree::Root _tree{}; //!< Configuration / status tree, shared between all root objects
     std::unordered_map<std::string, int> _treeCallbackIds{};
     std::unordered_map<std::string, CallbackHandle> _attributeCallbackHandles{};
 
     std::unique_ptr<Factory> _factory{}; //!< Object factory
     std::unique_ptr<Link> _link{};       //!< Link object for communicatin between World and Scene
-    std::string _linkSocketPrefix{""};   //!< Prefix to add to shared memory socket paths
 
     Values _lastAnswerReceived{}; //!< Holds the last answer received through the link
     std::condition_variable _answerCondition{};

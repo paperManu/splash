@@ -74,9 +74,11 @@ target_sources(unitTests PRIVATE
     unit_tests/core/name_registry.cpp
     unit_tests/core/root_object.cpp
     unit_tests/core/buffer_object.cpp
+    unit_tests/core/scene.cpp
     unit_tests/core/serializer.cpp
     unit_tests/core/tree.cpp
     unit_tests/core/value.cpp
+    unit_tests/core/world.cpp
     unit_tests/image/image_list.cpp
     unit_tests/utils/dense_deque.cpp
     unit_tests/utils/dense_map.cpp

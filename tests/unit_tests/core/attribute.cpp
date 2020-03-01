@@ -1,6 +1,6 @@
 #include <doctest.h>
 
-#include "./splash.h"
+#include "./core/attribute.h"
 
 using namespace std;
 using namespace Splash;

@@ -3,7 +3,7 @@
 #include <utility>
 #include <vector>
 
-#include "./splash.h"
+#include "./utils/resizable_array.h"
 
 using namespace std;
 using namespace Splash;

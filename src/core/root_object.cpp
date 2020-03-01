@@ -14,7 +14,17 @@ namespace Splash
 
 /**************/
 RootObject::RootObject()
-    : _factory(unique_ptr<Factory>(new Factory(this)))
+    : _context(Context())
+    , _factory(unique_ptr<Factory>(new Factory(this)))
+{
+    registerAttributes();
+    initializeTree();
+}
+
+/**************/
+RootObject::RootObject(Context context)
+    : _context(context)
+    , _factory(unique_ptr<Factory>(new Factory(this)))
 {
     registerAttributes();
     initializeTree();

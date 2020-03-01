@@ -6,7 +6,6 @@
 #include <doctest.h>
 
 #include "./core/base_object.h"
-#include "./splash.h"
 
 using namespace std;
 using namespace Splash;

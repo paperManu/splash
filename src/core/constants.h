@@ -36,6 +36,8 @@
 #define SPLASH_FILE_CONFIGURATION "splashConfiguration"
 #define SPLASH_FILE_PROJECT "splashProject"
 
+#define SPLASH_CAMERA_LINK "__camera_link"
+
 #include <execinfo.h>
 #include <iostream>
 
