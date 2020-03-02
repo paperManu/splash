@@ -200,7 +200,7 @@ class RootObject : public BaseObject
     // Condition variable for signaling a BufferObject update
     std::condition_variable _bufferObjectUpdatedCondition{};
     std::mutex _bufferObjectUpdatedMutex{};
-    std::mutex _bufferObjectSingleMutex{};
+    Spinlock _bufferObjectSingleMutex{};
     bool _bufferObjectUpdated = ATOMIC_FLAG_INIT;
 
     mutable std::recursive_mutex _objectsMutex{};                   //!< Used in registration and unregistration of objects

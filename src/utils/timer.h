@@ -26,12 +26,11 @@
 #define SPLASH_TIMER_H
 
 #include <chrono>
-#include <mutex>
 #include <string>
 #include <thread>
 
 #include "./core/constants.h"
-
+#include "./core/spinlock.h"
 #include "./utils/dense_map.h"
 
 namespace Splash
@@ -116,7 +115,7 @@ class Timer
      */
     bool waitUntilDuration(const std::string& name, unsigned long long duration)
     {
-        std::lock_guard<std::mutex> lock(_timerMutex);
+        std::lock_guard<Spinlock> lock(_timerMutex);
         if (!_enabled)
             return false;
 
@@ -158,7 +157,7 @@ class Timer
      */
     unsigned long long getDuration(const std::string& name) const
     {
-        std::lock_guard<std::mutex> lock(_timerMutex);
+        std::lock_guard<Spinlock> lock(_timerMutex);
         auto durationIt = _durationMap.find(name);
         if (durationIt == _durationMap.end())
             return 0;
@@ -171,7 +170,7 @@ class Timer
      */
     const DenseMap<std::string, uint64_t> getDurationMap() const
     {
-        std::lock_guard<std::mutex> lock(_timerMutex);
+        std::lock_guard<Spinlock> lock(_timerMutex);
         return _durationMap;
     }
 
@@ -182,7 +181,7 @@ class Timer
      */
     void setDuration(const std::string& name, unsigned long long value)
     {
-        std::lock_guard<std::mutex> lock(_timerMutex);
+        std::lock_guard<Spinlock> lock(_timerMutex);
         auto durationIt = _durationMap.find(name);
         if (durationIt == _durationMap.end())
             _durationMap[name] = value;
@@ -197,7 +196,7 @@ class Timer
      */
     unsigned long long sinceLastSeen(const std::string& name)
     {
-        std::lock_guard<std::mutex> lock(_timerMutex);
+        std::lock_guard<Spinlock> lock(_timerMutex);
         if (_timeMap.find(name) == _timeMap.end())
         {
             start(name);
@@ -215,7 +214,7 @@ class Timer
      */
     Timer& operator<<(const std::string& name)
     {
-        std::lock_guard<std::mutex> lock(_timerMutex);
+        std::lock_guard<Spinlock> lock(_timerMutex);
         start(name);
         _currentDuration = 0;
         return *this;
@@ -223,7 +222,7 @@ class Timer
 
     Timer& operator>>(unsigned long long duration)
     {
-        std::lock_guard<std::mutex> lock(_timerMutex);
+        std::lock_guard<Spinlock> lock(_timerMutex);
         _setTimerMutex.lock(); // We lock the mutex to prevent this value to be reset by another call to timer
         _currentDuration = duration;
         _durationThreadId = std::this_thread::get_id();
@@ -233,7 +232,7 @@ class Timer
 
     bool operator>>(const std::string& name)
     {
-        std::unique_lock<std::mutex> lock(_timerMutex);
+        std::unique_lock<Spinlock> lock(_timerMutex);
         unsigned long long duration = 0;
         if (_isDurationSet && _durationThreadId == std::this_thread::get_id())
         {
@@ -254,7 +253,7 @@ class Timer
 
     unsigned long long operator[](const std::string& name)
     {
-        std::lock_guard<std::mutex> lock(_timerMutex);
+        std::lock_guard<Spinlock> lock(_timerMutex);
         return getDuration(name);
     }
 
@@ -269,7 +268,7 @@ class Timer
      */
     void setMasterClock(const Timer::Point& clock)
     {
-        std::lock_guard<std::mutex> lockClock(_clockMutex);
+        std::lock_guard<Spinlock> lockClock(_clockMutex);
         if (clock != _clock)
             _lastMasterClockUpdate = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch());
         _clockSet = true;
@@ -282,7 +281,7 @@ class Timer
      */
     void setMasterClockPaused(bool paused)
     {
-        std::lock_guard<std::mutex> lockClock(_clockMutex);
+        std::lock_guard<Spinlock> lockClock(_clockMutex);
         _clock.paused = paused;
     }
 
@@ -295,7 +294,7 @@ class Timer
     {
         if (_clockSet)
         {
-            std::lock_guard<std::mutex> lockClock(_clockMutex);
+            std::lock_guard<Spinlock> lockClock(_clockMutex);
             clock = _clock;
             return true;
         }
@@ -320,7 +319,7 @@ class Timer
             return false;
         }
 
-        std::unique_lock<std::mutex> lockClock(_clockMutex);
+        std::unique_lock<Spinlock> lockClock(_clockMutex);
         auto clock = _clock;
         auto lastMasterClockUpdate = _lastMasterClockUpdate;
         lockClock.unlock();
@@ -362,9 +361,9 @@ class Timer
     uint64_t _currentDuration{0};
     bool _isDurationSet{false};
     std::thread::id _durationThreadId;
-    mutable std::mutex _timerMutex;
-    mutable std::mutex _setTimerMutex;
-    mutable std::mutex _clockMutex;
+    mutable Spinlock _timerMutex;
+    mutable Spinlock _setTimerMutex;
+    mutable Spinlock _clockMutex;
     bool _enabled{true};
     bool _isDebug{false};
     bool _looseClock{false};

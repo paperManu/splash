@@ -29,7 +29,6 @@
 #include <cstddef>
 #include <future>
 #include <list>
-#include <mutex>
 #include <vector>
 
 #include "./core/constants.h"
@@ -37,6 +36,7 @@
 #include "./core/attribute.h"
 #include "./core/factory.h"
 #include "./core/root_object.h"
+#include "./core/spinlock.h"
 #include "./graphics/gl_window.h"
 #include "./graphics/object_library.h"
 
@@ -238,7 +238,7 @@ class Scene : public RootObject
     std::future<void> _textureUploadFuture;
     std::shared_ptr<GlWindow> _textureUploadWindow;
     std::atomic_bool _textureUploadDone{false};
-    std::mutex _textureMutex; //!< Sync between texture and render loops
+    Spinlock _textureMutex; //!< Sync between texture and render loops
     GLsync _textureUploadFence{nullptr}, _cameraDrawnFence{nullptr};
 
     std::atomic_bool _doUploadTextures{false};
