@@ -17,7 +17,7 @@
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.9)
 project(
     splash
     VERSION 0.8.3
@@ -48,6 +48,13 @@ set(DEBUG_OPENGL OFF CACHE BOOL "Enable OpenGL debugging")
 set(PROFILE_OPENGL OFF CACHE BOOL "Enable OpenGL profiling")
 set(USE_SYSTEM_LIBS OFF CACHE BOOL "Enable using system libraries instead of bundle ones")
 set(TEST_COVERAGE OFF CACHE BOOL "Enable test coverage")
+set(WITH_LTO OFF CACHE BOOL "Activate link time optimization (LTO)")
+
+include(CheckIPOSupported)
+check_ipo_supported(RESULT IPO_SUPPORTED)
+if (NOT IPO_SUPPORTED)
+    set(WITH_LTO FALSE)
+endif()
 
 # Force color output (useful when building with Ninja)
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -239,6 +246,7 @@ info_cfg_option(DATAPATH_SDK_PATH)
 info_cfg_option(DOXYGEN_FOUND)
 info_cfg_option(DEBUG_OPENGL)
 info_cfg_option(PROFILE_OPENGL)
+info_cfg_option(WITH_LTO)
 
 info_cfg_text("")
 message("${_config_msg}")

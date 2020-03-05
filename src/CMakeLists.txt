@@ -105,6 +105,12 @@ link_directories(${SLAPS_LIBRARY_DIRS})
 add_library(splash-${API_VERSION} STATIC core/world.cpp)
 add_executable(splash splash-app.cpp)
 
+if(${WITH_LTO})
+    set_property(TARGET splash-${API_VERSION}
+        PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE
+    )
+endif()
+
 #
 # Splash library
 #

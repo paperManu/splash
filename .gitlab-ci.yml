@@ -126,7 +126,9 @@ package:debian:
   stage: deploy
   image: ubuntu:18.04
   script:
-    - git submodule update --init
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends gcc-8 g++-8
+    - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 700 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+    - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build
     - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
