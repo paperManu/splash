@@ -693,7 +693,7 @@ void Gui::drawMenuBar()
         }
         else if (_menuAction == MenuAction::SaveConfigurationAs)
         {
-            if (SplashImGui::FileSelector("Save configuration as...", path, cancelled, {{"json"}}))
+            if (SplashImGui::FileSelector("Save configuration as...", path, cancelled, {{"json"}}, true, true))
             {
                 _showFileSelector = false;
                 if (!cancelled)
@@ -705,7 +705,7 @@ void Gui::drawMenuBar()
         }
         else if (_menuAction == MenuAction::SaveProjectAs)
         {
-            if (SplashImGui::FileSelector("Save project as...", path, cancelled, {{"json"}}))
+            if (SplashImGui::FileSelector("Save project as...", path, cancelled, {{"json"}}, true, true))
             {
                 _showFileSelector = false;
                 if (!cancelled)
