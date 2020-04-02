@@ -8,19 +8,18 @@ Splash, a multi-projector video-mapping software
 
 For a more complete documentation, go visit the [official website](https://sat-metalab.gitlab.io/splash).
 
-Table of Contents
------------------
+## Table of Contents
 
 [Introduction](#introduction)
 
 [Installation](#installation)
 
-[Going forward](#goingforward)
+[Code contribution](#code-contribution)
+
+[Going forward](#going-forward)
 
 
-<a name="introduction"></a>
-Introduction
-------------
+## Introduction
 
 ### About
 Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending and color), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers is planned.
@@ -47,9 +46,7 @@ This project can be found either on [its official website](https://sat-metalab.g
 This project is made possible thanks to the [Society for Arts and Technologies](http://www.sat.qc.ca) (also known as SAT).
 
 
-<a name="installation"/></a>
-Installation
-------------
+## Installation
 
 ### Dependencies
 Splash relies on a few libraries to get the job done. The mandatory libraries are:
@@ -188,8 +185,12 @@ If you want to specify some defaults values for the objects, you can set the env
 
 And that's it, you can move on the the [Walkthrough](https://sat-metalab.gitlab.io/splash/Walkthrough/) page.
 
-<a name="goingforward"/></a>
-Going forward
--------------
+
+## Code contribution
+
+Contributions are welcome ! See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for details.
+
+
+## Going forward
 
 To learn how to configure and use Splash, the best resource is [its official website](https://sat-metalab.gitlab.io/splash).
