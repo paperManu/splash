@@ -149,6 +149,7 @@ package:debian:
 #
 static_analysis:
   stage: test
+  image: ubuntu:19.10
   script:
     - git submodule update --init
     - ./make_deps.sh

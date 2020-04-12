@@ -216,6 +216,33 @@ The core developer team regularly checks the repository for new merge requests. 
 
 If the MR concerns a minor issue, it will be merged immediately after one of the core developers approves it, if the CI succeeds. For more serious issues, we will wait a day or two after all feedback has been addressed before merging the request.
 
+### Static analysis
+
+Before releasing a new version of Splash, a static analysis pass should be done:
+
+```bash
+git checkout develop
+git branch -D static_analysis # remove any previous branch by this name
+git checkout -b static_analysis
+git push -f origin static_analysis
+```
+
+This will trigger the static analysis CI pipeline. The results will be availabe as an artefact from the pipeline and as a report from Coverity, an online service which pushes static analysis a bit further. Sometimes Coverity can be very slow to process an open source project which is why there is also a Gitlab-only static analysis part. Results from Coverity are accessible [there](https://scan.coverity.com/projects/papermanu-splash).
+
+The defects detected by static analysis should be fixed in a new commit, and submitted through a merge request.
+
+### Release process
+
+To release a new version of Splash, use the script provided in `./tools/release_version.py`. This script will take care of testing that the latest commit on **develop** build, update the version number as well as the NEWS.md file, and update the various branches accordingly.
+
+```bash
+./tools/release_version.py
+```
+
+The resulting branches will also be pushed to the repository. Note that you need to have write access to this repository for this to work.
+
+The website should be updated to match the new release. Also the [Flatpak package](https://github.com/flathub/com.gitlab.sat_metalab.Splash) should be updated separately.
+
 ### Addressing Feedback
 
 Once a MR has been submitted, your changes will be reviewed and constructive feedback may be provided. Feedback isn't meant as an attack, but to help make sure the highest-quality code makes it into the project. Changes will be approved once required feedback has been addressed.
