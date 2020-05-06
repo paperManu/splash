@@ -163,7 +163,7 @@ It is possible to let git ensure that you are conforming to the standards by usi
 ```
 sudo apt-get install clang-format exuberant-ctags
 # Then in Splash's home folder:
-rm -rf hooks && ln -s $(pwd)/.hooks $(pwd)/.git/hooks
+rm -rf $(pwd)/.git/hooks && ln -s $(pwd)/.hooks $(pwd)/.git/hooks
 ```
 
 For Python code we follow the [PEP 8 style guide](https://www.python.org/dev/peps/pep-0008/)

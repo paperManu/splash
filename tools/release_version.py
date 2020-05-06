@@ -280,8 +280,10 @@ if __name__ == "__main__":
     assert(git_merge(new_branch, True) == 0), f"Merge from branch {new_branch} into {working_branch} did not work"
 
     print("Pushing branches to remote.")
-    assert(git_push(remote_repo, bringup_branch) == 0), f"Failed to push branch {bringup_branch} into {remote_repo}/{bringup_branch}"
-    assert(git_push(remote_repo, release_branch) == 0), f"Failed to push branch {release_branch} into {remote_repo}/{release_branch}"
-    assert(git_push(remote_repo, working_branch) == 0), f"Failed to push branch {working_branch} into {remote_repo}/{working_branch}"
+    do_push=input(f"Do you want to push {bringup_branch} and {working_branch} branches to {remote_repo}? [y/N]")
+    if do_push == "y":
+        assert(git_push(remote_repo, bringup_branch) == 0), f"Failed to push branch {bringup_branch} into {remote_repo}/{bringup_branch}"
+        assert(git_push(remote_repo, release_branch) == 0), f"Failed to push branch {release_branch} into {remote_repo}/{release_branch}"
+        assert(git_push(remote_repo, working_branch) == 0), f"Failed to push branch {working_branch} into {remote_repo}/{working_branch}"
 
     success = True
