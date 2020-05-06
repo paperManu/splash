@@ -1,6 +1,42 @@
 Splash release notes
 ===================
 
+Splash 0.8.4 (2020-05-06)
+-------------------------
+New features:
+
+- Added a release script, updated contribution guide
+- Activated LTO for release builds
+- CI now runs Splash to make sure it exits properly
+- Added a class that read files from a directory: Image_Sequence
+- Updated the Image_Gphoto class to inherit from Image_Sequence
+- Added Value::byte_size, and fixed Value::size
+
+Improvements:
+- Updated and fixed contribution guide and code of conduct
+- Moved argument parsing in splash-app.cpp instead of World
+- Cleaned up World buffer serialization and sending
+- Removed threaded texture upload, not needed anymore with named textures
+- Added the possibility to select which integration test to run
+- Improved and documented integration tests
+- Added some unit tests, more to come
+- Updated the installation documentation to reflect the current procedure
+- Updated homepage to point to the new gitlab.io website
+- Added configuration for Gitlab.io website
+- Added coverage testing for all pipelines
+- Added version and compile date auto update for metainfo
+
+Bugs fixed:
+- Fixed CONTRIBUTING.md, improved release script a bit
+- Fixed issue with file selector when saving to file
+- Fixed segfault when launching a child process without a valid DISPLAY
+- Fixed spawned processes (as well as cmd line and docs)
+- Fixed an assertion when running tests in debug
+- Fixed PythonSink
+- Fixed an issue in save/load project
+- Fixed a false warning which happened when linking after deleting a GraphObject
+- Fixed Filter to render by itself, and improved shader uniforms display
+
 Splash 0.8.2 (2019-12-04)
 -------------------------
 New features:
