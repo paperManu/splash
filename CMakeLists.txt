@@ -20,8 +20,7 @@
 cmake_minimum_required(VERSION 3.9)
 project(
     splash
-	VERSION 0.8.4    LANGUAGES C CXX
-)
+	VERSION 0.8.5)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
