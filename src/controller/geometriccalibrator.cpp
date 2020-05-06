@@ -11,8 +11,16 @@
 #include <glm/gtx/euler_angles.hpp>
 
 #include "./image/image.h"
-#include "./image/image_gphoto.h"
+#include "./image/image_list.h"
 #include "./image/image_opencv.h"
+
+#if HAVE_LINUX
+#include "./image/image_v4l2.h"
+#endif
+
+#if HAVE_GPHOTO
+#include "./image/image_gphoto.h"
+#endif
 
 namespace Splash
 {
@@ -203,7 +211,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
 {
     // Begin calibration
     slaps::Workspace workspace;
-    slaps::Structured_Light structuredLight(_structuredLightScale);
+    slaps::Structured_Light structuredLight(&_logger, _structuredLightScale);
 
     // Set all cameras to display a pattern
     for (size_t index = 0; index < state.windowList.size(); ++index)
@@ -416,7 +424,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
 
     // Compute the calibration
     auto slapsCameraModel = _cameraModel == CameraModel::Pinhole ? slaps::Reconstruction::PINHOLE_CAMERA_RADIAL3 : slaps::Reconstruction::PINHOLE_CAMERA_FISHEYE;
-    slaps::Reconstruction reconstruction(workspace.getWorkPath(), slapsCameraModel);
+    slaps::Reconstruction reconstruction(&_logger, workspace.getWorkPath(), slapsCameraModel);
     reconstruction.sfmInitImageListing(_cameraFocal);
     reconstruction.computeFeatures();
     reconstruction.computeMatches();
@@ -426,14 +434,14 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
 
     // Generate the mesh
     auto points =
-        slaps::utils::readPly(std::filesystem::path(workspace.getWorkPath()) / slaps::constants::cOutputDirectory / slaps::constants::cPointCloudStructureFromKnownPoses_ply);
-    auto geometry = slaps::Geometry(points, {}, {}, {});
+        slaps::utils::readPly(&_logger, std::filesystem::path(workspace.getWorkPath()) / slaps::constants::cOutputDirectory / slaps::constants::cPointCloudStructureFromKnownPoses_ply);
+    auto geometry = slaps::Geometry(&_logger, points, {}, {}, {});
     auto geometryNormals = geometry.computeNormalsPointSet();
     auto geometryMesh = geometryNormals.marchingCubes(600);
     auto geometryMeshClean = geometryMesh.simplifyGeometry();
     auto geometryMeshUvs = geometryMeshClean.uvCoordinatesSphere();
 
-    slaps::Obj objFile(geometryMeshUvs);
+    slaps::Obj objFile(&_logger, geometryMeshUvs);
     objFile.writeMesh(std::filesystem::path(workspace.getWorkPath()) / _finalMeshName);
 
     Calibration calibration;
@@ -446,7 +454,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
         auto cameraSize = getObjectAttribute(cameraName, "size");
         auto camHeight = cameraSize[1].as<int>();
 
-        slaps::MapXYZs pixelMap(workspace.getWorkPath());
+        slaps::MapXYZs pixelMap(&_logger, workspace.getWorkPath());
         pixelMap.pixelToProj(camHeight, _structuredLightScale);
         auto matchesByProj = pixelMap.sampling(15);
 
@@ -455,7 +463,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
 
         std::vector<uint32_t> inliers;
         std::vector<double> parameters;
-        slaps::Kernel kernel(cameraModel, matchesByProj[cameraIndex + 1]); // Projectors start at 1 in SLAPS
+        slaps::Kernel kernel(&_logger, cameraModel, matchesByProj[cameraIndex + 1]); // Projectors start at 1 in SLAPS
         parameters = kernel.Ransac(inliers);
 
         if (parameters.empty())

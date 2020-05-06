@@ -34,7 +34,7 @@
 #include <tuple>
 #include <utility>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./core/value.h"
 #include "./utils/dense_map.h"

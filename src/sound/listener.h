@@ -35,7 +35,8 @@
 
 #include <portaudio.h>
 
-#include "./config.h"
+#include "./core/constants.h"
+
 #include "./core/attribute.h"
 #include "./core/graph_object.h"
 #include "./sound/sound_engine.h"
@@ -60,7 +61,7 @@ class Listener : public GraphObject
     /**
      * \brief Safe bool idiom
      */
-    explicit operator bool() const override { return _ready; }
+    explicit operator bool() const { return _ready; }
 
     /**
      * No copy, but some move constructors

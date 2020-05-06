@@ -25,7 +25,7 @@
 #ifndef SPLASH_IMAGE_FFMPEG_H
 #define SPLASH_IMAGE_FFMPEG_H
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include <atomic>
 #include <condition_variable>
@@ -42,8 +42,9 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
+#include "./core/constants.h"
+
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./image/image.h"
 #if HAVE_PORTAUDIO
 #include "./sound/speaker.h"
@@ -67,7 +68,7 @@ class Image_FFmpeg : public Image
     ~Image_FFmpeg() final;
 
     /**
-     * No copy, but some move constructors
+     * No copy constructor
      */
     Image_FFmpeg(const Image_FFmpeg&) = delete;
     Image_FFmpeg& operator=(const Image_FFmpeg&) = delete;

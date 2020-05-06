@@ -86,7 +86,7 @@ struct getSizeHelper<T, typename std::enable_if<std::is_same<T, Value>::value>::
         else if (objType == Value::Type::buffer)
             return acc + getSize(obj.as<Value::Buffer>());
         else
-            return acc + obj.size();
+            return acc + obj.byte_size();
     }
 };
 
@@ -113,8 +113,8 @@ struct serializeHelper<T, typename std::enable_if<std::is_same<T, Value>::value>
         else
         {
             auto ptr = reinterpret_cast<const uint8_t*>(obj.data());
-            std::copy(ptr, ptr + obj.size(), it);
-            it += obj.size();
+            std::copy(ptr, ptr + obj.byte_size(), it);
+            it += obj.byte_size();
         }
     }
 };

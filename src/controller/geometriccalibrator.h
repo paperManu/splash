@@ -32,9 +32,10 @@
 #include <mutex>
 #include <optional>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./controller/controller.h"
+#include "./utils/osutils.h"
 
 namespace Splash
 {
@@ -121,6 +122,7 @@ class GeometricCalibrator : public ControllerObject
     static inline const std::string _worldFilterPrefix{"__pattern_filter_"};
     static inline const std::string _finalMeshName{"final_mesh.obj"};
 
+    Utils::SlapsLogger _logger;
     bool _running{false};             //!< True if calibration is currently running
     bool _nextPosition{false};        //!< Set to true to capture from next camera position
     bool _finalizeCalibration{false}; //!< Set to true to finalize calibration
@@ -163,16 +165,6 @@ class GeometricCalibrator : public ControllerObject
      * \param calibration Calibration parameters
      */
     void applyCalibration(const ConfigurationState& state, const Calibration& calibration);
-
-    /**
-     * Wait for an object to be created
-     * \param name Object name
-     */
-    void waitForObjectCreation(const std::string& name)
-    {
-        while (!checkObject(name))
-            std::this_thread::sleep_for(15ms);
-    }
 
     /**
      * Register new functors to modify attributes

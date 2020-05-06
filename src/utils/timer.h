@@ -29,8 +29,7 @@
 #include <string>
 #include <thread>
 
-#include "./config.h"
-#include "./core/coretypes.h"
+#include "./core/constants.h"
 #include "./core/spinlock.h"
 #include "./utils/dense_map.h"
 

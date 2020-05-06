@@ -45,6 +45,7 @@ include_directories(${PORTAUDIO_INCLUDE_DIRS})
 include_directories(${OPENCV_INCLUDE_DIRS})
 include_directories(${SNAPPY_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
+include_directories(${SLAPS_INCLUDE_DIRS})
 
 # Distributed third parties first
 link_directories(${FFMPEG_LIBRARY_DIRS})
@@ -63,25 +64,36 @@ link_directories(${PYTHON_LIBRARY_DIRS})
 #
 # Unit tests (executed through 'make check' or 'make test')
 #
-add_executable(unitTests unitTests.cpp)
+add_executable(unitTests unit_tests/unitTests.cpp)
 target_sources(unitTests PRIVATE
-    check_attributefunctor.cpp
-    check_base_object.cpp
-    check_dense_deque.cpp
-    check_dense_map.cpp
-    check_dense_set.cpp
-    check_resizablearray.cpp
-    check_serialization.cpp
-    check_tree.cpp
-    check_upgrade_configuration.cpp
-    check_value.cpp
+    unit_tests/core/attribute.cpp
+    unit_tests/core/base_object.cpp
+    unit_tests/core/factory.cpp
+    unit_tests/core/graph_object.cpp
+    unit_tests/core/imagebuffer.cpp
+    unit_tests/core/name_registry.cpp
+    unit_tests/core/root_object.cpp
+    unit_tests/core/buffer_object.cpp
+    unit_tests/core/scene.cpp
+    unit_tests/core/serializer.cpp
+    unit_tests/core/tree.cpp
+    unit_tests/core/value.cpp
+    unit_tests/core/world.cpp
+    unit_tests/image/image_list.cpp
+    unit_tests/utils/dense_deque.cpp
+    unit_tests/utils/dense_map.cpp
+    unit_tests/utils/dense_set.cpp
+    unit_tests/utils/jsonutils.cpp
+    unit_tests/utils/resizable_array.cpp
+    unit_tests/utils/scope_guard.cpp
 )
 
 if (NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
     add_custom_command(OUTPUT update_assets
         COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/data
         COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/data/*.json ${CMAKE_CURRENT_BINARY_DIR}/data/
-    
+        COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/../data/share/splash/color_map.png ${CMAKE_CURRENT_BINARY_DIR}/data/
+
         )
     add_custom_target(assets DEPENDS update_assets)
     add_dependencies(unitTests assets)
@@ -95,12 +107,44 @@ add_custom_command(OUTPUT tests COMMAND unitTests)
 add_custom_target(check DEPENDS update_assets tests)
 
 #
+# Code coverage
+#
+if (TEST_COVERAGE)
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        add_custom_command(OUTPUT test_coverage_initial
+            COMMAND mkdir -p ${CMAKE_BINARY_DIR}/coverage
+            COMMAND lcov --no-external --capture --initial
+                --directory ${CMAKE_SOURCE_DIR}
+                --exclude '${CMAKE_SOURCE_DIR}/external/*'
+                --exclude '${CMAKE_SOURCE_DIR}/tests/*'
+                --output-file coverage/splash_base.info
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            )
+
+        add_custom_command(OUTPUT test_coverage
+            COMMAND lcov --no-external --capture
+                --directory ${CMAKE_SOURCE_DIR}
+                --exclude '${CMAKE_SOURCE_DIR}/external/*'
+                --exclude '${CMAKE_SOURCE_DIR}/tests/*'
+                --output-file coverage/splash.info
+            COMMAND lcov --add-tracefile ${CMAKE_BINARY_DIR}/coverage/splash_base.info
+                --add-tracefile ${CMAKE_BINARY_DIR}/coverage/splash.info
+                --output-file ${CMAKE_BINARY_DIR}/coverage/splash_total.info
+            COMMAND genhtml --output-directory ${CMAKE_BINARY_DIR}/coverage ${CMAKE_BINARY_DIR}/coverage/splash_total.info
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            )
+
+        add_custom_target(check_coverage DEPENDS test_coverage_initial tests test_coverage)
+    endif()
+endif()
+
+#
 # Integration tests (executed by launching Splash and checking its behavior)
 #
 add_custom_command(OUTPUT integration_tests
     COMMAND if [ ! -d ${CMAKE_CURRENT_SOURCE_DIR}/assets ]; then $(git clone https://gitlab.com/sat-metalab/splash-assets ${CMAKE_CURRENT_SOURCE_DIR}/assets); fi
     COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/assets && git pull origin master
-    COMMAND ../src/splash ${CMAKE_CURRENT_SOURCE_DIR}/integrationTests.json
+    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/../src/splash -P ${CMAKE_CURRENT_SOURCE_DIR}/integration_tests/integration_tests.py ${CMAKE_CURRENT_SOURCE_DIR}/integration_tests/integrationTests.json
     DEPENDS splash
     )
 add_custom_target(check_integration DEPENDS integration_tests)
@@ -109,15 +153,14 @@ add_custom_target(check_integration DEPENDS integration_tests)
 # Static analysis through CppCheck
 #
 add_custom_command(OUTPUT cppcheck_analysis
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/build_cppcheck.sh
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/cppcheck/cppcheck --enable=warning,performance,unusedFunction --project=${CMAKE_CURRENT_BINARY_DIR}/../compile_commands.json 2> ${CMAKE_CURRENT_BINARY_DIR}/static_analysis_result.txt
+    COMMAND cppcheck --enable=warning,performance,unusedFunction --project=${CMAKE_CURRENT_BINARY_DIR}/../compile_commands.json 2> ${CMAKE_CURRENT_BINARY_DIR}/static_analysis_result.txt
 )
 add_custom_target(static_analysis DEPENDS cppcheck_analysis)
 
 #
 # Performance tests
 #
-add_executable(perf_dense_map perf_dense_map.cpp)
+add_executable(perf_dense_map performance_tests/perf_dense_map.cpp)
 add_custom_command(OUTPUT run_perf_tests
     COMMAND ./perf_dense_map
     DEPENDS perf_dense_map

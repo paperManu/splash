@@ -60,6 +60,12 @@ class Factory
     std::shared_ptr<GraphObject> create(const std::string& type);
 
     /**
+     * Get the default parameters
+     * \return Return a const reference to the default values
+     */
+    const std::unordered_map<std::string, std::unordered_map<std::string, Values>> getDefaults() const { return _defaults; }
+
+    /**
      * \brief Get all creatable object types
      * \return Return a vector of all the creatable objects
      */
@@ -136,14 +142,7 @@ class Factory
     std::unordered_map<std::string, std::unordered_map<std::string, Values>> _defaults{}; //!< Default values
 
     /**
-     * \brief Helper function to convert Json::Value to Splash::Values
-     * \param values JSon to be processed
-     * \return Return a Values converted from the JSon
-     */
-    Values jsonToValues(const Json::Value& values);
-
-    /**
-     * Load default values from the file set in envvar SPLASH_DEFAULTS_FILE_ENV (set in coretypes.h)
+     * Load default values from the file set in envvar SPLASH_DEFAULTS_FILE_ENV (set in constants.h)
      */
     void loadDefaults();
 

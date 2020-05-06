@@ -29,16 +29,15 @@
 
 #include <glm/glm.hpp>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./graphics/framebuffer.h"
 #include "./graphics/geometry.h"
-#include "./image/image.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"
+#include "./image/image.h"
 
 namespace Splash
 {

@@ -28,7 +28,7 @@
 #include <shmdata/console-logger.hpp>
 #include <shmdata/follower.hpp>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./image/image.h"
 #include "./utils/osutils.h"
@@ -50,7 +50,7 @@ class Image_Shmdata : public Image
     ~Image_Shmdata() final;
 
     /**
-     * No copy constructor, only move
+     * No copy constructor
      */
     Image_Shmdata(const Image_Shmdata&) = delete;
     Image_Shmdata& operator=(const Image_Shmdata&) = delete;

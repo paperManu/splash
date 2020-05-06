@@ -33,9 +33,10 @@
 
 #include <Python.h>
 
+#include "./core/constants.h"
+
 #include "./controller.h"
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./graphics/filter.h"
 
 namespace Splash
@@ -83,6 +84,7 @@ class PythonEmbedded : public ControllerObject
     void stop();
 
   private:
+    static std::string _capsuleName;
     std::string _filepath{""};   //!< Path to the python script
     std::string _scriptName{""}; //!< Name of the module (filename minus .py)
     Values _pythonArgs{};        //!< Command line arguments to send to the scripts

@@ -17,11 +17,10 @@
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.9)
 project(
-    splash 
-    VERSION 0.8.2
-    LANGUAGES C CXX
+    splash
+	VERSION 0.8.4    LANGUAGES C CXX
 )
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
@@ -47,6 +46,14 @@ set(DATAPATH_SDK_PATH "" CACHE PATH "Path to the Datapath SDK")
 set(DEBUG_OPENGL OFF CACHE BOOL "Enable OpenGL debugging")
 set(PROFILE_OPENGL OFF CACHE BOOL "Enable OpenGL profiling")
 set(USE_SYSTEM_LIBS OFF CACHE BOOL "Enable using system libraries instead of bundle ones")
+set(TEST_COVERAGE OFF CACHE BOOL "Enable test coverage")
+set(WITH_LTO OFF CACHE BOOL "Activate link time optimization (LTO)")
+
+include(CheckIPOSupported)
+check_ipo_supported(RESULT IPO_SUPPORTED)
+if (NOT IPO_SUPPORTED)
+    set(WITH_LTO FALSE)
+endif()
 
 # Force color output (useful when building with Ninja)
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -87,12 +94,15 @@ pkg_search_module(SLAPS slaps-0.0)
 # Configuration
 #
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLM_FORCE_RADIANS")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDATADIR=\\\"${CMAKE_INSTALL_PREFIX}/share/splash/\\\"")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSPLASHPREFIX=\\\"${CMAKE_INSTALL_PREFIX}\\\"")
+
+if (TEST_COVERAGE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 --coverage")
+endif()
 
 set(HAVE_GPHOTO ${GPHOTO_FOUND})
 set(HAVE_OPENCV ${OPENCV_FOUND})
@@ -180,7 +190,7 @@ set(CPACK_GENERATOR "DEB")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-mapper")
 set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}")
-set(CPACK_DEBIAN_PROJECT_HOMEPAGE "https://gitlab.com/sat-metalab/splash/wiki")
+set(CPACK_DEBIAN_PROJECT_HOMEPAGE "https://sat-metalab.gitlab.io/splash")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_VENDOR} <emmanueldurand@protonmail.com>")
@@ -199,21 +209,21 @@ set(_config_msg "\nSplash Configuration\n=====================")
 function(info_cfg_option
     _setting
     )
-    
+
     set(_msg "  - ${_setting}")
     string(LENGTH "${_msg}" _len)
     while("32" GREATER "${_len}")
         set(_msg "${_msg} ")
          math(EXPR _len "${_len} + 1")
     endwhile()
-    
+
     set(_config_msg "${_config_msg}\n${_msg}${${_setting}}" PARENT_SCOPE)
 endfunction()
 
 function(info_cfg_text
     _text
     )
-    
+
     set(_config_msg "${_config_msg}\n\n  ${_text}" PARENT_SCOPE)
 endfunction()
 
@@ -235,6 +245,7 @@ info_cfg_option(DATAPATH_SDK_PATH)
 info_cfg_option(DOXYGEN_FOUND)
 info_cfg_option(DEBUG_OPENGL)
 info_cfg_option(PROFILE_OPENGL)
+info_cfg_option(WITH_LTO)
 
 info_cfg_text("")
 message("${_config_msg}")

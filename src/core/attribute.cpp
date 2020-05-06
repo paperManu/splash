@@ -37,10 +37,13 @@ Attribute& Attribute::operator=(Attribute&& a)
         _objectName = move(a._objectName);
         _setFunc = move(a._setFunc);
         _getFunc = move(a._getFunc);
+        _defaultSetAndGet = a._defaultSetAndGet;
+        _objectName = move(a._objectName);
         _description = move(a._description);
         _values = move(a._values);
         _valuesTypes = move(a._valuesTypes);
-        _defaultSetAndGet = a._defaultSetAndGet;
+        _syncMethod = a._syncMethod;
+        _callbacks = move(a._callbacks);
     }
 
     return *this;

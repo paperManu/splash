@@ -28,11 +28,10 @@
 #include <chrono>
 #include <mutex>
 
-#include "config.h"
+#include "./core/constants.h"
 
 #include "./core/attribute.h"
 #include "./core/buffer_object.h"
-#include "./core/coretypes.h"
 #include "./core/imagebuffer.h"
 #include "./core/root_object.h"
 
@@ -99,6 +98,16 @@ class Image : public BufferObject
     {
         std::lock_guard<Spinlock> lock(_readMutex);
         return _image ? _image->getSpec().timestamp : 0;
+    }
+
+    /**
+     * Set the timestamp
+     * \param timestamp Timestamp, in us
+     */
+    void setTimestamp(int64_t timestamp) override
+    {
+        std::lock_guard<std::shared_mutex> lock(_writeMutex);
+        _image->getSpec().timestamp = timestamp;
     }
 
     /**

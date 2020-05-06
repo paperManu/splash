@@ -31,10 +31,9 @@
 #include <string>
 #include <vector>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./core/factory.h"
 #include "./graphics/filter.h"
 #include "./graphics/texture.h"
@@ -59,7 +58,7 @@ class Queue : public BufferObject
     ~Queue() override;
 
     /**
-     * No copy constructor, but a move one
+     * No copy constructor
      */
     Queue(const Queue&) = delete;
     Queue(Queue&&) = default;

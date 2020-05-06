@@ -37,11 +37,10 @@
 #include <memory>
 #include <unordered_map>
 
-#include "./config.h"
+#include "./core/constants.h"
 
-#include "./core/attribute.h"
 #include "./controller/controller.h"
-#include "./core/coretypes.h"
+#include "./core/attribute.h"
 #include "./image/image.h"
 
 namespace Splash
@@ -58,7 +57,7 @@ struct FilesystemFile
 };
 
 bool FileSelectorParseDir(const std::string& path, std::vector<FilesystemFile>& list, const std::vector<std::string>& extensions, bool showNormalFiles);
-bool FileSelector(const std::string& label, std::string& path, bool& cancelled, const std::vector<std::string>& extensions, bool showNormalFiles = true);
+bool FileSelector(const std::string& label, std::string& path, bool& cancelled, const std::vector<std::string>& extensions, bool showNormalFiles = true, bool newFile = false);
 
 /**
  * Utility method to call InputText on a std::string

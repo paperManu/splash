@@ -26,8 +26,8 @@ void PythonSink::pythonSinkDealloc(PythonSinkObject* self)
 
     if (that)
     {
-        that->setInScene("deleteObject", {self->sinkName});
-        that->setInScene("deleteObject", {self->filterName});
+        that->setInScene("deleteObject", {*self->sinkName});
+        that->setInScene("deleteObject", {*self->filterName});
     }
 
     Py_XDECREF(self->lastBuffer);
@@ -69,17 +69,21 @@ int PythonSink::pythonSinkInit(PythonSinkObject* self, PyObject* args, PyObject*
 
     self->width = width;
     self->height = height;
+    self->keepRatio = false;
     self->framerate = 30;
+    self->linked = false;
+    self->opened = false;
+    self->lastBuffer = nullptr;
 
     auto index = self->sinkIndex.fetch_add(1);
-    self->sinkName = that->getName() + "_pythonsink_" + to_string(index);
-    that->setInScene("addObject", {"sink", self->sinkName, root->getName()});
+    self->sinkName = make_unique<string>(that->getName() + "_pythonsink_" + to_string(index));
+    that->setInScene("addObject", {"sink", *self->sinkName, root->getName()});
 
     // Wait until the sink is created
     int triesLeft = SPLASH_PYTHON_MAX_TRIES;
     while (!self->sink && --triesLeft)
     {
-        self->sink = dynamic_pointer_cast<Sink>(root->getObject(self->sinkName));
+        self->sink = dynamic_pointer_cast<Sink>(root->getObject(*self->sinkName));
         this_thread::sleep_for(chrono::milliseconds(5));
     }
 
@@ -116,6 +120,8 @@ PyDoc_STRVAR(pythonSinkLink_doc__,
 
 PyObject* PythonSink::pythonSinkLink(PythonSinkObject* self, PyObject* args, PyObject* kwds)
 {
+    assert(self != nullptr);
+
     auto that = PythonEmbedded::getInstance();
     if (!that)
     {
@@ -131,7 +137,7 @@ PyObject* PythonSink::pythonSinkLink(PythonSinkObject* self, PyObject* args, PyO
     }
 
     if (!self->sink)
-        self->sink = dynamic_pointer_cast<Sink>(root->getObject(self->sinkName));
+        self->sink = dynamic_pointer_cast<Sink>(root->getObject(*self->sinkName));
 
     if (!self->sink)
     {
@@ -156,7 +162,7 @@ PyObject* PythonSink::pythonSinkLink(PythonSinkObject* self, PyObject* args, PyO
 
     if (source)
     {
-        self->sourceName = string(source);
+        self->sourceName = make_unique<string>(source);
     }
     else
     {
@@ -166,7 +172,7 @@ PyObject* PythonSink::pythonSinkLink(PythonSinkObject* self, PyObject* args, PyO
     }
 
     auto objects = that->getObjectList();
-    auto objectIt = std::find(objects.begin(), objects.end(), self->sourceName);
+    auto objectIt = std::find(objects.begin(), objects.end(), *self->sourceName);
     if (objectIt == objects.end())
     {
         PyErr_Warn(PyExc_Warning, "The specified source object does not exist");
@@ -174,14 +180,16 @@ PyObject* PythonSink::pythonSinkLink(PythonSinkObject* self, PyObject* args, PyO
         return Py_False;
     }
 
-    self->filterName = self->sinkName + "_filter_" + self->sourceName;
+    self->filterName = make_unique<string>(*self->sinkName + "_filter_" + *self->sourceName);
 
     // Filter is added locally, we don't need (nor want) it in any other Scene
-    that->setInScene("addObject", {"filter", self->filterName, root->getName()});
-    that->setInScene("link", {self->sourceName, self->filterName});
-    that->setInScene("link", {self->filterName, self->sinkName});
-    that->setObjectAttribute(self->sinkName, "framerate", {self->framerate});
-    that->setObjectAttribute(self->filterName, "sizeOverride", {self->width, self->height});
+    that->setInScene("addObject", {"filter", *self->filterName, root->getName()});
+    // Wait for the object to be created
+    that->waitForObjectCreation(*self->filterName, 50);
+    that->setInScene("link", {*self->sourceName, *self->filterName});
+    that->setInScene("link", {*self->filterName, *self->sinkName});
+    that->setObjectAttribute(*self->sinkName, "framerate", {self->framerate});
+    that->setObjectAttribute(*self->filterName, "sizeOverride", {self->width, self->height});
 
     self->linked = true;
 
@@ -218,7 +226,7 @@ PyObject* PythonSink::pythonSinkUnlink(PythonSinkObject* self)
     }
 
     if (!self->sink)
-        self->sink = dynamic_pointer_cast<Sink>(root->getObject(self->sinkName));
+        self->sink = dynamic_pointer_cast<Sink>(root->getObject(*self->sinkName));
 
     if (!self->sink)
     {
@@ -241,14 +249,14 @@ PyObject* PythonSink::pythonSinkUnlink(PythonSinkObject* self)
         Py_XDECREF(result);
     }
 
-    that->setInScene("unlink", {self->sourceName, self->filterName});
-    that->setInScene("unlink", {self->filterName, self->sinkName});
-    that->setInScene("deleteObject", {self->filterName});
+    that->setInScene("unlink", {*self->sourceName, *self->filterName});
+    that->setInScene("unlink", {*self->filterName, *self->sinkName});
+    that->setInScene("deleteObject", {*self->filterName});
 
     // Wait for the filter to be truly deleted. We do not try to get a shared_ptr
     // of the object, because we want it to be deleted. So we get the object list
     auto objectList = that->getObjectList();
-    while (std::find(objectList.begin(), objectList.end(), self->filterName) != objectList.end())
+    while (std::find(objectList.begin(), objectList.end(), *self->filterName) != objectList.end())
     {
         this_thread::sleep_for(chrono::milliseconds(5));
         objectList = that->getObjectList();
@@ -311,7 +319,7 @@ PyObject* PythonSink::pythonSinkGrab(PythonSinkObject* self)
             // Keeping the ratio may also have had some effects
             if (self->keepRatio)
             {
-                auto realSize = that->getObjectAttribute(self->filterName, "sizeOverride");
+                auto realSize = that->getObjectAttribute(*self->filterName, "sizeOverride");
                 self->width = realSize[0].as<int>();
                 self->height = realSize[1].as<int>();
             }
@@ -374,7 +382,7 @@ PyObject* PythonSink::pythonSinkSetSize(PythonSinkObject* self, PyObject* args, 
 
     self->width = width;
     self->height = height;
-    that->setObjectAttribute(self->filterName, "sizeOverride", {self->width, self->height});
+    that->setObjectAttribute(*self->filterName, "sizeOverride", {self->width, self->height});
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -401,7 +409,7 @@ PyObject* PythonSink::pythonSinkGetSize(PythonSinkObject* self)
         return Py_False;
     }
 
-    Values size = that->getObjectAttribute(self->filterName, "sizeOverride");
+    Values size = that->getObjectAttribute(*self->filterName, "sizeOverride");
     if (size.size() == 2)
         return Py_BuildValue("ii", size[0].as<int>(), size[1].as<int>());
     else
@@ -442,7 +450,7 @@ PyObject* PythonSink::pythonSinkSetFramerate(PythonSinkObject* self, PyObject* a
     }
 
     self->framerate = framerate;
-    that->setObjectAttribute(self->sinkName, "framerate", {self->framerate});
+    that->setObjectAttribute(*self->sinkName, "framerate", {self->framerate});
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -482,7 +490,7 @@ PyObject* PythonSink::pythonSinkKeepRatio(PythonSinkObject* self, PyObject* args
     }
 
     self->keepRatio = keepRatio;
-    that->setObjectAttribute(self->filterName, "keepRatio", {static_cast<int>(keepRatio)});
+    that->setObjectAttribute(*self->filterName, "keepRatio", {static_cast<int>(keepRatio)});
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -516,7 +524,7 @@ PyObject* PythonSink::pythonSinkOpen(PythonSinkObject* self)
         return Py_False;
     }
 
-    that->setObjectAttribute(self->sinkName, "opened", {1});
+    that->setObjectAttribute(*self->sinkName, "opened", {1});
     self->opened = true;
 
     Py_INCREF(Py_True);
@@ -551,7 +559,7 @@ PyObject* PythonSink::pythonSinkClose(PythonSinkObject* self)
         return Py_False;
     }
 
-    that->setObjectAttribute(self->sinkName, "opened", {0});
+    that->setObjectAttribute(*self->sinkName, "opened", {0});
     self->opened = false;
 
     PyObject* tmp = nullptr;

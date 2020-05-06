@@ -6,6 +6,7 @@
 #include <array>
 #include <fstream>
 #include <imgui.h>
+#include <imgui_internal.h>
 
 #include "./graphics/camera.h"
 #include "./image/image.h"
@@ -106,7 +107,7 @@ bool FileSelectorParseDir(const string& sourcePath, vector<FilesystemFile>& list
 }
 
 /*********/
-bool FileSelector(const string& label, string& path, bool& cancelled, const vector<string>& extensions, bool showNormalFiles)
+bool FileSelector(const string& label, string& path, bool& cancelled, const vector<string>& extensions, bool showNormalFiles, bool newFile)
 {
     path = Utils::getPathFromFilePath(path);
 
@@ -178,6 +179,12 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
 
     ImGui::Checkbox("Filter files", &filterExtension);
 
+    bool disableSelectPathButton = (selectedId[label] == 0) && newFile;
+    if (disableSelectPathButton)
+    {
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.1f);
+    }
     if (ImGui::Button("Select path"))
     {
         if (!manualPath)
@@ -192,6 +199,11 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
         }
         selectionDone = true;
     }
+    if (disableSelectPathButton)
+    {
+        ImGui::PopStyleVar();
+    }
+
     ImGui::SameLine();
     if (ImGui::Button("Cancel"))
         cancelled = true;

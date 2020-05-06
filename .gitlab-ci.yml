@@ -3,7 +3,8 @@ variables:
 
 stages:
   - test
-  - package
+  - coverage
+  - deploy
 
 cache:
   paths:
@@ -18,9 +19,7 @@ before_script:
   - apt update -qq
   - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends ca-certificates ccache wget curl build-essential git-core libjsoncpp-dev
     zip cmake automake libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev 
-    libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python libopencv-dev gcc-8 g++-8
-  - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 700 --slave /usr/bin/g++ g++ /usr/bin/g++-7
-  - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
+    libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python libopencv-dev
   # CCache stuff
   - mkdir -p ccache
   - export CCACHE_BASEDIR=${PWD}
@@ -31,36 +30,52 @@ test:18.04:
   stage: test
   image: ubuntu:18.04
   script: 
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends gcc-8 g++-8
+    - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 700 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+    - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
     - git submodule update --init
+    #
+    # Test using bundled libs
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build
     - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make test
-
-test:18.04-clang:
-  stage: test
-  image: ubuntu:18.04
-  script: 
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends clang
-    - git submodule update --init
-    - CC=clang CXX=clang++ ./make_deps.sh
-    - rm -rf build && mkdir build && cd build
-    - CC=clang CXX=clang++ cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
-    - make -j$(nproc)
-    - make test
-
-test:18.04-syslibs:
-  stage: test
-  image: ubuntu:18.04
-  script:
+    - ./src/splash ../data/share/splash/splash.json
+    - cd ..
+    #
+    # Test using system libs
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
       libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev
-    - git submodule update --init
     - rm -rf build && mkdir build && cd build
     - cmake -DBUILD_GENERIC_ARCH=ON -DUSE_SYSTEM_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make test
+    - ./src/splash ../data/share/splash/splash.json
+
+test:19.10:
+  stage: test
+  image: ubuntu:19.10
+  script: 
+    - git submodule update --init
+    #
+    # Test using bundled libs
+    - ./make_deps.sh
+    - rm -rf build && mkdir build && cd build
+    - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
+    - make -j$(nproc)
+    - make test
+    - ./src/splash ../data/share/splash/splash.json
+    - cd ..
+    #
+    # Test using system libs
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
+      libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev
+    - rm -rf build && mkdir build && cd build
+    - cmake -DBUILD_GENERIC_ARCH=ON -DUSE_SYSTEM_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr ..
+    - make -j$(nproc)
+    - make test
+    - ./src/splash ../data/share/splash/splash.json
 
 test:archlinux:
   stage: test
@@ -84,13 +99,36 @@ test:archlinux:
     - make test
 
 #
+# Test coverage
+#
+coverage:
+  stage: coverage
+  image: ubuntu:19.10
+  script: 
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends lcov zip
+    - git submodule update --init
+    - ./make_deps.sh
+    - rm -rf build && mkdir build && cd build
+    - cmake -DTEST_COVERAGE=ON -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
+    - make -j$(nproc)
+    - make check_coverage
+    - zip -r coverage.zip coverage
+    - mv coverage.zip ../
+  artifacts:
+    name: "splash_coverage_${CI_BUILD_REF_NAME}"
+    paths:
+    - "coverage.zip"
+
+#
 # Package
 #
 package:debian:
-  stage: package
+  stage: deploy
   image: ubuntu:18.04
   script:
-    - git submodule update --init
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends gcc-8 g++-8
+    - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 700 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+    - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build
     - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
@@ -111,6 +149,7 @@ package:debian:
 #
 static_analysis:
   stage: test
+  image: ubuntu:19.10
   script:
     - git submodule update --init
     - ./make_deps.sh
@@ -123,7 +162,7 @@ static_analysis:
     - tar caf splash-cov.bz2 cov-int
     - curl --form token=zkRfEWYxyAeJDlYYg9Hkkg --form email=emmanueldurand@gmail.com --form file=@splash-cov.bz2
       --form description="Splash" https://scan.coverity.com/builds?project=paperManu%2Fsplash
-    - apt install -y libpcre3-dev
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libpcre3-dev cppcheck
     - make static_analysis
     - mv tests/static_analysis_result.txt ../
   only:
@@ -133,3 +172,27 @@ static_analysis:
     paths:
     - "static_analysis_result.txt"
 
+#
+# Gitlab pages
+#
+pages:
+  stage: deploy
+  image: ubuntu:18.04
+  script:
+    - DEBIAN_FRONTEND=noninteractive apt install -y python3-pip doxygen graphviz
+    - pip3 install mkdocs markdown-include mkdocs-bootswatch
+    - git clone https://gitlab.com/sat-metalab/splash.wiki docs/wiki
+    - export LC_ALL=C.UTF-8
+    - export LANG=C.UTF-8
+    - mkdocs build -f docs/mkdocs.yml
+    - ./make_deps.sh
+    - mkdir build && cd build
+    - cmake .. && make doc && cp -r docs/html ../static/doxygen
+    - cd ..
+    - mv static public
+  artifacts:
+    paths:
+      - public
+  only:
+    - master
+    - website

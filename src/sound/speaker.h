@@ -33,7 +33,8 @@
 #include <mutex>
 #include <vector>
 
-#include "./config.h"
+#include "./core/constants.h"
+
 #include "./core/attribute.h"
 #include "./core/graph_object.h"
 #include "./sound/sound_engine.h"

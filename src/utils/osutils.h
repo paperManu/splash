@@ -25,21 +25,27 @@
 #ifndef SPLASH_OSUTILS_H
 #define SPLASH_OSUTILS_H
 
+#include <algorithm>
 #include <dirent.h>
-#include <string>
-#include <unistd.h>
-#include <vector>
-#if HAVE_SHMDATA
-#include <shmdata/abstract-logger.hpp>
-#endif
 #include <pwd.h>
 #include <sched.h>
+#include <string>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
+#include <unistd.h>
+#include <vector>
 
+#include "./core/constants.h"
 #include "./utils/log.h"
+
+#if HAVE_SHMDATA
+#include <shmdata/abstract-logger.hpp>
+#endif
+#if HAVE_SLAPS
+#include <slaps/abstract_logger.h>
+#endif
 
 namespace Splash
 {
@@ -129,6 +135,16 @@ inline int xioctl(int fd, int request, void* arg)
     } while (res == -1 && errno == EINTR);
 
     return res;
+}
+
+/**
+ * Converts a string to lower case
+ * \param input string to convert
+ * \return the string in lower case format
+ */
+inline void toLower(std::string& input)
+{
+    std::transform(input.begin(), input.end(), input.begin(), ::tolower);
 }
 
 /**
@@ -432,7 +448,23 @@ class ShmdataLogger : public shmdata::AbstractLogger
     void on_debug(std::string&& str) final { Log::get() << Log::DEBUGGING << "Shmdata::ShmdataLogger - " << str << Log::endl; }
 };
 #endif
-} // end of namespace
-} // end of namespace
+
+#if HAVE_SLAPS
+/**
+ * \brief Slaps logger dedicated to splash
+ */
+class SlapsLogger : public slaps::AbstractLogger
+{
+  private:
+    void on_error(std::string&& str) final { Log::get() << Log::ERROR << "Slaps::SlapsLogger - " << str << Log::endl; }
+    void on_critical(std::string&& str) final { Log::get() << Log::ERROR << "Slaps::SlapsLogger - " << str << Log::endl; }
+    void on_warning(std::string&& str) final { Log::get() << Log::WARNING << "Slaps::SlapsLogger - " << str << Log::endl; }
+    void on_message(std::string&& str) final { Log::get() << Log::MESSAGE << "Slaps::SlapsLogger - " << str << Log::endl; }
+    void on_info(std::string&& str) final { Log::get() << Log::MESSAGE << "Slaps::SlapsLogger - " << str << Log::endl; }
+    void on_debug(std::string&& str) final { Log::get() << Log::DEBUGGING << "Slaps::SlapsLogger - " << str << Log::endl; }
+};
+#endif
+} // namespace Utils
+} // namespace Splash
 
 #endif

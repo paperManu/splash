@@ -1,24 +1,25 @@
 Splash, a multi-projector video-mapping software
 ================================================
 
-[![Build status](https://gitlab.com/sat-metalab/splash/badges/develop/build.svg)](https://gitlab.com/sat-metalab/splash/commits/develop)
+[![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
+[![pipeline status](https://gitlab.com/sat-metalab/splash/badges/develop/pipeline.svg)](https://gitlab.com/sat-metalab/splash/commits/develop)
+[![coverage report](https://gitlab.com/sat-metalab/splash/badges/develop/coverage.svg)](https://gitlab.com/sat-metalab/splash/commits/develop)
 [![Coverity Scan Build Status](https://img.shields.io/coverity/scan/3544.svg)](https://scan.coverity.com/projects/papermanu-splash)
 
-For a more complete documentation, go visit the [wiki](https://gitlab.com/sat-metalab/splash/wikis/home).
+For a more complete documentation, go visit the [official website](https://sat-metalab.gitlab.io/splash).
 
-Table of Contents
------------------
+## Table of Contents
 
 [Introduction](#introduction)
 
 [Installation](#installation)
 
-[Going forward](#goingforward)
+[Code contribution](#code-contribution)
+
+[Going forward](#going-forward)
 
 
-<a name="introduction"></a>
-Introduction
-------------
+## Introduction
 
 ### About
 Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending and color), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers is planned.
@@ -36,20 +37,16 @@ Splash can read videos from various sources amoung which video files (most commo
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
 
 ### Authors
-* Emmanuel Durand ([Github](https://github.com/paperManu))([Website](https://emmanueldurand.net))
-* Jérémie Soria ([Github](https://github.com/eldaranne))
+See [AUTHORS.md](AUTHORS.md)
 
-### Projet URL
-This project can be found either on the [SAT Metalab repository](https://gitlab.com/sat-metalab/splash) or on [Github](https://github.com/paperManu/splash).
+### Project URL
+This project can be found either on [its official website](https://sat-metalab.gitlab.io/splash), on the [SAT Metalab repository](https://gitlab.com/sat-metalab/splash) or on [Github](https://github.com/paperManu/splash).
 
 ### Sponsors
 This project is made possible thanks to the [Society for Arts and Technologies](http://www.sat.qc.ca) (also known as SAT).
-Thanks to the Ministère de l'Économie, des Sciences et de l'Innovation (MESI).
 
 
-<a name="installation"/></a>
-Installation
-------------
+## Installation
 
 ### Dependencies
 Splash relies on a few libraries to get the job done. The mandatory libraries are:
@@ -92,15 +89,21 @@ Splash can be installed from a pre-built package, or compiled by hand. Newcomers
 
 ##### Packages
 
-The easiest way to install and test Splash is by using the [Flatpak](https://flatpak.org) archive, which is compatible with most Linux distributions. It can be downloaded from the [tags page](https://gitlab.com/sat-metalab/splash/tags), and installed as follows on Ubuntu:
+The easiest way to install and test Splash is by using the [Flatpak](https://flatpak.org) archive, which is compatible with most Linux distributions. Splash is available on [Flathub](https://flathub.org/apps/details/com.gitlab.sat_metalab.Splash), and can be installed as follows on Ubuntu:
 
 ```bash
 sudo apt install flatpak
 sudo flatpak install flathub org.freedesktop.Platform//1.6
-sudo flatpak install splash.flatpak
+sudo flatpak install flathub com.gitlab.sat_metalab.Splash
 ```
 
-Splash should now be available from your application menu (this may require to logout / log back in). A known limitation of the Flatpak package is that it has no access to Jack, and cannot use multiple GPUs.
+Splash should now be accessible from your application menu (this may require to logout / log back in), or it can be run directly from the terminal as well:
+
+```bash
+flatpak run com.gitlab.sat_metalab.Splash
+```
+
+A known limitation of the Flatpak package is that it has no access to Jack.
 
 The current release of Splash is also packaged for Ubuntu (version 18.04) and derived. This is done through a Debian archive available on the [tags page](https://gitlab.com/sat-metalab/splash/tags), and install it with :
 
@@ -180,10 +183,14 @@ Then log out and log back in.
 
 If you want to specify some defaults values for the objects, you can set the environment variable SPLASH_DEFAULTS with the path to a file defining default values for given types. An example of such a file can be found in [data/config/splashrc](data/config/splashrc)
 
-And that's it, you can move on the the [Walkthrough](https://gitlab.com/sat-metalab/splash/wikis/Walkthrough) page.
+And that's it, you can move on the the [Walkthrough](https://sat-metalab.gitlab.io/splash/Walkthrough/) page.
 
-<a name="goingforward"/></a>
-Going forward
--------------
 
-To learn how to configure and use Splash, the best resource currently is the Wiki page on [Gitlab](https://gitlab.com/sat-metalab/splash/wikis/home).
+## Code contribution
+
+Contributions are welcome ! See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for details.
+
+
+## Going forward
+
+To learn how to configure and use Splash, the best resource is [its official website](https://sat-metalab.gitlab.io/splash).

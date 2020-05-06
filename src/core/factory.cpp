@@ -14,6 +14,7 @@
 #include "./graphics/window.h"
 #include "./image/image.h"
 #include "./image/image_ffmpeg.h"
+#include "./image/image_list.h"
 #include "./image/queue.h"
 #include "./mesh/mesh.h"
 #include "./sink/sink.h"
@@ -53,6 +54,7 @@ namespace Splash
 Factory::Factory()
     : _root(nullptr)
 {
+    loadDefaults();
     registerObjects();
 }
 
@@ -85,38 +87,11 @@ void Factory::loadDefaults()
         auto attrNames = config[name].getMemberNames();
         for (const auto& attrName : attrNames)
         {
-            auto value = jsonToValues(config[name][attrName]);
+            auto value = Utils::jsonToValues(config[name][attrName]);
             defaults[attrName] = value;
         }
         _defaults[name] = defaults;
     }
-}
-
-/*************/
-Values Factory::jsonToValues(const Json::Value& values)
-{
-    Values outValues;
-
-    if (values.isInt())
-        outValues.emplace_back(values.asInt());
-    else if (values.isDouble())
-        outValues.emplace_back(values.asFloat());
-    else if (values.isArray())
-        for (const auto& v : values)
-        {
-            if (v.isInt())
-                outValues.emplace_back(v.asInt());
-            else if (v.isDouble())
-                outValues.emplace_back(v.asFloat());
-            else if (v.isArray())
-                outValues.emplace_back(jsonToValues(v));
-            else
-                outValues.emplace_back(v.asString());
-        }
-    else
-        outValues.emplace_back(values.asString());
-
-    return outValues;
 }
 
 /*************/
@@ -238,6 +213,20 @@ void Factory::registerObjects()
         GraphObject::Category::IMAGE,
         "image",
         "Static image read from a file.",
+        true);
+
+    _objectBook["image_list"] = Page(
+        [&](RootObject* root) {
+            shared_ptr<GraphObject> object;
+            if (!_scene)
+                object = dynamic_pointer_cast<GraphObject>(make_shared<Image_List>(root));
+            else
+                object = dynamic_pointer_cast<GraphObject>(make_shared<Image>(root));
+            return object;
+        },
+        GraphObject::Category::IMAGE,
+        "Images from a list",
+        "Static images read from a directory.",
         true);
 
 #if HAVE_LINUX

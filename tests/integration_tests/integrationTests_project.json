@@ -1,0 +1,72 @@
+{
+   "description" : "splashProject",
+   "links" : [
+      [ "object", "gui" ],
+      [ "object", "__camera_link" ],
+      [ "image", "object_image_filter" ],
+      [ "mesh", "object" ],
+      [ "object_image_filter", "object" ]
+   ],
+   "objects" : {
+      "image" : {
+         "alias" : [ "image" ],
+         "file" : [ "../../data/share/splash/color_map.png" ],
+         "flip" : [ 0 ],
+         "flop" : [ 0 ],
+         "mediaInfo" : [ 4096, 4096, 32, 4, "RGBA", 1 ],
+         "pattern" : [ 0 ],
+         "priorityShift" : [ 0 ],
+         "savable" : [ 1 ],
+         "srgb" : [ 1 ],
+         "timestamp" : [ 1233431143 ],
+         "type" : "image"
+      },
+      "mesh" : {
+         "alias" : [ "mesh" ],
+         "file" : [ "../../data/share/splash/cubes.obj" ],
+         "priorityShift" : [ 0 ],
+         "savable" : [ 1 ],
+         "timestamp" : [ 1233431451 ],
+         "type" : "mesh"
+      },
+      "object" : {
+         "alias" : [ "object" ],
+         "color" : [ 0, 0, 0, 1 ],
+         "fill" : [ "texture" ],
+         "normalExponent" : [ 0 ],
+         "position" : [ 0, 0, 0 ],
+         "priorityShift" : [ 0 ],
+         "rotation" : [ 0, 0, 0 ],
+         "savable" : [ 1 ],
+         "scale" : [ 1, 1, 1 ],
+         "sideness" : [ 0 ],
+         "timestamp" : [ 1233178611 ],
+         "type" : "object"
+      },
+      "object_image_filter" : {
+         "alias" : [ "object_image_filter" ],
+         "blackLevel" : [ 0 ],
+         "blackLevelAuto" : [ 0, 1 ],
+         "brightness" : [ 1 ],
+         "buffer" : [ 0 ],
+         "colorCurveAnchors" : [ 0 ],
+         "colorTemperature" : [ 6500 ],
+         "contrast" : [ 1 ],
+         "fileFilterSource" : [ "" ],
+         "filterSource" : [ "" ],
+         "grabMipmapLevel" : [ -1 ],
+         "invertChannels" : [ 0 ],
+         "keepRatio" : [ 0 ],
+         "priorityShift" : [ 0 ],
+         "saturation" : [ 1 ],
+         "savable" : [ 1 ],
+         "scale" : [ 1, 1 ],
+         "size" : [ 128, 128 ],
+         "sizeOverride" : [ -1, -1 ],
+         "timestamp" : [ 1233178611 ],
+         "type" : "filter",
+         "watchShaderFile" : [ 0 ]
+      }
+   },
+   "version" : "0.8.3"
+}

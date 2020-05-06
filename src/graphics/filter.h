@@ -32,10 +32,9 @@
 
 #include <glm/glm.hpp>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./graphics/framebuffer.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
@@ -108,6 +107,12 @@ class Filter : public Texture
     void setKeepRatio(bool keepRatio);
 
     /**
+     * Set the bit depth to 16 bpc
+     * \param active If true, set to 16bpc, otherwise 8bpc
+     */
+    void setSixteenBpc(bool active);
+
+    /**
      * \brief Render the filter
      */
     void render() override;
@@ -137,8 +142,10 @@ class Filter : public Texture
     std::shared_ptr<Object> _screen;
 
     // Filter parameters
+    static constexpr int _defaultSize[2]{512, 512};
     int _sizeOverride[2]{-1, -1}; //!< If set to positive values, overrides the size given by input textures
     bool _keepRatio{false};
+    bool _sixteenBpc{true};
     std::unordered_map<std::string, Values> _filterUniforms; //!< Contains all filter uniforms
     Values _colorCurves{};                                   //!< RGB points for the color curves, active if at least 3 points are set
 

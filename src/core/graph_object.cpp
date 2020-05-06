@@ -46,6 +46,13 @@ Attribute& GraphObject::addAttribute(const string& name, const function<bool(con
 }
 
 /*************/
+void GraphObject::setAttributeDescription(const string& name, const string& description)
+{
+    BaseObject::setAttributeDescription(name, description);
+    initializeTree();
+}
+
+/*************/
 void GraphObject::linkToParent(GraphObject* obj)
 {
     auto parentIt = find(_parents.begin(), _parents.end(), obj);
@@ -108,7 +115,7 @@ bool GraphObject::linkTo(const shared_ptr<GraphObject>& obj)
     });
 
     if (objectIt != _linkedObjects.end())
-        return false;
+        return true;
 
     if (!linkIt(obj))
     {
@@ -330,8 +337,6 @@ void GraphObject::initializeTree()
                 continue;
             auto attrName = d[0].as<string>();
             auto attrPath = docPath + attrName;
-            if (tree->hasBranchAt(attrPath))
-                continue;
             tree->createBranchAt(attrPath);
             tree->createLeafAt(attrPath + "/description");
             tree->createLeafAt(attrPath + "/arguments");

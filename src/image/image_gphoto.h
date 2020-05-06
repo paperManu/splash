@@ -31,16 +31,16 @@
 
 #include <gphoto2/gphoto2.h>
 
-#include "./config.h"
+#include "./core/constants.h"
 
-#include "./image/image.h"
+#include "./image/image_sequence.h"
 
 typedef Camera GpCamera;
 
 namespace Splash
 {
 
-class Image_GPhoto : public Image
+class Image_GPhoto : public Image_Sequence
 {
   public:
     /**
@@ -54,7 +54,7 @@ class Image_GPhoto : public Image
     ~Image_GPhoto() override;
 
     /**
-     * No copy constructor, only move
+     * No copy constructor
      */
     Image_GPhoto(const Image_GPhoto&) = delete;
     Image_GPhoto& operator=(const Image_GPhoto&) = delete;
@@ -62,7 +62,7 @@ class Image_GPhoto : public Image
     /**
      * Capture a new photo
      */
-    bool capture();
+    bool capture() final;
 
     /**
      * Set the camera to read from

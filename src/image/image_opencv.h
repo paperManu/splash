@@ -30,10 +30,9 @@
 #include <mutex>
 #include <thread>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./image/image.h"
 
 namespace cv
@@ -58,7 +57,7 @@ class Image_OpenCV : public Image
     ~Image_OpenCV() final;
 
     /**
-     * No copy, but some move constructors
+     * No copy constructor
      */
     Image_OpenCV(const Image_OpenCV&) = delete;
     Image_OpenCV& operator=(const Image_OpenCV&) = delete;

@@ -282,7 +282,7 @@ bool Link::sendMessage(const string& name, const string& attribute, const Values
                         sendMessage(v.as<Values>());
                     else
                     {
-                        int valueSize = (valueType == Value::Type::string) ? v.size() + 1 : v.size();
+                        int valueSize = (valueType == Value::Type::string) ? v.byte_size() + 1 : v.byte_size();
                         void* value = v.data();
                         msg.rebuild(valueSize);
                         memcpy(msg.data(), value, valueSize);
@@ -400,7 +400,7 @@ void Link::handleInputMessages()
 // We don't display broadcast messages, for visibility
 #ifdef DEBUG
             if (name != SPLASH_ALL_PEERS)
-                Log::get() << Log::DEBUGGING << "Link::" << __FUNCTION__ << " (" << root->getName() << ")"
+                Log::get() << Log::DEBUGGING << "Link::" << __FUNCTION__ << " (" << _rootObject->getName() << ")"
                            << " - Receiving message for " << name << "::" << attribute << Log::endl;
 #endif
         }
@@ -436,10 +436,10 @@ void Link::handleInputBuffers()
             string name((char*)msg.data());
 
             _socketBufferIn->recv(&msg);
-            shared_ptr<SerializedObject> buffer = make_shared<SerializedObject>(static_cast<uint8_t*>(msg.data()), static_cast<uint8_t*>(msg.data()) + msg.size());
+            auto buffer = make_shared<SerializedObject>(static_cast<uint8_t*>(msg.data()), static_cast<uint8_t*>(msg.data()) + msg.size());
 
             if (_rootObject)
-                _rootObject->setFromSerializedObject(name, std::move(buffer));
+                _rootObject->setFromSerializedObject(name, buffer);
         }
     }
     catch (const zmq::error_t& e)

@@ -49,9 +49,7 @@ bool BaseObject::setAttribute(const string& attrib, const Values& args)
     if (attribNotPresent)
     {
         auto result = _attribFunctions.emplace(attrib, Attribute(attrib));
-        if (!result.second)
-            return false;
-
+        assert(result.second);
         attribFunction = result.first;
     }
 
@@ -88,7 +86,17 @@ optional<Values> BaseObject::getAttribute(const string& attrib) const
 }
 
 /*************/
-string BaseObject::getAttributeDescription(const string& name)
+vector<std::string> BaseObject::getAttributesList() const
+{
+    unique_lock<recursive_mutex> lock(_attribMutex);
+    vector<string> attributeNames;
+    for (const auto& [name, attribute] : _attribFunctions)
+        attributeNames.push_back(name);
+    return attributeNames;
+}
+
+/*************/
+string BaseObject::getAttributeDescription(const string& name) const
 {
     unique_lock<recursive_mutex> lock(_attribMutex);
     auto attr = _attribFunctions.find(name);
@@ -99,7 +107,7 @@ string BaseObject::getAttributeDescription(const string& name)
 }
 
 /*************/
-Values BaseObject::getAttributesDescriptions()
+Values BaseObject::getAttributesDescriptions() const
 {
     unique_lock<recursive_mutex> lock(_attribMutex);
     Values descriptions;
@@ -116,14 +124,21 @@ Attribute::Sync BaseObject::getAttributeSyncMethod(const string& name)
     if (attr != _attribFunctions.end())
         return attr->second.getSyncMethod();
     else
-        return Attribute::Sync::no_sync;
+        return Attribute::Sync::auto_sync;
 }
 
 /*************/
 void BaseObject::runAsyncTask(const function<void(void)>& func)
 {
     lock_guard<mutex> lockTasks(_asyncTaskMutex);
-    _asyncTask = async(launch::async, func);
+    auto taskId = _nextAsyncTaskId++;
+    _asyncTasks[taskId] = async(launch::async, [this, func, taskId]() -> void {
+        func();
+        addTask([this, taskId]() -> void {
+            lock_guard<mutex> lockTasks(_asyncTaskMutex);
+            _asyncTasks.erase(taskId);
+        });
+    });
 }
 
 /*************/
@@ -142,6 +157,15 @@ Attribute& BaseObject::addAttribute(const string& name, const function<bool(cons
     _attribFunctions[name] = Attribute(name, set, get, types);
     _attribFunctions[name].setObjectName(_name);
     return _attribFunctions[name];
+}
+
+/*************/
+bool BaseObject::hasAttribute(const string& name) const
+{
+    unique_lock<recursive_mutex> lock(_attribMutex);
+    if (_attribFunctions.find(name) == _attribFunctions.end())
+        return false;
+    return true;
 }
 
 /*************/

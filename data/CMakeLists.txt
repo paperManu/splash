@@ -18,10 +18,10 @@
 #
 
 add_custom_command(
-    OUTPUT splash.desktop
+    OUTPUT update_version
     COMMAND sed -i 's/Version=.*/Version=${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}/g' ${CMAKE_CURRENT_SOURCE_DIR}/share/applications/splash.desktop
 )
 
-add_custom_target(splash-launcher ALL DEPENDS splash.desktop)
+add_custom_target(splash-launcher ALL DEPENDS update_version)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/share DESTINATION ${CMAKE_INSTALL_PREFIX})
 install(FILES share/icons/hicolor/512x512/apps/splash.png DESTINATION "share/splash/")

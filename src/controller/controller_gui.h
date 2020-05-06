@@ -38,14 +38,13 @@
 #include <imgui.h>
 #include <memory>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #if HAVE_GPHOTO and HAVE_OPENCV
 #include "./controller/colorcalibrator.h"
 #endif
 #include "./controller/widget/widget.h"
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./graphics/camera.h"
 #include "./graphics/framebuffer.h"
 #include "./userinput/userinput.h"

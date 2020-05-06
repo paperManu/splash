@@ -14,7 +14,17 @@ namespace Splash
 
 /**************/
 RootObject::RootObject()
-    : _factory(unique_ptr<Factory>(new Factory(this)))
+    : _context(Context())
+    , _factory(unique_ptr<Factory>(new Factory(this)))
+{
+    registerAttributes();
+    initializeTree();
+}
+
+/**************/
+RootObject::RootObject(Context context)
+    : _context(context)
+    , _factory(unique_ptr<Factory>(new Factory(this)))
 {
     registerAttributes();
     initializeTree();
@@ -173,19 +183,24 @@ bool RootObject::set(const string& name, const string& attrib, const Values& arg
 }
 
 /*************/
-void RootObject::setFromSerializedObject(const string& name, shared_ptr<SerializedObject> obj)
+bool RootObject::setFromSerializedObject(const string& name, const shared_ptr<SerializedObject>& obj)
 {
     auto object = getObject(name);
     if (object)
     {
         auto objectAsBuffer = dynamic_pointer_cast<BufferObject>(object);
         if (objectAsBuffer)
-            objectAsBuffer->setSerializedObject(move(obj));
+        {
+            objectAsBuffer->setSerializedObject(obj);
+            return true;
+        }
     }
     else
     {
-        handleSerializedObject(name, move(obj));
+        return handleSerializedObject(name, obj);
     }
+
+    return false;
 }
 
 /*************/
@@ -228,7 +243,7 @@ bool RootObject::waitSignalBufferObjectUpdated(uint64_t timeout)
 }
 
 /*************/
-bool RootObject::handleSerializedObject(const string& name, shared_ptr<SerializedObject> obj)
+bool RootObject::handleSerializedObject(const string& name, const shared_ptr<SerializedObject>& obj)
 {
     if (name == "_tree")
     {
@@ -298,12 +313,21 @@ void RootObject::updateTreeFromObjects()
 
         attributePath = string("/" + _name + "/objects/" + objectName + "/attributes");
         assert(_tree.hasBranchAt(attributePath));
-
         for (const auto& leafName : _tree.getLeafListAt(attributePath))
         {
-            Values attribValue;
-            object->getAttribute(leafName, attribValue);
-            _tree.setValueForLeafAt(attributePath + "/" + leafName, attribValue);
+            auto attribValue = object->getAttribute(leafName);
+            if (attribValue)
+                _tree.setValueForLeafAt(attributePath + "/" + leafName, attribValue.value());
+            else
+                _tree.removeLeafAt(attributePath + "/" + leafName);
+        }
+
+        auto docPath = string("/" + _name + "/objects/" + objectName + "/documentation");
+        assert(_tree.hasBranchAt(docPath));
+        for (const auto& docBranchName : _tree.getBranchListAt(docPath))
+        {
+            if (!object->hasAttribute(docBranchName))
+                _tree.removeBranchAt(docPath + "/" + docBranchName);
         }
     }
 }
@@ -311,6 +335,8 @@ void RootObject::updateTreeFromObjects()
 /*************/
 void RootObject::propagateTree()
 {
+    assert(_link);
+
     auto treeSeeds = _tree.getUpdateSeedList();
     if (treeSeeds.empty())
         return;
@@ -323,6 +349,8 @@ void RootObject::propagateTree()
 /*************/
 void RootObject::propagatePath(const string& path)
 {
+    assert(_link);
+
     auto seeds = _tree.getSeedsForPath(path);
     if (seeds.empty())
         return;
@@ -569,8 +597,7 @@ Json::Value RootObject::getRootConfigurationAsJson(const string& rootName)
 /*************/
 Values RootObject::sendMessageWithAnswer(const string& name, const string& attribute, const Values& message, const unsigned long long timeout)
 {
-    if (!_link)
-        return {};
+    assert(_link);
 
     lock_guard<mutex> lock(_answerMutex);
     _answerExpected = attribute;

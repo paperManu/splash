@@ -88,7 +88,7 @@ class BufferObject : public GraphObject
      * \param obj Serialized object to use as source
      * \return Return true if everything went well
      */
-    virtual bool deserialize(const std::shared_ptr<SerializedObject>& obj) = 0;
+    virtual bool deserialize(const std::shared_ptr<SerializedObject>& /*obj*/) = 0;
 
     /**
      * \brief Update the BufferObject from the inner serialized object, set with setSerializedObject
@@ -132,7 +132,13 @@ class BufferObject : public GraphObject
      * \brief Set the next serialized object to deserialize to buffer
      * \param obj Serialized object
      */
-    void setSerializedObject(std::shared_ptr<SerializedObject> obj);
+    void setSerializedObject(const std::shared_ptr<SerializedObject>& obj);
+
+    /**
+     * Check whether a serialized object is waiting for deserialization
+     * \return Return true if a serialized object is waiting
+     */
+    bool hasSerializedObjectWaiting() const { return _newSerializedObject; };
 
   protected:
     mutable Spinlock _readMutex;                //!< Read mutex locked when the object is read from

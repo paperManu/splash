@@ -28,7 +28,7 @@
 #include <map>
 #include <string>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 namespace Splash
 {

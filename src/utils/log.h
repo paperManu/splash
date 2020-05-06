@@ -37,7 +37,7 @@
 #include <utility>
 #include <vector>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./core/spinlock.h"
 #include "./core/value.h"

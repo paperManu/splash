@@ -25,7 +25,7 @@
 #ifndef SPLASH_SERIALIZED_OBJECT_H
 #define SPLASH_SERIALIZED_OBJECT_H
 
-#include "./core/resizable_array.h"
+#include "./utils/resizable_array.h"
 
 namespace Splash
 {

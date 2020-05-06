@@ -27,10 +27,9 @@
 
 #include <memory>
 
-#include "./config.h"
+#include "./core/constants.h"
 
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./core/graph_object.h"
 #include "./graphics/texture_image.h"
 
@@ -69,6 +68,12 @@ class Framebuffer : public GraphObject
      * \param dst Destination FBO
      */
     static void blit(const Framebuffer& src, const Framebuffer& dst);
+
+    /**
+     * Get bit depth
+     * \return Return the bit depth for each channel
+     */
+    uint32_t getBitDepth() const { return _16bits ? 16 : 8; }
 
     /**
      * Get the color texture

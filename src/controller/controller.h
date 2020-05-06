@@ -25,11 +25,13 @@
 #ifndef SPLASH_CONTROLLER_H
 #define SPLASH_CONTROLLER_H
 
+#include <chrono>
 #include <string>
 #include <vector>
 
+#include "./core/constants.h"
+
 #include "./core/attribute.h"
-#include "./core/coretypes.h"
 #include "./core/graph_object.h"
 #include "./core/scene.h"
 #include "./userinput/userinput.h"
@@ -61,7 +63,7 @@ class ControllerObject : public GraphObject
      * \param name Object name
      * \return Return true if the object exists, false otherwise
      */
-    bool checkObject(const std::string& name) const;
+    bool checkObjectExists(const std::string& name) const;
 
     /**
      * Get a ptr to the named object
@@ -168,6 +170,17 @@ class ControllerObject : public GraphObject
      */
     template <typename T>
     std::vector<std::shared_ptr<T>> getObjectsOfBaseType() const;
+
+    /**
+     * Wait for an object to be created
+     * \param name Object name
+     * \param wait time as uint32. Will be cast to milliseconds
+     */
+    void waitForObjectCreation(const std::string& name, uint32_t waitTime=15)
+    {
+        while (!checkObjectExists(name))
+            std::this_thread::sleep_for(static_cast<std::chrono::milliseconds>(waitTime));
+    }
 
     /**
      * \brief Send a serialized buffer to the given BufferObject

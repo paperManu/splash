@@ -48,6 +48,6 @@ class Spinlock
     std::atomic_flag _lock = ATOMIC_FLAG_INIT;
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_SPINLOCK_H
