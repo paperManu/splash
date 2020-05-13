@@ -16,6 +16,7 @@ git log --format='%aN' | \
     sed 's/Jeremie Soria/Jérémie Soria/' | \
     sed 's/Marie-Eve$/Marie-Eve Dumas/' | \
     sed 's/nicolas/Nicolas Bouillot/' | \
+    sed 's/Emamnuel Durand/Emmanuel Durand/' | \
     grep -v metalab | \
     sort | \
     uniq -c | sort -bgr | \
