@@ -117,22 +117,18 @@ void Sink::update()
         _image = ImageBuffer(_spec);
     }
 
-    // TODO: figure out why replacing glGetTexImage with glGetTextureImage is not straightforward
-    _inputTexture->bind();
     glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboWriteIndex]);
     if (_spec.bpp == 32)
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, 0);
+        glGetTextureImage(_inputTexture->getTexId(), 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, 0, 0);
     else if (_spec.bpp == 24)
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+        glGetTextureImage(_inputTexture->getTexId(), 0, GL_RGB, GL_UNSIGNED_BYTE, 0, 0);
     else if (_spec.bpp == 16 && _spec.channels != 1)
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_UNSIGNED_SHORT, 0);
+        glGetTextureImage(_inputTexture->getTexId(), 0, GL_RG, GL_UNSIGNED_SHORT, 0, 0);
     else if (_spec.bpp == 16 && _spec.channels == 1)
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_SHORT, 0);
+        glGetTextureImage(_inputTexture->getTexId(), 0, GL_RED, GL_UNSIGNED_SHORT, 0, 0);
     else if (_spec.bpp == 8)
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
-
+        glGetTextureImage(_inputTexture->getTexId(), 0, GL_RED, GL_UNSIGNED_BYTE, 0, 0);
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-    _inputTexture->unbind();
 
     _pboWriteIndex = (_pboWriteIndex + 1) % _pbos.size();
 
