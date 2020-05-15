@@ -17,9 +17,11 @@ cache:
 # This is specifically used for Ubuntu builds
 before_script:
   - apt update -qq
-  - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends ca-certificates ccache wget curl build-essential git-core libjsoncpp-dev
-    zip cmake automake libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev 
-    libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python libopencv-dev
+  - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends ca-certificates
+    ccache wget curl build-essential git-core libjsoncpp-dev zip cmake automake libtool
+    libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev
+    libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python
+    libopencv-dev libx264-dev libx265-dev
   # CCache stuff
   - mkdir -p ccache
   - export CCACHE_BASEDIR=${PWD}
