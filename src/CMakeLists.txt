@@ -40,6 +40,11 @@ set_source_files_properties(
     PROPERTIES COMPILE_FLAGS "-Wno-error=strict-aliasing -Wno-strict-aliasing"
 )
 
+set_source_files_properties(
+    core/link.cpp
+    PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized"
+)
+
 if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
   set_source_files_properties(
       image/image.cpp
