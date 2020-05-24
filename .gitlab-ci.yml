@@ -32,7 +32,6 @@ test:20.04:
   stage: test
   image: ubuntu:20.04
   script: 
-    - git submodule update --init
     #
     # Test using bundled libs
     - ./make_deps.sh
@@ -65,7 +64,6 @@ test:archlinux:
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
     - export PATH="/usr/lib/ccache:${PATH}"
-    - git submodule update --init
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build
   script:
@@ -81,7 +79,6 @@ coverage:
   image: ubuntu:20.04
   script: 
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends lcov zip
-    - git submodule update --init
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build
     - cmake -DTEST_COVERAGE=ON -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
@@ -99,14 +96,11 @@ coverage:
 #
 package:debian:
   stage: deploy
-  image: ubuntu:18.04
+  image: ubuntu:20.04
   script:
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends gcc-8 g++-8
-    - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 700 --slave /usr/bin/g++ g++ /usr/bin/g++-7
-    - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build
-    - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
+    - cmake -DBUILD_GENERIC_ARCH=ON -DWITH_LTO=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make package
     - mv *.deb ../

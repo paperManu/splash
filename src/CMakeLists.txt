@@ -114,6 +114,10 @@ if(${WITH_LTO})
     set_property(TARGET splash-${API_VERSION}
         PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE
     )
+
+    set_property(TARGET splash
+        PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE
+    )
 endif()
 
 #
