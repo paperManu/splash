@@ -55,8 +55,12 @@ bool Sink::linkIt(const shared_ptr<GraphObject>& obj)
     }
     else if (auto objAsTexture = dynamic_pointer_cast<Texture>(obj); objAsTexture)
     {
-        _inputTexture = objAsTexture;
-        return true;
+        auto filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", getName() + "_" + obj->getName() + "_filter").lock());
+        filter->setSavable(_savable); // We always save the filters as they hold user-specified values, if this is savable
+        if (filter->linkTo(obj))
+            return linkTo(filter);
+        else
+            return false;
     }
 
     return false;
@@ -72,7 +76,15 @@ void Sink::unlinkIt(const shared_ptr<GraphObject>& obj)
     }
     else if (auto objAsTexture = dynamic_pointer_cast<Texture>(obj); objAsTexture)
     {
-        _inputTexture.reset();
+        auto filterName = getName() + "_" + obj->getName() + "_filter";
+
+        if (auto filter = _root->getObject(filterName))
+        {
+            filter->unlinkFrom(obj);
+            unlinkFrom(filter);
+        }
+
+        _root->disposeObject(filterName);
     }
 }
 
