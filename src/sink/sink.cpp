@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-#include "./graphics/filter.h"
+#include "./graphics/texture.h"
 #include "./utils/timer.h"
 
 using namespace std;
@@ -50,7 +50,7 @@ bool Sink::linkIt(const shared_ptr<GraphObject>& obj)
     if (auto objAsFilter = dynamic_pointer_cast<Filter>(obj); objAsFilter)
     {
         objAsFilter->setSixteenBpc(false);
-        _inputTexture = dynamic_pointer_cast<Texture>(obj);
+        _inputFilter = dynamic_pointer_cast<Filter>(obj);
         return true;
     }
     else if (auto objAsTexture = dynamic_pointer_cast<Texture>(obj); objAsTexture)
@@ -72,7 +72,7 @@ void Sink::unlinkIt(const shared_ptr<GraphObject>& obj)
     if (auto objAsFilter = dynamic_pointer_cast<Filter>(obj); objAsFilter)
     {
         objAsFilter->setSixteenBpc(true);
-        _inputTexture.reset();
+        _inputFilter.reset();
     }
     else if (auto objAsTexture = dynamic_pointer_cast<Texture>(obj); objAsTexture)
     {
@@ -91,7 +91,7 @@ void Sink::unlinkIt(const shared_ptr<GraphObject>& obj)
 /*************/
 void Sink::render()
 {
-    if (!_inputTexture || !_mappedPixels)
+    if (!_inputFilter || !_mappedPixels)
         return;
 
     handlePixels(reinterpret_cast<char*>(_mappedPixels), _spec);
@@ -100,10 +100,10 @@ void Sink::render()
 /*************/
 void Sink::update()
 {
-    if (!_inputTexture)
+    if (!_inputFilter)
         return;
 
-    auto textureSpec = _inputTexture->getSpec();
+    auto textureSpec = _inputFilter->getSpec();
     if (textureSpec.rawSize() == 0)
         return;
 
@@ -131,15 +131,15 @@ void Sink::update()
 
     glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboWriteIndex]);
     if (_spec.bpp == 32)
-        glGetTextureImage(_inputTexture->getTexId(), 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, 0, 0);
+        glGetTextureImage(_inputFilter->getTexId(), 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, 0, 0);
     else if (_spec.bpp == 24)
-        glGetTextureImage(_inputTexture->getTexId(), 0, GL_RGB, GL_UNSIGNED_BYTE, 0, 0);
+        glGetTextureImage(_inputFilter->getTexId(), 0, GL_RGB, GL_UNSIGNED_BYTE, 0, 0);
     else if (_spec.bpp == 16 && _spec.channels != 1)
-        glGetTextureImage(_inputTexture->getTexId(), 0, GL_RG, GL_UNSIGNED_SHORT, 0, 0);
+        glGetTextureImage(_inputFilter->getTexId(), 0, GL_RG, GL_UNSIGNED_SHORT, 0, 0);
     else if (_spec.bpp == 16 && _spec.channels == 1)
-        glGetTextureImage(_inputTexture->getTexId(), 0, GL_RED, GL_UNSIGNED_SHORT, 0, 0);
+        glGetTextureImage(_inputFilter->getTexId(), 0, GL_RED, GL_UNSIGNED_SHORT, 0, 0);
     else if (_spec.bpp == 8)
-        glGetTextureImage(_inputTexture->getTexId(), 0, GL_RED, GL_UNSIGNED_BYTE, 0, 0);
+        glGetTextureImage(_inputFilter->getTexId(), 0, GL_RED, GL_UNSIGNED_BYTE, 0, 0);
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
     _pboWriteIndex = (_pboWriteIndex + 1) % _pbos.size();

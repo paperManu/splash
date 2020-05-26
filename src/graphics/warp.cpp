@@ -73,9 +73,6 @@ unordered_map<string, Values> Warp::getShaderUniforms() const
 /*************/
 bool Warp::linkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (!obj)
-        return false;
-
     if (dynamic_pointer_cast<Camera>(obj))
     {
         auto camera = _inCamera.lock();
@@ -89,7 +86,7 @@ bool Warp::linkIt(const std::shared_ptr<GraphObject>& obj)
         return true;
     }
 
-    return true;
+    return false;
 }
 
 /*************/

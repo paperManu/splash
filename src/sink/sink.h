@@ -33,7 +33,7 @@
 
 #include "./core/attribute.h"
 #include "./core/graph_object.h"
-#include "./graphics/texture.h"
+#include "./graphics/filter.h"
 #include "./utils/resizable_array.h"
 
 namespace Splash
@@ -95,7 +95,7 @@ class Sink : public GraphObject
     void registerAttributes();
 
   private:
-    std::shared_ptr<Texture> _inputTexture{nullptr};
+    std::shared_ptr<Filter> _inputFilter{nullptr};
     ImageBufferSpec _spec{};
     ImageBuffer _image{};
     std::mutex _lockPixels{};
