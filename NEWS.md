@@ -1,6 +1,24 @@
 Splash release notes
 ===================
 
+Splash 0.8.6 (2020-06-01)
+-------------------------
+New features:
+- Added a Filter to be created automatically when connecting a Sink to a Texture
+
+Improvements:
+- Updated and fixed CI to use Ubuntu 20.04
+- Replaced Framebuffer::setParameters with precise setters
+- Removed non-necessary method Filter::getOutTexture
+
+Bugs fixed:
+- Fixed Warp linking to anything, cleaned up Sink a bit
+- Fixed linked time optimization CMake option
+- Fixed segfault when creating an empty Geometry object
+- Fixed x264 and x264 being not supported by bundled ffmpeg. Added vaapi and amf support to Sink_Shmdata_Encoded
+- Fixed Sink not using OpenGL named texture
+- Fixed release script which did not update version across the source files
+
 Splash 0.8.4 (2020-05-06)
 -------------------------
 New features:
