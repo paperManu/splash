@@ -240,7 +240,7 @@ void Warp::loadDefaultModels()
 void Warp::setupFBO()
 {
     _fbo = make_unique<Framebuffer>(_root);
-    _fbo->setParameters(0, false, true /* srgb */);
+    _fbo->setsRGB(true);
 
     // Setup the virtual screen
     _screen = make_shared<Object>(_root);

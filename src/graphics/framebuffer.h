@@ -108,19 +108,34 @@ class Framebuffer : public GraphObject
     int getHeight() const { return _height; }
 
     /**
-     * Set the FBO multisampling and bit per channel settings
-     * \param multisample Multisampling value
-     * \param sixteenbpc If true, set color depth to 16bpc
-     * \param srgb If true, use sRGB color space (overrides 16bpc)
-     * \param cubemap True if render to cubemap
-     */
-    void setParameters(int multisample, bool sixteenbpc, bool srgb = false, bool cubemap = false);
-
-    /**
      * Set whether this FBO should resize automatically
      * \param autoresize Set to true for auto resizing
      */
     void setAutoResize(bool autoresize) { _automaticResize = autoresize; }
+
+    /**
+     * Set framebuffer as rendering to a cubemap
+     * \param cubemap Set to true to render to a cubemap
+     */
+    void setCubemap(bool cubemap);
+
+    /**
+     * Set multisampling sample count
+     * \param samples Sample count
+     */
+    void setMultisampling(int samples);
+
+    /**
+     * Set whether to render to sRGB color space
+     * \param srgb If true, use sRGB color space (overrides 16bpc)
+     */
+    void setsRGB(bool srgb);
+
+    /**
+     * Set the color depth to 16bpc
+     * \param sixteenbpc If true, set color depth to 16bpc
+     */
+    void setSixteenBpc(bool sixteenbpc);
 
     /**
      * Set the FBO size
@@ -150,8 +165,14 @@ class Framebuffer : public GraphObject
     int _multisample{0};
     bool _16bits{false};
     bool _srgb{false};
+    bool _cubemap{false};
     bool _automaticResize{false}; // TODO: handle this correctly
     int _previousFbo{0};
+
+    /**
+     * Set the FBO multisampling and bit per channel settings
+     */
+    void setRenderingParameters();
 };
 
 } // namespace Splash

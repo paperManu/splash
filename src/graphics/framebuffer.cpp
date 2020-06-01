@@ -91,22 +91,58 @@ float Framebuffer::getDepthAt(float x, float y)
 }
 
 /*************/
-void Framebuffer::setParameters(int multisample, bool sixteenbpc, bool srgb, bool cubemap)
+void Framebuffer::setCubemap(bool cubemap)
 {
-    _multisample = multisample;
-    _16bits = sixteenbpc;
-    _srgb = srgb;
+    if (cubemap != _cubemap)
+    {
+        _cubemap = cubemap;
+        setRenderingParameters();
+    }
+}
 
+/*************/
+void Framebuffer::setsRGB(bool srgb)
+{
+    if (srgb != _srgb)
+    {
+        _srgb = srgb;
+        setRenderingParameters();
+    }
+}
+
+/*************/
+void Framebuffer::setMultisampling(int samples)
+{
+    if (_multisample != samples)
+    {
+        _multisample = samples;
+        setRenderingParameters();
+    }
+}
+
+/*************/
+void Framebuffer::setSixteenBpc(bool sixteenbpc)
+{
+    if (_16bits != sixteenbpc)
+    {
+        _16bits = sixteenbpc;
+        setRenderingParameters();
+    }
+}
+
+/*************/
+void Framebuffer::setRenderingParameters()
+{
     auto spec = _colorTexture->getSpec();
 
-    _depthTexture->reset(spec.width, spec.height, "D", nullptr, _multisample, cubemap);
+    _depthTexture->reset(spec.width, spec.height, "D", nullptr, _multisample, _cubemap);
 
     if (_srgb)
-        _colorTexture->reset(spec.width, spec.height, "sRGBA", nullptr, _multisample, cubemap);
+        _colorTexture->reset(spec.width, spec.height, "sRGBA", nullptr, _multisample, _cubemap);
     else if (_16bits)
-        _colorTexture->reset(spec.width, spec.height, "RGBA16", nullptr, _multisample, cubemap);
+        _colorTexture->reset(spec.width, spec.height, "RGBA16", nullptr, _multisample, _cubemap);
     else
-        _colorTexture->reset(spec.width, spec.height, "RGBA", nullptr, _multisample, cubemap);
+        _colorTexture->reset(spec.width, spec.height, "RGBA", nullptr, _multisample, _cubemap);
 
     glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
     glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
