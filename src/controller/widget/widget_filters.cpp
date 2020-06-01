@@ -116,13 +116,12 @@ void GuiFilters::render()
     {
         auto spec = filter->getSpec();
         auto ratio = static_cast<float>(spec.height) / static_cast<float>(spec.width);
-        auto texture = dynamic_pointer_cast<Texture_Image>(filter->getOutTexture());
 
         auto leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
         int w = ImGui::GetWindowWidth() - 2 * leftMargin;
         int h = w * ratio;
 
-        ImGui::Image(reinterpret_cast<ImTextureID>(texture->getTexId()), ImVec2(w, h));
+        ImGui::Image(reinterpret_cast<ImTextureID>(filter->getTexId()), ImVec2(w, h));
         ImGui::TreePop();
     }
 
