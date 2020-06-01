@@ -200,10 +200,10 @@ bool Link::sendBuffer(const string& name, shared_ptr<SerializedObject> buffer)
 
             zmq::message_t msg(name.size() + 1);
             memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
-            _socketBufferOut->send(msg, ZMQ_SNDMORE);
+            _socketBufferOut->send(msg, zmq::send_flags::sndmore);
 
             msg.rebuild(bufferPtr->data(), bufferPtr->size(), Link::freeOlderBuffer, this);
-            _socketBufferOut->send(msg);
+            _socketBufferOut->send(msg, zmq::send_flags::none);
         }
         catch (const zmq::error_t& e)
         {
@@ -244,12 +244,12 @@ bool Link::sendMessage(const string& name, const string& attribute, const Values
             // First we send the name of the target
             zmq::message_t msg(name.size() + 1);
             memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
-            _socketMessageOut->send(msg, ZMQ_SNDMORE);
+            _socketMessageOut->send(msg, zmq::send_flags::sndmore);
 
             // And the target's attribute
             msg.rebuild(attribute.size() + 1);
             memcpy(msg.data(), (void*)attribute.c_str(), attribute.size() + 1);
-            _socketMessageOut->send(msg, ZMQ_SNDMORE);
+            _socketMessageOut->send(msg, zmq::send_flags::sndmore);
 
             // Helper function to send messages
             std::function<void(const Values& message)> sendMessage;
@@ -260,9 +260,9 @@ bool Link::sendMessage(const string& name, const string& attribute, const Values
                 memcpy(msg.data(), (void*)&size, sizeof(size));
 
                 if (message.size() == 0)
-                    _socketMessageOut->send(msg);
+                    _socketMessageOut->send(msg, zmq::send_flags::none);
                 else
-                    _socketMessageOut->send(msg, ZMQ_SNDMORE);
+                    _socketMessageOut->send(msg, zmq::send_flags::sndmore);
 
                 for (uint32_t i = 0; i < message.size(); ++i)
                 {
@@ -271,12 +271,12 @@ bool Link::sendMessage(const string& name, const string& attribute, const Values
 
                     msg.rebuild(sizeof(valueType));
                     memcpy(msg.data(), (void*)&valueType, sizeof(valueType));
-                    _socketMessageOut->send(msg, ZMQ_SNDMORE);
+                    _socketMessageOut->send(msg, zmq::send_flags::sndmore);
 
                     std::string valueName = v.getName();
                     msg.rebuild(valueName.size() + 1);
                     memcpy(msg.data(), valueName.data(), valueName.size() + 1);
-                    _socketMessageOut->send(msg, ZMQ_SNDMORE);
+                    _socketMessageOut->send(msg, zmq::send_flags::sndmore);
 
                     if (valueType == Value::Type::values)
                         sendMessage(v.as<Values>());
@@ -288,9 +288,9 @@ bool Link::sendMessage(const string& name, const string& attribute, const Values
                         memcpy(msg.data(), value, valueSize);
 
                         if (i != message.size() - 1)
-                            _socketMessageOut->send(msg, ZMQ_SNDMORE);
+                            _socketMessageOut->send(msg, zmq::send_flags::sndmore);
                         else
-                            _socketMessageOut->send(msg);
+                            _socketMessageOut->send(msg, zmq::send_flags::none);
                     }
                 }
             };
@@ -349,16 +349,20 @@ void Link::handleInputMessages()
         zmq::message_t msg;
         std::function<Values(void)> recvMessage;
         recvMessage = [&]() -> Values {
-            _socketMessageIn->recv(&msg); // size of the message
-            int size = *(int*)msg.data();
+            auto result = _socketMessageIn->recv(msg, zmq::recv_flags::none); // size of the message
+            if (!result)
+                return {};
+            size_t size = *(static_cast<int*>(msg.data()));
 
             Values values;
-            for (int i = 0; i < size; ++i)
+            for (size_t i = 0; i < size; ++i)
             {
-                _socketMessageIn->recv(&msg);
+                if (!_socketMessageIn->recv(msg, zmq::recv_flags::none))
+                    return {};
                 Value::Type valueType = *(Value::Type*)msg.data();
 
-                _socketMessageIn->recv(&msg);
+                if (!_socketMessageIn->recv(msg, zmq::recv_flags::none))
+                    return {};
                 string valueName(static_cast<char*>(msg.data()));
 
                 if (valueType == Value::Type::values)
@@ -367,7 +371,9 @@ void Link::handleInputMessages()
                 }
                 else
                 {
-                    _socketMessageIn->recv(&msg);
+                    if (!_socketMessageIn->recv(msg, zmq::recv_flags::none))
+                        return {};
+
                     if (valueType == Value::Type::integer)
                         values.push_back(*(int64_t*)msg.data());
                     else if (valueType == Value::Type::real)
@@ -384,13 +390,15 @@ void Link::handleInputMessages()
 
         while (_running)
         {
-            if (!_socketMessageIn->recv(&msg, ZMQ_DONTWAIT)) // name of the target
+            if (!_socketMessageIn->recv(msg, zmq::recv_flags::dontwait)) // name of the target
             {
                 std::this_thread::sleep_for(1ms);
                 continue;
             }
             string name((char*)msg.data());
-            _socketMessageIn->recv(&msg); // target's attribute
+            if (!_socketMessageIn->recv(msg, zmq::recv_flags::none)) // target's attribute
+                return;
+
             string attribute((char*)msg.data());
 
             Values values = recvMessage();
@@ -428,14 +436,15 @@ void Link::handleInputBuffers()
         {
             zmq::message_t msg;
 
-            if (!_socketBufferIn->recv(&msg, ZMQ_DONTWAIT))
+            if (!_socketBufferIn->recv(msg, zmq::recv_flags::dontwait))
             {
                 std::this_thread::sleep_for(1ms);
                 continue;
             }
             string name((char*)msg.data());
 
-            _socketBufferIn->recv(&msg);
+            if (!_socketBufferIn->recv(msg, zmq::recv_flags::none))
+                continue;
             auto buffer = make_shared<SerializedObject>(static_cast<uint8_t*>(msg.data()), static_cast<uint8_t*>(msg.data()) + msg.size());
 
             if (_rootObject)

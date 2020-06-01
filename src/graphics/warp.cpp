@@ -73,9 +73,6 @@ unordered_map<string, Values> Warp::getShaderUniforms() const
 /*************/
 bool Warp::linkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (!obj)
-        return false;
-
     if (dynamic_pointer_cast<Camera>(obj))
     {
         auto camera = _inCamera.lock();
@@ -89,7 +86,7 @@ bool Warp::linkIt(const std::shared_ptr<GraphObject>& obj)
         return true;
     }
 
-    return true;
+    return false;
 }
 
 /*************/
@@ -243,7 +240,7 @@ void Warp::loadDefaultModels()
 void Warp::setupFBO()
 {
     _fbo = make_unique<Framebuffer>(_root);
-    _fbo->setParameters(0, false, true /* srgb */);
+    _fbo->setsRGB(true);
 
     // Setup the virtual screen
     _screen = make_shared<Object>(_root);

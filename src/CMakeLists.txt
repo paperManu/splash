@@ -40,6 +40,11 @@ set_source_files_properties(
     PROPERTIES COMPILE_FLAGS "-Wno-error=strict-aliasing -Wno-strict-aliasing"
 )
 
+set_source_files_properties(
+    core/link.cpp
+    PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized"
+)
+
 if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
   set_source_files_properties(
       image/image.cpp
@@ -107,6 +112,10 @@ add_executable(splash splash-app.cpp)
 
 if(${WITH_LTO})
     set_property(TARGET splash-${API_VERSION}
+        PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE
+    )
+
+    set_property(TARGET splash
         PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE
     )
 endif()

@@ -79,8 +79,9 @@ Camera::Camera(RootObject* root)
     // Intialize FBO, textures and everything OpenGL
     _msFbo = make_unique<Framebuffer>(_root);
     _outFbo = make_unique<Framebuffer>(_root);
-    _msFbo->setParameters(_multisample, _render16bits, false);
-    _outFbo->setParameters(false, _render16bits, false);
+    _msFbo->setMultisampling(_multisample);
+    _msFbo->setSixteenBpc(_render16bits);
+    _outFbo->setSixteenBpc(_render16bits);
 
     // Load some models
     loadDefaultModels();
@@ -535,8 +536,9 @@ void Camera::render()
 
     if (_updateColorDepth)
     {
-        _msFbo->setParameters(_multisample, _render16bits, false);
-        _outFbo->setParameters(false, _render16bits, false);
+        _msFbo->setMultisampling(_multisample);
+        _msFbo->setSixteenBpc(_render16bits);
+        _outFbo->setSixteenBpc(_render16bits);
         _updateColorDepth = false;
     }
 

@@ -33,7 +33,9 @@ AVCodec* Sink_Shmdata_Encoded::findEncoderByName(const string& codecName)
     {
         codec = avcodec_find_encoder_by_name("h264_nvenc");
         if (!codec)
-            codec = avcodec_find_encoder_by_name("nvenc_h264");
+            codec = avcodec_find_encoder_by_name("h264_vaapi");
+        if (!codec)
+            codec = avcodec_find_encoder_by_name("h264_amf");
         if (!codec)
             codec = avcodec_find_encoder_by_name("libx264");
     }
@@ -41,7 +43,9 @@ AVCodec* Sink_Shmdata_Encoded::findEncoderByName(const string& codecName)
     {
         codec = avcodec_find_encoder_by_name("hvec_nvenc");
         if (!codec)
-            codec = avcodec_find_encoder_by_name("nvenc_h265");
+            codec = avcodec_find_encoder_by_name("hevc_vaapi");
+        if (!codec)
+            codec = avcodec_find_encoder_by_name("hevc_amf");
         if (!codec)
             codec = avcodec_find_encoder_by_name("libx265");
     }

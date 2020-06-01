@@ -160,7 +160,7 @@ void Filter::setSixteenBpc(bool active)
     if (!_fbo)
         return;
 
-    _fbo->setParameters(false, active);
+    _fbo->setSixteenBpc(active);
 }
 
 /*************/
@@ -334,7 +334,7 @@ void Filter::setOutput()
 {
     _fbo = make_unique<Framebuffer>(_root);
     _fbo->getColorTexture()->setAttribute("filtering", {1});
-    _fbo->setParameters(false, _sixteenBpc);
+    _fbo->setSixteenBpc(_sixteenBpc);
 
     // Setup the virtual screen
     _screen = make_shared<Object>(_root);

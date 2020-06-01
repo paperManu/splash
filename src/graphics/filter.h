@@ -77,12 +77,6 @@ class Filter : public Texture
     void unbind() override;
 
     /**
-     * Get the output texture
-     * \return Return the output texture
-     */
-    std::shared_ptr<Texture_Image> getOutTexture() const { return _fbo->getColorTexture(); }
-
-    /**
      * Get the shader parameters related to this texture
      * Texture should be locked first
      */

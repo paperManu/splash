@@ -120,7 +120,7 @@ def update_config_file(project: str, new_version: List[int], regex_pattern: str)
             for line in old_file:
                 version_line = re.search(regex_pattern, line)
                 if version_line:
-                    line = f"\tVERSION {new_version[0]}.{new_version[1]}.{new_version[2]}"
+                    line = f"    VERSION {new_version[0]}.{new_version[1]}.{new_version[2]}\n"
                 new_file.write(line)
 
     os.rename(changed_file, config_file)
@@ -274,6 +274,13 @@ if __name__ == "__main__":
     else:
         release_version[2] = 1
     update_config_file(git_project, release_version, version_pattern)
+
+    print(f"Updating the version number across the repository.")
+    os.chdir(build_dir)
+    if subprocess.call(f"cmake .. && make blenderSplash && make splash-launcher", shell=True) != 0:
+        printerr(f"{git_project} new version build failed, stopping the release.")
+    os.chdir(os.path.join(libs_root_path, git_project))
+
     git_commit("Post-release version bump")
 
     assert(git_checkout(working_branch) == 0), f"Could not checkout branch {working_branch}"
