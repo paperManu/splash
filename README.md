@@ -4,7 +4,6 @@ Splash, a multi-projector video-mapping software
 [![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
 [![pipeline status](https://gitlab.com/sat-metalab/splash/badges/develop/pipeline.svg)](https://gitlab.com/sat-metalab/splash/commits/develop)
 [![coverage report](https://gitlab.com/sat-metalab/splash/badges/develop/coverage.svg)](https://gitlab.com/sat-metalab/splash/commits/develop)
-[![Coverity Scan Build Status](https://img.shields.io/coverity/scan/3544.svg)](https://scan.coverity.com/projects/papermanu-splash)
 
 For a more complete documentation, go visit the [official website](https://sat-metalab.gitlab.io/splash).
 

@@ -23,6 +23,8 @@ from typing import List
 libs_root_path = os.path.join("/", "tmp", "releases")
 version_file = "CMakeLists.txt"
 metainfo_file = os.path.join("data", "share", "metainfo", "com.gitlab.sat_metalab.Splash.metainfo.xml")
+desktop_file = os.path.join("data", "share", "applications", "splash.desktop")
+blender_addon_init_file = os.path.join("addons", "blender", "splash", "__init__.py")
 
 version_pattern = "\s+VERSION (\d+).(\d+).(\d+)"
 git_path = "git@gitlab.com:sat-metalab"
@@ -277,9 +279,10 @@ if __name__ == "__main__":
 
     print(f"Updating the version number across the repository.")
     os.chdir(build_dir)
-    if subprocess.call(f"cmake .. && make blenderSplash && make splash-launcher", shell=True) != 0:
+    if subprocess.call(f"rm -rf * && cmake .. && make blenderSplash && make splash-launcher", shell=True) != 0:
         printerr(f"{git_project} new version build failed, stopping the release.")
     os.chdir(os.path.join(libs_root_path, git_project))
+    git_add([desktop_file, blender_addon_init_file])
 
     git_commit("Post-release version bump")
 

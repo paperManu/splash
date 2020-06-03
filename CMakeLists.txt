@@ -71,6 +71,7 @@ if (NOT USE_SYSTEM_LIBS)
 endif()
 
 find_package(PkgConfig REQUIRED)
+find_package(Threads REQUIRED)
 
 # Mandatory dependencies
 pkg_search_module(JSONCPP REQUIRED jsoncpp)

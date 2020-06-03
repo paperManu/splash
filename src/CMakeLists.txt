@@ -274,7 +274,7 @@ else()
     target_link_libraries(splash-${API_VERSION} zmq.a)
 endif()
 # System libs
-target_link_libraries(splash-${API_VERSION} pthread)
+target_link_libraries(splash-${API_VERSION} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(splash-${API_VERSION} ${JSONCPP_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GSL_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${SHMDATA_LIBRARIES})

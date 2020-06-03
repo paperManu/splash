@@ -4,14 +4,17 @@ Splash release notes
 Splash 0.8.6 (2020-06-01)
 -------------------------
 New features:
+
 - Added a Filter to be created automatically when connecting a Sink to a Texture
 
 Improvements:
+
 - Updated and fixed CI to use Ubuntu 20.04
 - Replaced Framebuffer::setParameters with precise setters
 - Removed non-necessary method Filter::getOutTexture
 
 Bugs fixed:
+
 - Fixed Warp linking to anything, cleaned up Sink a bit
 - Fixed linked time optimization CMake option
 - Fixed segfault when creating an empty Geometry object
@@ -31,6 +34,7 @@ New features:
 - Added Value::byte_size, and fixed Value::size
 
 Improvements:
+
 - Updated and fixed contribution guide and code of conduct
 - Moved argument parsing in splash-app.cpp instead of World
 - Cleaned up World buffer serialization and sending
@@ -45,6 +49,7 @@ Improvements:
 - Added version and compile date auto update for metainfo
 
 Bugs fixed:
+
 - Fixed CONTRIBUTING.md, improved release script a bit
 - Fixed issue with file selector when saving to file
 - Fixed segfault when launching a child process without a valid DISPLAY
