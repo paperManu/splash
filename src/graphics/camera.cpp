@@ -599,26 +599,30 @@ void Camera::render()
             timestamp = std::max(timestamp, obj->getTimestamp());
             obj->activate();
 
+            auto objShader = obj->getShader();
+            if (!objShader)
+                continue;
+
             vec2 colorBalance = colorBalanceFromTemperature(_colorTemperature);
-            obj->getShader()->setAttribute("uniform", {"_wireframeColor", _wireframeColor.x, _wireframeColor.y, _wireframeColor.z, _wireframeColor.w});
-            obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _brightness, _saturation, _contrast});
-            obj->getShader()->setAttribute("uniform", {"_fovAndColorBalance", _fov * _width / _height * M_PI / 180.0, _fov * M_PI / 180.0, colorBalance.x, colorBalance.y});
-            obj->getShader()->setAttribute("uniform", {"_showCameraCount", (int)_showCameraCount});
+            objShader->setAttribute("uniform", {"_wireframeColor", _wireframeColor.x, _wireframeColor.y, _wireframeColor.z, _wireframeColor.w});
+            objShader->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _brightness, _saturation, _contrast});
+            objShader->setAttribute("uniform", {"_fovAndColorBalance", _fov * _width / _height * M_PI / 180.0, _fov * M_PI / 180.0, colorBalance.x, colorBalance.y});
+            objShader->setAttribute("uniform", {"_showCameraCount", (int)_showCameraCount});
             if (_colorLUT.size() == 768 && _isColorLUTActivated)
             {
-                obj->getShader()->setAttribute("uniform", {"_colorLUT", _colorLUT});
-                obj->getShader()->setAttribute("uniform", {"_isColorLUT", 1});
+                objShader->setAttribute("uniform", {"_colorLUT", _colorLUT});
+                objShader->setAttribute("uniform", {"_isColorLUT", 1});
 
                 Values m(10);
                 m[0] = "_colorMixMatrix";
                 for (int u = 0; u < 3; ++u)
                     for (int v = 0; v < 3; ++v)
                         m[u * 3 + v + 1] = _colorMixMatrix[u][v];
-                obj->getShader()->setAttribute("uniform", m);
+                objShader->setAttribute("uniform", m);
             }
             else
             {
-                obj->getShader()->setAttribute("uniform", {"_isColorLUT", 0});
+                objShader->setAttribute("uniform", {"_isColorLUT", 0});
             }
 
             obj->setViewProjectionMatrix(computeViewMatrix(), computeProjectionMatrix());
