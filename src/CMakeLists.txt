@@ -146,6 +146,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     controller/widget/widget_warp.cpp
     graphics/camera.cpp
     graphics/filter.cpp
+    graphics/filter_black_level.cpp
     graphics/framebuffer.cpp
     graphics/geometry.cpp
     graphics/gpu_buffer.cpp

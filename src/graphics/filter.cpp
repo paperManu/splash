@@ -16,12 +16,6 @@ namespace Splash
 Filter::Filter(RootObject* root)
     : Texture(root)
 {
-    init();
-}
-
-/*************/
-void Filter::init()
-{
     _type = "filter";
     _renderingPriority = Priority::FILTER;
     registerAttributes();
@@ -30,8 +24,15 @@ void Filter::init()
     if (!_root)
         return;
 
-    // Intialize FBO, textures and everything OpenGL
-    setOutput();
+    _fbo = make_unique<Framebuffer>(_root);
+    _fbo->getColorTexture()->setAttribute("filtering", {1});
+    _fbo->setSixteenBpc(_sixteenBpc);
+
+    // Setup the virtual screen
+    _screen = make_shared<Object>(_root);
+    _screen->setAttribute("fill", {"image_filter"});
+    auto virtualScreen = make_shared<Geometry>(_root);
+    _screen->addGeometry(virtualScreen);
 }
 
 /*************/
@@ -73,6 +74,8 @@ bool Filter::linkIt(const std::shared_ptr<GraphObject>& obj)
         auto tex = dynamic_pointer_cast<Texture>(obj);
         _screen->addTexture(tex);
         _inTextures.push_back(tex);
+        _sizeOverride[0] = -1;
+        _sizeOverride[1] = -1;
 
         return true;
     }
@@ -183,6 +186,13 @@ void Filter::updateSizeWrtRatio()
 /*************/
 void Filter::render()
 {
+    // Intialize FBO, textures and everything OpenGL
+    if (!_shaderAttributesRegistered)
+    {
+        _shaderAttributesRegistered = true;
+        registerDefaultShaderAttributes();
+    }
+
     if (!_inTextures.empty() && !_inTextures[0].expired())
     {
         auto input = _inTextures[0].lock();
@@ -252,26 +262,6 @@ void Filter::render()
         auto spec = colorTexture->getSpec();
         _mipmapBufferSpec = {spec.width, spec.height, spec.channels, spec.bpp, spec.format};
     }
-
-    // Automatic black level stuff
-    if (_autoBlackLevelTargetValue != 0.f)
-    {
-        auto luminance = _fbo->getColorTexture()->getMeanValue().luminance();
-        auto deltaLuminance = _autoBlackLevelTargetValue - luminance;
-        auto newBlackLevel = _autoBlackLevel + deltaLuminance / 2.f;
-
-        auto currentTime = Timer::getTime() / 1000;
-        auto deltaT = _previousTime == 0 ? 0.f : static_cast<float>((currentTime - _previousTime) / 1e3);
-        _previousTime = currentTime;
-
-        if (deltaT != 0.f)
-        {
-            auto blackLevelProgress = std::min(1.f, deltaT / _autoBlackLevelSpeed); // Limit to 1.f, otherwise the black level resonates
-            newBlackLevel = min(_autoBlackLevelTargetValue, max(0.f, newBlackLevel));
-            _autoBlackLevel = newBlackLevel * blackLevelProgress + _autoBlackLevel * (1.f - blackLevelProgress);
-            _filterUniforms["_blackLevel"] = {_autoBlackLevel / 255.0};
-        }
-    }
 }
 
 /*************/
@@ -327,23 +317,6 @@ void Filter::updateUniforms()
             param.push_back(v);
         shader->setAttribute("uniform", param);
     }
-}
-
-/*************/
-void Filter::setOutput()
-{
-    _fbo = make_unique<Framebuffer>(_root);
-    _fbo->getColorTexture()->setAttribute("filtering", {1});
-    _fbo->setSixteenBpc(_sixteenBpc);
-
-    // Setup the virtual screen
-    _screen = make_shared<Object>(_root);
-    _screen->setAttribute("fill", {"filter"});
-    auto virtualScreen = make_shared<Geometry>(_root);
-    _screen->addGeometry(virtualScreen);
-
-    // Some attributes are only meant to be with the default shader
-    registerDefaultShaderAttributes();
 }
 
 /*************/
@@ -518,42 +491,65 @@ void Filter::registerAttributes()
         [&]() -> Values { return {_watchShaderFile}; },
         {'n'});
     setAttributeDescription("watchShaderFile", "If true, automatically updates the shader from the source file");
+
+    addAttribute(
+        "size",
+        [&](const Values&) { return true; },
+        [&]() -> Values {
+            if (_inTextures.empty())
+                return {0, 0};
+
+            auto texture = _inTextures[0].lock();
+            if (!texture)
+                return {0, 0};
+
+            auto inputSpec = texture->getSpec();
+            return {inputSpec.width, inputSpec.height};
+        },
+        {});
+    setAttributeDescription("size", "Size of the input texture");
+
+    addAttribute(
+        "sizeOverride",
+        [&](const Values& args) {
+            auto width = args[0].as<int>();
+            auto height = args[1].as<int>();
+            addTask([=]() {
+                _sizeOverride[0] = width;
+                _sizeOverride[1] = height;
+            });
+            return true;
+        },
+        [&]() -> Values {
+            return {_sizeOverride[0], _sizeOverride[1]};
+        },
+        {'n', 'n'});
+    setAttributeDescription("sizeOverride", "Sets the filter output to a different resolution than its input");
+
+    //
+    // Mipmap capture
+    addAttribute(
+        "grabMipmapLevel",
+        [&](const Values& args) {
+            _grabMipmapLevel = args[0].as<int>();
+            return true;
+        },
+        [&]() -> Values { return {_grabMipmapLevel}; },
+        {'n'});
+    setAttributeDescription("grabMipmapLevel", "If set to 0 or superior, sync the rendered texture to the tree, at the given mipmap level");
+
+    addAttribute(
+        "buffer", [&](const Values&) { return true; }, [&]() -> Values { return {_mipmapBuffer}; }, {});
+    setAttributeDescription("buffer", "Getter attribute which gives access to the mipmap image, if grabMipmapLevel is greater or equal to 0");
+
+    addAttribute(
+        "bufferSpec", [&](const Values&) { return true; }, [&]() -> Values { return _mipmapBufferSpec; }, {});
+    setAttributeDescription("bufferSpec", "Getter attribute to the specs of the attribute buffer");
 }
 
 /*************/
 void Filter::registerDefaultShaderAttributes()
 {
-    addAttribute("blackLevel",
-        [&](const Values& args) {
-            auto blackLevel = std::max(0.f, std::min(255.f, args[0].as<float>()));
-            _filterUniforms["_blackLevel"] = {blackLevel / 255.f};
-            return true;
-        },
-        [&]() -> Values {
-            auto it = _filterUniforms.find("_blackLevel");
-            if (it == _filterUniforms.end())
-                _filterUniforms["_blackLevel"] = {0.f}; // Default value
-            return {_filterUniforms["_blackLevel"][0].as<float>() * 255.f};
-        },
-        {'n'});
-    setAttributeDescription("blackLevel", "Set the black level for the linked texture, between 0 and 255");
-
-    addAttribute("blackLevelAuto",
-        [&](const Values& args) {
-            _autoBlackLevelTargetValue = std::min(255.f, std::max(0.f, args[0].as<float>()));
-            _autoBlackLevelSpeed = std::max(0.f, args[1].as<float>());
-            return true;
-        },
-        [&]() -> Values {
-            return {_autoBlackLevelTargetValue, _autoBlackLevelSpeed};
-        },
-        {'n', 'n'});
-    setAttributeDescription("blackLevelAuto",
-        "If the first parameter is not zero, automatic black level is enabled.\n"
-        "The first parameter is the black level value (between 0 and 255) to match if needed.\n"
-        "The second parameter is the maximum time to match the black level, in seconds.\n"
-        "The black level will be updated so that the minimum overall luminance matches the target.");
-
     addAttribute("brightness",
         [&](const Values& args) {
             auto brightness = args[0].as<float>();
@@ -710,55 +706,6 @@ void Filter::registerDefaultShaderAttributes()
         },
         {'n', 'n'});
     setAttributeDescription("scale", "Set the scaling of the texture along both axes");
-
-    addAttribute("size",
-        [&](const Values&) { return true; },
-        [&]() -> Values {
-            if (_inTextures.empty())
-                return {0, 0};
-
-            auto texture = _inTextures[0].lock();
-            if (!texture)
-                return {0, 0};
-
-            auto inputSpec = texture->getSpec();
-            return {inputSpec.width, inputSpec.height};
-        },
-        {});
-    setAttributeDescription("size", "Size of the input texture");
-
-    addAttribute("sizeOverride",
-        [&](const Values& args) {
-            auto width = args[0].as<int>();
-            auto height = args[1].as<int>();
-            addTask([=]() {
-                _sizeOverride[0] = width;
-                _sizeOverride[1] = height;
-            });
-            return true;
-        },
-        [&]() -> Values {
-            return {_sizeOverride[0], _sizeOverride[1]};
-        },
-        {'n', 'n'});
-    setAttributeDescription("sizeOverride", "Sets the filter output to a different resolution than its input");
-
-    //
-    // Mipmap capture
-    addAttribute("grabMipmapLevel",
-        [&](const Values& args) {
-            _grabMipmapLevel = args[0].as<int>();
-            return true;
-        },
-        [&]() -> Values { return {_grabMipmapLevel}; },
-        {'n'});
-    setAttributeDescription("grabMipmapLevel", "If set to 0 or superior, sync the rendered texture to the tree, at the given mipmap level");
-
-    addAttribute("buffer", [&](const Values&) { return true; }, [&]() -> Values { return {_mipmapBuffer}; }, {});
-    setAttributeDescription("buffer", "Getter attribute which gives access to the mipmap image, if grabMipmapLevel is greater or equal to 0");
-
-    addAttribute("bufferSpec", [&](const Values&) { return true; }, [&]() -> Values { return _mipmapBufferSpec; }, {});
-    setAttributeDescription("bufferSpec", "Getter attribute to the specs of the attribute buffer");
 }
 
 } // namespace Splash

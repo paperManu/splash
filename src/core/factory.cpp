@@ -5,6 +5,7 @@
 #include "./core/scene.h"
 #include "./graphics/camera.h"
 #include "./graphics/filter.h"
+#include "./graphics/filter_black_level.h"
 #include "./graphics/geometry.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
@@ -204,6 +205,12 @@ void Factory::registerObjects()
         "Filter applied to textures. The default filter allows for standard image manipulation, the user can set his own GLSL shader.",
         true);
 
+    _objectBook["filter_black_level"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<FilterBlackLevel>(root)); },
+        GraphObject::Category::MISC,
+        "black level filter",
+        "Black level filter, which sets the black for an input source higher than 0 to allow for blending in dark areas.",
+        true);
+
     _objectBook["geometry"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<Geometry>(root)); },
         GraphObject::Category::MISC,
         "Geometry",
@@ -225,7 +232,7 @@ void Factory::registerObjects()
             return object;
         },
         GraphObject::Category::IMAGE,
-        "Images from a list",
+        "images from a list",
         "Static images read from a directory.",
         true);
 
