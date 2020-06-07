@@ -15,7 +15,12 @@ namespace Splash
 Texture::Texture(RootObject* root)
     : GraphObject(root)
 {
-    init();
+    _type = "texture";
+    registerAttributes();
+
+    // This is used for getting documentation "offline"
+    if (!_root)
+        return;
 }
 
 /*************/
@@ -24,17 +29,6 @@ Texture::~Texture()
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Texture::~Texture - Destructor" << Log::endl;
 #endif
-}
-
-/*************/
-void Texture::init()
-{
-    _type = "texture";
-    registerAttributes();
-
-    // This is used for getting documentation "offline"
-    if (!_root)
-        return;
 }
 
 /*************/

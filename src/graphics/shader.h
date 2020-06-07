@@ -77,6 +77,7 @@ class Shader : public GraphObject
         color,
         image_filter,
         blacklevel_filter,
+        color_curves_filter,
         primitiveId,
         uv,
         userDefined,

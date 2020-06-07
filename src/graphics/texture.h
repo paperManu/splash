@@ -132,12 +132,6 @@ class Texture : public GraphObject
      *  Register new functors to modify attributes
      */
     void registerAttributes();
-
-  private:
-    /**
-     *  As says its name
-     */
-    void init();
 };
 
 } // namespace Splash

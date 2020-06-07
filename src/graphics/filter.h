@@ -25,7 +25,6 @@
 #ifndef SPLASH_FILTER_H
 #define SPLASH_FILTER_H
 
-#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
@@ -53,11 +52,6 @@ class Filter : public Texture
      * \param root Root object
      */
     Filter(RootObject* root);
-
-    /**
-     *  Destructor
-     */
-    ~Filter() override;
 
     /**
      * No copy constructor, but a move one
@@ -115,6 +109,8 @@ class Filter : public Texture
     std::vector<std::weak_ptr<Texture>> _inTextures;
     std::shared_ptr<Object> _screen;
     std::unique_ptr<Framebuffer> _fbo{nullptr};
+
+    bool _shaderAttributesRegistered{false};
     std::unordered_map<std::string, Values> _filterUniforms; //!< Contains all filter uniforms
 
     /**
@@ -129,6 +125,16 @@ class Filter : public Texture
      */
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
+    /**
+     *  Updates the shader uniforms according to the textures and images the filter is connected to.
+     */
+    virtual void updateUniforms();
+
+    /**
+     *  Register new functors to modify attributes
+     */
+    virtual void registerAttributes();
+
   private:
 
     // Filter parameters
@@ -136,13 +142,6 @@ class Filter : public Texture
     int _sizeOverride[2]{-1, -1}; //!< If set to positive values, overrides the size given by input textures
     bool _keepRatio{false};
     bool _sixteenBpc{true};
-    Values _colorCurves{};                                   //!< RGB points for the color curves, active if at least 3 points are set
-
-    bool _shaderAttributesRegistered{false};
-    std::string _shaderSource{""};                            //!< User defined fragment shader filter
-    std::string _shaderSourceFile{""};                        //!< User defined fragment shader filter source file
-    bool _watchShaderFile{false};                             //!< If true, updates shader automatically if source file changes
-    std::filesystem::file_time_type _lastShaderSourceWrite{}; //!< Last time the shader source has been updated
 
     // Mipmap capture
     int _grabMipmapLevel{-1};
@@ -150,31 +149,9 @@ class Filter : public Texture
     Values _mipmapBufferSpec{};
 
     /**
-     *  Set the filter fragment shader. Automatically adds attributes corresponding to the uniforms
-     * \param source Source fragment shader
-     * \return Return true if the shader is valid
-     */
-    bool setFilterSource(const std::string& source);
-
-    /**
-     *  Updates the shader uniforms according to the textures and images the filter is connected to.
-     */
-    void updateUniforms();
-
-    /**
-     * Update the shader parameters, if it is the default shader
-     */
-    void updateShaderParameters();
-
-    /**
      * Update the size override to take (or not) ratio into account
      */
     void updateSizeWrtRatio();
-
-    /**
-     *  Register new functors to modify attributes
-     */
-    void registerAttributes();
 
     /**
      * Register attributes related to the default shader

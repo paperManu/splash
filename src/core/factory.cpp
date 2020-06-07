@@ -6,6 +6,7 @@
 #include "./graphics/camera.h"
 #include "./graphics/filter.h"
 #include "./graphics/filter_black_level.h"
+#include "./graphics/filter_color_curves.h"
 #include "./graphics/geometry.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
@@ -209,6 +210,12 @@ void Factory::registerObjects()
         GraphObject::Category::MISC,
         "black level filter",
         "Black level filter, which sets the black for an input source higher than 0 to allow for blending in dark areas.",
+        true);
+
+    _objectBook["filter_color_curves"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<FilterColorCurves>(root)); },
+        GraphObject::Category::MISC,
+        "color curves filter",
+        "Color curves filter, which applies color transformation based on user-defined RGB curves.",
         true);
 
     _objectBook["geometry"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<Geometry>(root)); },

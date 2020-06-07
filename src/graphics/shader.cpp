@@ -819,6 +819,16 @@ void Shader::registerGraphicAttributes()
                 setSource(options + ShaderSources.FRAGMENT_SHADER_BLACKLEVEL_FILTER, fragment);
                 compileProgram();
             }
+            else if (args[0].as<string>() == "color_curves_filter" && (_fill != color_curves_filter || _shaderOptions != options))
+            {
+                _currentProgramName = args[0].as<string>();
+                _fill = color_curves_filter;
+                _shaderOptions = options;
+                setSource(options + ShaderSources.VERTEX_SHADER_FILTER, vertex);
+                resetShader(geometry);
+                setSource(options + ShaderSources.FRAGMENT_SHADER_COLOR_CURVES_FILTER, fragment);
+                compileProgram();
+            }
             else if (args[0].as<string>() == "color" && (_fill != color || _shaderOptions != options))
             {
                 _currentProgramName = args[0].as<string>();
