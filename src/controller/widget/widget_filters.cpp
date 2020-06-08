@@ -1,5 +1,7 @@
 #include "./controller/widget/widget_filters.h"
 
+#include <algorithm>
+
 #include <imgui.h>
 
 #include "./graphics/filter.h"
@@ -12,7 +14,13 @@ namespace Splash
 /*************/
 void GuiFilters::render()
 {
-    auto filterList = getObjectsPtr(getObjectsOfType("filter"));
+    auto types = getTypesFromCategory(GraphObject::Category::FILTER);
+    vector<shared_ptr<GraphObject>> filterList;
+    for (const auto& type : types)
+    {
+        auto objectList = getObjectsPtr(getObjectsOfType(type));
+        std::copy(objectList.begin(), objectList.end(), std::back_inserter(filterList));
+    }
     filterList.erase(std::remove_if(filterList.begin(), filterList.end(), [](const auto& filter) { return !filter->getSavable(); }), filterList.end());
 
     ImVec2 availableSize = ImGui::GetContentRegionAvail();

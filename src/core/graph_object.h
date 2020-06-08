@@ -55,6 +55,7 @@ class GraphObject : public BaseObject
     enum class Category
     {
         MISC,
+        FILTER,
         IMAGE,
         MESH,
         TEXTURE

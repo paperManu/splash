@@ -202,25 +202,25 @@ void Factory::registerObjects()
         "Virtual camera which corresponds to a given videoprojector.");
 
     _objectBook["filter"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<Filter>(root)); },
-        GraphObject::Category::MISC,
+        GraphObject::Category::FILTER,
         "filter",
         "Filter applied to textures. The default filter allows for standard image manipulation, the user can set his own GLSL shader.",
         true);
 
     _objectBook["filter_black_level"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<FilterBlackLevel>(root)); },
-        GraphObject::Category::MISC,
+        GraphObject::Category::FILTER,
         "black level filter",
         "Black level filter, which sets the black for an input source higher than 0 to allow for blending in dark areas.",
         true);
 
     _objectBook["filter_color_curves"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<FilterColorCurves>(root)); },
-        GraphObject::Category::MISC,
+        GraphObject::Category::FILTER,
         "color curves filter",
         "Color curves filter, which applies color transformation based on user-defined RGB curves.",
         true);
 
     _objectBook["filter_custom"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<FilterCustom>(root)); },
-        GraphObject::Category::MISC,
+        GraphObject::Category::FILTER,
         "custom filter",
         "Custom filter, which can take a GLSL fragment shader source to process the input texture(s).",
         true);
