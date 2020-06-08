@@ -14,6 +14,7 @@ namespace Splash
 {
 
 /*************/
+std::recursive_mutex PythonEmbedded::_pythonMutex{};
 atomic_int PythonEmbedded::_pythonInstances{0};
 PyThreadState* PythonEmbedded::_pythonGlobalThreadState{nullptr};
 PyObject* PythonEmbedded::SplashError{nullptr};
@@ -856,75 +857,24 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* /*self*/, PyObject*
 
     // Add the attribute to the Python interpreter object
     // This will replace any previous (or default) attribute (setter and getter included)
-    that->addAttribute(attributeName,
+    that->addAttribute(
+        attributeName,
         [=](const Values& args) {
-            bool calledFromPython = false;
-            auto pyThreadDict = PyThreadState_GetDict();
-            if (!pyThreadDict)
-            {
-                PyEval_AcquireThread(that->_pythonGlobalThreadState);
-                PyThreadState_Swap(that->_pythonLocalThreadState);
-                calledFromPython = true;
-            }
-
-            auto moduleDict = PyModule_GetDict(that->_pythonModule);
-            PyObject* object = nullptr;
-            if (args.size() == 1)
-                object = convertFromValue(args[0]);
-            else
-                object = convertFromValue(args);
-            if (PyDict_SetItemString(moduleDict, attributeName.c_str(), object) == -1)
-            {
-                PyErr_Warn(PyExc_Warning, (string("Could not set object named ") + attributeName).c_str());
-                Py_DECREF(object);
-                return false;
-            }
-
-            Py_DECREF(object);
-
-            if (calledFromPython)
-            {
-                PyThreadState_Swap(that->_pythonGlobalThreadState);
-                PyEval_ReleaseThread(that->_pythonGlobalThreadState);
-            }
-
+            lock_guard<mutex> lock(that->_attributesMutex);
+            that->_attributesToUpdate[attributeName] = args;
             return true;
         },
         [=]() -> Values {
-            bool calledFromPython = false;
-            auto pyThreadDict = PyThreadState_GetDict();
-            if (!pyThreadDict)
-            {
-                PyEval_AcquireThread(that->_pythonGlobalThreadState);
-                PyThreadState_Swap(that->_pythonLocalThreadState);
-                calledFromPython = true;
-            }
-
-            auto moduleDict = PyModule_GetDict(that->_pythonModule);
-            auto object = PyDict_GetItemString(moduleDict, attributeName.c_str());
-            auto value = convertToValue(object);
-            if (!object)
-            {
-                PyErr_Warn(PyExc_Warning, (string("Could not find object named ") + attributeName).c_str());
-                return {};
-            }
-
-            if (calledFromPython)
-            {
-                PyThreadState_Swap(that->_pythonGlobalThreadState);
-                PyEval_ReleaseThread(that->_pythonGlobalThreadState);
-            }
-
-            if (value.getType() == Value::Type::values)
-                return value.as<Values>();
-            else
-                return {value};
+            lock_guard<mutex> lock(that->_attributesMutex);
+            return that->_attributesValue[attributeName];
         },
         {});
 
     // Set the previous attribute if needed
     if (!previousValue.empty())
-        that->setObjectAttribute(that->getName(), attributeName, previousValue);
+        that->_attributesValue[attributeName] = previousValue;
+    else
+        that->_attributesValue[attributeName] = {};
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -983,6 +933,7 @@ PyObject* PythonEmbedded::pythonRegisterAttributeCallback(PyObject* /*self*/, Py
     auto callbackFunc = [that, callable](const string& obj, const string& attr) {
         lock_guard<mutex> lockCb(that->_attributeCallbackMutex);
 
+        unique_lock<recursive_mutex> pythonMutexLock(_pythonMutex);
         PyEval_AcquireThread(that->_pythonGlobalThreadState);
         PyThreadState_Swap(that->_pythonLocalThreadState);
 
@@ -1164,6 +1115,7 @@ PythonEmbedded::~PythonEmbedded()
     stop();
     if (_pythonInstances.fetch_sub(1) == 1)
     {
+        unique_lock<recursive_mutex> pythonMutexLock(_pythonMutex);
         PyEval_AcquireThread(_pythonGlobalThreadState);
         Py_Finalize();
     }
@@ -1215,6 +1167,7 @@ void PythonEmbedded::loop()
     PyObject* pName;
 
     // Create the sub-interpreter
+    unique_lock<recursive_mutex> pythonMutexLock(_pythonMutex);
     PyEval_AcquireThread(_pythonGlobalThreadState);
     _pythonLocalThreadState = Py_NewInterpreter();
     PyThreadState_Swap(_pythonLocalThreadState);
@@ -1257,25 +1210,75 @@ void PythonEmbedded::loop()
 
         PyThreadState_Swap(_pythonGlobalThreadState);
         PyEval_ReleaseThread(_pythonGlobalThreadState);
+        pythonMutexLock.unlock();
 
         // Run the module loop
         while (pFuncLoop && _doLoop)
         {
             Timer::get() << timerName;
 
+            pythonMutexLock.lock();
             PyEval_AcquireThread(_pythonGlobalThreadState);
             PyThreadState_Swap(_pythonLocalThreadState);
+            auto moduleDict = PyModule_GetDict(_pythonModule);
 
-            PyObject_CallObject(pFuncLoop, nullptr);
+            // Update Python objects linked to a custom attribute
+            unique_lock<mutex> lockAttributes(_attributesMutex);
+            for (auto& [attributeName, value] : _attributesToUpdate)
+            {
+                PyObject* object = nullptr;
+                if (value.size() == 1)
+                    object = convertFromValue(value[0]);
+                else
+                    object = convertFromValue(value);
+
+                if (PyDict_SetItemString(moduleDict, attributeName.c_str(), object) == -1)
+                    PyErr_Warn(PyExc_Warning, (string("Could not set object named ") + attributeName).c_str());
+
+                Py_DECREF(object);
+            }
+            _attributesToUpdate.clear();
+            lockAttributes.unlock();
+
+            // Run the loop
+            auto returnValue = PyObject_CallObject(pFuncLoop, nullptr);
+            if (returnValue != nullptr)
+            {
+                if (!PyObject_IsTrue(returnValue))
+                    _doLoop = false;
+                Py_DECREF(returnValue);
+            }
+
             if (PyErr_Occurred())
                 PyErr_Print();
 
+            // Update custom attributes wrt Python objects
+            lockAttributes.lock();
+            for (auto& [attributeName, attributeValue] : _attributesValue)
+            {
+                auto object = PyDict_GetItemString(moduleDict, attributeName.c_str());
+                if (!object)
+                {
+                    PyErr_Warn(PyExc_Warning, (string("Could not find object named ") + attributeName).c_str());
+                    continue;
+                }
+
+                auto value = convertToValue(object);
+                if (value.getType() == Value::Type::values)
+                    attributeValue = value.as<Values>();
+                else
+                    attributeValue = {value};
+            }
+
             PyThreadState_Swap(_pythonGlobalThreadState);
             PyEval_ReleaseThread(_pythonGlobalThreadState);
+            lockAttributes.unlock();
+            pythonMutexLock.unlock();
 
             Timer::get() >> 1.f / static_cast<float>(_updateRate) * 1000.f >> timerName;
         }
 
+        pythonMutexLock.lock();
         PyEval_AcquireThread(_pythonGlobalThreadState);
         PyThreadState_Swap(_pythonLocalThreadState);
 
@@ -1295,6 +1298,7 @@ void PythonEmbedded::loop()
 
         PyThreadState_Swap(_pythonGlobalThreadState);
         PyEval_ReleaseThread(_pythonGlobalThreadState);
+        pythonMutexLock.unlock();
     }
     else
     {
@@ -1306,9 +1310,11 @@ void PythonEmbedded::loop()
 
         PyThreadState_Swap(_pythonGlobalThreadState);
         PyEval_ReleaseThread(_pythonGlobalThreadState);
+        pythonMutexLock.unlock();
     }
 
     // Clean the interpreter
+    pythonMutexLock.lock();
     PyEval_AcquireThread(_pythonGlobalThreadState);
     PyThreadState_Swap(_pythonLocalThreadState);
 
@@ -1316,6 +1322,7 @@ void PythonEmbedded::loop()
 
     PyThreadState_Swap(_pythonGlobalThreadState);
     PyEval_ReleaseThread(_pythonGlobalThreadState);
+    pythonMutexLock.unlock();
 }
 
 /*************/
@@ -1434,10 +1441,12 @@ void PythonEmbedded::registerAttributes()
         return true;
     });
 
-    addAttribute("file", [&](const Values& args) { return setScriptFile(args[0].as<string>()); }, [&]() -> Values { return {_filepath + _scriptName}; }, {'s'});
+    addAttribute(
+        "file", [&](const Values& args) { return setScriptFile(args[0].as<string>()); }, [&]() -> Values { return {_filepath + _scriptName}; }, {'s'});
     setAttributeDescription("file", "Set the path to the source Python file");
 
-    addAttribute("loopRate",
+    addAttribute(
+        "loopRate",
         [&](const Values& args) {
             _updateRate = max(1, args[0].as<int>());
             return true;

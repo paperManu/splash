@@ -29,12 +29,12 @@ def repl():
 
 replThread = threading.Thread(target=repl)
 
-def splash_init():
+def splash_init() -> None:
     replThread.start()
 
-def splash_loop():
-    pass
+def splash_loop() -> bool:
+    return True
 
-def splash_stop():
+def splash_stop() -> None:
     print("Press a key to quit")
     console.push("quit()")
