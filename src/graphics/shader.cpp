@@ -855,7 +855,7 @@ void Shader::registerGraphicAttributes()
                 _fill = userDefined;
                 _shaderOptions = options;
                 if (_shadersSource.find(ShaderType::vertex) == _shadersSource.end())
-                    setSource(options + ShaderSources.VERTEX_SHADER_FILTER, vertex);
+                    setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
                 resetShader(geometry);
                 if (_shadersSource.find(ShaderType::fragment) == _shadersSource.end())
                     setSource(options + ShaderSources.FRAGMENT_SHADER_DEFAULT_FILTER, fragment);

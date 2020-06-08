@@ -148,6 +148,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/filter.cpp
     graphics/filter_black_level.cpp
     graphics/filter_color_curves.cpp
+    graphics/filter_custom.cpp
     graphics/framebuffer.cpp
     graphics/geometry.cpp
     graphics/gpu_buffer.cpp

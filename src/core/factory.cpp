@@ -7,6 +7,7 @@
 #include "./graphics/filter.h"
 #include "./graphics/filter_black_level.h"
 #include "./graphics/filter_color_curves.h"
+#include "./graphics/filter_custom.h"
 #include "./graphics/geometry.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
@@ -216,6 +217,12 @@ void Factory::registerObjects()
         GraphObject::Category::MISC,
         "color curves filter",
         "Color curves filter, which applies color transformation based on user-defined RGB curves.",
+        true);
+
+    _objectBook["filter_custom"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<FilterCustom>(root)); },
+        GraphObject::Category::MISC,
+        "custom filter",
+        "Custom filter, which can take a GLSL fragment shader source to process the input texture(s).",
         true);
 
     _objectBook["geometry"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<Geometry>(root)); },
