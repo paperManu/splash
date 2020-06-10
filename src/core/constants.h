@@ -38,6 +38,10 @@
 
 #define SPLASH_CAMERA_LINK "__camera_link"
 
+#define GL_VENDOR_NVIDIA "NVIDIA Corporation"
+#define GL_VENDOR_AMD "X.Org"
+#define GL_VENDOR_INTEL "Intel"
+
 #include <execinfo.h>
 #include <iostream>
 

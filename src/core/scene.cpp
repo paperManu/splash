@@ -54,18 +54,6 @@ std::string Scene::_glRenderer{};
 vector<string> Scene::_ghostableTypes{"camera", "warp"};
 
 /*************/
-std::vector<int> Scene::getGLVersion()
-{
-    return _glVersion;
-}
-
-/*************/
-bool Scene::getHasNVSwapGroup()
-{
-    return _hasNVSwapGroup;
-}
-
-/*************/
 Scene::Scene(Context context)
     : RootObject(context)
     , _objectLibrary(dynamic_cast<RootObject*>(this))

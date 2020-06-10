@@ -92,13 +92,25 @@ class Scene : public RootObject
      * Get the found OpenGL version
      * \return Return the version as a vector of {MAJOR, MINOR}
      */
-    static std::vector<int> getGLVersion();
+    static std::vector<int> getGLVersion() { return _glVersion; }
+
+    /**
+     * Get the vendor of the OpenGL renderer
+     * \return Return the vendor of the OpenGL renderer
+     */
+    static std::string getGLVendor() { return _glVendor; }
+
+    /**
+     * Get the name of the OpenGL renderer
+     * \return Return the name of the OpenGL renderer
+     */
+    static std::string getGLRenderer() { return _glRenderer; }
 
     /**
      * Get whether NV swap groups are available
      * \return Return true if they are
      */
-    static bool getHasNVSwapGroup();
+    static bool getHasNVSwapGroup() { return _hasNVSwapGroup; }
 
     /**
      * Get a reference to the object library
