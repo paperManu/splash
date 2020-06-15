@@ -35,12 +35,6 @@ set_source_files_properties(
 )
 
 set_source_files_properties(
-    controller/geometriccalibrator.cpp
-    graphics/camera.cpp
-    PROPERTIES COMPILE_FLAGS "-Wno-error=strict-aliasing -Wno-strict-aliasing"
-)
-
-set_source_files_properties(
     core/link.cpp
     PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized"
 )

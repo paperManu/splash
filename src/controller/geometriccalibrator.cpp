@@ -461,7 +461,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
         std::shared_ptr<slaps::Camera> cameraModel{nullptr};
         cameraModel = std::make_shared<slaps::cameramodel::Pinhole>(cameraSize[0].as<int>(), cameraSize[1].as<int>());
 
-        std::vector<uint32_t> inliers;
+        std::vector<int> inliers;
         std::vector<double> parameters;
         slaps::Kernel kernel(&_logger, cameraModel, matchesByProj[cameraIndex + 1]); // Projectors start at 1 in SLAPS
         parameters = kernel.Ransac(inliers);
