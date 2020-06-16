@@ -98,17 +98,17 @@ void Image_OpenCV::readLoop()
 
         // Update capture parameters
         if (width != _width)
-            videoCapture->set(CV_CAP_PROP_FRAME_WIDTH, _width);
+            videoCapture->set(cv::CAP_PROP_FRAME_WIDTH, _width);
         if (height != _height)
-            videoCapture->set(CV_CAP_PROP_FRAME_HEIGHT, _height);
+            videoCapture->set(cv::CAP_PROP_FRAME_HEIGHT, _height);
         if (framerate != _framerate)
-            videoCapture->set(CV_CAP_PROP_FPS, _framerate);
+            videoCapture->set(cv::CAP_PROP_FPS, _framerate);
         if (exposure != _exposure)
             videoCapture->set(cv::CAP_PROP_EXPOSURE, _exposure);
 
-        _width = width = videoCapture->get(CV_CAP_PROP_FRAME_WIDTH);
-        _height = height = videoCapture->get(CV_CAP_PROP_FRAME_HEIGHT);
-        _framerate = framerate = videoCapture->get(CV_CAP_PROP_FPS);
+        _width = width = videoCapture->get(cv::CAP_PROP_FRAME_WIDTH);
+        _height = height = videoCapture->get(cv::CAP_PROP_FRAME_HEIGHT);
+        _framerate = framerate = videoCapture->get(cv::CAP_PROP_FPS);
         _exposure = exposure = videoCapture->get(cv::CAP_PROP_EXPOSURE);
 
         // Capture
@@ -122,7 +122,7 @@ void Image_OpenCV::readLoop()
         if (capture.channels() == 1)
         {
             auto rgba = cv::Mat();
-            cv::cvtColor(capture, rgba, CV_GRAY2RGBA);
+            cv::cvtColor(capture, rgba, cv::COLOR_GRAY2RGBA);
             capture = rgba;
         }
 

@@ -259,7 +259,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
                 cv::Mat3b rgbPattern(pattern.size());
                 if (pattern.channels() == 1)
                 {
-                    cvtColor(pattern, rgbPattern, CV_GRAY2RGB);
+                    cvtColor(pattern, rgbPattern, cv::COLOR_GRAY2RGB);
                     pattern = rgbPattern;
                 }
             }
@@ -337,13 +337,13 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
                 {
                     assert(spec.channels == 4 || spec.channels == 3); // All Image classes should output RGB or RGBA (when uncompressed)
                     capturedImage = cv::Mat(spec.height, spec.width, spec.channels == 4 ? CV_8UC4 : CV_8UC3, imageBuffer.data());
-                    cv::cvtColor(capturedImage, capturedImage, CV_RGB2GRAY);
+                    cv::cvtColor(capturedImage, capturedImage, cv::COLOR_RGB2GRAY);
                 }
                 else if (spec.format == "YUYV")
                 {
                     assert(spec.channels == 3 && spec.bpp == 16);
                     auto yuvImage = cv::Mat(spec.height, spec.width, CV_8UC2, imageBuffer.data());
-                    cv::cvtColor(yuvImage, capturedImage, CV_YUV2RGB_YUYV);
+                    cv::cvtColor(yuvImage, capturedImage, cv::COLOR_YUV2RGB_YUYV);
                 }
                 else
                 {
