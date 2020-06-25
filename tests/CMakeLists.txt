@@ -86,6 +86,7 @@ target_sources(unitTests PRIVATE
     unit_tests/utils/jsonutils.cpp
     unit_tests/utils/resizable_array.cpp
     unit_tests/utils/scope_guard.cpp
+    unit_tests/utils/file_access.cpp
 )
 
 if (NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
