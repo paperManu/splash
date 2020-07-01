@@ -104,7 +104,7 @@ flatpak run com.gitlab.sat_metalab.Splash
 
 A known limitation of the Flatpak package is that it has no access to Jack.
 
-The current release of Splash is also packaged for Ubuntu (version 18.04) and derived. This is done through a Debian archive available on the [tags page](https://gitlab.com/sat-metalab/splash/tags), and install it with :
+The current release of Splash is also packaged for Ubuntu (version 20.04) and derived. This is done through a Debian archive available on the [tags page](https://gitlab.com/sat-metalab/splash/tags), and install it with :
 
 ```bash
 sudo apt install <download path>/splash-<version>-Linux.deb
@@ -115,7 +115,7 @@ sudo apt install <download path>/splash-<version>-Linux.deb
 You can also compile Splash by hand, especially if you are curious about its internals or want to tinker with the code (or even, who knows, contribute!). Note that although what follows compiles the develop branch, it is more likely to contain bugs alongside new features / optimizations so if you experience crash you can try with the master branch.
 
 The packages necessary to compile Splash are the following:
-- Ubuntu and derivatives:
+- Ubuntu 20.04 and derivatives:
 
 ```bash
 sudo apt install build-essential git-core cmake libxrandr-dev libxi-dev \
@@ -144,8 +144,8 @@ cd splash
 git submodule update --init
 ./make_deps.sh
 mkdir -p build && cd build
-CC=gcc-8 CXX=g++-8 cmake ..
-make && sudo make install
+cmake ..
+make -j$(nproc) && sudo make install
 ```
 
 Otherwise, to build Splash and link it against the system libraries:
@@ -156,7 +156,7 @@ cd splash
 git submodule update --init
 mkdir -p build && cd build
 cmake -DUSE_SYSTEM_LIBS=ON ..
-make && sudo make install
+make -j$(nproc) && sudo make install
 ```
 
 You can now try launching Splash:
