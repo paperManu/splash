@@ -35,12 +35,6 @@ set_source_files_properties(
 )
 
 set_source_files_properties(
-    controller/geometriccalibrator.cpp
-    graphics/camera.cpp
-    PROPERTIES COMPILE_FLAGS "-Wno-error=strict-aliasing -Wno-strict-aliasing"
-)
-
-set_source_files_properties(
     core/link.cpp
     PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized"
 )
@@ -83,7 +77,6 @@ include_directories(${SHMDATA_INCLUDE_DIRS})
 include_directories(${GPHOTO_INCLUDE_DIRS})
 include_directories(${FFMPEG_INCLUDE_DIRS})
 include_directories(${PORTAUDIO_INCLUDE_DIRS})
-include_directories(${OPENCV_INCLUDE_DIRS})
 include_directories(${SNAPPY_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
 include_directories(${SLAPS_INCLUDE_DIRS})
@@ -99,7 +92,6 @@ link_directories(${GSL_LIBRARY_DIRS})
 link_directories(${SHMDATA_LIBRARY_DIRS})
 link_directories(${GPHOTO_LIBRARY_DIRS})
 link_directories(${PORTAUDIO_LIBRARY_DIRS})
-link_directories(${OPENCV_LIBRARY_DIRS})
 link_directories(${PYTHON_LIBRARY_DIRS})
 link_directories(${UUID_LIBRARY_DIRS})
 link_directories(${SLAPS_LIBRARY_DIRS})
@@ -224,7 +216,7 @@ if (PORTAUDIO_FOUND)
     )
 endif()
 
-if (HAVE_SLAPS AND OPENCV_FOUND)
+if (SLAPS_FOUND AND OPENCV_FOUND)
     target_sources(splash-${API_VERSION} PRIVATE
         controller/geometriccalibrator.cpp
     )
@@ -274,13 +266,13 @@ else()
     target_link_libraries(splash-${API_VERSION} zmq.a)
 endif()
 # System libs
-target_link_libraries(splash-${API_VERSION} pthread)
+target_link_libraries(splash-${API_VERSION} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(splash-${API_VERSION} ${JSONCPP_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GSL_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${SHMDATA_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GPHOTO_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${PORTAUDIO_LIBRARIES})
-target_link_libraries(splash-${API_VERSION} ${OPENCV_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} ${OpenCV_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${PYTHON_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${UUID_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${SLAPS_LIBRARIES})

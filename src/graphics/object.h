@@ -131,11 +131,7 @@ class Object : public GraphObject
      * \brief Get the shader used for the object. This must be called while the object is active
      * \return Return the shader
      */
-    inline std::shared_ptr<Shader> getShader() const
-    {
-        assert(_shader);
-        return _shader;
-    }
+    inline std::shared_ptr<Shader> getShader() const { return _shader; }
 
     /**
      * \brief Get the number of vertices for this object

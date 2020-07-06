@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.9)
 project(
     splash
-    VERSION 0.8.6
+    VERSION 0.8.8
     LANGUAGES C CXX
 )
 
@@ -71,6 +71,7 @@ if (NOT USE_SYSTEM_LIBS)
 endif()
 
 find_package(PkgConfig REQUIRED)
+find_package(Threads REQUIRED)
 
 # Mandatory dependencies
 pkg_search_module(JSONCPP REQUIRED jsoncpp)
@@ -84,8 +85,8 @@ set(Python_ADDITIONAL_VERSIONS 3.4 3.5)
 find_package(PythonLibs)
 
 find_package(Doxygen)
+find_package(OpenCV)
 pkg_search_module(GPHOTO libgphoto2)
-pkg_search_module(OPENCV opencv)
 pkg_search_module(JACK jack)
 pkg_search_module(PORTAUDIO portaudio-2.0)
 pkg_search_module(SHMDATA shmdata-1.3)
@@ -234,7 +235,7 @@ info_cfg_option(FFMPEG_libavformat_VERSION)
 info_cfg_option(FFMPEG_libavcodec_VERSION)
 info_cfg_option(FFMPEG_libavutil_VERSION)
 info_cfg_option(FFMPEG_libswscale_VERSION)
-info_cfg_option(OPENCV_VERSION)
+info_cfg_option(OpenCV_VERSION)
 info_cfg_option(PORTAUDIO_VERSION)
 info_cfg_option(JACK_VERSION)
 info_cfg_option(PYTHONLIBS_VERSION_STRING)

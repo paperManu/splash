@@ -76,15 +76,16 @@ class SplashServer(BaseHTTPRequestHandler):
             else:
                 self.sendResult("")
 
-def splash_init():
+def splash_init() -> None:
     global splashServer
     print("Starting HTTP server")
     splashServer = HTTPServer((hostName, hostPort), SplashServer)
     splashServer.timeout = 0.1
 
-def splash_loop():
+def splash_loop() -> bool:
     global splashServer
     splashServer.handle_request()
+    return True
 
-def splash_stop():
+def splash_stop() -> None:
     print("Shutting down HTTP server")

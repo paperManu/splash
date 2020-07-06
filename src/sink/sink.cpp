@@ -2,6 +2,7 @@
 
 #include <fstream>
 
+#include "./core/scene.h"
 #include "./graphics/texture.h"
 #include "./utils/timer.h"
 
@@ -130,16 +131,44 @@ void Sink::update()
     }
 
     glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboWriteIndex]);
-    if (_spec.bpp == 32)
-        glGetTextureImage(_inputFilter->getTexId(), 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, 0, 0);
-    else if (_spec.bpp == 24)
-        glGetTextureImage(_inputFilter->getTexId(), 0, GL_RGB, GL_UNSIGNED_BYTE, 0, 0);
-    else if (_spec.bpp == 16 && _spec.channels != 1)
-        glGetTextureImage(_inputFilter->getTexId(), 0, GL_RG, GL_UNSIGNED_SHORT, 0, 0);
-    else if (_spec.bpp == 16 && _spec.channels == 1)
-        glGetTextureImage(_inputFilter->getTexId(), 0, GL_RED, GL_UNSIGNED_SHORT, 0, 0);
-    else if (_spec.bpp == 8)
-        glGetTextureImage(_inputFilter->getTexId(), 0, GL_RED, GL_UNSIGNED_BYTE, 0, 0);
+
+    auto scene = dynamic_cast<Scene*>(_root);
+    // Nvidia hardware and/or drivers do not like much copying to a PBO
+    // from a named texture, it prefers the old way for some unknown reason.
+    // Hence the special treatment, even though it's not modern-ish.
+    // For reference, the behavior with Nvidia hardware is that the grabbed
+    // image is always completely black. It works correctly with AMD and Intel
+    // hardware using Mesa driver.
+    if (scene != nullptr && scene->getGLVendor() == GL_VENDOR_NVIDIA)
+    {
+        _inputFilter->bind();
+        if (_spec.bpp == 32)
+            glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, 0);
+        else if (_spec.bpp == 24)
+            glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+        else if (_spec.bpp == 16 && _spec.channels != 1)
+            glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_UNSIGNED_SHORT, 0);
+        else if (_spec.bpp == 16 && _spec.channels == 1)
+            glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_SHORT, 0);
+        else if (_spec.bpp == 8)
+            glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
+        _inputFilter->unbind();
+    }
+    else
+    {
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboWriteIndex]);
+        if (_spec.bpp == 32)
+            glGetTextureImage(_inputFilter->getTexId(), 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, 0, 0);
+        else if (_spec.bpp == 24)
+            glGetTextureImage(_inputFilter->getTexId(), 0, GL_RGB, GL_UNSIGNED_BYTE, 0, 0);
+        else if (_spec.bpp == 16 && _spec.channels != 1)
+            glGetTextureImage(_inputFilter->getTexId(), 0, GL_RG, GL_UNSIGNED_SHORT, 0, 0);
+        else if (_spec.bpp == 16 && _spec.channels == 1)
+            glGetTextureImage(_inputFilter->getTexId(), 0, GL_RED, GL_UNSIGNED_SHORT, 0, 0);
+        else if (_spec.bpp == 8)
+            glGetTextureImage(_inputFilter->getTexId(), 0, GL_RED, GL_UNSIGNED_BYTE, 0, 0);
+    }
+
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
     _pboWriteIndex = (_pboWriteIndex + 1) % _pbos.size();
@@ -177,7 +206,8 @@ void Sink::registerAttributes()
 {
     GraphObject::registerAttributes();
 
-    addAttribute("bufferCount",
+    addAttribute(
+        "bufferCount",
         [&](const Values& args) {
             _pboCount = max(args[0].as<int>(), 2);
             return true;
@@ -186,7 +216,8 @@ void Sink::registerAttributes()
         {'n'});
     setAttributeDescription("bufferCount", "Number of GPU buffers to use for data download to CPU memory");
 
-    addAttribute("framerate",
+    addAttribute(
+        "framerate",
         [&](const Values& args) {
             _framerate = max(1, args[0].as<int>());
             return true;
@@ -195,7 +226,8 @@ void Sink::registerAttributes()
         {'n'});
     setAttributeDescription("framerate", "Maximum framerate, additional frames are dropped");
 
-    addAttribute("opened",
+    addAttribute(
+        "opened",
         [&](const Values& args) {
             _opened = args[0].as<int>();
             return true;
@@ -205,4 +237,4 @@ void Sink::registerAttributes()
     setAttributeDescription("opened", "If true, the sink lets frames through");
 }
 
-} // end of namespace
+} // namespace Splash

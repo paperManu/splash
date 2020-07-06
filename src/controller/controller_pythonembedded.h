@@ -97,9 +97,13 @@ class PythonEmbedded : public ControllerObject
     PyObject* _pythonModule{nullptr};                //!< Loaded module (from the specified script)
     PyThreadState* _pythonLocalThreadState{nullptr}; //!< Local Python thread state, for the sub-interpreter
 
+    std::mutex _attributesMutex{};
     std::mutex _attributeCallbackMutex{};
     std::map<uint32_t, CallbackHandle> _attributeCallbackHandles{};
+    std::map<std::string, Values> _attributesValue{};
+    std::map<std::string, Values> _attributesToUpdate{};
 
+    static std::recursive_mutex _pythonMutex;
     static std::atomic_int _pythonInstances;        //!< Number of Python scripts running
     static PyThreadState* _pythonGlobalThreadState; //!< Global Python thread state, shared by all PythonEmbedded instances
 
