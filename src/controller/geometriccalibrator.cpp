@@ -324,7 +324,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
                 while (updateTime > imageBuffer.getSpec().timestamp)
                 {
                     imageBuffer = _grabber->get();
-                    std::this_thread::sleep_for(5ms);
+                    std::this_thread::sleep_for(100ms);
                 }
 
                 if (imageBuffer.empty())
