@@ -31,6 +31,7 @@
 
 #include <initializer_list>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 #include "./utils/dense_set.h"

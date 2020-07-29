@@ -345,7 +345,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
                     auto bgraImage = cv::Mat(spec.height, spec.width, spec.channels == 4 ? CV_8UC4 : CV_8UC3, imageBuffer.data());
                     cv::cvtColor(bgraImage, capturedImage, cv::COLOR_BGR2GRAY);
                 }
-                 else if (spec.format == "YUYV")
+                else if (spec.format == "YUYV")
                 {
                     assert(spec.channels == 3 && spec.bpp == 16);
                     auto yuvImage = cv::Mat(spec.height, spec.width, CV_8UC2, imageBuffer.data());
