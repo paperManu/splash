@@ -177,7 +177,7 @@ void GeometricCalibrator::setupCalibrationState(const GeometricCalibrator::Confi
             continue;
 
         auto filterName = _worldFilterPrefix + std::to_string(index);
-        setWorldAttribute("addObject", {"filter", filterName});
+        setWorldAttribute("addObject", {"filter_custom", filterName});
 
         auto& windowName = state.windowList[index];
         setWorldAttribute("link", {_worldBlackImage, filterName});
