@@ -486,7 +486,7 @@ void Gui::drawMainTab()
 
 #endif
 
-#if HAVE_SLAPS
+#if HAVE_CALIMIRO
     ImGui::Separator();
     ImGui::Text("Geometric calibration");
     if (ImGui::Button("Start calibration", ImVec2(availableSize[0] / 3.f, 32.f)))

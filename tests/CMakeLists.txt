@@ -45,7 +45,7 @@ include_directories(${PORTAUDIO_INCLUDE_DIRS})
 include_directories(${OPENCV_INCLUDE_DIRS})
 include_directories(${SNAPPY_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
-include_directories(${SLAPS_INCLUDE_DIRS})
+include_directories(${CALIMIRO_INCLUDE_DIRS})
 
 # Distributed third parties first
 link_directories(${FFMPEG_LIBRARY_DIRS})

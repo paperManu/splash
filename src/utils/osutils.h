@@ -43,8 +43,8 @@
 #if HAVE_SHMDATA
 #include <shmdata/abstract-logger.hpp>
 #endif
-#if HAVE_SLAPS
-#include <slaps/abstract_logger.h>
+#if HAVE_CALIMIRO
+#include <calimiro/abstract_logger.h>
 #endif
 
 namespace Splash
@@ -448,19 +448,19 @@ class ShmdataLogger : public shmdata::AbstractLogger
 };
 #endif
 
-#if HAVE_SLAPS
+#if HAVE_CALIMIRO
 /**
- * \brief Slaps logger dedicated to splash
+ * \brief Calimiro logger dedicated to splash
  */
-class SlapsLogger : public slaps::AbstractLogger
+class CalimiroLogger : public calimiro::AbstractLogger
 {
   private:
-    void on_error(std::string&& str) final { Log::get() << Log::ERROR << "Slaps::SlapsLogger - " << str << Log::endl; }
-    void on_critical(std::string&& str) final { Log::get() << Log::ERROR << "Slaps::SlapsLogger - " << str << Log::endl; }
-    void on_warning(std::string&& str) final { Log::get() << Log::WARNING << "Slaps::SlapsLogger - " << str << Log::endl; }
-    void on_message(std::string&& str) final { Log::get() << Log::MESSAGE << "Slaps::SlapsLogger - " << str << Log::endl; }
-    void on_info(std::string&& str) final { Log::get() << Log::MESSAGE << "Slaps::SlapsLogger - " << str << Log::endl; }
-    void on_debug(std::string&& str) final { Log::get() << Log::DEBUGGING << "Slaps::SlapsLogger - " << str << Log::endl; }
+    void on_error(std::string&& str) final { Log::get() << Log::ERROR << "Calimiro::CalimiroLogger - " << str << Log::endl; }
+    void on_critical(std::string&& str) final { Log::get() << Log::ERROR << "Calimiro::CalimiroLogger - " << str << Log::endl; }
+    void on_warning(std::string&& str) final { Log::get() << Log::WARNING << "Calimiro::CalimiroLogger - " << str << Log::endl; }
+    void on_message(std::string&& str) final { Log::get() << Log::MESSAGE << "Calimiro::CalimiroLogger - " << str << Log::endl; }
+    void on_info(std::string&& str) final { Log::get() << Log::MESSAGE << "Calimiro::CalimiroLogger - " << str << Log::endl; }
+    void on_debug(std::string&& str) final { Log::get() << Log::DEBUGGING << "Calimiro::CalimiroLogger - " << str << Log::endl; }
 };
 #endif
 } // namespace Utils

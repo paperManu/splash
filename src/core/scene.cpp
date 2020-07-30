@@ -38,7 +38,7 @@
 #include <GL/glxext.h>
 // clang-format on
 
-#if HAVE_SLAPS
+#if HAVE_CALIMIRO
 #include "./controller/geometriccalibrator.h"
 #endif
 
@@ -446,7 +446,7 @@ void Scene::setAsMaster(const string& configFilePath)
     _objects["colorCalibrator"] = _colorCalibrator;
 #endif
 
-#if HAVE_SLAPS
+#if HAVE_CALIMIRO
     _geometricCalibrator = make_shared<GeometricCalibrator>(this);
     _geometricCalibrator->setName("geometricCalibrator");
     _objects["geometricCalibrator"] = _geometricCalibrator;
@@ -946,7 +946,7 @@ void Scene::registerAttributes()
     setAttributeDescription("calibrateColorResponseFunction", "Launch the camera color calibration");
 #endif
 
-#if HAVE_SLAPS
+#if HAVE_CALIMIRO
     addAttribute("calibrateGeometry", [&](const Values&) {
         auto calibrator = dynamic_pointer_cast<GeometricCalibrator>(_geometricCalibrator);
         if (calibrator)

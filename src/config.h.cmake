@@ -25,8 +25,8 @@
 /* Defined to 1 if the Datapath SDK is detected */
 #cmakedefine01 HAVE_DATAPATH
 
-/* Defined to 1 if the SLAPS is detected */
-#cmakedefine01 HAVE_SLAPS
+/* Defined to 1 if the CALIMIRO is detected */
+#cmakedefine01 HAVE_CALIMIRO
 
 /* Support mmx instructions */
 #cmakedefine01 HAVE_MMX

@@ -79,7 +79,7 @@ include_directories(${FFMPEG_INCLUDE_DIRS})
 include_directories(${PORTAUDIO_INCLUDE_DIRS})
 include_directories(${SNAPPY_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
-include_directories(${SLAPS_INCLUDE_DIRS})
+include_directories(${CALIMIRO_INCLUDE_DIRS})
 
 # Distributed third parties first
 link_directories(${FFMPEG_LIBRARY_DIRS})
@@ -94,7 +94,7 @@ link_directories(${GPHOTO_LIBRARY_DIRS})
 link_directories(${PORTAUDIO_LIBRARY_DIRS})
 link_directories(${PYTHON_LIBRARY_DIRS})
 link_directories(${UUID_LIBRARY_DIRS})
-link_directories(${SLAPS_LIBRARY_DIRS})
+link_directories(${CALIMIRO_LIBRARY_DIRS})
 
 #
 # Targets
@@ -219,7 +219,7 @@ if (PORTAUDIO_FOUND)
     )
 endif()
 
-if (SLAPS_FOUND AND OPENCV_FOUND)
+if (CALIMIRO_FOUND AND OPENCV_FOUND)
     target_sources(splash-${API_VERSION} PRIVATE
         controller/geometriccalibrator.cpp
     )
@@ -278,7 +278,7 @@ target_link_libraries(splash-${API_VERSION} ${PORTAUDIO_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${OpenCV_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${PYTHON_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${UUID_LIBRARIES})
-target_link_libraries(splash-${API_VERSION} ${SLAPS_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} ${CALIMIRO_LIBRARIES})
 
 #
 # splash executable
