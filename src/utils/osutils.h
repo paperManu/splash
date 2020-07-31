@@ -26,7 +26,6 @@
 #define SPLASH_OSUTILS_H
 
 #include <algorithm>
-#include <dirent.h>
 #include <filesystem>
 #include <pwd.h>
 #include <sched.h>
