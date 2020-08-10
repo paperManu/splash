@@ -45,14 +45,14 @@ TEST_CASE("Testing Splash::Utils::isDir")
 TEST_CASE("Testing Splash::Utils::cleanPath")
 {
     CHECK(cleanPath("/") == "/");
-    CHECK(cleanPath(".") == "/");
-    CHECK(cleanPath("..") == "/");
-    CHECK(cleanPath("/some/path/") == "/some/path");
-    CHECK(cleanPath("/some/path/.") == "/some/path");
-    CHECK(cleanPath("/some/path/..") == "/some");
-    CHECK(cleanPath("//some//path//") == "/some/path");
-    CHECK(cleanPath("./some/path") == "/some/path");
-    CHECK(cleanPath("../some/path") == "/some/path");
+    CHECK(cleanPath(".") == ".");
+    CHECK(cleanPath("..") == "..");
+    CHECK(cleanPath("/some/path/") == "/some/path/");
+    CHECK(cleanPath("/some/path/.") == "/some/path/");
+    CHECK(cleanPath("/some/path/..") == "/some/");
+    CHECK(cleanPath("/some//path//") == "/some/path/");
+    CHECK(cleanPath("./some/path/") == "some/path/");
+    CHECK(cleanPath("../some/path/") == "../some/path/");
     CHECK(cleanPath("/some/file.abc") == "/some/file.abc");
 }
 
@@ -60,12 +60,12 @@ TEST_CASE("Testing Splash::Utils::cleanPath")
 TEST_CASE("Testing Splash::Utils::getPathFromFilePath")
 {
     auto filename = std::string("/some/absolute/path.ext");
-    CHECK(getPathFromFilePath(filename) == "/some/absolute");
+    CHECK(getPathFromFilePath(filename) == "/some/absolute/");
 
     filename = std::string("this/one/is/relative.ext");
     auto config_path = std::string("/some/config/path");
-    CHECK(getPathFromFilePath(filename) == getCurrentWorkingDirectory() + "/this/one/is");
-    CHECK(getPathFromFilePath(filename, config_path) ==  config_path + "/this/one/is");
+    CHECK(getPathFromFilePath(filename) == getCurrentWorkingDirectory() + "/this/one/is/");
+    CHECK(getPathFromFilePath(filename, config_path) ==  config_path + "/this/one/is/");
 }
 
 /*************/
@@ -115,17 +115,15 @@ TEST_CASE("Testing Splash::Utils::listDirContent")
 
     std::vector<std::string> files = listDirContent(dir_name);
 
-    // In the directory we have 5 elements:
+    // In the directory we have 3 elements:
     // a
     // file1.txt
     // file2.txt
-    // .
-    // ..
-    CHECK(files.size() == 5);
+    CHECK(files.size() == 3);
 
     // Special case: path is actually a file
     files = listDirContent(dir_name / "file1.txt");
-    CHECK(files.size() == 5);
+    CHECK(files.size() == 3);
 
     std::filesystem::remove_all(dir_name);
 }
