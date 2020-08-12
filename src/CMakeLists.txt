@@ -78,7 +78,7 @@ include_directories(${GPHOTO_INCLUDE_DIRS})
 include_directories(${FFMPEG_INCLUDE_DIRS})
 include_directories(${PORTAUDIO_INCLUDE_DIRS})
 include_directories(${SNAPPY_INCLUDE_DIRS})
-include_directories(${PYTHON_INCLUDE_DIRS})
+include_directories(${Python3_INCLUDE_DIRS})
 include_directories(${CALIMIRO_INCLUDE_DIRS})
 
 # Distributed third parties first
@@ -92,7 +92,7 @@ link_directories(${GSL_LIBRARY_DIRS})
 link_directories(${SHMDATA_LIBRARY_DIRS})
 link_directories(${GPHOTO_LIBRARY_DIRS})
 link_directories(${PORTAUDIO_LIBRARY_DIRS})
-link_directories(${PYTHON_LIBRARY_DIRS})
+link_directories(${Python3_LIBRARY_DIRS})
 link_directories(${UUID_LIBRARY_DIRS})
 link_directories(${CALIMIRO_LIBRARY_DIRS})
 
@@ -234,7 +234,7 @@ if (HAVE_SHMDATA)
     )
 endif()
 
-if (PYTHONLIBS_FOUND)
+if (HAVE_PYTHON)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         set_source_files_properties(
             controller/controller_pythonembedded.cpp
@@ -276,7 +276,7 @@ target_link_libraries(splash-${API_VERSION} ${SHMDATA_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GPHOTO_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${PORTAUDIO_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${OpenCV_LIBRARIES})
-target_link_libraries(splash-${API_VERSION} ${PYTHON_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} ${Python3_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${UUID_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${CALIMIRO_LIBRARIES})
 

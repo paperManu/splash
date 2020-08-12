@@ -17,7 +17,7 @@
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.12)
 project(
     splash
     VERSION 0.8.9
@@ -81,8 +81,7 @@ pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswscale)
 pkg_check_modules(UUID REQUIRED uuid)
 
 # Optional dependencies
-set(Python_ADDITIONAL_VERSIONS 3.4 3.5)
-find_package(PythonLibs)
+find_package (Python3 COMPONENTS Interpreter Development)
 
 find_package(Doxygen)
 find_package(OpenCV)
@@ -110,7 +109,7 @@ set(HAVE_GPHOTO ${GPHOTO_FOUND})
 set(HAVE_OPENCV ${OPENCV_FOUND})
 set(HAVE_PORTAUDIO ${PORTAUDIO_FOUND})
 set(HAVE_SHMDATA ${SHMDATA_FOUND})
-set(HAVE_PYTHON ${PYTHONLIBS_FOUND})
+set(HAVE_PYTHON ${Python3_FOUND})
 set(HAVE_CALIMIRO ${CALIMIRO_FOUND})
 
 if (FFMPEG_libavformat_VERSION LESS 57)
@@ -238,7 +237,7 @@ info_cfg_option(FFMPEG_libswscale_VERSION)
 info_cfg_option(OpenCV_VERSION)
 info_cfg_option(PORTAUDIO_VERSION)
 info_cfg_option(JACK_VERSION)
-info_cfg_option(PYTHONLIBS_VERSION_STRING)
+info_cfg_option(Python3_VERSION)
 info_cfg_option(JSONCPP_VERSION)
 info_cfg_option(SHMDATA_VERSION)
 info_cfg_option(CALIMIRO_VERSION)

@@ -44,7 +44,7 @@ include_directories(${FFMPEG_INCLUDE_DIRS})
 include_directories(${PORTAUDIO_INCLUDE_DIRS})
 include_directories(${OPENCV_INCLUDE_DIRS})
 include_directories(${SNAPPY_INCLUDE_DIRS})
-include_directories(${PYTHON_INCLUDE_DIRS})
+include_directories(${Python3_INCLUDE_DIRS})
 include_directories(${CALIMIRO_INCLUDE_DIRS})
 
 # Distributed third parties first
@@ -59,7 +59,7 @@ link_directories(${SHMDATA_LIBRARY_DIRS})
 link_directories(${GPHOTO_LIBRARY_DIRS})
 link_directories(${PORTAUDIO_LIBRARY_DIRS})
 link_directories(${OPENCV_LIBRARY_DIRS})
-link_directories(${PYTHON_LIBRARY_DIRS})
+link_directories(${Python3_LIBRARY_DIRS})
 
 #
 # Unit tests (executed through 'make check' or 'make test')
