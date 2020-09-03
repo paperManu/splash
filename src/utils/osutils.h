@@ -248,7 +248,7 @@ inline std::vector<std::string> listDirContent(const std::string& path)
 
     std::vector<std::string> files{};
     auto dir_iterator = std::filesystem::directory_iterator(clean_path);
-    std::transform(std::filesystem::begin(dir_iterator), std::filesystem::end(dir_iterator), std::back_inserter(files), [](auto dir_entry) { return dir_entry.path(); });
+    std::transform(std::filesystem::begin(dir_iterator), std::filesystem::end(dir_iterator), std::back_inserter(files), [&clean_path](auto dir_entry) { return dir_entry.path().lexically_relative(clean_path); });
 
     return files;
 }
