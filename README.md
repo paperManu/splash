@@ -132,8 +132,8 @@ sudo apt install libglfw3-dev libglm-dev libavcodec-dev libavformat-dev \
 - Archlinux (not well maintained, please signal any issue):
 
 ```bash
-pacman -Sy git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcursor libjsoncpp
-pacman -Sy mesa glm gsl libgphoto2 python3 portaudio zip zlib
+pacman -Sy git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcursor jsoncpp \
+    mesa glm gsl libgphoto2 python3 portaudio zip zlib x264 x265 opencv qt5-base vtk hdf5 glew
 ```
 
 Once everything is installed, you can go on with building Splash. To build and link it against the bundled libraries:
@@ -141,7 +141,6 @@ Once everything is installed, you can go on with building Splash. To build and l
 ```bash
 git clone https://gitlab.com/sat-metalab/splash
 cd splash
-git submodule update --init
 ./make_deps.sh
 mkdir -p build && cd build
 cmake ..
@@ -153,7 +152,6 @@ Otherwise, to build Splash and link it against the system libraries:
 ```bash
 git clone https://gitlab.com/sat-metalab/splash
 cd splash
-git submodule update --init
 mkdir -p build && cd build
 cmake -DUSE_SYSTEM_LIBS=ON ..
 make -j$(nproc) && sudo make install

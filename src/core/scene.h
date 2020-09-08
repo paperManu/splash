@@ -222,7 +222,7 @@ class Scene : public RootObject
 #if HAVE_GPHOTO and HAVE_OPENCV
     std::shared_ptr<GraphObject> _colorCalibrator{nullptr};
 #endif
-#if HAVE_SLAPS
+#if HAVE_CALIMIRO
     std::shared_ptr<GraphObject> _geometricCalibrator{nullptr};
 #endif
 

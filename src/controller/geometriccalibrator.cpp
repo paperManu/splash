@@ -4,7 +4,7 @@
 #include <thread>
 
 #include <opencv2/opencv.hpp>
-#include <slaps/slaps.h>
+#include <calimiro/calimiro.h>
 
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
@@ -177,7 +177,7 @@ void GeometricCalibrator::setupCalibrationState(const GeometricCalibrator::Confi
             continue;
 
         auto filterName = _worldFilterPrefix + std::to_string(index);
-        setWorldAttribute("addObject", {"filter", filterName});
+        setWorldAttribute("addObject", {"filter_custom", filterName});
 
         auto& windowName = state.windowList[index];
         setWorldAttribute("link", {_worldBlackImage, filterName});
@@ -210,8 +210,8 @@ void GeometricCalibrator::setupCalibrationState(const GeometricCalibrator::Confi
 std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibrationFunc(const GeometricCalibrator::ConfigurationState& state)
 {
     // Begin calibration
-    slaps::Workspace workspace;
-    slaps::Structured_Light structuredLight(&_logger, _structuredLightScale);
+    calimiro::Workspace workspace;
+    calimiro::Structured_Light structuredLight(&_logger, _structuredLightScale);
 
     // Set all cameras to display a pattern
     for (size_t index = 0; index < state.windowList.size(); ++index)
@@ -324,7 +324,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
                 while (updateTime > imageBuffer.getSpec().timestamp)
                 {
                     imageBuffer = _grabber->get();
-                    std::this_thread::sleep_for(5ms);
+                    std::this_thread::sleep_for(100ms);
                 }
 
                 if (imageBuffer.empty())
@@ -338,6 +338,12 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
                     assert(spec.channels == 4 || spec.channels == 3); // All Image classes should output RGB or RGBA (when uncompressed)
                     capturedImage = cv::Mat(spec.height, spec.width, spec.channels == 4 ? CV_8UC4 : CV_8UC3, imageBuffer.data());
                     cv::cvtColor(capturedImage, capturedImage, cv::COLOR_RGB2GRAY);
+                }
+                else if (spec.format.find("BGR") != std::string::npos)
+                {
+                    assert(spec.channels == 4 || spec.channels == 3);
+                    auto bgraImage = cv::Mat(spec.height, spec.width, spec.channels == 4 ? CV_8UC4 : CV_8UC3, imageBuffer.data());
+                    cv::cvtColor(bgraImage, capturedImage, cv::COLOR_BGR2GRAY);
                 }
                 else if (spec.format == "YUYV")
                 {
@@ -380,7 +386,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
             if (!decoded || !shadowMask || !decodedCoords)
                 return {};
 
-            slaps::Workspace::ImageList imagesToSave(
+            calimiro::Workspace::ImageList imagesToSave(
                 {{"decoded_images/pos_" + std::to_string(positionIndex) + "_proj" + std::to_string(cameraIndex) + "_shadow_mask.jpg", shadowMask.value()},
                     {"decoded_images/pos_" + std::to_string(positionIndex) + "_proj" + std::to_string(cameraIndex) + "_x.jpg", decodedCoords.value().first},
                     {"decoded_images/pos_" + std::to_string(positionIndex) + "_proj" + std::to_string(cameraIndex) + "_y.jpg", decodedCoords.value().second}});
@@ -423,8 +429,8 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
     }
 
     // Compute the calibration
-    auto slapsCameraModel = _cameraModel == CameraModel::Pinhole ? slaps::Reconstruction::PINHOLE_CAMERA_RADIAL3 : slaps::Reconstruction::PINHOLE_CAMERA_FISHEYE;
-    slaps::Reconstruction reconstruction(&_logger, workspace.getWorkPath(), slapsCameraModel);
+    auto calimiroCameraModel = _cameraModel == CameraModel::Pinhole ? calimiro::Reconstruction::PINHOLE_CAMERA_RADIAL3 : calimiro::Reconstruction::PINHOLE_CAMERA_FISHEYE;
+    calimiro::Reconstruction reconstruction(&_logger, workspace.getWorkPath(), calimiroCameraModel);
     reconstruction.sfmInitImageListing(_cameraFocal);
     reconstruction.computeFeatures();
     reconstruction.computeMatches();
@@ -434,14 +440,14 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
 
     // Generate the mesh
     auto points =
-        slaps::utils::readPly(&_logger, std::filesystem::path(workspace.getWorkPath()) / slaps::constants::cOutputDirectory / slaps::constants::cPointCloudStructureFromKnownPoses_ply);
-    auto geometry = slaps::Geometry(&_logger, points, {}, {}, {});
+        calimiro::utils::readPly(&_logger, std::filesystem::path(workspace.getWorkPath()) / calimiro::constants::cOutputDirectory / calimiro::constants::cPointCloudStructureFromKnownPoses_ply);
+    auto geometry = calimiro::Geometry(&_logger, points, {}, {}, {});
     auto geometryNormals = geometry.computeNormalsPointSet();
     auto geometryMesh = geometryNormals.marchingCubes(600);
     auto geometryMeshClean = geometryMesh.simplifyGeometry();
     auto geometryMeshUvs = geometryMeshClean.uvCoordinatesSphere();
 
-    slaps::Obj objFile(&_logger, geometryMeshUvs);
+    calimiro::Obj objFile(&_logger, geometryMeshUvs);
     objFile.writeMesh(std::filesystem::path(workspace.getWorkPath()) / _finalMeshName);
 
     Calibration calibration;
@@ -454,16 +460,16 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
         auto cameraSize = getObjectAttribute(cameraName, "size");
         auto camHeight = cameraSize[1].as<int>();
 
-        slaps::MapXYZs pixelMap(&_logger, workspace.getWorkPath());
+        calimiro::MapXYZs pixelMap(&_logger, workspace.getWorkPath());
         pixelMap.pixelToProj(camHeight, _structuredLightScale);
         auto matchesByProj = pixelMap.sampling(15);
 
-        std::shared_ptr<slaps::Camera> cameraModel{nullptr};
-        cameraModel = std::make_shared<slaps::cameramodel::Pinhole>(cameraSize[0].as<int>(), cameraSize[1].as<int>());
+        std::shared_ptr<calimiro::Camera> cameraModel{nullptr};
+        cameraModel = std::make_shared<calimiro::cameramodel::Pinhole>(cameraSize[0].as<int>(), cameraSize[1].as<int>());
 
         std::vector<int> inliers;
         std::vector<double> parameters;
-        slaps::Kernel kernel(&_logger, cameraModel, matchesByProj[cameraIndex + 1]); // Projectors start at 1 in SLAPS
+        calimiro::Kernel kernel(&_logger, cameraModel, matchesByProj[cameraIndex + 1]); // Projectors start at 1 in Calimiro
         parameters = kernel.Ransac(inliers);
 
         if (parameters.empty())

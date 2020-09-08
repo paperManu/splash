@@ -25,7 +25,6 @@
 #ifndef SPLASH_FILTER_H
 #define SPLASH_FILTER_H
 
-#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
@@ -49,15 +48,10 @@ class Filter : public Texture
 {
   public:
     /**
-     * \brief Constructor
+     *  Constructor
      * \param root Root object
      */
     Filter(RootObject* root);
-
-    /**
-     * \brief Destructor
-     */
-    ~Filter() override;
 
     /**
      * No copy constructor, but a move one
@@ -67,12 +61,12 @@ class Filter : public Texture
     Filter& operator=(const Filter&) = delete;
 
     /**
-     * \brief Bind the filter
+     *  Bind the filter
      */
     void bind() override;
 
     /**
-     * \brief Unbind the filter
+     *  Unbind the filter
      */
     void unbind() override;
 
@@ -83,13 +77,13 @@ class Filter : public Texture
     std::unordered_map<std::string, Values> getShaderUniforms() const override;
 
     /**
-     * \brief Get specs of the texture
+     *  Get specs of the texture
      * \return Return the texture specs
      */
     ImageBufferSpec getSpec() const override { return _fbo->getColorTexture()->getSpec(); }
 
     /**
-     * \brief Get the id of the gl texture
+     *  Get the id of the gl texture
      * \return Return the texture id
      */
     GLuint getTexId() const override { return _fbo->getColorTexture()->getTexId(); }
@@ -107,51 +101,47 @@ class Filter : public Texture
     void setSixteenBpc(bool active);
 
     /**
-     * \brief Render the filter
+     *  Render the filter
      */
     void render() override;
 
-    /**
-     * \brief Update for a filter does nothing, it is the render() job
-     */
-    void update() override {}
-
   protected:
+    std::vector<std::weak_ptr<Texture>> _inTextures;
+    std::shared_ptr<Object> _screen;
+    std::unique_ptr<Framebuffer> _fbo{nullptr};
+
+    bool _shaderAttributesRegistered{false};
+    std::unordered_map<std::string, Values> _filterUniforms; //!< Contains all filter uniforms
+
     /**
-     * \brief Try to link the given GraphObject to this object
+     *  Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
     bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
 
     /**
-     * \brief Try to unlink the given GraphObject from this object
+     *  Try to unlink the given GraphObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
-  private:
-    std::vector<std::weak_ptr<Texture>> _inTextures;
+    /**
+     *  Updates the shader uniforms according to the textures and images the filter is connected to.
+     */
+    virtual void updateUniforms();
 
-    std::unique_ptr<Framebuffer> _fbo{nullptr};
-    std::shared_ptr<Object> _screen;
+    /**
+     *  Register new functors to modify attributes
+     */
+    virtual void registerAttributes();
+
+  private:
 
     // Filter parameters
     static constexpr int _defaultSize[2]{512, 512};
     int _sizeOverride[2]{-1, -1}; //!< If set to positive values, overrides the size given by input textures
     bool _keepRatio{false};
     bool _sixteenBpc{true};
-    std::unordered_map<std::string, Values> _filterUniforms; //!< Contains all filter uniforms
-    Values _colorCurves{};                                   //!< RGB points for the color curves, active if at least 3 points are set
-
-    float _autoBlackLevelTargetValue{0.f}; //!< If not zero, defines the target luminance value
-    float _autoBlackLevelSpeed{1.f};       //!< Time to match the black level target value
-    float _autoBlackLevel{0.f};
-    int64_t _previousTime{0}; //!< Used for computing the current black value regarding black value speed
-
-    std::string _shaderSource{""};                            //!< User defined fragment shader filter
-    std::string _shaderSourceFile{""};                        //!< User defined fragment shader filter source file
-    bool _watchShaderFile{false};                             //!< If true, updates shader automatically if source file changes
-    std::filesystem::file_time_type _lastShaderSourceWrite{}; //!< Last time the shader source has been updated
 
     // Mipmap capture
     int _grabMipmapLevel{-1};
@@ -159,46 +149,14 @@ class Filter : public Texture
     Values _mipmapBufferSpec{};
 
     /**
-     * \brief Init function called in constructors
-     */
-    void init();
-
-    /**
-     * \brief Set the filter fragment shader. Automatically adds attributes corresponding to the uniforms
-     * \param source Source fragment shader
-     * \return Return true if the shader is valid
-     */
-    bool setFilterSource(const std::string& source);
-
-    /**
-     * \brief Setup the output texture
-     */
-    void setOutput();
-
-    /**
-     * \brief Updates the shader uniforms according to the textures and images the filter is connected to.
-     */
-    void updateUniforms();
-
-    /**
-     * Update the shader parameters, if it is the default shader
-     */
-    void updateShaderParameters();
-
-    /**
      * Update the size override to take (or not) ratio into account
      */
     void updateSizeWrtRatio();
 
     /**
-     * \brief Register new functors to modify attributes
-     */
-    void registerAttributes();
-
-    /**
      * Register attributes related to the default shader
      */
-    void registerDefaultShaderAttributes();
+    virtual void registerDefaultShaderAttributes();
 };
 
 } // namespace Splash

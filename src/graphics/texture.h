@@ -43,13 +43,13 @@ class Texture : public GraphObject
 {
   public:
     /**
-     * \brief Constructor
+     *  Constructor
      * \param root Root object
      */
     Texture(RootObject* root);
 
     /**
-     * \brief Destructor
+     *  Destructor
      */
     virtual ~Texture();
 
@@ -60,12 +60,12 @@ class Texture : public GraphObject
     Texture& operator=(const Texture&) = delete;
 
     /**
-     * \brief Bind this texture
+     *  Bind this texture
      */
     virtual void bind() = 0;
 
     /**
-     * \brief Unbind this texture
+     *  Unbind this texture
      */
     virtual void unbind() = 0;
 
@@ -77,7 +77,7 @@ class Texture : public GraphObject
     virtual std::unordered_map<std::string, Values> getShaderUniforms() const = 0;
 
     /**
-     * \brief Get spec of the texture
+     *  Get spec of the texture
      * \return Return the texture spec
      */
     virtual ImageBufferSpec getSpec() const { return _spec; }
@@ -89,7 +89,7 @@ class Texture : public GraphObject
     virtual GLuint getTexId() const = 0;
 
     /**
-     * \brief Get the prefix for the glsl sampler name
+     *  Get the prefix for the glsl sampler name
      */
     virtual std::string getPrefix() const { return "_tex"; }
 
@@ -106,17 +106,17 @@ class Texture : public GraphObject
     virtual void setTimestamp(int64_t timestamp) override { _spec.timestamp = timestamp; }
 
     /**
-     * \brief Lock the texture for read / write operations
+     *  Lock the texture for read / write operations
      */
     void lock() const { _mutex.lock(); }
 
     /**
-     * \brief Unlock the texture for read / write operations
+     *  Unlock the texture for read / write operations
      */
     void unlock() const { _mutex.unlock(); }
 
     /**
-     * \brief Set whether the texture should be resizable
+     *  Set whether the texture should be resizable
      * \param resizable If true, the texture is resizable
      */
     void setResizable(bool resizable) { _resizable = resizable; }
@@ -129,15 +129,9 @@ class Texture : public GraphObject
     bool _resizable{true};
 
     /**
-     * \brief Register new functors to modify attributes
+     *  Register new functors to modify attributes
      */
     void registerAttributes();
-
-  private:
-    /**
-     * \brief As says its name
-     */
-    void init();
 };
 
 } // namespace Splash

@@ -53,13 +53,14 @@ test:20.04:
 
 test:archlinux:
   stage: test
-  image: base/archlinux
+  image: archlinux:latest
   only:
     - archlinux
   before_script:
     - pacman -Syyu --noconfirm
-    - pacman -Sy --noconfirm git cmake make gcc yasm ccache pkgconfig libxi libxinerama libxrandr libxcursor mesa
-      gsl libgphoto2 opencv gtk3 hdf5 python3 portaudio zip zlib
+    - pacman -Sy --noconfirm git cmake make gcc yasm ccache pkgconfig libxi libxinerama libxrandr
+      libxcursor jsoncpp mesa gsl libgphoto2 python3 portaudio zip zlib x264 x265 opencv qt5-base vtk
+      hdf5 glew
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache

@@ -799,14 +799,34 @@ void Shader::registerGraphicAttributes()
                 setSource(options + ShaderSources.FRAGMENT_SHADER_CUBEMAP_PROJECTION, fragment);
                 compileProgram();
             }
-            else if (args[0].as<string>() == "filter" && (_fill != filter || _shaderOptions != options))
+            else if (args[0].as<string>() == "image_filter" && (_fill != image_filter || _shaderOptions != options))
             {
                 _currentProgramName = args[0].as<string>();
-                _fill = filter;
+                _fill = image_filter;
                 _shaderOptions = options;
                 setSource(options + ShaderSources.VERTEX_SHADER_FILTER, vertex);
                 resetShader(geometry);
-                setSource(options + ShaderSources.FRAGMENT_SHADER_FILTER, fragment);
+                setSource(options + ShaderSources.FRAGMENT_SHADER_IMAGE_FILTER, fragment);
+                compileProgram();
+            }
+            else if (args[0].as<string>() == "blacklevel_filter" && (_fill != blacklevel_filter || _shaderOptions != options))
+            {
+                _currentProgramName = args[0].as<string>();
+                _fill = blacklevel_filter;
+                _shaderOptions = options;
+                setSource(options + ShaderSources.VERTEX_SHADER_FILTER, vertex);
+                resetShader(geometry);
+                setSource(options + ShaderSources.FRAGMENT_SHADER_BLACKLEVEL_FILTER, fragment);
+                compileProgram();
+            }
+            else if (args[0].as<string>() == "color_curves_filter" && (_fill != color_curves_filter || _shaderOptions != options))
+            {
+                _currentProgramName = args[0].as<string>();
+                _fill = color_curves_filter;
+                _shaderOptions = options;
+                setSource(options + ShaderSources.VERTEX_SHADER_FILTER, vertex);
+                resetShader(geometry);
+                setSource(options + ShaderSources.FRAGMENT_SHADER_COLOR_CURVES_FILTER, fragment);
                 compileProgram();
             }
             else if (args[0].as<string>() == "color" && (_fill != color || _shaderOptions != options))
@@ -835,10 +855,10 @@ void Shader::registerGraphicAttributes()
                 _fill = userDefined;
                 _shaderOptions = options;
                 if (_shadersSource.find(ShaderType::vertex) == _shadersSource.end())
-                    setSource(options + ShaderSources.VERTEX_SHADER_FILTER, vertex);
+                    setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
                 resetShader(geometry);
                 if (_shadersSource.find(ShaderType::fragment) == _shadersSource.end())
-                    setSource(options + ShaderSources.FRAGMENT_SHADER_FILTER, fragment);
+                    setSource(options + ShaderSources.FRAGMENT_SHADER_DEFAULT_FILTER, fragment);
                 compileProgram();
             }
             else if (args[0].as<string>() == "uv" && (_fill != uv || _shaderOptions != options))

@@ -1,6 +1,26 @@
 Splash release notes
 ===================
 
+Splash 0.8.10 (2020-09-08)
+-------------------------
+New features:
+* Added support to BGRA in the geometric calibrator
+
+Improvements:
+* Testing file access in osUtils
+* Improved detection of Python3
+* Renamed Slaps to Calimiro
+* Added Test for geometric calibrator
+* Moved custom shader to FilterCustom
+* Moved color curves correction to its own filter
+* Moved black level into its own filter
+
+Bugs fixed:
+* Fixed filter type of geometric_calibrator
+* Fixed documentation for Archlinux
+* Fixed compilation with GCC 10
+* Fixed filter GUI panel not showing derived Filter classes
+
 Splash 0.8.8 (2020-07-06)
 -------------------------
 Improvements:
