@@ -166,6 +166,18 @@ class Scene : public RootObject
     void unlink(const std::shared_ptr<GraphObject>& first, const std::shared_ptr<GraphObject>& second);
 
     /**
+     * Enable/disable user input from a joystick
+     * \param enable Enable the joystick if true, disable otherwise
+     */
+    void setEnableJoystickInput(bool enable);
+
+    /**
+     * Get whether the joystick input is enabled or not
+     * \return Return true if joystick input is enabled, false otherwise
+     */
+    bool getEnableJoystickInput() const;
+
+    /**
      *  Remove an object
      * \param name Object name
      */

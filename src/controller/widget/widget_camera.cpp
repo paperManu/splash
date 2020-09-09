@@ -183,6 +183,11 @@ void GuiCamera::render()
         ImGui::SetTooltip("Activate colorization of the wireframe rendering, green "
                           "for selected camera and magenta for the other "
                           "cameras\n(V while hovering the view)");
+    ImGui::SameLine();
+
+    ImGui::Checkbox("Activate joystick", &_joystickActivated);
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Activate calibration control using joysticks");
 
     if (_camera != nullptr)
     {
@@ -224,8 +229,11 @@ void GuiCamera::render()
     hideOtherCameras(_hideCameras);
     colorizeCameraWireframes(_camerasColorized);
 
-    // Joystick can be updated independently from the mouse position
-    processJoystickState();
+    if (_joystickActivated != _scene->getEnableJoystickInput())
+        _scene->setEnableJoystickInput(_joystickActivated);
+    if (_joystickActivated)
+        // Joystick can be updated independently from the mouse position
+        processJoystickState();
 
     releaseJoystick();
 }

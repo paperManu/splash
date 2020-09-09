@@ -203,6 +203,30 @@ void Scene::unlink(const std::shared_ptr<GraphObject>& first, const std::shared_
 }
 
 /*************/
+void Scene::setEnableJoystickInput(bool enable)
+{
+    static string joystickName = "joystick";
+    if (!_joystick && enable)
+    {
+        _joystick = make_shared<Joystick>(this);
+        _joystick->setName(joystickName);
+        _objects[_joystick->getName()] = _joystick;
+    }
+    else if (_joystick && !enable)
+    {
+        _joystick.reset();
+        if (auto objectsIt = _objects.find(joystickName); objectsIt != _objects.end())
+            _objects.erase(objectsIt);
+    }
+}
+
+/*************/
+bool Scene::getEnableJoystickInput() const
+{
+    return _joystick != nullptr;
+}
+
+/*************/
 void Scene::remove(const string& name)
 {
     std::shared_ptr<GraphObject> obj;
@@ -415,7 +439,6 @@ void Scene::setAsMaster(const string& configFilePath)
 
     _keyboard = make_shared<Keyboard>(this);
     _mouse = make_shared<Mouse>(this);
-    _joystick = make_shared<Joystick>(this);
     _dragndrop = make_shared<DragNDrop>(this);
 
     if (_keyboard)
@@ -427,11 +450,6 @@ void Scene::setAsMaster(const string& configFilePath)
     {
         _mouse->setName("mouse");
         _objects["mouse"] = _mouse;
-    }
-    if (_joystick)
-    {
-        _joystick->setName("joystick");
-        _objects[_joystick->getName()] = _joystick;
     }
     if (_dragndrop)
     {
