@@ -304,9 +304,16 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
             case 1:
             {
                 float tmp = attribute[0].as<float>();
-                float step = attribute[0].getType() == Value::Type::real ? 0.01 * tmp : 1.f;
+                auto type = attribute[0].getType();
+                float step = type == Value::Type::real ? 0.01 * tmp : 1.f;
                 if (ImGui::InputFloat(attrName.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                    setObjectAttribute(objName, attrName, {tmp});
+                {
+                    // Make sure that we store the same type
+                    if (type == Value::Type::real)
+                        setObjectAttribute(objName, attrName, {static_cast<float>(tmp)});
+                    else
+                        setObjectAttribute(objName, attrName, {static_cast<int>(tmp)});
+                }
                 break;
             }
             case 2:
