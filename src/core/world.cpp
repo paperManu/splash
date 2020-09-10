@@ -1256,8 +1256,7 @@ void World::registerAttributes()
                 if (clockDeviceName != _clockDeviceName)
                 {
                     _clockDeviceName = clockDeviceName;
-                    _clock.reset();
-                    _clock = unique_ptr<LtcClock>(new LtcClock(true, _clockDeviceName));
+                    _clock = make_unique<LtcClock>(true, _clockDeviceName);
                 }
             });
 
