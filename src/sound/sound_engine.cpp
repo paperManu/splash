@@ -50,7 +50,7 @@ Sound_Engine::~Sound_Engine()
 #if HAVE_JACK
 bool Sound_Engine::getDevice(bool inputDevice, const string& name)
 #else
-bool Sound_Engine::getDevice(bool inputDevice, const string& /*name*/)
+bool Sound_Engine::getDevice(bool inputDevice)
 #endif
 {
     lock_guard<mutex> lock(_engineMutex);
@@ -66,7 +66,7 @@ bool Sound_Engine::getDevice(bool inputDevice, const string& /*name*/)
         for (int i = 0; i < numDevices; ++i)
         {
             auto deviceInfo = Pa_GetDeviceInfo(i);
-            if (string(deviceInfo->name) == name)
+            if (name.compare(deviceInfo->name) == 0)
                 _streamParameters.device = i;
         }
 

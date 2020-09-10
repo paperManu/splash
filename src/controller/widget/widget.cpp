@@ -235,7 +235,7 @@ bool InputText(const char* label, std::string& str, ImGuiInputTextFlags flags)
     str.resize(512, 0);
     if (ImGui::InputText(label, str.data(), str.size(), flags))
     {
-        str.resize(str.find((char)0) + 1);
+        str.resize(str.find((char)0));
         return true;
     }
     return false;

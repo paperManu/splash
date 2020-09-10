@@ -62,11 +62,15 @@ class Sound_Engine
 
     /**
      * Get device by name, or default device
+     * \param inputDevice Set to true to get an input device, false otherwise
      * \param name Device name
-     * \param params A structure holding default parameters for the device
      * \return Return true if all went well
      */
+#if HAVE_JACK
     bool getDevice(bool inputDevice = false, const std::string& name = "");
+#else
+    bool getDevice(bool inputDevice = false);
+#endif
 
     /**
      * Get the stream parameters
