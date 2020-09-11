@@ -49,9 +49,9 @@ bool FileSelectorParseDir(const string& sourcePath, vector<string>& list, const 
         // Alphabetical order
         std::sort(files.begin(), files.end(), [](string a, string b) { return a < b; });
 
-	// if path is not root add ".." to the list
-	if (path != path.root_path())
-	    list.push_back("..");
+        // if path is not root add ".." to the list
+        if (path != path.root_path())
+            list.push_back("..");
 
         // But we put directories first
         std::copy_if(files.begin(), files.end(), std::back_inserter(list), [&path](string p) { return std::filesystem::is_directory(path / p); });
@@ -64,20 +64,21 @@ bool FileSelectorParseDir(const string& sourcePath, vector<string>& list, const 
         // * hidden files
         list.erase(std::remove_if(list.begin(),
                        list.end(),
-                       [&extensions, &path, &showNormalFiles](string p) {
+                       [&extensions, &path, &showNormalFiles](const string& p) {
+                           // remove hidden files and directories
+                           if (p.size() > 2 && p[0] == '.')
+                               return true;
+
                            // We don't want to filter the directories
                            if (filesystem::is_directory(path / p))
                                return false;
-			   // remove hidden files
-			   if (p.size() > 2  && p[0] == '.')
-                               return true;
 
                            if (!showNormalFiles)
                                return true;
 
                            if (extensions.size() > 0)
                            {
-			       for (const auto& ext : extensions)
+                               for (const auto& ext : extensions)
                                {
                                    if (std::string(filesystem::path(p).extension()) == ext)
                                        return false;
@@ -86,9 +87,9 @@ bool FileSelectorParseDir(const string& sourcePath, vector<string>& list, const 
                                return true;
                            }
                            else
-			       return false;
-                      }),
-           list.end());
+                               return false;
+                       }),
+            list.end());
     }
 
     return isDirectoryPath;
