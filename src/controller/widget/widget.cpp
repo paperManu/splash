@@ -158,7 +158,7 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
 
         if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
         {
-            path = Utils::getPathFromFilePath(path) + filename;
+            path = std::filesystem::path(Utils::getPathFromFilePath(path)) / filename;
             if (!FileSelectorParseDir(path, fileList, extensions, showNormalFiles))
                 selectionDone = true;
         }
@@ -182,7 +182,7 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
             {
                 if (selectedIdIt->second >= fileList.size())
                     selectedIdIt->second = 0;
-                path = path + "/" + fileList[selectedIdIt->second];
+                path = std::filesystem::path(path) / fileList[selectedIdIt->second];
             }
         }
         selectionDone = true;

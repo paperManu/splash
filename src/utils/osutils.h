@@ -191,14 +191,21 @@ inline std::string getPathFromFilePath(const std::string& filepath, const std::s
     auto path = std::filesystem::path(filepath);
 
     if(path.is_absolute())
+    {
+        if (isDir(path))
+            return path;
         return path.remove_filename().lexically_normal();
+    }
 
     // The path is relative
-    path = path.remove_filename().lexically_normal();
     if (configPath.empty())
-        return std::filesystem::current_path() / path;
+        path = std::filesystem::current_path() / path;
     else
-        return std::filesystem::path(configPath).lexically_normal() / path;
+        path = std::filesystem::path(configPath).lexically_normal() / path;
+
+    if (isDir(path))
+        return path;
+    return path.remove_filename().lexically_normal();
 }
 
 /**
