@@ -771,7 +771,7 @@ bool World::loadConfig(const string& filename, Json::Value& configuration)
 
     _configFilename = filename;
     _configurationPath = Utils::getPathFromFilePath(_configFilename);
-    _mediaPath = _configurationPath; // By default, same directory
+    _mediaPath = Utils::getHomePath(); // By default, home path
     return true;
 }
 
