@@ -73,15 +73,20 @@ unordered_map<string, Values> Warp::getShaderUniforms() const
 /*************/
 bool Warp::linkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (dynamic_pointer_cast<Camera>(obj))
-    {
-        auto camera = _inCamera.lock();
-        if (camera)
-            _screen->removeTexture(camera->getTexture());
+    if (!_inTexture.expired() && !_inCamera.expired())
+        return false;
 
-        camera = dynamic_pointer_cast<Camera>(obj);
+    if (auto camera = dynamic_pointer_cast<Camera>(obj); camera != nullptr)
+    {
         _screen->addTexture(camera->getTexture());
         _inCamera = camera;
+
+        return true;
+    }
+    else if (auto texture = dynamic_pointer_cast<Texture>(obj); texture != nullptr)
+    {
+        _screen->addTexture(texture);
+        _inTexture = texture;
 
         return true;
     }
@@ -98,19 +103,22 @@ void Warp::unbind()
 /*************/
 void Warp::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (dynamic_pointer_cast<Camera>(obj))
+    if (auto camera = dynamic_pointer_cast<Camera>(obj); camera != nullptr)
     {
-        if (!_inCamera.expired())
+        auto inCamera = _inCamera.lock();
+        if (inCamera == camera)
         {
-            auto inCamera = _inCamera.lock();
-            auto camera = dynamic_pointer_cast<Camera>(obj);
-
-            if (inCamera == camera)
-            {
-                _screen->removeTexture(camera->getTexture());
-                if (camera->getName() == inCamera->getName())
-                    _inCamera.reset();
-            }
+            _screen->removeTexture(camera->getTexture());
+            _inCamera.reset();
+        }
+    }
+    else if (auto texture = dynamic_pointer_cast<Texture>(obj); texture != nullptr)
+    {
+        auto inTexture = _inTexture.lock();
+        if (inTexture == texture)
+        {
+            _screen->removeTexture(texture);
+            _inTexture.reset();
         }
     }
 }
@@ -118,11 +126,21 @@ void Warp::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 /*************/
 void Warp::render()
 {
-    if (_inCamera.expired())
-        return;
+    shared_ptr<Texture> input(nullptr);
 
-    auto camera = _inCamera.lock();
-    auto input = camera->getTexture();
+    if (!_inCamera.expired())
+    {
+        auto camera = _inCamera.lock();
+        input = camera->getTexture();
+    }
+    else if (!_inTexture.expired())
+    {
+        input = _inTexture.lock();
+    }
+    else
+    {
+        return;
+    }
 
     auto inputSpec = input->getSpec();
     if (inputSpec != _spec)
@@ -256,7 +274,8 @@ void Warp::registerAttributes()
 {
     Texture::registerAttributes();
 
-    addAttribute("patchControl",
+    addAttribute(
+        "patchControl",
         [&](const Values& args) {
             if (!_screenMesh)
                 return false;
@@ -272,7 +291,8 @@ void Warp::registerAttributes()
         });
     setAttributeDescription("patchControl", "Set the control points positions");
 
-    addAttribute("patchResolution",
+    addAttribute(
+        "patchResolution",
         [&](const Values& args) {
             if (!_screenMesh)
                 return false;
@@ -289,7 +309,8 @@ void Warp::registerAttributes()
         {'n'});
     setAttributeDescription("patchResolution", "Set the Bezier patch final resolution");
 
-    addAttribute("patchSize",
+    addAttribute(
+        "patchSize",
         [&](const Values& args) {
             if (!_screenMesh)
                 return false;
@@ -307,18 +328,14 @@ void Warp::registerAttributes()
         {'n', 'n'});
     setAttributeDescription("patchSize", "Set the Bezier patch control resolution");
 
-    addAttribute("size",
+    addAttribute(
+        "size",
         [&](const Values&) { return true; },
         [&]() -> Values {
-            auto camera = _inCamera.lock();
-            if (!camera)
-                return {0, 0};
-            Values size;
-            camera->getAttribute("size", size);
-            return size;
+            return {_fbo->getWidth(), _fbo->getHeight()};
         },
         {});
-    setAttributeDescription("size", "Size of the input camera");
+    setAttributeDescription("size", "Size of the rendered output");
 
     // Show the Bezier patch describing the warp
     // Also resets the selected control point if hidden
@@ -347,7 +364,8 @@ void Warp::registerAttributes()
 
     //
     // Mipmap capture
-    addAttribute("grabMipmapLevel",
+    addAttribute(
+        "grabMipmapLevel",
         [&](const Values& args) {
             _grabMipmapLevel = args[0].as<int>();
             return true;
@@ -356,11 +374,13 @@ void Warp::registerAttributes()
         {'n'});
     setAttributeDescription("grabMipmapLevel", "If set to 0 or superior, sync the rendered texture to the 'buffer' attribute, at the given mipmap level");
 
-    addAttribute("buffer", [&](const Values&) { return true; }, [&]() -> Values { return {_mipmapBuffer}; }, {});
+    addAttribute(
+        "buffer", [&](const Values&) { return true; }, [&]() -> Values { return {_mipmapBuffer}; }, {});
     setAttributeDescription("buffer", "Getter attribute which gives access to the mipmap image, if grabMipmapLevel is greater or equal to 0");
 
-    addAttribute("bufferSpec", [&](const Values&) { return true; }, [&]() -> Values { return _mipmapBufferSpec; }, {});
+    addAttribute(
+        "bufferSpec", [&](const Values&) { return true; }, [&]() -> Values { return _mipmapBufferSpec; }, {});
     setAttributeDescription("bufferSpec", "Getter attribute to the specs of the attribute buffer");
 }
 
-} // end of namespace
+} // namespace Splash

@@ -136,6 +136,7 @@ class Warp : public Texture
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
   private:
+    std::weak_ptr<Texture> _inTexture;
     std::weak_ptr<Camera> _inCamera;
 
     std::unique_ptr<Framebuffer> _fbo{nullptr};
