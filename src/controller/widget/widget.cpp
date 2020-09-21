@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <array>
+#include <filesystem>
 #include <fstream>
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -34,73 +35,61 @@ namespace Splash
 namespace SplashImGui
 {
 /*********/
-bool FileSelectorParseDir(const string& sourcePath, vector<FilesystemFile>& list, const vector<string>& extensions, bool showNormalFiles)
+bool FileSelectorParseDir(const string& sourcePath, vector<string>& list, const vector<string>& extensions, bool showNormalFiles)
 {
-    bool isDirectoryPath = true;
-    auto path = Utils::cleanPath(sourcePath);
-    string tmpPath = path;
+    // Make the path absolute and if path is a file, get its parent directory
+    bool isDirectoryPath = filesystem::is_directory(sourcePath);
+    filesystem::path path = Utils::getPathFromFilePath(sourcePath);
 
-    auto directory = opendir(tmpPath.c_str());
-    if (directory == nullptr)
-    {
-        isDirectoryPath = false;
-        tmpPath = Utils::getPathFromFilePath(tmpPath);
-        directory = opendir(tmpPath.c_str());
-    }
-
-    if (directory != nullptr)
+    if (isDirectoryPath)
     {
         list.clear();
-        vector<FilesystemFile> files{};
-
-        struct dirent* dirEntry;
-        while ((dirEntry = readdir(directory)) != nullptr)
-        {
-            FilesystemFile path;
-            path.filename = dirEntry->d_name;
-
-            // Do not show hidden files
-            if (path.filename.size() > 2 && path.filename[0] == '.')
-                continue;
-
-            if (dirEntry->d_type == DT_DIR)
-                path.isDir = true;
-            else if (!showNormalFiles)
-                continue;
-
-            files.push_back(path);
-        }
-        closedir(directory);
+        vector<string> files = Utils::listDirContent(path);
 
         // Alphabetical order
-        std::sort(files.begin(), files.end(), [](FilesystemFile a, FilesystemFile b) { return a.filename < b.filename; });
+        std::sort(files.begin(), files.end(), [](string a, string b) { return a < b; });
+
+        // if path is not root add ".." to the list
+        if (path != path.root_path())
+            list.push_back("..");
 
         // But we put directories first
-        std::copy_if(files.begin(), files.end(), std::back_inserter(list), [](FilesystemFile p) { return p.isDir; });
+        std::copy_if(files.begin(), files.end(), std::back_inserter(list), [&path](string p) { return std::filesystem::is_directory(path / p); });
 
-        std::copy_if(files.begin(), files.end(), std::back_inserter(list), [](FilesystemFile p) { return !p.isDir; });
+        std::copy_if(files.begin(), files.end(), std::back_inserter(list), [&path](string p) { return !std::filesystem::is_directory(path / p); });
 
-        // Filter files based on extension
-        if (extensions.size() != 0)
-        {
-            list.erase(std::remove_if(list.begin(),
-                           list.end(),
-                           [&extensions](FilesystemFile p) {
-                               if (p.isDir)
-                                   return false;
+        // Filter files based:
+        // * on extension -> only show some specific extensions
+        // * showNormalFiles: when false only show directories
+        // * hidden files
+        list.erase(std::remove_if(list.begin(),
+                       list.end(),
+                       [&extensions, &path, &showNormalFiles](const string& p) {
+                           // remove hidden files and directories
+                           if (p.size() > 2 && p[0] == '.')
+                               return true;
 
-                               bool filteredOut = true;
+                           // We don't want to filter the directories
+                           if (filesystem::is_directory(path / p))
+                               return false;
+
+                           if (!showNormalFiles)
+                               return true;
+
+                           if (extensions.size() > 0)
+                           {
                                for (const auto& ext : extensions)
                                {
-                                   auto pos = p.filename.rfind(ext);
-                                   if (pos != string::npos && pos == p.filename.size() - ext.size())
-                                       filteredOut = false;
+                                   if (std::string(filesystem::path(p).extension()) == ext)
+                                       return false;
                                }
 
-                               return filteredOut;
-                           }),
-                list.end());
-        }
+                               return true;
+                           }
+                           else
+                               return false;
+                       }),
+            list.end());
     }
 
     return isDirectoryPath;
@@ -125,7 +114,7 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
     ImGui::Begin(windowName.c_str(), nullptr, ImVec2(400, 600), 0.99f);
 
     ImGui::PushItemWidth(-64.f);
-    vector<FilesystemFile> fileList;
+    vector<string> fileList;
 
     string newPath = Utils::getPathFromFilePath(path);
     string newFilename = Utils::getFilenameFromFilePath(path);
@@ -158,8 +147,8 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
     {
         bool isSelected = (selectedId[label] == i);
 
-        auto filename = fileList[i].filename;
-        if (fileList[i].isDir)
+        auto filename = fileList[i];
+        if (std::filesystem::is_directory(path / filesystem::path(filename)))
             filename += "/";
 
         if (ImGui::Selectable(filename.c_str(), isSelected))
@@ -170,7 +159,7 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
 
         if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
         {
-            path = Utils::getPathFromFilePath(path) + filename;
+            path = std::filesystem::path(Utils::getPathFromFilePath(path)) / filename;
             if (!FileSelectorParseDir(path, fileList, extensions, showNormalFiles))
                 selectionDone = true;
         }
@@ -194,7 +183,7 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
             {
                 if (selectedIdIt->second >= fileList.size())
                     selectedIdIt->second = 0;
-                path = path + "/" + fileList[selectedIdIt->second].filename;
+                path = std::filesystem::path(path) / fileList[selectedIdIt->second];
             }
         }
         selectionDone = true;
@@ -235,7 +224,7 @@ bool InputText(const char* label, std::string& str, ImGuiInputTextFlags flags)
     str.resize(512, 0);
     if (ImGui::InputText(label, str.data(), str.size(), flags))
     {
-        str.resize(str.find((char)0) + 1);
+        str.resize(str.find((char)0));
         return true;
     }
     return false;
@@ -304,9 +293,16 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
             case 1:
             {
                 float tmp = attribute[0].as<float>();
-                float step = attribute[0].getType() == Value::Type::real ? 0.01 * tmp : 1.f;
+                auto type = attribute[0].getType();
+                float step = type == Value::Type::real ? 0.01 * tmp : 1.f;
                 if (ImGui::InputFloat(attrName.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                    setObjectAttribute(objName, attrName, {tmp});
+                {
+                    // Make sure that we store the same type
+                    if (type == Value::Type::real)
+                        setObjectAttribute(objName, attrName, {static_cast<float>(tmp)});
+                    else
+                        setObjectAttribute(objName, attrName, {static_cast<int>(tmp)});
+                }
                 break;
             }
             case 2:
@@ -404,7 +400,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                     {
                         static string path = _root->getMediaPath();
                         bool cancelled;
-                        vector<string> extensions{{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"}, {"avi"}, {"mov"}, {"mp4"}, {"obj"}};
+                        vector<string> extensions{{".bmp"}, {".jpg"}, {".png"}, {".tga"}, {".tif"}, {".avi"}, {".mov"}, {".mp4"}, {".obj"}};
                         if (SplashImGui::FileSelector(objAlias, path, cancelled, extensions))
                         {
                             if (!cancelled)

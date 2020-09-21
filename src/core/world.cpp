@@ -771,7 +771,7 @@ bool World::loadConfig(const string& filename, Json::Value& configuration)
 
     _configFilename = filename;
     _configurationPath = Utils::getPathFromFilePath(_configFilename);
-    _mediaPath = _configurationPath; // By default, same directory
+    _mediaPath = Utils::getHomePath(); // By default, home path
     return true;
 }
 
@@ -1256,8 +1256,7 @@ void World::registerAttributes()
                 if (clockDeviceName != _clockDeviceName)
                 {
                     _clockDeviceName = clockDeviceName;
-                    _clock.reset();
-                    _clock = unique_ptr<LtcClock>(new LtcClock(true, _clockDeviceName));
+                    _clock = make_unique<LtcClock>(true, _clockDeviceName);
                 }
             });
 

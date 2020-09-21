@@ -192,7 +192,7 @@ bool Image_FFmpeg::setupAudioOutput(AVCodecContext* audioCodecContext)
         break;
     }
 
-    _speaker = unique_ptr<Speaker>(new Speaker());
+    _speaker = make_unique<Speaker>();
     if (!_speaker)
         return false;
 

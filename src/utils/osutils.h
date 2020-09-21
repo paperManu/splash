@@ -26,7 +26,7 @@
 #define SPLASH_OSUTILS_H
 
 #include <algorithm>
-#include <dirent.h>
+#include <filesystem>
 #include <pwd.h>
 #include <sched.h>
 #include <string>
@@ -154,10 +154,7 @@ inline void toLower(std::string& input)
  */
 inline bool isDir(const std::string& filepath)
 {
-    struct stat pathStat;
-    if (lstat(filepath.c_str(), &pathStat) == -1)
-        return false;
-    return S_ISDIR(pathStat.st_mode);
+    return std::filesystem::is_directory(filepath);
 }
 
 /**
@@ -167,61 +164,7 @@ inline bool isDir(const std::string& filepath)
  */
 inline std::string cleanPath(const std::string& filepath)
 {
-    std::vector<std::string> links;
-
-    auto remain = filepath;
-    while (remain.size() != 0)
-    {
-        auto nextSlashPos = remain.find("/");
-        if (nextSlashPos == 0)
-        {
-            remain = remain.substr(1, std::string::npos);
-            continue;
-        }
-
-        auto link = remain.substr(0, nextSlashPos);
-        links.push_back(link);
-
-        if (nextSlashPos == std::string::npos)
-            remain.clear();
-        else
-            remain = remain.substr(nextSlashPos + 1, std::string::npos);
-    }
-
-    for (uint32_t i = 0; i < links.size();)
-    {
-        if (links[i] == "..")
-        {
-            links.erase(links.begin() + i);
-            if (i > 0)
-                links.erase(links.begin() + i - 1);
-            i -= 1;
-            continue;
-        }
-
-        if (links[i] == ".")
-        {
-            links.erase(links.begin() + i);
-            continue;
-        }
-
-        ++i;
-    }
-
-    auto path = std::string("");
-    for (auto& link : links)
-    {
-        path += "/";
-        path += link;
-    }
-
-    if (path.size() == 0)
-        path = "/";
-
-    if (isDir(path) && path[path.size() - 1] != '/')
-        path += "/";
-
-    return path;
+    return std::filesystem::path(filepath).lexically_normal();
 }
 
 /**
@@ -246,40 +189,24 @@ inline std::string getHomePath()
  */
 inline std::string getPathFromFilePath(const std::string& filepath, const std::string& configPath = "")
 {
-    auto path = filepath;
+    auto path = std::filesystem::path(filepath);
 
-    bool isRelative = path.find(".") == 0 ? true : false;
-    bool isAbsolute = path.find("/") == 0 ? true : false;
-    auto fullPath = std::string("");
-
-    if (!isRelative && !isAbsolute)
+    if(path.is_absolute())
     {
-        isRelative = true;
-        path = "./" + filepath;
+        if (isDir(path))
+            return path;
+        return path.remove_filename().lexically_normal();
     }
 
-    size_t slashPos = path.rfind("/");
+    // The path is relative
+    if (configPath.empty())
+        path = std::filesystem::current_path() / path;
+    else
+        path = std::filesystem::path(configPath).lexically_normal() / path;
 
-    if (isAbsolute)
-        fullPath = path.substr(0, slashPos) + "/";
-    else if (isRelative)
-    {
-        if (configPath.size() == 0)
-        {
-            char workingPathChar[256];
-            auto workingPath = std::string(getcwd(workingPathChar, 255));
-            if (path.find("/") == 1)
-                fullPath = workingPath + path.substr(1, slashPos) + "/";
-            else if (path.find("/") == 2)
-                fullPath = workingPath + "/" + path.substr(0, slashPos) + "/";
-        }
-        else
-        {
-            fullPath = configPath + "/" + path.substr(0, slashPos);
-        }
-    }
-
-    return cleanPath(fullPath);
+    if (isDir(path))
+        return path;
+    return path.remove_filename().lexically_normal();
 }
 
 /**
@@ -288,42 +215,7 @@ inline std::string getPathFromFilePath(const std::string& filepath, const std::s
  */
 inline std::string getCurrentWorkingDirectory()
 {
-    char workingPathChar[256];
-    auto workingPath = std::string(getcwd(workingPathChar, 255));
-    return workingPath;
-}
-
-/**
- * \brief Get the directory path from an executable file path
- * \param filepath Executable path
- * \return Return the executable directory
- */
-inline std::string getPathFromExecutablePath(const std::string& filepath)
-{
-    auto path = filepath;
-
-    bool isRelative = path.find(".") == 0 ? true : false;
-    bool isAbsolute = path.find("/") == 0 ? true : false;
-    auto fullPath = std::string("");
-
-    size_t slashPos = path.rfind("/");
-
-    if (isAbsolute)
-    {
-        fullPath = path.substr(0, slashPos) + "/";
-        fullPath = cleanPath(fullPath);
-    }
-    else if (isRelative)
-    {
-        auto workingPath = getCurrentWorkingDirectory();
-        if (path.find("/") == 1)
-            fullPath = workingPath + path.substr(1, slashPos) + "/";
-        else if (path.find("/") == 2)
-            fullPath = workingPath + "/" + path.substr(0, slashPos) + "/";
-        fullPath = cleanPath(fullPath);
-    }
-
-    return fullPath;
+    return std::filesystem::current_path();
 }
 
 /**
@@ -333,13 +225,7 @@ inline std::string getPathFromExecutablePath(const std::string& filepath)
  */
 inline std::string getFilenameFromFilePath(const std::string& filepath)
 {
-    size_t slashPos = filepath.rfind("/");
-    auto filename = std::string("");
-    if (slashPos == std::string::npos)
-        filename = filepath;
-    else
-        filename = filepath.substr(slashPos + 1);
-    return filename;
+    return std::filesystem::path(filepath).filename();
 }
 
 /**
@@ -351,36 +237,26 @@ inline std::string getFilenameFromFilePath(const std::string& filepath)
 inline std::string getFullPathFromFilePath(const std::string& filepath, const std::string& configurationPath)
 {
     auto path = Utils::getPathFromFilePath(filepath, configurationPath);
-    auto filename = Utils::getFilenameFromFilePath(filepath);
-    if (path[path.size() - 1] != '/')
-        path += "/";
-    return path + filename;
+    return path / std::filesystem::path(filepath).filename();
 }
 
 /**
- * \brief Get a list of the files in a directory
+ * \brief Get a list of the entries in a directory
  * \param path Directory path
- * \return Return the file list
+ * \return Return the entries list
+ * Note that an entry can be a file or a directory
+ * In the case where the path is a file, it is processed as its parent directory instead
  */
 inline std::vector<std::string> listDirContent(const std::string& path)
 {
-    auto tmpPath = cleanPath(path);
-
-    auto directory = opendir(tmpPath.c_str());
-    if (directory == nullptr)
-    {
-        tmpPath = Utils::getPathFromFilePath(tmpPath);
-        directory = opendir(tmpPath.c_str());
-    }
+    auto clean_path = std::filesystem::path(path).lexically_normal();
+    // Special case where the path is a file -> we consider its parent directory instead
+    if (std::filesystem::is_regular_file(clean_path))
+        clean_path = clean_path.remove_filename();
 
     std::vector<std::string> files{};
-    if (directory != nullptr)
-    {
-        struct dirent* dirEntry;
-        while ((dirEntry = readdir(directory)) != nullptr)
-            files.push_back(std::string(dirEntry->d_name));
-        closedir(directory);
-    }
+    auto dir_iterator = std::filesystem::directory_iterator(clean_path);
+    std::transform(std::filesystem::begin(dir_iterator), std::filesystem::end(dir_iterator), std::back_inserter(files), [&clean_path](auto dir_entry) { return dir_entry.path().lexically_relative(clean_path); });
 
     return files;
 }

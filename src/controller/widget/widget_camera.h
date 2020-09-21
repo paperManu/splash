@@ -56,6 +56,7 @@ class GuiCamera : public GuiWidget
     bool _showCalibrationPoints{true};
     bool _camerasColorized{false};
     bool _camerasColorizedPreviousValue{false};
+    bool _joystickActivated{false};
 
     // Size of the view
     int _camWidth{0}, _camHeight{0};

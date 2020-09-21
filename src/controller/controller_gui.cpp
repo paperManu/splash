@@ -544,18 +544,29 @@ void Gui::drawMainTab()
     }
 
     ImGui::Separator();
-    // Configuration applied to multiple objects
-    ImGui::Text("Other configuration");
+    ImGui::Text("Master clock");
+    auto clockDeviceValue = getWorldAttribute("clockDeviceName"); 
+    assert(!clockDeviceValue.empty());
+    auto clockDeviceName = clockDeviceValue[0].as<string>();
+    if (SplashImGui::InputText("##clockDeviceName", clockDeviceName, ImGuiInputTextFlags_EnterReturnsTrue))
+        setWorldAttribute("clockDeviceName", {clockDeviceName});
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Set the audio input device name from which to read the LTC clock");
+    ImGui::SameLine();
+    ImGui::Text("Audio input device");
+
     static auto looseClock = false;
     auto looseClockValue = getWorldAttribute("looseClock");
-    if (!looseClockValue.empty())
-        looseClock = looseClockValue[0].as<bool>();
+    assert(!looseClockValue.empty());
+    looseClock = looseClockValue[0].as<bool>();
     if (ImGui::Checkbox("Loose master clock", &looseClock))
         setWorldAttribute("looseClock", {static_cast<int>(looseClock)});
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Loose clock: if activated, the master clock is only "
                           "used as an indication, not a hard constraint");
 
+    ImGui::Separator();
+    ImGui::Text("Blending parameters");
     static auto blendWidth = 0.05f;
     if (ImGui::InputFloat("Blending width", &blendWidth, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
         setObjectsOfType("camera", "blendWidth", {blendWidth});
@@ -836,7 +847,10 @@ void Gui::render()
     // Panel
     if (_isVisible)
     {
-        ImGui::Begin("Splash Control Panel", nullptr, ImVec2(900, 900), 0.97f, _windowFlags);
+        std::string windowName = "Splash Control Panel";
+        if (!_configurationPath.empty())
+            windowName += " - " + _configurationPath;
+        ImGui::Begin(windowName.c_str(), nullptr, ImVec2(900, 900), 0.97f, _windowFlags);
         _windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse;
 
         if (_showAbout)

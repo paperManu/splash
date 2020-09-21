@@ -223,10 +223,10 @@
    "world" : {
       "clock" : [ 1039529541 ],
       "clockDeviceName" : [ "" ],
-      "configurationPath" : [ "/home/manu/src/splash/data/" ],
+      "configurationPath" : [ "" ],
       "forceRealtime" : [ 0 ],
       "framerate" : [ 60 ],
       "looseClock" : [ 0 ],
-      "mediaPath" : [ "/home/manu/src/splash/data/" ]
+      "mediaPath" : [ "" ]
    }
 }

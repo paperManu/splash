@@ -21,7 +21,8 @@ nav:
     - Tutorials: Walkthrough.md
   - Docs:
     - Architecture: Technical_Information.md
-    - Cookbook: FAQ.md
+    - Frequently asked questions: FAQ.md
+    - Advanced usages: Advanced_usages.md
     - API: ./doxygen/index.html
   - Community:
     - Release notes: News.md
