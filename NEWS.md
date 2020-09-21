@@ -1,6 +1,25 @@
 Splash release notes
 ===================
 
+Splash 0.8.12 (2020-09-21)
+-------------------------
+New features:
+* Added the possibility to connect a texture to a warp object
+
+Improvements:
+* Added current filename to window titlebar
+* Added a GUI entry for master clock input device name
+* Added the advanced usages pages to mkdocs
+* Added a switch for enabling camera calibration using a joystick
+* Changed default path for media folder to ${HOME}
+* Replace filesystem access in osUtils to std::filesystem
+
+Bugs fixed:
+* Fixed hidden directory being visible
+* Fixed issue with directories not ending with a slash
+* Fixed audio output device selection
+* Fixed attribute type switching from integer to real
+
 Splash 0.8.10 (2020-09-08)
 -------------------------
 New features:
