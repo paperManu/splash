@@ -66,11 +66,7 @@ class Sound_Engine
      * \param name Device name
      * \return Return true if all went well
      */
-#if HAVE_JACK
     bool getDevice(bool inputDevice = false, const std::string& name = "");
-#else
-    bool getDevice(bool inputDevice = false);
-#endif
 
     /**
      * Get the stream parameters
