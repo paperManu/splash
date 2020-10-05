@@ -26,9 +26,9 @@
 #define SPLASH_VALUE_H
 
 #include <cassert>
-#include <deque>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <variant>
 
 #include "./utils/dense_deque.h"
@@ -58,71 +58,39 @@ struct Value
 
     Value() = default;
 
-    template <class T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
+    template <class T>
     Value(const T& v, const std::string& name = "")
         : _name(name)
-        , _type(Type::integer)
-        , _data(static_cast<int64_t>(v))
     {
-    }
-
-    template <class T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
-    Value(const T& v, const std::string& name = "")
-        : _name(name)
-        , _type(Type::real)
-        , _data(static_cast<double>(v))
-    {
-    }
-
-    template <class T, typename std::enable_if<std::is_same<T, std::string>::value>::type* = nullptr>
-    Value(const T& v, const std::string& name = "")
-        : _name(name)
-        , _type(Type::string)
-        , _data(v)
-    {
-    }
-
-    template <class T, typename std::enable_if<std::is_same<T, const char*>::value>::type* = nullptr>
-    Value(T c, const std::string& name = "")
-        : _name(name)
-        , _type(Type::string)
-        , _data(c)
-    {
-    }
-
-    template <class T, typename std::enable_if<std::is_same<T, Values>::value>::type* = nullptr>
-    Value(const T& v, const std::string& name = "")
-        : _name(name)
-        , _type(Type::values)
-        , _data(v)
-    {
-    }
-
-    template <class T, typename std::enable_if<std::is_same<T, Buffer>::value>::type* = nullptr>
-    Value(const T& v, const std::string& name = "")
-        : _name(name)
-        , _type(Type::buffer)
-        , _data(v)
-    {
-    }
-
-    Value(const Value& v) { operator=(v); }
-    Value& operator=(const Value& v)
-    {
-        if (this != &v)
+        if constexpr (std::is_integral_v<T>)
         {
-            _name = v._name;
-            _type = v._type;
-            _data = v._data;
+            _type = Type::integer;
+            _data = static_cast<int64_t>(v);
         }
-
-        return *this;
-    }
-
-    Value& operator[](const std::string& name)
-    {
-        _name = name;
-        return *this;
+        else if constexpr (std::is_floating_point_v<T>)
+        {
+            _type = Type::real;
+            _data = static_cast<double>(v);
+        }
+        else if constexpr (std::is_same_v<T, std::string> || std::is_convertible_v<T, const char*>)
+        {
+            _type = Type::string;
+            _data = v;
+        }
+        else if constexpr (std::is_same_v<T, Values>)
+        {
+            _type = Type::values;
+            _data = v;
+        }
+        else if constexpr (std::is_same_v<T, Buffer>)
+        {
+            _type = Type::buffer;
+            _data = v;
+        }
+        else
+        {
+            assert(false);
+        }
     }
 
     template <class InputIt>
@@ -205,103 +173,115 @@ struct Value
         }
     }
 
-    template <class T, typename std::enable_if<std::is_same<T, std::string>::value>::type* = nullptr>
+    template <class T>
     T as() const
     {
         switch (_type)
         {
         default:
             assert(false);
-            return "";
+            return {};
         case Type::integer:
-            return std::to_string(std::get<int64_t>(_data));
+            if constexpr (std::is_same_v<T, std::string>)
+                return std::to_string(std::get<int64_t>(_data));
+            else if constexpr (std::is_arithmetic_v<T>)
+                return std::get<int64_t>(_data);
+            else if constexpr (std::is_same_v<T, Values>)
+                return {std::get<int64_t>(_data)};
+            else if constexpr (std::is_same_v<T, Buffer>)
+                return {};
+            else
+            {
+                assert(false);
+                return {};
+            }
         case Type::real:
-            return std::to_string(std::get<double>(_data));
+            if constexpr (std::is_same_v<T, std::string>)
+                return std::to_string(std::get<double>(_data));
+            else if constexpr (std::is_arithmetic_v<T>)
+                return std::get<double>(_data);
+            else if constexpr (std::is_same_v<T, Values>)
+                return {std::get<double>(_data)};
+            else if constexpr (std::is_same_v<T, Buffer>)
+                return {};
+            else
+            {
+                assert(false);
+                return {};
+            }
         case Type::string:
-            return std::get<std::string>(_data);
+            if constexpr (std::is_same_v<T, std::string>)
+                return std::get<std::string>(_data);
+            else if constexpr (std::is_arithmetic_v<T>)
+            {
+                try
+                {
+                    return std::stof(std::get<std::string>(_data));
+                }
+                catch (...)
+                {
+                    return 0;
+                }
+            }
+            else if constexpr (std::is_same_v<T, Values>)
+                return {std::get<std::string>(_data)};
+            else if constexpr (std::is_same_v<T, Buffer>)
+                return {};
+            else
+            {
+                assert(false);
+                return {};
+            }
         case Type::values:
-        {
-            auto& data = std::get<Values>(_data);
-            std::string out = "[";
-            for (uint32_t i = 0; i < data.size(); ++i)
+            if constexpr (std::is_same_v<T, std::string>)
             {
-                out += data[i].as<std::string>();
-                if (data.size() > 1 && i < data.size() - 1)
-                    out += ", ";
+                auto& data = std::get<Values>(_data);
+                std::string out = "[";
+                for (uint32_t i = 0; i < data.size(); ++i)
+                {
+                    out += data[i].as<std::string>();
+                    if (data.size() > 1 && i < data.size() - 1)
+                        out += ", ";
+                }
+                out += "]";
+                return out;
             }
-            out += "]";
-            return out;
-        }
-        case Type::buffer:
-        {
-            auto& data = std::get<Buffer>(_data);
-            std::string out = "(";
-            const static size_t maxBufferPrinted = 16;
-            for (uint32_t i = 0; i < std::min(static_cast<size_t>(maxBufferPrinted), data.size()); ++i)
-                out += std::to_string(data[i]);
-            if (data.size() > maxBufferPrinted)
-                out += "...";
-            out += ")";
-            return out;
-        }
-        }
-    }
-
-    template <class T, typename std::enable_if<std::is_arithmetic<T>::value>::type* = nullptr>
-    T as() const
-    {
-        switch (_type)
-        {
-        default:
-            assert(false);
-            return 0;
-        case Type::integer:
-            return std::get<int64_t>(_data);
-        case Type::real:
-            return std::get<double>(_data);
-        case Type::string:
-            try
-            {
-                return std::stof(std::get<std::string>(_data));
-            }
-            catch (...)
-            {
+            else if constexpr (std::is_arithmetic_v<T>)
                 return 0;
+            else if constexpr (std::is_same_v<T, Values>)
+                return std::get<Values>(_data);
+            else if constexpr (std::is_same_v<T, Buffer>)
+                return {};
+            else
+            {
+                assert(false);
+                return {};
             }
-        case Type::values:
-            return 0;
         case Type::buffer:
-            return 0;
+            if constexpr (std::is_same_v<T, std::string>)
+            {
+                auto& data = std::get<Buffer>(_data);
+                std::string out = "(";
+                static constexpr size_t maxBufferPrinted = 16;
+                for (uint32_t i = 0; i < std::min(static_cast<size_t>(maxBufferPrinted), data.size()); ++i)
+                    out += std::to_string(data[i]);
+                if (data.size() > maxBufferPrinted)
+                    out += "...";
+                out += ")";
+                return out;
+            }
+            else if constexpr (std::is_arithmetic_v<T>)
+                return 0;
+            else if constexpr (std::is_same_v<T, Values>)
+                return {};
+            else if constexpr (std::is_same_v<T, Buffer>)
+                return std::get<Buffer>(_data);
+            else
+            {
+                assert(false);
+                return {};
+            }
         }
-    }
-
-    template <class T, typename std::enable_if<std::is_same<T, Values>::value>::type* = nullptr>
-    T as() const
-    {
-        switch (_type)
-        {
-        default:
-            assert(false);
-            return {};
-        case Type::integer:
-            return {std::get<int64_t>(_data)};
-        case Type::real:
-            return {std::get<double>(_data)};
-        case Type::string:
-            return {std::get<std::string>(_data)};
-        case Type::values:
-            return std::get<Values>(_data);
-        case Type::buffer:
-            return {};
-        }
-    }
-
-    template <class T, typename std::enable_if<std::is_same<T, Buffer>::value>::type* = nullptr>
-    T as() const
-    {
-        if (_type != Type::buffer)
-            return {};
-        return std::get<Buffer>(_data);
     }
 
     void* data()
@@ -425,7 +405,7 @@ struct Value
   private:
     std::string _name{""};
     Type _type{Type::integer};
-    std::variant<int64_t, double, std::string, Values, Buffer> _data;
+    std::variant<int64_t, double, std::string, Values, Buffer> _data{};
 }; // namespace Splash
 
 } // namespace Splash
