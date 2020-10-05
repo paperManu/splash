@@ -47,18 +47,13 @@ Sound_Engine::~Sound_Engine()
 }
 
 /*************/
-#if HAVE_JACK
 bool Sound_Engine::getDevice(bool inputDevice, const string& name)
-#else
-bool Sound_Engine::getDevice(bool inputDevice)
-#endif
 {
     lock_guard<mutex> lock(_engineMutex);
 
     _inputDevice = inputDevice;
     _streamParameters = PaStreamParameters();
     _streamParameters.device = -1;
-#if HAVE_JACK
     // If a JACK device name is set, we try to connect to it
     if (name != "")
     {
@@ -73,7 +68,6 @@ bool Sound_Engine::getDevice(bool inputDevice)
         if (_streamParameters.device >= 0)
             Log::get() << Log::MESSAGE << "Sound_Engine::" << __FUNCTION__ << " - Connecting to device: " << name << " as " << (_inputDevice ? "input" : "output") << Log::endl;
     }
-#endif
 
     if (_streamParameters.device < 0)
     {

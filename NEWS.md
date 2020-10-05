@@ -1,6 +1,14 @@
 Splash release notes
 ===================
 
+Splash 0.8.14 (2020-10-05)
+-------------------------
+Improvements:
+* Replaced SFINAE with constexpr in Value definition
+
+Bugs fixed:
+* Fixed compilation issue in Sound_Engine
+
 Splash 0.8.12 (2020-09-21)
 -------------------------
 New features:
