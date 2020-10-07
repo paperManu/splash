@@ -135,7 +135,7 @@ def update_metainfo_file(project: str, version: List[int]) -> None:
         with open(changed_file, 'w') as new_file:
             found_releases = False
             for line in old_file:
-                release_line = re.search("    <release version=\"\d+\.+\d+\.+\d\" date=", line)
+                release_line = re.search("    <release version=\"\d+\.+\d+\.+\d+\" date=", line)
                 if release_line and not found_releases:
                     found_releases = True
                     new_line = f"    <release version=\"{version[0]}.{version[1]}.{version[2]}\" date=\"{datetime.date.today()}\" />\n"
