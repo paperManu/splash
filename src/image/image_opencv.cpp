@@ -200,7 +200,7 @@ void Image_OpenCV::registerAttributes()
         [&]() -> Values {
             return {(int)_width, (int)_height};
         },
-        {'n', 'n'});
+        {'i', 'i'});
     setAttributeDescription("size", "Set the desired capture resolution");
 
     addAttribute("framerate",
@@ -209,7 +209,7 @@ void Image_OpenCV::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_framerate}; },
-        {'n'});
+        {'r'});
     setAttributeDescription("framerate", "Set the desired capture framerate");
 
     addAttribute("exposure",
@@ -218,7 +218,7 @@ void Image_OpenCV::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_exposure}; },
-        {'n'});
+        {'r'});
     setAttributeDescription("exposure", "Camera exposure");
 
     addAttribute("capturing", [](const Values&) { return true; }, [&]() -> Values { return {_capturing}; });

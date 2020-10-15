@@ -158,7 +158,9 @@ Values jsonToValues(const Json::Value& values)
     {
         for (const auto& v : values)
         {
-            if (v.isInt())
+            if (v.isBool())
+                outValues.emplace_back(v.asBool());
+            else if (v.isInt())
                 outValues.emplace_back(v.asInt());
             else if (v.isDouble())
                 outValues.emplace_back(v.asFloat());
@@ -174,7 +176,9 @@ Values jsonToValues(const Json::Value& values)
         int index = 0;
         for (const auto& v : values)
         {
-            if (v.isInt())
+            if (v.isBool())
+                outValues.emplace_back(v.asBool(), names[index]);
+            else if (v.isInt())
                 outValues.emplace_back(v.asInt(), names[index]);
             else if (v.isDouble())
                 outValues.emplace_back(v.asFloat(), names[index]);

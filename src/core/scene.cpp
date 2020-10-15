@@ -784,7 +784,7 @@ void Scene::registerAttributes()
             Timer::get().setDuration(args[0].as<string>(), args[1].as<int>());
             return true;
         },
-        {'s', 'n'});
+        {'s', 'i'});
     setAttributeDescription("duration", "Set the duration of the given timer");
 
     addAttribute("masterClock",
@@ -801,7 +801,7 @@ void Scene::registerAttributes()
             Timer::get().setMasterClock(clock);
             return true;
         },
-        {'n', 'n', 'n', 'n', 'n', 'n', 'n'});
+        {'i', 'i', 'i', 'i', 'i', 'i', 'i'});
     setAttributeDescription("masterClock", "Set the timing of the master clock");
 
     addAttribute("link",
@@ -822,7 +822,7 @@ void Scene::registerAttributes()
             Log::get().setLog(args[0].as<uint64_t>(), args[1].as<string>(), (Log::Priority)args[2].as<int>());
             return true;
         },
-        {'n', 's', 'n'});
+        {'i', 's', 'i'});
     setAttributeDescription("log", "Add an entry to the logs, given its message and priority");
 
     addAttribute("logToFile",
@@ -830,8 +830,8 @@ void Scene::registerAttributes()
             Log::get().logToFile(args[0].as<bool>());
             return true;
         },
-        {'n'});
-    setAttributeDescription("logToFile", "If set to 1, the process holding the Scene will try to write log to file");
+        {'b'});
+    setAttributeDescription("logToFile", "If true, the process holding the Scene will try to write log to file");
 
     addAttribute("ping", [&](const Values&) {
         signalBufferObjectUpdated();
@@ -890,8 +890,8 @@ void Scene::registerAttributes()
                     dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTest", args);
         });
         return true;
-    });
-    setAttributeDescription("swapTest", "Activate video swap test if set to 1");
+    }, {'i'});
+    setAttributeDescription("swapTest", "Activate video swap test if set to anything but 0");
 
     addAttribute("swapTestColor", [&](const Values& args) {
         addTask([=]() {
@@ -938,13 +938,13 @@ void Scene::registerAttributes()
                 lock_guard<recursive_mutex> lock(_objectsMutex);
                 for (auto& obj : _objects)
                     if (obj.second->getType() == "camera")
-                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].as<int>())});
+                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", args);
             });
 
             return true;
         },
-        {'n'});
-    setAttributeDescription("wireframe", "Show all meshes as wireframes if set to 1");
+        {'b'});
+    setAttributeDescription("wireframe", "Show all meshes as wireframes if true");
 
 #if HAVE_GPHOTO and HAVE_OPENCV
     addAttribute("calibrateColor", [&](const Values&) {
@@ -978,8 +978,8 @@ void Scene::registerAttributes()
             _runInBackground = args[0].as<bool>();
             return true;
         },
-        {'n'});
-    setAttributeDescription("runInBackground", "If set to 1, Splash will run in the background (useful for background processing)");
+        {'b'});
+    setAttributeDescription("runInBackground", "If true, Splash will run in the background (useful for background processing)");
 
     addAttribute(
         "swapInterval",
@@ -989,7 +989,7 @@ void Scene::registerAttributes()
             return true;
         },
         [&]() -> Values { return {(int)_swapInterval}; },
-        {'n'});
+        {'i'});
     setAttributeDescription("swapInterval", "Set the interval between two video frames. 1 is synced, 0 is not, -1 to sync when possible");
 }
 

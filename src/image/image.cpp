@@ -399,20 +399,20 @@ void Image::registerAttributes()
 
     addAttribute("flip",
         [&](const Values& args) {
-            _flip = (args[0].as<int>() > 0) ? true : false;
+            _flip = args[0].as<bool>();
             return true;
         },
         [&]() -> Values { return {_flip}; },
-        {'n'});
+        {'b'});
     setAttributeDescription("flip", "Mirrors the image on the Y axis");
 
     addAttribute("flop",
         [&](const Values& args) {
-            _flop = (args[0].as<int>() > 0) ? true : false;
+            _flop = args[0].as<bool>();
             return true;
         },
         [&]() -> Values { return {_flop}; },
-        {'n'});
+        {'b'});
     setAttributeDescription("flop", "Mirrors the image on the X axis");
 
     addAttribute("file",
@@ -428,33 +428,30 @@ void Image::registerAttributes()
 
     addAttribute("srgb",
         [&](const Values& args) {
-            _srgb = (args[0].as<int>() > 0) ? true : false;
+            _srgb = args[0].as<bool>();
             return true;
         },
         [&]() -> Values { return {_srgb}; },
-        {'n'});
-    setAttributeDescription("srgb", "Set to 1 if the image file is stored as sRGB");
+        {'b'});
+    setAttributeDescription("srgb", "Set to true if the image file is stored as sRGB");
 
     addAttribute("benchmark",
         [&](const Values& args) {
-            if (args[0].as<int>() > 0)
-                _benchmark = true;
-            else
-                _benchmark = false;
+            _benchmark = args[0].as<bool>();
             return true;
         },
-        {'n'});
-    setAttributeDescription("benchmark", "Set to 1 to resend the image even when not updated");
+        {'b'});
+    setAttributeDescription("benchmark", "Set to true to resend the image even when not updated");
 
     addAttribute("pattern",
         [&](const Values& args) {
-            if (args[0].as<int>() == 1)
+            if (args[0].as<bool>())
                 createPattern();
             return true;
         },
         [&]() -> Values { return {false}; },
-        {'n'});
-    setAttributeDescription("pattern", "Set to 1 to replace the image with a pattern");
+        {'b'});
+    setAttributeDescription("pattern", "Set to true to replace the image with a pattern");
 
     addAttribute("mediaInfo",
         [&](const Values& args) {

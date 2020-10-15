@@ -1452,7 +1452,7 @@ void PythonEmbedded::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_updateRate}; },
-        {'n'});
+        {'i'});
     setAttributeDescription("loopRate", "Set the rate at which the loop is called");
 }
 

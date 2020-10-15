@@ -233,7 +233,7 @@ void GraphObject::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_savable}; },
-        {'n'});
+        {'b'});
     setAttributeDescription("savable", "If true, the object will be saved in the configuration file. This should NOT be modified by hand");
 
     addAttribute("priorityShift",
@@ -242,7 +242,7 @@ void GraphObject::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_priorityShift}; },
-        {'n'});
+        {'i'});
     setAttributeDescription("priorityShift",
         "Shift to the default rendering priority value, for those cases where two objects should be rendered in a specific order. Higher value means lower priority");
 

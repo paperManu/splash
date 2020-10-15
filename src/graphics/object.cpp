@@ -505,7 +505,7 @@ void Object::transferVisibilityFromTexToAttr(int width, int height, int primitiv
     {
         geom->update();
         geom->activateAsSharedBuffer();
-        _computeShaderTransferVisibilityToAttr->setAttribute("uniform", {"_texSize", (float)width, (float)height});
+        _computeShaderTransferVisibilityToAttr->setAttribute("uniform", {"_texSize", static_cast<float>(width), static_cast<float>(height)});
         _computeShaderTransferVisibilityToAttr->setAttribute("uniform", {"_idShift", primitiveIdShift});
         _computeShaderTransferVisibilityToAttr->doCompute(width / 32 + 1, height / 32 + 1);
         glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
@@ -574,13 +574,13 @@ void Object::registerAttributes()
 
     addAttribute("activateVertexBlending",
         [&](const Values& args) {
-            _vertexBlendingActive = args[0].as<int>();
+            _vertexBlendingActive = args[0].as<bool>();
             for (auto& geom : _geometries)
                 geom->useAlternativeBuffers(_vertexBlendingActive);
             return true;
         },
-        {'n'});
-    setAttributeDescription("activateVertexBlending", "If set to 1, activate vertex blending");
+        {'b'});
+    setAttributeDescription("activateVertexBlending", "If true, activate vertex blending");
 
     addAttribute("position",
         [&](const Values& args) {
@@ -590,7 +590,7 @@ void Object::registerAttributes()
         [&]() -> Values {
             return {_position.x, _position.y, _position.z};
         },
-        {'n', 'n', 'n'});
+        {'r', 'r', 'r'});
     setAttributeDescription("position", "Set the object position");
 
     addAttribute("rotation",
@@ -601,7 +601,7 @@ void Object::registerAttributes()
         [&]() -> Values {
             return {_rotation.x * 180.0 / M_PI, _rotation.y * 180.0 / M_PI, _rotation.z * 180.0 / M_PI};
         },
-        {'n', 'n', 'n'});
+        {'r', 'r', 'r'});
     setAttributeDescription("rotation", "Set the object rotation");
 
     addAttribute("scale",
@@ -616,7 +616,7 @@ void Object::registerAttributes()
         [&]() -> Values {
             return {_scale.x, _scale.y, _scale.z};
         },
-        {'n'});
+        {'r'});
     setAttributeDescription("scale", "Set the object scale");
 
     addAttribute("sideness",
@@ -625,7 +625,7 @@ void Object::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_sideness}; },
-        {'n'});
+        {'i'});
     setAttributeDescription("sideness", "Set the side culling for the object: 0 for double sided, 1 for front-face visible, 2 for back-face visible");
 
     addAttribute("fill",
@@ -650,7 +650,7 @@ void Object::registerAttributes()
         [&]() -> Values {
             return {_color.r, _color.g, _color.b, _color.a};
         },
-        {'n', 'n', 'n', 'n'});
+        {'r', 'r', 'r', 'r'});
     setAttributeDescription("color", "Set the object color, used for the \"color\" fill mode, or when no texture is linked to the object.");
 
     addAttribute("normalExponent",
@@ -659,7 +659,7 @@ void Object::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_normalExponent}; },
-        {'n'});
+        {'r'});
     setAttributeDescription("normalExponent", "If set to anything but 0.0, set the exponent applied to the normal factor for blending computation");
 }
 

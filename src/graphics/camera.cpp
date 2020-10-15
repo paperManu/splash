@@ -1068,7 +1068,8 @@ void Camera::registerAttributes()
 {
     GraphObject::registerAttributes();
 
-    addAttribute("eye",
+    addAttribute(
+        "eye",
         [&](const Values& args) {
             _eye = dvec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
             return true;
@@ -1076,10 +1077,11 @@ void Camera::registerAttributes()
         [&]() -> Values {
             return {_eye.x, _eye.y, _eye.z};
         },
-        {'n', 'n', 'n'});
+        {'r', 'r', 'r'});
     setAttributeDescription("eye", "Set the camera position");
 
-    addAttribute("target",
+    addAttribute(
+        "target",
         [&](const Values& args) {
             _target = dvec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
             return true;
@@ -1087,19 +1089,21 @@ void Camera::registerAttributes()
         [&]() -> Values {
             return {_target.x, _target.y, _target.z};
         },
-        {'n', 'n', 'n'});
+        {'r', 'r', 'r'});
     setAttributeDescription("target", "Set the camera target position");
 
-    addAttribute("fov",
+    addAttribute(
+        "fov",
         [&](const Values& args) {
             _fov = args[0].as<float>();
             return true;
         },
         [&]() -> Values { return {_fov}; },
-        {'n'});
+        {'r'});
     setAttributeDescription("fov", "Set the camera field of view");
 
-    addAttribute("up",
+    addAttribute(
+        "up",
         [&](const Values& args) {
             _up = dvec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
             return true;
@@ -1107,10 +1111,11 @@ void Camera::registerAttributes()
         [&]() -> Values {
             return {_up.x, _up.y, _up.z};
         },
-        {'n', 'n', 'n'});
+        {'r', 'r', 'r'});
     setAttributeDescription("up", "Set the camera up vector");
 
-    addAttribute("size",
+    addAttribute(
+        "size",
         [&](const Values& args) {
             _newWidth = args[0].as<int>();
             _newHeight = args[1].as<int>();
@@ -1119,28 +1124,31 @@ void Camera::registerAttributes()
         [&]() -> Values {
             return {_width, _height};
         },
-        {'n', 'n'});
+        {'i', 'i'});
     setAttributeDescription("size", "Set the render size");
 
-    addAttribute("near",
+    addAttribute(
+        "near",
         [&](const Values& args) {
             _near = args[0].as<float>();
             return true;
         },
         [&]() -> Values { return {_near}; },
-        {});
+        {'r'});
     setAttributeDescription("near", "Closest visible distance");
 
-    addAttribute("far",
+    addAttribute(
+        "far",
         [&](const Values& args) {
             _far = args[0].as<float>();
             return true;
         },
         [&]() -> Values { return {_far}; },
-        {});
+        {'r'});
     setAttributeDescription("far", "Farthest visible distance");
 
-    addAttribute("principalPoint",
+    addAttribute(
+        "principalPoint",
         [&](const Values& args) {
             _cx = args[0].as<float>();
             _cy = args[1].as<float>();
@@ -1149,17 +1157,18 @@ void Camera::registerAttributes()
         [&]() -> Values {
             return {_cx, _cy};
         },
-        {'n', 'n'});
+        {'r', 'r'});
     setAttributeDescription("principalPoint", "Set the principal point of the lens (for lens shifting)");
 
-    addAttribute("weightedCalibrationPoints",
+    addAttribute(
+        "weightedCalibrationPoints",
         [&](const Values& args) {
-            _weightedCalibrationPoints = args[0].as<int>();
+            _weightedCalibrationPoints = args[0].as<bool>();
             return true;
         },
-        [&]() -> Values { return {(int)_weightedCalibrationPoints}; },
-        {'n'});
-    setAttributeDescription("weightedCalibrationPoints", "If set to 1, calibration points located near the edges are more weight in the calibration");
+        [&]() -> Values { return {_weightedCalibrationPoints}; },
+        {'b'});
+    setAttributeDescription("weightedCalibrationPoints", "If true, calibration points located near the edges are more weight in the calibration");
 
     // More advanced attributes
     addAttribute("moveEye",
@@ -1169,7 +1178,7 @@ void Camera::registerAttributes()
             _eye.z = _eye.z + args[2].as<float>();
             return true;
         },
-        {'n', 'n', 'n'});
+        {'r', 'r', 'r'});
     setAttributeDescription("moveEye", "Move the eye by the specified vector");
 
     addAttribute("moveTarget",
@@ -1179,7 +1188,7 @@ void Camera::registerAttributes()
             _target.z = _target.z + args[2].as<float>();
             return true;
         },
-        {'n', 'n', 'n'});
+        {'r', 'r', 'r'});
     setAttributeDescription("moveTarget", "Move the target by the specified vector");
 
     addAttribute("rotateAroundTarget",
@@ -1197,7 +1206,7 @@ void Camera::registerAttributes()
 
             return true;
         },
-        {'n', 'n', 'n'});
+        {'r', 'r', 'r'});
     setAttributeDescription("rotateAroundTarget", "Rotate around the target point by the given Euler angles");
 
     addAttribute("rotateAroundPoint",
@@ -1233,7 +1242,7 @@ void Camera::registerAttributes()
 
             return true;
         },
-        {'n', 'n', 'n', 'n', 'n', 'n'});
+        {'r', 'r', 'r', 'r', 'r', 'r'});
     setAttributeDescription("rotateAroundPoint", "Rotate around a given point by the given Euler angles");
 
     addAttribute("pan",
@@ -1247,7 +1256,7 @@ void Camera::registerAttributes()
 
             return true;
         },
-        {'n', 'n', 'n'});
+        {'r', 'r', 'r'});
     setAttributeDescription("pan", "Move the camera in its focal plane");
 
     addAttribute("forward",
@@ -1259,7 +1268,7 @@ void Camera::registerAttributes()
             _eye += dirV;
             return true;
         },
-        {'n'});
+        {'r'});
     setAttributeDescription("forward", "Move the camera forward along its Z axis");
 
     addAttribute("calibrate", [&](const Values&) {
@@ -1275,7 +1284,7 @@ void Camera::registerAttributes()
             addCalibrationPoint({args[0].as<float>(), args[1].as<float>(), args[2].as<float>()});
             return true;
         },
-        {'n', 'n', 'n'});
+        {'r', 'r', 'r'});
     setAttributeDescription("addCalibrationPoint", "Add a calibration point at the given position");
 
     addAttribute("deselectedCalibrationPoint", [&](const Values&) {
@@ -1289,7 +1298,7 @@ void Camera::registerAttributes()
             moveCalibrationPoint(args[0].as<float>(), args[1].as<float>());
             return true;
         },
-        {'n', 'n'});
+        {'r', 'r'});
     setAttributeDescription("moveCalibrationPoint", "Move the target calibration point in the 2D projection space");
 
     addAttribute("removeCalibrationPoint",
@@ -1300,10 +1309,10 @@ void Camera::registerAttributes()
                 removeCalibrationPoint({args[0].as<float>(), args[1].as<float>(), args[2].as<float>()}, args[3].as<int>());
             return true;
         },
-        {'n', 'n', 'n'});
+        {'r', 'r', 'r'});
     setAttributeDescription("removeCalibrationPoint", "Remove the calibration point given its 3D coordinates");
 
-    addAttribute("setCalibrationPoint", [&](const Values& args) { return setCalibrationPoint({args[0].as<float>(), args[1].as<float>()}); }, {'n', 'n'});
+    addAttribute("setCalibrationPoint", [&](const Values& args) { return setCalibrationPoint({args[0].as<float>(), args[1].as<float>()}); }, {'r', 'r'});
     setAttributeDescription("setCalibrationPoint", "Set the 2D projection of a calibration point");
 
     addAttribute("selectNextCalibrationPoint", [&](const Values&) {
@@ -1322,7 +1331,8 @@ void Camera::registerAttributes()
     setAttributeDescription("selectPreviousCalibrationPoint", "Select the previous available calibration point");
 
     // Store / restore calibration points
-    addAttribute("calibrationPoints",
+    addAttribute(
+        "calibrationPoints",
         [&](const Values& args) {
             removeCalibrationPointsFromObjects();
             _calibrationPoints.clear();
@@ -1339,7 +1349,7 @@ void Camera::registerAttributes()
                 c.world[2] = v[2].as<float>();
                 c.screen[0] = v[3].as<float>();
                 c.screen[1] = v[4].as<float>();
-                c.isSet = v[5].as<int>();
+                c.isSet = v[5].as<bool>();
 
                 _calibrationPoints.push_back(c);
             }
@@ -1359,9 +1369,10 @@ void Camera::registerAttributes()
     setAttributeDescription("calibrationPoints", "Set multiple calibration points, as an array of 6D vector (position, projection and status)");
 
     // Rendering options
-    addAttribute("16bits",
+    addAttribute(
+        "16bits",
         [&](const Values& args) {
-            bool render16bits = args[0].as<int>();
+            auto render16bits = args[0].as<bool>();
             if (render16bits != _render16bits)
             {
                 _render16bits = render16bits;
@@ -1369,11 +1380,12 @@ void Camera::registerAttributes()
             }
             return true;
         },
-        [&]() -> Values { return {(int)_render16bits}; },
-        {'n'});
-    setAttributeDescription("16bits", "Set to 1 for the camera to render in 16bits per component (otherwise 8bpc)");
+        [&]() -> Values { return {_render16bits}; },
+        {'b'});
+    setAttributeDescription("16bits", "Set to true for the camera to render in 16bits per component (otherwise 8bpc)");
 
-    addAttribute("multisampling",
+    addAttribute(
+        "multisampling",
         [&](const Values& args) {
             static vector<int> validSampleValues{0, 2, 4, 8, 16};
 
@@ -1394,25 +1406,27 @@ void Camera::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_multisample}; },
-        {'n'});
+        {'i'});
     setAttributeDescription("multisampling", "Set the sample count for the multisampling antialiasing");
 
-    addAttribute("blendWidth",
+    addAttribute(
+        "blendWidth",
         [&](const Values& args) {
             _blendWidth = args[0].as<float>();
             return true;
         },
         [&]() -> Values { return {_blendWidth}; },
-        {'n'});
+        {'r'});
     setAttributeDescription("blendWidth", "Set the projectors blending width");
 
-    addAttribute("blendPrecision",
+    addAttribute(
+        "blendPrecision",
         [&](const Values& args) {
             _blendPrecision = args[0].as<float>();
             return true;
         },
         [&]() -> Values { return {_blendPrecision}; },
-        {'n'});
+        {'r'});
     setAttributeDescription("blendPrecision", "Set the blending precision");
 
     addAttribute("clearColor", [&](const Values& args) {
@@ -1427,23 +1441,25 @@ void Camera::registerAttributes()
     });
     setAttributeDescription("clearColor", "Clears the camera, with a default color if no argument is given (as RGBA)");
 
-    addAttribute("colorTemperature",
+    addAttribute(
+        "colorTemperature",
         [&](const Values& args) {
             _colorTemperature = args[0].as<float>();
             _colorTemperature = std::max(1000.f, std::min(15000.f, _colorTemperature));
             return true;
         },
         [&]() -> Values { return {_colorTemperature}; },
-        {'n'});
+        {'r'});
     setAttributeDescription("colorTemperature", "Set the color temperature correction");
 
-    addAttribute("colorLUT",
+    addAttribute(
+        "colorLUT",
         [&](const Values& args) {
             if (args[0].as<Values>().size() != 768)
                 return false;
 
             for (auto& v : args[0].as<Values>())
-                if (v.getTypeAsChar() != 'n')
+                if (!v.isConvertibleToType(Value::Type::real))
                     return false;
 
             _colorLUT = args[0].as<Values>();
@@ -1464,10 +1480,11 @@ void Camera::registerAttributes()
             _wireframeColor = dvec4(args[0].as<float>(), args[1].as<float>(), args[2].as<float>(), args[3].as<float>());
             return true;
         },
-        {'n', 'n', 'n', 'n'});
+        {'r', 'r', 'r', 'r'});
     setAttributeDescription("colorWireframe", "Set the color for the wireframe rendering");
 
-    addAttribute("activateColorLUT",
+    addAttribute(
+        "activateColorLUT",
         [&](const Values& args) {
             if (args[0].as<int>() == 2)
                 _isColorLUTActivated = (_isColorLUTActivated != true);
@@ -1484,10 +1501,11 @@ void Camera::registerAttributes()
             return true;
         },
         [&]() -> Values { return {(int)_isColorLUTActivated}; },
-        {'n'});
+        {'i'});
     setAttributeDescription("activateColorLUT", "Activate the color lookup table. If set to 2, switches its status");
 
-    addAttribute("colorMixMatrix",
+    addAttribute(
+        "colorMixMatrix",
         [&](const Values& args) {
             if (args[0].as<Values>().size() != 9)
                 return false;
@@ -1507,45 +1525,46 @@ void Camera::registerAttributes()
         {'v'});
     setAttributeDescription("colorMixMatrix", "Set the color correction matrix");
 
-    addAttribute("brightness",
+    addAttribute(
+        "brightness",
         [&](const Values& args) {
             _brightness = std::max(0.f, std::min(2.f, args[0].as<float>()));
             return true;
         },
         [&]() -> Values { return {_brightness}; },
-        {'n'});
+        {'r'});
     setAttributeDescription("brightness", "Set the camera brightness");
 
-    addAttribute("contrast",
+    addAttribute(
+        "contrast",
         [&](const Values& args) {
             _contrast = std::max(0.f, std::min(2.f, args[0].as<float>()));
             return true;
         },
         [&]() -> Values { return {_contrast}; },
-        {'n'});
+        {'r'});
     setAttributeDescription("contrast", "Set the camera contrast");
 
-    addAttribute("saturation",
+    addAttribute(
+        "saturation",
         [&](const Values& args) {
             _saturation = std::max(0.f, std::min(2.f, args[0].as<float>()));
             return true;
         },
         [&]() -> Values { return {_saturation}; },
-        {'n'});
+        {'r'});
     setAttributeDescription("saturation", "Set the camera saturation");
 
     addAttribute("frame",
         [&](const Values& args) {
-            if (args[0].as<int>() > 0)
-                _drawFrame = true;
-            else
-                _drawFrame = false;
+            _drawFrame = args[0].as<bool>();
             return true;
         },
-        {'n'});
-    setAttributeDescription("frame", "If set to 1, draws a frame around the camera");
+        {'b'});
+    setAttributeDescription("frame", "If true, draws a frame around the camera");
 
-    addAttribute("hide",
+    addAttribute(
+        "hide",
         [&](const Values& args) {
             if (args[0].as<int>() > 0)
                 _hidden = true;
@@ -1556,13 +1575,15 @@ void Camera::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_hidden}; },
-        {'n'});
-    setAttributeDescription("hide", "If set to 1, prevent from drawing this camera");
+        {'b'});
+    setAttributeDescription("hide", R"(If set to 1, prevent from drawing this camera.
+ If set to 0, the camera can be drawn.
+ If set to -1, switches the 'hide' state.)");
 
     addAttribute("wireframe",
         [&](const Values& args) {
             string primitive;
-            if (args[0].as<int>() == 0)
+            if (args[0].as<bool>() == 0)
                 primitive = "texture";
             else
                 primitive = "wireframe";
@@ -1576,55 +1597,55 @@ void Camera::registerAttributes()
             }
             return true;
         },
-        {'n'});
-    setAttributeDescription("wireframe", "If set to 1, draws all linked objects as wireframes");
+        {'b'});
+    setAttributeDescription("wireframe", "If true, draws all linked objects as wireframes");
 
     addAttribute("showCameraCount",
         [&](const Values& args) {
             _showCameraCount = args[0].as<bool>();
             return true;
         },
-        {'n'});
-    setAttributeDescription("showCameraCount", "If set to 1, shows visually the camera count, encoded in binary in RGB (blending has to be activated)");
+        {'b'});
+    setAttributeDescription("showCameraCount", "If true, shows visually the camera count, encoded in binary in RGB (blending has to be activated)");
 
     //
     // Mipmap capture
-    addAttribute("grabMipmapLevel",
+    addAttribute(
+        "grabMipmapLevel",
         [&](const Values& args) {
             _grabMipmapLevel = args[0].as<int>();
             return true;
         },
         [&]() -> Values { return {_grabMipmapLevel}; },
-        {'n'});
+        {'i'});
     setAttributeDescription("grabMipmapLevel", "If set to 0 or superior, sync the rendered texture to the 'buffer' attribute, at the given mipmap level");
 
-    addAttribute("buffer", [&](const Values&) { return true; }, [&]() -> Values { return {_mipmapBuffer}; }, {});
+    addAttribute(
+        "buffer", [&](const Values&) { return true; }, [&]() -> Values { return {_mipmapBuffer}; }, {});
     setAttributeDescription("buffer", "Getter attribute which gives access to the mipmap image, if grabMipmapLevel is greater or equal to 0");
 
-    addAttribute("bufferSpec", [&](const Values&) { return true; }, [&]() -> Values { return _mipmapBufferSpec; }, {});
+    addAttribute(
+        "bufferSpec", [&](const Values&) { return true; }, [&]() -> Values { return _mipmapBufferSpec; }, {});
     setAttributeDescription("bufferSpec", "Getter attribute to the specs of the attribute buffer");
 
     //
     // Various options
     addAttribute("displayCalibration",
         [&](const Values& args) {
-            if (args[0].as<int>() > 0)
-                _displayCalibration = true;
-            else
-                _displayCalibration = false;
+            _displayCalibration = args[0].as<bool>();
             return true;
         },
-        {'n'});
-    setAttributeDescription("displayCalibration", "If set to 1, display the calibration points");
+        {'b'});
+    setAttributeDescription("displayCalibration", "If true, display the calibration points");
 
     // Shows all calibration points for all cameras linked to the same objects
     addAttribute("displayAllCalibrations",
         [&](const Values& args) {
-            _displayAllCalibrations = (args[0].as<int>() > 0) ? true : false;
+            _displayAllCalibrations = args[0].as<bool>();
             return true;
         },
-        {'n'});
-    setAttributeDescription("displayAllCalibrations", "If set to 1, display all calibration points from other cameras");
+        {'b'});
+    setAttributeDescription("displayAllCalibrations", "If true, display all calibration points from other cameras");
 
     addAttribute("showAllCalibrationPoints",
         [&](const Values& args) {
@@ -1637,8 +1658,10 @@ void Camera::registerAttributes()
                 _showAllCalibrationPoints = !_showAllCalibrationPoints;
             return true;
         },
-        {'n'});
-    setAttributeDescription("showAllCalibrationPoints", "Switch whether to show all calibration points");
+        {'i'});
+    setAttributeDescription("showAllCalibrationPoints", R"(If set to 1, all calibration points are visible.
+ If set to 0, no points are visible.
+ If set to -1, switches visibility status.)");
 
     addAttribute("switchDisplayAllCalibration", [&](const Values&) {
         _displayAllCalibrations = !_displayAllCalibrations;

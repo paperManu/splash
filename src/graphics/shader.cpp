@@ -938,8 +938,8 @@ void Shader::registerGraphicAttributes()
             return true;
         },
         [&]() -> Values { return {(int)_sideness}; },
-        {'n'});
-    setAttributeDescription("sideness", "If set to 0 or 1, the object is single-sided. If set to 2, it is double-sided");
+        {'i'});
+    setAttributeDescription("sideness", "If set to 0 or 1, the object is single-sided (back or front-sided). If set to 2, it is double-sided");
 }
 
 /*************/

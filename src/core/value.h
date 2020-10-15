@@ -26,6 +26,7 @@
 #define SPLASH_VALUE_H
 
 #include <cassert>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -49,11 +50,13 @@ struct Value
   public:
     enum Type : uint8_t
     {
-        integer = 0, // integer
-        real,        // float
-        string,      // string
-        values,      // values
-        buffer       // buffer
+        empty = 0, // Value not set to anything
+        boolean,   // bool
+        integer,   // integer
+        real,      // float
+        string,    // string
+        values,    // values
+        buffer     // buffer
     };
 
     Value() = default;
@@ -62,7 +65,12 @@ struct Value
     Value(const T& v, const std::string& name = "")
         : _name(name)
     {
-        if constexpr (std::is_integral_v<T>)
+        if constexpr (std::is_same_v<T, bool>)
+        {
+            _type = Type::boolean;
+            _data = static_cast<bool>(v);
+        }
+        else if constexpr (std::is_integral_v<T>)
         {
             _type = Type::integer;
             _data = static_cast<int64_t>(v);
@@ -75,7 +83,7 @@ struct Value
         else if constexpr (std::is_same_v<T, std::string> || std::is_convertible_v<T, const char*>)
         {
             _type = Type::string;
-            _data = v;
+            _data = std::string(v);
         }
         else if constexpr (std::is_same_v<T, Values>)
         {
@@ -113,6 +121,10 @@ struct Value
         default:
             assert(false);
             return false;
+        case Type::empty:
+            return true;
+        case Type::boolean:
+            return std::get<bool>(_data) == std::get<bool>(v._data);
         case Type::integer:
             return std::get<int64_t>(_data) == std::get<int64_t>(v._data);
         case Type::real:
@@ -181,8 +193,73 @@ struct Value
         default:
             assert(false);
             return {};
+        case Type::empty:
+            // This case initializes the Value underlying type
+            if constexpr (std::is_same_v<T, bool>)
+            {
+                _data = false;
+                _type = Type::boolean;
+                return std::get<bool>(_data);
+            }
+            else if constexpr (std::is_same_v<T, std::string>)
+            {
+                _data = std::string();
+                _type = Type::string;
+                return std::get<std::string>(_data);
+            }
+            else if constexpr (std::is_integral_v<T>)
+            {
+                _data = 0l;
+                _type = Type::integer;
+                return std::get<int64_t>(_data);
+            }
+            else if constexpr (std::is_floating_point_v<T>)
+            {
+                _data = 0.0;
+                _type = Type::real;
+                return std::get<double>(_data);
+            }
+            else if constexpr (std::is_same_v<T, Values>)
+            {
+                _data = Values();
+                _type = Type::values;
+                return std::get<Values>(_data);
+            }
+            else if constexpr (std::is_same_v<T, Buffer>)
+            {
+                _data = Buffer();
+                _type = Type::buffer;
+                return std::get<Buffer>(_data);
+            }
+            else
+            {
+                assert(false);
+                return {};
+            }
+        case Type::boolean:
+            if constexpr (std::is_same_v<T, bool>)
+                return std::get<bool>(_data);
+            else if constexpr (std::is_same_v<T, std::string>)
+            {
+                if (std::get<bool>(_data))
+                    return "true";
+                return "false";
+            }
+            else if constexpr (std::is_arithmetic_v<T>)
+                return std::get<bool>(_data);
+            else if constexpr (std::is_same_v<T, Values>)
+                return {std::get<bool>(_data)};
+            else if constexpr (std::is_same_v<T, Buffer>)
+                return {};
+            else
+            {
+                assert(false);
+                return {};
+            }
         case Type::integer:
-            if constexpr (std::is_same_v<T, std::string>)
+            if constexpr (std::is_same_v<T, bool>)
+                return std::get<int64_t>(_data);
+            else if constexpr (std::is_same_v<T, std::string>)
                 return std::to_string(std::get<int64_t>(_data));
             else if constexpr (std::is_arithmetic_v<T>)
                 return std::get<int64_t>(_data);
@@ -196,7 +273,9 @@ struct Value
                 return {};
             }
         case Type::real:
-            if constexpr (std::is_same_v<T, std::string>)
+            if constexpr (std::is_same_v<T, bool>)
+                return std::get<double>(_data);
+            else if constexpr (std::is_same_v<T, std::string>)
                 return std::to_string(std::get<double>(_data));
             else if constexpr (std::is_arithmetic_v<T>)
                 return std::get<double>(_data);
@@ -210,7 +289,9 @@ struct Value
                 return {};
             }
         case Type::string:
-            if constexpr (std::is_same_v<T, std::string>)
+            if constexpr (std::is_same_v<T, bool>)
+                return std::get<std::string>(_data) == "true";
+            else if constexpr (std::is_same_v<T, std::string>)
                 return std::get<std::string>(_data);
             else if constexpr (std::is_arithmetic_v<T>)
             {
@@ -233,7 +314,9 @@ struct Value
                 return {};
             }
         case Type::values:
-            if constexpr (std::is_same_v<T, std::string>)
+            if constexpr (std::is_same_v<T, bool>)
+                return false;
+            else if constexpr (std::is_same_v<T, std::string>)
             {
                 auto& data = std::get<Values>(_data);
                 std::string out = "[";
@@ -258,7 +341,9 @@ struct Value
                 return {};
             }
         case Type::buffer:
-            if constexpr (std::is_same_v<T, std::string>)
+            if constexpr (std::is_same_v<T, bool>)
+                return false;
+            else if constexpr (std::is_same_v<T, std::string>)
             {
                 auto& data = std::get<Buffer>(_data);
                 std::string out = "(";
@@ -291,6 +376,10 @@ struct Value
         default:
             assert(false);
             return nullptr;
+        case Type::empty:
+            return nullptr;
+        case Type::boolean:
+            return reinterpret_cast<void*>(const_cast<bool*>(&std::get<bool>(_data)));
         case Type::integer:
             return reinterpret_cast<void*>(const_cast<int64_t*>(&std::get<int64_t>(_data)));
         case Type::real:
@@ -311,12 +400,16 @@ struct Value
         default:
             assert(false);
             return nullptr;
+        case Type::empty:
+            return nullptr;
+        case Type::boolean:
+            return reinterpret_cast<const void*>(&std::get<bool>(_data));
         case Type::integer:
-            return reinterpret_cast<void*>(const_cast<int64_t*>(&std::get<int64_t>(_data)));
+            return reinterpret_cast<const void*>(&std::get<int64_t>(_data));
         case Type::real:
-            return reinterpret_cast<void*>(const_cast<double*>(&std::get<double>(_data)));
+            return reinterpret_cast<const void*>(&std::get<double>(_data));
         case Type::string:
-            return reinterpret_cast<void*>(const_cast<char*>(std::get<std::string>(_data).c_str()));
+            return reinterpret_cast<const void*>(std::get<std::string>(_data).c_str());
         case Type::values:
             return nullptr;
         case Type::buffer:
@@ -336,17 +429,66 @@ struct Value
         default:
             assert(false);
             return ' ';
+        case Type::empty:
+            return 'e';
+        case Type::boolean:
+            return 'b';
         case Type::integer:
-            return 'n';
+            return 'i';
         case Type::real:
-            return 'n';
+            return 'r';
         case Type::string:
             return 's';
         case Type::values:
             return 'v';
         case Type::buffer:
-            return 'b';
+            return 'd';
         }
+    }
+
+    /**
+     * Get the corresponding Value::Type from the corresponding char
+     * \param typeAsChar Type as a char
+     * \return Type
+     */
+    static constexpr Value::Type getTypeFromChar(char typeAsChar)
+    {
+        switch (typeAsChar)
+        {
+        default:
+            assert(false);
+            return Type::empty;
+        case 'e':
+            return Type::empty;
+        case 'b':
+            return Type::boolean;
+        case 'i':
+            return Type::integer;
+        case 'r':
+            return Type::real;
+        case 's':
+            return Type::string;
+        case 'v':
+            return Type::values;
+        case 'd':
+            return Type::buffer;
+        }
+    }
+
+    /**
+     * Check whether the current value is convertible to the given type
+     * If the Value given as parameter is of type Integer, it 
+     * can be converted to a Real. All other conversions are forbidden
+     * \param v Other value to compute type with
+     * \return Return true if the conversion is possible
+     */
+    bool isConvertibleToType(const Value::Type type) const
+    {
+        if (_type == Type::integer && type == Type::real)
+            return true;
+        if (_type == type)
+            return true;
+        return false;
     }
 
     /**
@@ -360,6 +502,10 @@ struct Value
         default:
             assert(false);
             return 0;
+        case Type::empty:
+            return 0;
+        case Type::boolean:
+            return sizeof(bool);
         case Type::integer:
             return sizeof(int64_t);
         case Type::real:
@@ -389,6 +535,10 @@ struct Value
         default:
             assert(false);
             return 0;
+        case Type::empty:
+            return 0;
+        case Type::boolean:
+            return 1;
         case Type::integer:
             return 1;
         case Type::real:
@@ -404,8 +554,8 @@ struct Value
 
   private:
     std::string _name{""};
-    Type _type{Type::integer};
-    std::variant<int64_t, double, std::string, Values, Buffer> _data{};
+    mutable Type _type{Type::empty};
+    mutable std::variant<bool, int64_t, double, std::string, Values, Buffer> _data{};
 }; // namespace Splash
 
 } // namespace Splash

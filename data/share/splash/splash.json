@@ -6,34 +6,33 @@
       "local" : {
          "address" : "localhost",
          "links" : [
-            [ "cam1", "win1_cam1_warp" ],
-            [ "object", "cam1" ],
             [ "object", "gui" ],
+            [ "object", "cam1" ],
             [ "mesh", "object" ],
-            [ "object", "object" ],
-            [ "image", "object" ],
             [ "object_image_filter", "object" ],
+            [ "image", "object" ],
             [ "image", "object_image_filter" ],
             [ "gui", "win1" ],
             [ "cam1", "win1" ],
-            [ "win1_cam1_warp", "win1" ]
+            [ "win1_cam1_warp", "win1" ],
+            [ "cam1", "win1_cam1_warp" ]
          ],
          "objects" : {
             "blender" : {
                "alias" : [ "blender" ],
                "mode" : [ "none" ],
                "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
+               "savable" : [ true ],
+               "timestamp" : [ 0 ],
                "type" : "blender"
             },
             "cam1" : {
-               "16bits" : [ 1 ],
+               "16bits" : [ true ],
                "activateColorLUT" : [ 0 ],
                "alias" : [ "cam1" ],
                "blendPrecision" : [ 0.10000000149011612 ],
                "blendWidth" : [ 0.05000000074505806 ],
                "brightness" : [ 1 ],
-               "buffer" : [ 0 ],
                "colorMixMatrix" : [
                   [ 1, 0, 0, 0, 1, 0, 0, 0, 1 ]
                ],
@@ -41,21 +40,22 @@
                "contrast" : [ 1 ],
                "eye" : [ -0.74572044610977173, -2.0000450611114502, 1.9612512588500977 ],
                "far" : [ 100 ],
-               "fov" : [ 59 ],
+               "fov" : [ 58 ],
                "getReprojectionError" : [ 0 ],
                "grabMipmapLevel" : [ -1 ],
-               "hide" : [ 0 ],
+               "hide" : [ false ],
                "multisampling" : [ 0 ],
                "near" : [ 0.10000000149011612 ],
                "principalPoint" : [ 0.5, 0.5 ],
                "priorityShift" : [ 0 ],
                "saturation" : [ 1 ],
-               "savable" : [ 1 ],
+               "savable" : [ true ],
                "size" : [ 1280, 1024 ],
                "target" : [ 0.20872476696968079, 0.10215018689632416, 0.31510153412818909 ],
+               "timestamp" : [ 356070819 ],
                "type" : "camera",
                "up" : [ 0, 0, 1 ],
-               "weightedCalibrationPoints" : [ 1 ]
+               "weightedCalibrationPoints" : [ true ]
             },
             "colorCalibrator" : {
                "alias" : [ "colorCalibrator" ],
@@ -65,55 +65,44 @@
                "hdrStep" : [ 1 ],
                "imagePerHDR" : [ 1 ],
                "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
+               "savable" : [ true ],
+               "timestamp" : [ 0 ],
                "type" : "colorCalibrator"
             },
             "dragndrop" : {
                "alias" : [ "dragndrop" ],
                "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
+               "savable" : [ true ],
+               "timestamp" : [ 0 ],
                "type" : "dragndrop",
                "updateRate" : [ 10 ]
             },
-            "geometricCalibrator" : {
-               "alias" : [ "geometricCalibrator" ],
-               "cameraFocal" : [ 5000 ],
-               "cameraModel" : [ "FISHEYE" ],
-               "patternScale" : [ 0.0625 ],
-               "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
-               "type" : "geometricCalibrator"
-            },
             "gui" : {
                "alias" : [ "gui" ],
+               "fullscreen" : [ false ],
                "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
+               "savable" : [ true ],
+               "timestamp" : [ 0 ],
                "type" : "gui"
             },
             "image" : {
                "alias" : [ "image" ],
                "file" : [ "color_map.png" ],
-               "flip" : [ 0 ],
-               "flop" : [ 0 ],
+               "flip" : [ false ],
+               "flop" : [ false ],
                "mediaInfo" : [ 4096, 4096, 32, 4, "RGBA", 1 ],
-               "pattern" : [ 0 ],
+               "pattern" : [ false ],
                "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
-               "srgb" : [ 1 ],
-               "timestamp" : [ 1031414476 ],
+               "savable" : [ true ],
+               "srgb" : [ true ],
+               "timestamp" : [ 356070819 ],
                "type" : "image"
-            },
-            "joystick" : {
-               "alias" : [ "joystick" ],
-               "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
-               "type" : "joystick",
-               "updateRate" : [ 100 ]
             },
             "keyboard" : {
                "alias" : [ "keyboard" ],
                "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
+               "savable" : [ true ],
+               "timestamp" : [ 0 ],
                "type" : "keyboard",
                "updateRate" : [ 100 ]
             },
@@ -121,14 +110,15 @@
                "alias" : [ "mesh" ],
                "file" : [ "./cubes.obj" ],
                "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
-               "timestamp" : [ 1031414739 ],
+               "savable" : [ true ],
+               "timestamp" : [ 356071875 ],
                "type" : "mesh"
             },
             "mouse" : {
                "alias" : [ "mouse" ],
                "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
+               "savable" : [ true ],
+               "timestamp" : [ 0 ],
                "type" : "mouse",
                "updateRate" : [ 100 ]
             },
@@ -140,51 +130,48 @@
                "position" : [ 0, 0, 0 ],
                "priorityShift" : [ 0 ],
                "rotation" : [ 0, 0, 0 ],
-               "savable" : [ 1 ],
+               "savable" : [ true ],
                "scale" : [ 1, 1, 1 ],
                "sideness" : [ 0 ],
+               "timestamp" : [ 356070819 ],
                "type" : "object"
             },
             "object_image_filter" : {
                "alias" : [ "object_image_filter" ],
-               "blackLevel" : [ 0 ],
-               "blackLevelAuto" : [ 0, 1 ],
                "brightness" : [ 1 ],
-               "buffer" : [ 0 ],
-               "colorCurveAnchors" : [ 0 ],
                "colorTemperature" : [ 6500 ],
                "contrast" : [ 1 ],
-               "fileFilterSource" : [ "" ],
-               "filterSource" : [ "" ],
                "grabMipmapLevel" : [ -1 ],
-               "invertChannels" : [ 0 ],
-               "keepRatio" : [ 0 ],
+               "invertChannels" : [ false ],
+               "keepRatio" : [ false ],
                "priorityShift" : [ 0 ],
                "saturation" : [ 1 ],
-               "savable" : [ 1 ],
+               "savable" : [ true ],
                "scale" : [ 1, 1 ],
                "size" : [ 4096, 4096 ],
                "sizeOverride" : [ -1, -1 ],
-               "timestamp" : [ 1031414476 ],
-               "type" : "filter",
-               "watchShaderFile" : [ 0 ]
+               "timestamp" : [ 356070819 ],
+               "type" : "filter"
             },
             "win1" : {
                "alias" : [ "win1" ],
-               "decorated" : [ 1 ],
+               "decorated" : [ true ],
                "gamma" : [ 2.2000000476837158 ],
+               "guiOnly" : [ false ],
                "layout" : [ 0, 1, 2, 3 ],
                "position" : [ 611, 17 ],
+               "presentationDelay" : [ 1032650 ],
                "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
+               "savable" : [ true ],
                "size" : [ 1280, 1024 ],
-               "srgb" : [ 1 ],
+               "srgb" : [ true ],
                "textureList" : [ "win1_cam1_warp" ],
+               "timestamp" : [ 356070819 ],
                "type" : "window"
             },
             "win1_cam1_warp" : {
                "alias" : [ "win1_cam1_warp" ],
-               "buffer" : [ 0 ],
+               "buffer" : null,
                "grabMipmapLevel" : [ -1 ],
                "patchControl" : [
                   4,
@@ -209,9 +196,9 @@
                "patchResolution" : [ 64 ],
                "patchSize" : [ 4, 4 ],
                "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
+               "savable" : [ true ],
                "size" : [ 1280, 1024 ],
-               "timestamp" : [ -1 ],
+               "timestamp" : [ 356070819 ],
                "type" : "warp"
             }
          },
@@ -219,14 +206,14 @@
          "swapInterval" : [ 1 ]
       }
    },
-   "version" : "0.7.21",
+   "version" : "0.8.15",
    "world" : {
-      "clock" : [ 1039529541 ],
+      "clock" : [ 357094442 ],
       "clockDeviceName" : [ "" ],
       "configurationPath" : [ "" ],
-      "forceRealtime" : [ 0 ],
+      "forceRealtime" : [ false ],
       "framerate" : [ 60 ],
-      "looseClock" : [ 0 ],
+      "looseClock" : [ false ],
       "mediaPath" : [ "" ]
    }
 }

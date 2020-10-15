@@ -306,7 +306,7 @@ void Warp::registerAttributes()
             _screenMesh->getAttribute("patchResolution", v);
             return v;
         },
-        {'n'});
+        {'i'});
     setAttributeDescription("patchResolution", "Set the Bezier patch final resolution");
 
     addAttribute(
@@ -325,7 +325,7 @@ void Warp::registerAttributes()
             _screenMesh->getAttribute("patchSize", v);
             return v;
         },
-        {'n', 'n'});
+        {'i', 'i'});
     setAttributeDescription("patchSize", "Set the Bezier patch control resolution");
 
     addAttribute(
@@ -334,20 +334,20 @@ void Warp::registerAttributes()
         [&]() -> Values {
             return {_fbo->getWidth(), _fbo->getHeight()};
         },
-        {});
+        {'i', 'i'});
     setAttributeDescription("size", "Size of the rendered output");
 
     // Show the Bezier patch describing the warp
     // Also resets the selected control point if hidden
     addAttribute("showControlLattice",
         [&](const Values& args) {
-            _showControlPoints = args[0].as<int>();
+            _showControlPoints = args[0].as<bool>();
             if (!_showControlPoints)
                 _selectedControlPointIndex = -1;
             return true;
         },
-        {'n'});
-    setAttributeDescription("showControlLattice", "If set to 1, show the control lattice");
+        {'b'});
+    setAttributeDescription("showControlLattice", "If true, show the control lattice");
 
     // Show a single control point
     addAttribute("showControlPoint",
@@ -359,7 +359,7 @@ void Warp::registerAttributes()
                 _selectedControlPointIndex = index;
             return true;
         },
-        {'n'});
+        {'i'});
     setAttributeDescription("showControlPoint", "Show the control point given its index");
 
     //
@@ -371,7 +371,7 @@ void Warp::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_grabMipmapLevel}; },
-        {'n'});
+        {'i'});
     setAttributeDescription("grabMipmapLevel", "If set to 0 or superior, sync the rendered texture to the 'buffer' attribute, at the given mipmap level");
 
     addAttribute(

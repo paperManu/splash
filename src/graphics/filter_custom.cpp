@@ -174,7 +174,7 @@ void FilterCustom::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_watchShaderFile}; },
-        {'n'});
+        {'b'});
     setAttributeDescription("watchShaderFile", "If true, automatically updates the shader from the source file");
 }
 

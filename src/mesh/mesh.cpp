@@ -368,14 +368,11 @@ void Mesh::registerAttributes()
 
     addAttribute("benchmark",
         [&](const Values& args) {
-            if (args[0].as<int>() > 0)
-                _benchmark = true;
-            else
-                _benchmark = false;
+            _benchmark = args[0].as<bool>();
             return true;
         },
-        {'n'});
-    setAttributeDescription("benchmark", "Set to 1 to resend the image even when not updated");
+        {'b'});
+    setAttributeDescription("benchmark", "Set to true to resend the image even when not updated");
 }
 
 } // end of namespace

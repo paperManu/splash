@@ -577,7 +577,7 @@ void GeometricCalibrator::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_cameraFocal}; },
-        {'n'});
+        {'r'});
     setAttributeDescription("cameraFocal", "Capture camera focal, in pixels (relatively to the sensor size)");
 
     addAttribute("cameraModel",
@@ -606,7 +606,7 @@ void GeometricCalibrator::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_captureDelay.count()}; },
-        {'n'});
+        {'i'});
     setAttributeDescription("captureDelay", "Delay between the display of the next pattern and grabbing it through the camera");
 
     addAttribute("patternScale",
@@ -615,7 +615,7 @@ void GeometricCalibrator::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_structuredLightScale}; },
-        {'n'});
+        {'r'});
     setAttributeDescription("patternScale", "Scale of the structured light pattern to be projected");
 }
 

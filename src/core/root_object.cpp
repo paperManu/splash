@@ -427,6 +427,9 @@ Json::Value RootObject::getValuesAsJson(const Values& values, bool asObject) con
             {
             default:
                 continue;
+            case Value::boolean:
+                jsValue[v.getName()] = v.as<bool>();
+                break;
             case Value::integer:
                 jsValue[v.getName()] = v.as<int>();
                 break;
@@ -457,6 +460,9 @@ Json::Value RootObject::getValuesAsJson(const Values& values, bool asObject) con
             {
             default:
                 continue;
+            case Value::boolean:
+                jsValue.append(v.as<bool>());
+                break;
             case Value::integer:
                 jsValue.append(v.as<int>());
                 break;

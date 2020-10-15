@@ -1090,8 +1090,8 @@ void World::registerAttributes()
             setAttribute("sendAllScenes", {"logToFile", args[0]});
             return true;
         },
-        {'n'});
-    setAttributeDescription("logToFile", "If set to 1, the process holding the World will try to write log to file");
+        {'b'});
+    setAttributeDescription("logToFile", "If true, the process holding the World will try to write log to file");
 
     addAttribute("sendAll",
         [&](const Values& args) {
@@ -1144,8 +1144,7 @@ void World::registerAttributes()
 
     addAttribute("pingTest",
         [&](const Values& args) {
-            auto doPing = args[0].as<int>();
-            if (doPing)
+            if (args[0].as<bool>())
             {
                 addPeriodicTask("pingTest", [&]() {
                     static auto frameIndex = 0;
@@ -1167,8 +1166,8 @@ void World::registerAttributes()
 
             return true;
         },
-        {'n'});
-    setAttributeDescription("pingTest", "Activate ping test if set to 1");
+        {'b'});
+    setAttributeDescription("pingTest", "Activate ping test if true");
 
     addAttribute("swapTest",
         [&](const Values& args) {
@@ -1205,22 +1204,22 @@ void World::registerAttributes()
             }
             return true;
         },
-        {'n'});
-    setAttributeDescription("swapTest", "Activate video swap test if set to 1");
+        {'i'});
+    setAttributeDescription("swapTest", "Activate video swap test if set to anything but 0");
 
     addAttribute("wireframe",
         [&](const Values& args) {
-            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "wireframe", {args[0].as<int>()}); });
+            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "wireframe", args); });
 
             return true;
         },
-        {'n'});
-    setAttributeDescription("wireframe", "Show all meshes as wireframes if set to 1");
+        {'b'});
+    setAttributeDescription("wireframe", "Show all meshes as wireframes if true");
 
 #if HAVE_LINUX
     addAttribute("forceRealtime",
         [&](const Values& args) {
-            _enforceRealtime = args[0].as<int>();
+            _enforceRealtime = args[0].as<bool>();
 
             if (!_enforceRealtime)
                 return true;
@@ -1234,8 +1233,8 @@ void World::registerAttributes()
 
             return true;
         },
-        [&]() -> Values { return {(int)_enforceRealtime}; },
-        {'n'});
+        [&]() -> Values { return {_enforceRealtime}; },
+        {'b'});
     setAttributeDescription("forceRealtime", "Ask the scheduler to run Splash with realtime priority.");
 #endif
 
@@ -1245,7 +1244,7 @@ void World::registerAttributes()
             return true;
         },
         [&]() -> Values { return {(int)_worldFramerate}; },
-        {'n'});
+        {'i'});
     setAttributeDescription("framerate", "Set the minimum refresh rate for the world (adapted to video framerate)");
 
 #if HAVE_PORTAUDIO
@@ -1286,8 +1285,9 @@ void World::registerAttributes()
             Timer::get().setLoose(args[0].as<bool>());
             return true;
         },
-        [&]() -> Values { return {static_cast<int>(Timer::get().isLoose())}; },
-        {'n'});
+        [&]() -> Values { return {Timer::get().isLoose()}; },
+        {'b'});
+    setAttributeDescription("looseClock", "Master clock is not a hard constraints if true");
 
     addAttribute("clock", [&](const Values& /*args*/) { return true; }, [&]() -> Values { return {Timer::getTime()}; }, {});
     setAttributeDescription("clock", "Current World clock (not settable)");

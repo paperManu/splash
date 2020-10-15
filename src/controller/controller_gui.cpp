@@ -344,7 +344,7 @@ void Gui::key(int key, int action, int mods)
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
         {
             _wireframe = false;
-            setWorldAttribute("wireframe", {0});
+            setWorldAttribute("wireframe", {_wireframe});
         }
         break;
     }
@@ -354,7 +354,7 @@ void Gui::key(int key, int action, int mods)
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
         {
             _wireframe = true;
-            setWorldAttribute("wireframe", {1});
+            setWorldAttribute("wireframe", {_wireframe});
         }
         break;
     }
@@ -1464,7 +1464,7 @@ void Gui::registerAttributes()
             setOutputSize(args[0].as<int>(), args[1].as<int>());
             return true;
         },
-        {'n', 'n'});
+        {'i', 'i'});
     setAttributeDescription("size", "Set the GUI render resolution");
 
     addAttribute("hide", [&](const Values&) {
@@ -1487,7 +1487,7 @@ void Gui::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_fullscreen}; },
-        {'n'});
+        {'b'});
     setAttributeDescription("fullscreen", "The GUI will take the whole window if set to true");
 }
 

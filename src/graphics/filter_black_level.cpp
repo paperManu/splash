@@ -57,7 +57,7 @@ void FilterBlackLevel::registerDefaultShaderAttributes()
                 _filterUniforms["_blackLevel"] = {0.f}; // Default value
             return {_filterUniforms["_blackLevel"][0].as<float>() * 255.f};
         },
-        {'n'});
+        {'r'});
     setAttributeDescription("blackLevel", "Set the black level for the linked texture, between 0 and 255");
 
     addAttribute(
@@ -70,7 +70,7 @@ void FilterBlackLevel::registerDefaultShaderAttributes()
         [&]() -> Values {
             return {_autoBlackLevelTargetValue, _autoBlackLevelSpeed};
         },
-        {'n', 'n'});
+        {'r', 'r'});
     setAttributeDescription("blackLevelAuto",
         "If the first parameter is not zero, automatic black level is enabled.\n"
         "The first parameter is the black level value (between 0 and 255) to match if needed.\n"

@@ -56,7 +56,7 @@
          "filterSource" : [ "" ],
          "grabMipmapLevel" : [ -1 ],
          "invertChannels" : [ 0 ],
-         "keepRatio" : [ 0 ],
+         "keepRatio" : [ false ],
          "priorityShift" : [ 0 ],
          "saturation" : [ 1 ],
          "savable" : [ 1 ],

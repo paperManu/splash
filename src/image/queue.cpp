@@ -73,12 +73,12 @@ void Queue::update()
             if (!_playlist[_currentSourceIndex].freeRun)
             {
                 if (_currentSource)
-                    _currentSource->setAttribute("pause", {1});
+                    _currentSource->setAttribute("pause", {true});
                 return;
             }
         }
         else if (_currentSource)
-            _currentSource->setAttribute("pause", {0});
+            _currentSource->setAttribute("pause", {false});
     }
 
     // Get the current index regarding the current time
@@ -136,11 +136,11 @@ void Queue::update()
                 // If we use the master clock, set a timeshift to be correctly placed in the video
                 // (as the source gets its clock from the same Timer)
                 _currentSource->setAttribute("timeShift", {-(float)sourceParameters.start / 1e6});
-                _currentSource->setAttribute("useClock", {1});
+                _currentSource->setAttribute("useClock", {true});
             }
             else
             {
-                _currentSource->setAttribute("useClock", {0});
+                _currentSource->setAttribute("useClock", {false});
             }
 
             _root->sendMessage(_name, "source", {sourceParameters.type});
@@ -160,7 +160,7 @@ void Queue::update()
     if (!_useClock && !_playlist[_currentSourceIndex].freeRun && _seeked)
     {
         // If we don't use the master clock, we want to seek accordingly in the file
-        _currentSource->setAttribute("seek", {(float)(_currentTime - _playlist[_currentSourceIndex].start) / 1e6});
+        _currentSource->setAttribute("seek", {static_cast<float>(_currentTime - _playlist[_currentSourceIndex].start) / 1e6});
         _seeked = false;
     }
 
@@ -278,23 +278,22 @@ void Queue::registerAttributes()
     addAttribute(
         "loop",
         [&](const Values& args) {
-            _loop = (bool)args[0].as<int>();
+            _loop = args[0].as<bool>();
             return true;
         },
         [&]() -> Values { return {_loop}; },
-        {'n'});
+        {'b'});
     setAttributeDescription("loop", "Set whether to loop through the queue or not");
 
     addAttribute(
         "pause",
         [&](const Values& args) {
-            _paused = args[0].as<int>();
-
+            _paused = args[0].as<bool>();
             return true;
         },
         [&]() -> Values { return {_paused}; },
-        {'n'});
-    setAttributeDescription("pause", "Pause the queue if set to 1");
+        {'b'});
+    setAttributeDescription("pause", "Pause the queue if true");
 
     addAttribute(
         "playlist",
@@ -354,7 +353,7 @@ void Queue::registerAttributes()
     setAttributeDescription("playlist", "Set the playlist as an array of [type, filename, start, end, (args)]");
 
     addAttribute(
-        "elapsed", [&](const Values& /*args*/) { return true; }, [&]() -> Values { return {static_cast<float>(_currentTime / 1e6)}; }, {'n'});
+        "elapsed", [&](const Values& /*args*/) { return true; }, [&]() -> Values { return {static_cast<float>(_currentTime / 1e6)}; }, {'r'});
     setAttributeDescription("elapsed", "Time elapsed since the beginning of the queue");
 
     addAttribute(
@@ -366,21 +365,21 @@ void Queue::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_seekTime}; },
-        {'n'});
+        {'r'});
     setAttributeDescription("seek", "Seek through the playlist");
 
     addAttribute(
         "useClock",
         [&](const Values& args) {
-            _useClock = args[0].as<int>();
+            _useClock = args[0].as<bool>();
             if (_currentSource)
                 _currentSource->setAttribute("useClock", {_useClock});
 
             return true;
         },
-        [&]() -> Values { return {(int)_useClock}; },
-        {'n'});
-    setAttributeDescription("useClock", "Use the master clock if set to 1");
+        [&]() -> Values { return {_useClock}; },
+        {'b'});
+    setAttributeDescription("useClock", "Use the master clock if true");
 }
 
 /*************/

@@ -406,15 +406,6 @@ void Image_GPhoto::registerAttributes()
 {
     Image::registerAttributes();
 
-    addAttribute("cooldown",
-        [&](const Values& args) {
-            _cooldownTime = args[0].as<int>();
-            return true;
-        },
-        [&]() -> Values { return {_cooldownTime}; },
-        {'n'});
-    setAttributeDescription("cooldown", "Cooldown after a capture, some cameras need some rest before changing parameters");
-
     addAttribute("aperture",
         [&](const Values& args) { return doSetProperty("aperture", args[0].as<string>()); },
         [&]() -> Values {
@@ -465,9 +456,9 @@ void Image_GPhoto::registerAttributes()
         [&]() -> Values {
             lock_guard<recursive_mutex> lock(_gpMutex);
             if (_selectedCameraIndex == -1)
-                return {0};
+                return {false};
             else
-                return {1};
+                return {true};
         });
     setAttributeDescription("ready", "Ask whether the camera is ready to shoot");
 }

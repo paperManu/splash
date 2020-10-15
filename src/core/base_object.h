@@ -28,7 +28,6 @@
 #include <atomic>
 #include <condition_variable>
 #include <future>
-#include <json/json.h>
 #include <list>
 #include <map>
 #include <optional>
