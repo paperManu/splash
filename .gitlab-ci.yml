@@ -147,8 +147,9 @@ static_analysis:
 #
 pages:
   stage: deploy
-  image: ubuntu:18.04
+  image: ubuntu:20.04
   script:
+    # Build the website
     - DEBIAN_FRONTEND=noninteractive apt install -y python3-pip doxygen graphviz
     - pip3 install mkdocs markdown-include mkdocs-bootswatch
     - git clone https://gitlab.com/sat-metalab/splash.wiki docs/wiki
@@ -160,9 +161,18 @@ pages:
     - cmake .. && make doc && cp -r docs/html ../static/doxygen
     - cd ..
     - mv static public
+
+    # Build the packages
+    - ./make_deps.sh
+    - rm -rf build && mkdir build && cd build
+    - cmake -DBUILD_GENERIC_ARCH=ON -DWITH_LTO=ON -DCMAKE_INSTALL_PREFIX=/usr ..
+    - make -j$(nproc)
+    - make package
+    - mv *.deb ../public/splash.deb
+    - mv addons/blender/*.tar.bz2 ../public/blender_splash_addon.tar.bz2
   artifacts:
     paths:
       - public
   only:
-    - master
+    - tags
     - website

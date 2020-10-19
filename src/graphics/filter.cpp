@@ -25,7 +25,7 @@ Filter::Filter(RootObject* root)
         return;
 
     _fbo = make_unique<Framebuffer>(_root);
-    _fbo->getColorTexture()->setAttribute("filtering", {1});
+    _fbo->getColorTexture()->setAttribute("filtering", {true});
     _fbo->setSixteenBpc(_sixteenBpc);
 
     // Setup the virtual screen
@@ -333,7 +333,7 @@ void Filter::registerAttributes()
         [&]() -> Values {
             return {_sizeOverride[0], _sizeOverride[1]};
         },
-        {'n', 'n'});
+        {'i', 'i'});
     setAttributeDescription("sizeOverride", "Sets the filter output to a different resolution than its input");
 
     //
@@ -345,7 +345,7 @@ void Filter::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_grabMipmapLevel}; },
-        {'n'});
+        {'i'});
     setAttributeDescription("grabMipmapLevel", "If set to 0 or superior, sync the rendered texture to the tree, at the given mipmap level");
 
     addAttribute(
@@ -373,7 +373,7 @@ void Filter::registerDefaultShaderAttributes()
                 _filterUniforms["_brightness"] = {1.f}; // Default value
             return _filterUniforms["_brightness"];
         },
-        {'n'});
+        {'r'});
     setAttributeDescription("brightness", "Set the brightness for the linked texture");
 
     addAttribute("contrast",
@@ -389,7 +389,7 @@ void Filter::registerDefaultShaderAttributes()
                 _filterUniforms["_contrast"] = {1.f}; // Default value
             return _filterUniforms["_contrast"];
         },
-        {'n'});
+        {'r'});
     setAttributeDescription("contrast", "Set the contrast for the linked texture");
 
     addAttribute("colorTemperature",
@@ -407,23 +407,22 @@ void Filter::registerDefaultShaderAttributes()
                 _filterUniforms["_colorTemperature"] = {6500.f}; // Default value
             return _filterUniforms["_colorTemperature"];
         },
-        {'n'});
+        {'r'});
     setAttributeDescription("colorTemperature", "Set the color temperature correction for the linked texture");
 
     addAttribute("invertChannels",
         [&](const Values& args) {
-            auto enable = args[0].as<int>();
-            enable = std::min(1, std::max(0, enable));
+            auto enable = args[0].as<bool>();
             _filterUniforms["_invertChannels"] = {enable};
             return true;
         },
         [&]() -> Values {
             auto it = _filterUniforms.find("_invertChannels");
             if (it == _filterUniforms.end())
-                _filterUniforms["_invertChannels"] = {0};
+                _filterUniforms["_invertChannels"] = {true};
             return _filterUniforms["_invertChannels"];
         },
-        {'n'});
+        {'b'});
     setAttributeDescription("invertChannels", "Invert red and blue channels");
 
     addAttribute("keepRatio",
@@ -431,9 +430,9 @@ void Filter::registerDefaultShaderAttributes()
             setKeepRatio(args[0].as<bool>());
             return true;
         },
-        [&]() -> Values { return {static_cast<int>(_keepRatio)}; },
-        {'n'});
-    setAttributeDescription("keepRatio", "If set to 1, keeps the ratio of the input image");
+        [&]() -> Values { return {_keepRatio}; },
+        {'b'});
+    setAttributeDescription("keepRatio", "If true, keeps the ratio of the input image");
 
     addAttribute("saturation",
         [&](const Values& args) {
@@ -448,7 +447,7 @@ void Filter::registerDefaultShaderAttributes()
                 _filterUniforms["_saturation"] = {1.f}; // Default value
             return _filterUniforms["_saturation"];
         },
-        {'n'});
+        {'r'});
     setAttributeDescription("saturation", "Set the saturation for the linked texture");
 
     addAttribute("scale",
@@ -464,7 +463,7 @@ void Filter::registerDefaultShaderAttributes()
                 _filterUniforms["_scale"] = {1.0, 1.0}; // Default value
             return _filterUniforms["_scale"];
         },
-        {'n', 'n'});
+        {'r', 'r'});
     setAttributeDescription("scale", "Set the scaling of the texture along both axes");
 }
 

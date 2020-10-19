@@ -88,15 +88,15 @@ bool Attribute::operator()(const Values& args)
 
     for (uint32_t i = 0; i < _valuesTypes.size(); ++i)
     {
+        if (args[i].isConvertibleToType(Value::getTypeFromChar(_valuesTypes[i])))
+            continue;
+
         auto type = args[i].getTypeAsChar();
         auto expected = _valuesTypes[i];
 
-        if (type != expected)
-        {
-            Log::get() << Log::WARNING << _objectName << "~~" << _name << " - Argument " << i << " is of wrong type " << string(&type, &type + 1) << ", expected "
-                       << string(&expected, &expected + 1) << Log::endl;
-            return false;
-        }
+        Log::get() << Log::WARNING << _objectName << "~~" << _name << " - Argument " << i << " is of wrong type " << string(&type, &type + 1) << ", expected "
+                   << string(&expected, &expected + 1) << Log::endl;
+        return false;
     }
 
     return _setFunc(args);

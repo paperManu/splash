@@ -111,13 +111,13 @@ void GuiCamera::render()
                 setObjectAttribute(camera->getName(), "hide", {0});
 
                 _camerasColorized = false;
-                setObjectAttribute(_camera->getName(), "frame", {0});
-                setObjectAttribute(_camera->getName(), "displayCalibration", {0});
+                setObjectAttribute(_camera->getName(), "frame", {false});
+                setObjectAttribute(_camera->getName(), "displayCalibration", {false});
 
                 _camera = camera;
 
-                setObjectAttribute(_camera->getName(), "frame", {1});
-                setObjectAttribute(_camera->getName(), "displayCalibration", {1});
+                setObjectAttribute(_camera->getName(), "frame", {true});
+                setObjectAttribute(_camera->getName(), "displayCalibration", {true});
                 showAllCalibrationPoints(static_cast<Camera::CalibrationPointsVisibility>(_showCalibrationPoints));
             }
         }
@@ -652,16 +652,16 @@ void GuiCamera::processMouseEvents()
             {
                 if (_newTarget.size() == 3)
                     setObjectAttribute(
-                        _camera->getName(), "rotateAroundPoint", {dx / 100.f, dy / 100.f, 0, _newTarget[0].as<float>(), _newTarget[1].as<float>(), _newTarget[2].as<float>()});
+                        _camera->getName(), "rotateAroundPoint", {dx / 100.f, dy / 100.f, 0.0, _newTarget[0].as<float>(), _newTarget[1].as<float>(), _newTarget[2].as<float>()});
                 else
-                    setObjectAttribute(_camera->getName(), "rotateAroundTarget", {dx / 100.f, dy / 100.f, 0});
+                    setObjectAttribute(_camera->getName(), "rotateAroundTarget", {dx / 100.f, dy / 100.f, 0.0});
             }
             else
             {
                 if (_newTarget.size() == 3)
-                    _camera->setAttribute("rotateAroundPoint", {dx / 100.f, dy / 100.f, 0, _newTarget[0].as<float>(), _newTarget[1].as<float>(), _newTarget[2].as<float>()});
+                    _camera->setAttribute("rotateAroundPoint", {dx / 100.f, dy / 100.f, 0.0, _newTarget[0].as<float>(), _newTarget[1].as<float>(), _newTarget[2].as<float>()});
                 else
-                    _camera->setAttribute("rotateAroundTarget", {dx / 100.f, dy / 100.f, 0});
+                    _camera->setAttribute("rotateAroundTarget", {dx / 100.f, dy / 100.f, 0.0});
             }
         }
         // Move the target and the camera (in the camera plane)
@@ -670,9 +670,9 @@ void GuiCamera::processMouseEvents()
             float dx = io.MouseDelta.x * _newTargetDistance;
             float dy = io.MouseDelta.y * _newTargetDistance;
             if (_camera != _guiCamera)
-                setObjectAttribute(_camera->getName(), "pan", {-dx / 100.f, dy / 100.f, 0.f});
+                setObjectAttribute(_camera->getName(), "pan", {-dx / 100.f, dy / 100.f, 0.0});
             else
-                _camera->setAttribute("pan", {-dx / 100.f, dy / 100.f, 0});
+                _camera->setAttribute("pan", {-dx / 100.f, dy / 100.f, 0.0});
         }
         else if (!io.KeyShift && io.KeyCtrl)
         {
@@ -690,7 +690,7 @@ vector<shared_ptr<Camera>> GuiCamera::getCameras()
 {
     auto cameras = vector<shared_ptr<Camera>>();
 
-    _guiCamera->setAttribute("size", {ImGui::GetWindowWidth(), ImGui::GetWindowWidth() * 3 / 4});
+    _guiCamera->setAttribute("size", {static_cast<int>(ImGui::GetWindowWidth()), static_cast<int>(ImGui::GetWindowWidth() * 3.f / 4.f)});
 
     auto rtMatrices = getCamerasRTMatrices();
     for (auto& matrix : rtMatrices)

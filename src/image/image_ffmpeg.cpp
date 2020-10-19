@@ -797,7 +797,7 @@ void Image_FFmpeg::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_maximumBufferSize / (int64_t)1048576}; },
-        {'n'});
+        {'i'});
     setAttributeDescription("bufferSize", "Set the maximum buffer size for the video (in MB)");
 
     addAttribute("duration",
@@ -823,14 +823,13 @@ void Image_FFmpeg::registerAttributes()
 
     addAttribute("loop",
         [&](const Values& args) {
-            _loopOnVideo = (bool)args[0].as<int>();
+            _loopOnVideo = args[0].as<bool>();
             return true;
         },
         [&]() -> Values {
-            int loop = _loopOnVideo;
-            return {loop};
+            return {_loopOnVideo};
         },
-        {'n'});
+        {'b'});
 
     addAttribute("elapsed",
         [&](const Values&) { return false; },
@@ -845,11 +844,11 @@ void Image_FFmpeg::registerAttributes()
 
     addAttribute("pause",
         [&](const Values& args) {
-            _paused = args[0].as<int>();
+            _paused = args[0].as<bool>();
             return true;
         },
         [&]() -> Values { return {_paused}; },
-        {'n'});
+        {'b'});
 
     addAttribute("seek",
         [&](const Values& args) {
@@ -859,7 +858,7 @@ void Image_FFmpeg::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_seekTime}; },
-        {'n'});
+        {'r'});
     setAttributeDescription("seek", "Change the read position in the video file");
 
     addAttribute("trim",
@@ -885,12 +884,12 @@ void Image_FFmpeg::registerAttributes()
         [&]() -> Values {
             return {static_cast<double>(_trimStart) / 1e6, static_cast<double>(_trimEnd / 1e6)};
         },
-        {'n', 'n'});
+        {'r', 'r'});
     setAttributeDescription("trim", "Trim the video by setting the start and end times");
 
     addAttribute("useClock",
         [&](const Values& args) {
-            _useClock = args[0].as<int>();
+            _useClock = args[0].as<bool>();
             if (!_useClock)
                 _clockTime = -1;
             else
@@ -898,8 +897,8 @@ void Image_FFmpeg::registerAttributes()
 
             return true;
         },
-        [&]() -> Values { return {(int)_useClock}; },
-        {'n'});
+        [&]() -> Values { return {_useClock}; },
+        {'b'});
 
     addAttribute("videoFormat",
         [&](const Values&) {
@@ -915,7 +914,7 @@ void Image_FFmpeg::registerAttributes()
 
             return true;
         },
-        {'n'});
+        {'r'});
 }
 
 } // namespace Splash

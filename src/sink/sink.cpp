@@ -212,8 +212,8 @@ void Sink::registerAttributes()
             _pboCount = max(args[0].as<int>(), 2);
             return true;
         },
-        [&]() -> Values { return {(int)_pboCount}; },
-        {'n'});
+        [&]() -> Values { return {_pboCount}; },
+        {'i'});
     setAttributeDescription("bufferCount", "Number of GPU buffers to use for data download to CPU memory");
 
     addAttribute(
@@ -222,18 +222,18 @@ void Sink::registerAttributes()
             _framerate = max(1, args[0].as<int>());
             return true;
         },
-        [&]() -> Values { return {(int)_framerate}; },
-        {'n'});
+        [&]() -> Values { return {_framerate}; },
+        {'i'});
     setAttributeDescription("framerate", "Maximum framerate, additional frames are dropped");
 
     addAttribute(
         "opened",
         [&](const Values& args) {
-            _opened = args[0].as<int>();
+            _opened = args[0].as<bool>();
             return true;
         },
-        [&]() -> Values { return {static_cast<int>(_opened)}; },
-        {'n'});
+        [&]() -> Values { return {_opened}; },
+        {'b'});
     setAttributeDescription("opened", "If true, the sink lets frames through");
 }
 

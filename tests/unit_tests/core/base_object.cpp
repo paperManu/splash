@@ -61,7 +61,7 @@ class BaseObjectMock : public BaseObject
                 return true;
             },
             [&]() -> Values { return {_integer}; },
-            {'n'});
+            {'i'});
         setAttributeDescription("integer", "An integer attribute");
 
         addAttribute(
@@ -71,7 +71,7 @@ class BaseObjectMock : public BaseObject
                 return true;
             },
             [&]() -> Values { return {_float}; },
-            {'n'});
+            {'r'});
         setAttributeDescription("float", "A float attribute");
         setAttributeSyncMethod("float", Attribute::Sync::force_async);
 

@@ -198,7 +198,7 @@ void UserInput::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_updateRate}; },
-        {'n'});
+        {'i'});
     setAttributeDescription("updateRate", "Set the rate at which the inputs are updated");
 }
 

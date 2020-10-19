@@ -490,7 +490,7 @@ PyObject* PythonSink::pythonSinkKeepRatio(PythonSinkObject* self, PyObject* args
     }
 
     self->keepRatio = keepRatio;
-    that->setObjectAttribute(*self->filterName, "keepRatio", {static_cast<int>(keepRatio)});
+    that->setObjectAttribute(*self->filterName, "keepRatio", {keepRatio});
 
     Py_INCREF(Py_True);
     return Py_True;

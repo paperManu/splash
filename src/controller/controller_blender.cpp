@@ -92,7 +92,7 @@ void Blender::update()
             }
 
             for (auto& object : objects)
-                object->setAttribute("activateVertexBlending", {1});
+                object->setAttribute("activateVertexBlending", {true});
 
             // If there are some other scenes, send them the blending
             auto geometries = getObjectsPtr(getObjectsOfType("geometry"));
@@ -122,7 +122,7 @@ void Blender::update()
                 _vertexBlendingReceptionStatus = false;
 
                 for (auto& object : getObjLinkedToCameras())
-                    object->setAttribute("activateVertexBlending", {1});
+                    object->setAttribute("activateVertexBlending", {true});
             }
         }
     }
@@ -145,7 +145,7 @@ void Blender::update()
         }
 
         for (auto& object : objects)
-            object->setAttribute("activateVertexBlending", {0});
+            object->setAttribute("activateVertexBlending", {false});
     }
 }
 

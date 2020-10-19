@@ -22,8 +22,8 @@ Framebuffer::Framebuffer(RootObject* root)
     if (!_colorTexture)
     {
         _colorTexture = make_shared<Texture_Image>(_root);
-        _colorTexture->setAttribute("clampToEdge", {1});
-        _colorTexture->setAttribute("filtering", {0});
+        _colorTexture->setAttribute("clampToEdge", {true});
+        _colorTexture->setAttribute("filtering", {false});
         _colorTexture->reset(_width, _height, _16bits ? "RGBA16" : "RGBA", nullptr, _multisample);
         glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
     }

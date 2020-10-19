@@ -67,7 +67,7 @@ void ColorCalibrator::update()
         // Check whether the camera is ready
         Values status;
         _gcamera->getAttribute("ready", status);
-        if (status.size() == 0 || status[0].as<int>() == 0)
+        if (status.size() == 0 || status[0].as<bool>() == false)
         {
             Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Camera is not ready, unable to update calibration" << Log::endl;
             return;
@@ -352,7 +352,7 @@ void ColorCalibrator::updateCRF()
         // Check whether the camera is ready
         Values status;
         _gcamera->getAttribute("ready", status);
-        if (status.size() == 0 || status[0].as<int>() == 0)
+        if (status.size() == 0 || status[0].as<bool>() == false)
         {
             Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Camera is not ready, unable to update color response" << Log::endl;
             return;
@@ -852,7 +852,7 @@ void ColorCalibrator::registerAttributes()
             return true;
         },
         [&]() -> Values { return {(int)_colorCurveSamples}; },
-        {'n'});
+        {'i'});
     setAttributeDescription("colorSamples", "Set the number of color samples");
 
     addAttribute("detectionThresholdFactor",
@@ -861,7 +861,7 @@ void ColorCalibrator::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_displayDetectionThreshold}; },
-        {'n'});
+        {'r'});
     setAttributeDescription("detectionThresholdFactor", "Set the threshold for projection detection");
 
     addAttribute("imagePerHDR",
@@ -870,7 +870,7 @@ void ColorCalibrator::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_imagePerHDR}; },
-        {'n'});
+        {'i'});
     setAttributeDescription("imagePerHDR", "Set the number of image per HDRI to shoot");
 
     addAttribute("hdrStep",
@@ -879,7 +879,7 @@ void ColorCalibrator::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_hdrStep}; },
-        {'n'});
+        {'r'});
     setAttributeDescription("hdrStep", "Set the step between two images for HDRI");
 
     addAttribute("equalizeMethod",
@@ -894,7 +894,7 @@ void ColorCalibrator::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_equalizationMethod}; },
-        {'n'});
+        {'i'});
     setAttributeDescription("equalizeMethod", "Set the color calibration method (0: WB only, 1: WB from weakest projector, 2: WB maximizing minimum luminance");
 }
 

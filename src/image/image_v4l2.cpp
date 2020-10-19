@@ -759,8 +759,8 @@ void Image_V4L2::registerAttributes()
 
             return true;
         },
-        [&]() -> Values { return {(int)_capturing}; },
-        {'n'});
+        [&]() -> Values { return {_capturing}; },
+        {'b'});
 
     addAttribute("captureSize",
         [&](const Values& args) {
@@ -776,7 +776,7 @@ void Image_V4L2::registerAttributes()
         [&]() -> Values {
             return {_outputWidth, _outputHeight};
         },
-        {'n', 'n'});
+        {'i', 'i'});
 
     addAttribute("device",
         [&](const Values& args) {
@@ -828,7 +828,7 @@ void Image_V4L2::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_v4l2Index}; },
-        {'n'});
+        {'i'});
     setAttributeDescription("index", "Set the input index for the selected V4L2 capture device");
 
     addAttribute("sourceFormat", [&](const Values&) { return true; }, [&]() -> Values { return {_sourceFormatAsString}; }, {});

@@ -134,6 +134,12 @@ struct deserializeHelper<T, typename std::enable_if<std::is_same<T, Value>::valu
         default:
             assert(false);
             break;
+        case Value::Type::empty:
+            obj = Value();
+            break;
+        case Value::Type::boolean:
+            obj = Value(deserializer<bool>(it));
+            break;
         case Value::Type::integer:
             obj = Value(deserializer<int64_t>(it));
             break;

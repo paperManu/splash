@@ -90,7 +90,7 @@ TEST_CASE("Testing tree printing")
 | |-- second
 | | |-- branch
 | | | |-- leaf_1
-| | | | |-- 0
+| | | | |-- false
 )");
     CHECK(treeAsString == correctString);
 }

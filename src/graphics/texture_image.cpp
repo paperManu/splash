@@ -393,7 +393,7 @@ void Texture_Image::update()
         if (spec.channels == 4 && spec.type == ImageBufferSpec::Type::UINT8)
         {
             dataFormat = GL_UNSIGNED_INT_8_8_8_8_REV;
-            if (srgb[0].as<int>() > 0)
+            if (srgb[0].as<bool>())
                 internalFormat = GL_SRGB8_ALPHA8;
             else
                 internalFormat = GL_RGBA;
@@ -401,7 +401,7 @@ void Texture_Image::update()
         else if (spec.channels == 3 && spec.type == ImageBufferSpec::Type::UINT8)
         {
             dataFormat = GL_UNSIGNED_BYTE;
-            if (srgb[0].as<int>() > 0)
+            if (srgb[0].as<bool>())
                 internalFormat = GL_SRGB8_ALPHA8;
             else
                 internalFormat = GL_RGBA;
@@ -426,14 +426,14 @@ void Texture_Image::update()
     {
         if (spec.format == "RGB_DXT1")
         {
-            if (srgb[0].as<int>() > 0)
+            if (srgb[0].as<bool>())
                 internalFormat = GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
             else
                 internalFormat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
         }
         else if (spec.format == "RGBA_DXT5")
         {
-            if (srgb[0].as<int>() > 0)
+            if (srgb[0].as<bool>())
                 internalFormat = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
             else
                 internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
@@ -597,20 +597,20 @@ void Texture_Image::registerAttributes()
 
     addAttribute("filtering",
         [&](const Values& args) {
-            _filtering = args[0].as<int>() > 0 ? true : false;
+            _filtering = args[0].as<bool>();
             return true;
         },
         [&]() -> Values { return {_filtering}; },
-        {'n'});
+        {'b'});
     setAttributeDescription("filtering", "Activate the mipmaps for this texture");
 
     addAttribute("clampToEdge",
         [&](const Values& args) {
-            _glTextureWrap = args[0].as<int>() ? GL_CLAMP_TO_EDGE : GL_REPEAT;
+            _glTextureWrap = args[0].as<bool>() ? GL_CLAMP_TO_EDGE : GL_REPEAT;
             return true;
         },
-        {'n'});
-    setAttributeDescription("clampToEdge", "If set to 1, clamp the texture to the edge");
+        {'b'});
+    setAttributeDescription("clampToEdge", "If true, clamp the texture to the edge");
 
     addAttribute("size",
         [&](const Values& args) {
@@ -620,7 +620,7 @@ void Texture_Image::registerAttributes()
         [&]() -> Values {
             return {_spec.width, _spec.height};
         },
-        {'n', 'n'});
+        {'i', 'i'});
     setAttributeDescription("size", "Change the texture size");
 }
 

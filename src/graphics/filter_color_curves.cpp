@@ -94,7 +94,7 @@ void FilterColorCurves::registerDefaultShaderAttributes()
             else
                 return {_colorCurves[0].size()};
         },
-        {'n'});
+        {'i'});
 }
 
 } // namespace Splash

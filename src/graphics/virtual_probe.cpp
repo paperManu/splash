@@ -168,8 +168,8 @@ void VirtualProbe::setupFBO()
     _fbo = make_unique<Framebuffer>(_root);
     _fbo->setSize(_width, _height);
     _fbo->setCubemap(true);
-    _fbo->getColorTexture()->setAttribute("clampToEdge", {1});
-    _fbo->getColorTexture()->setAttribute("filtering", {0});
+    _fbo->getColorTexture()->setAttribute("clampToEdge", {true});
+    _fbo->getColorTexture()->setAttribute("filtering", {false});
 
     _outFbo = make_unique<Framebuffer>(_root);
     _outFbo->setSize(_width, _height);
@@ -220,7 +220,7 @@ void VirtualProbe::registerAttributes()
         [&]() -> Values {
             return {_position.x, _position.y, _position.z};
         },
-        {'n', 'n', 'n'});
+        {'r', 'r', 'r'});
     setAttributeDescription("position", "Set the virtual probe position");
 
     addAttribute("projection",
@@ -261,7 +261,7 @@ void VirtualProbe::registerAttributes()
         [&]() -> Values {
             return {_rotation.x, _rotation.y, _rotation.z};
         },
-        {'n', 'n', 'n'});
+        {'r', 'r', 'r'});
     setAttributeDescription("rotation", "Set the virtual probe rotation");
 
     addAttribute("size",
@@ -273,7 +273,7 @@ void VirtualProbe::registerAttributes()
         [&]() -> Values {
             return {_width, _height};
         },
-        {'n', 'n'});
+        {'i', 'i'});
     setAttributeDescription("size", "Set the render size");
 
     addAttribute("sphericalFov",
@@ -285,7 +285,7 @@ void VirtualProbe::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_sphericalFov}; },
-        {'n'});
+        {'r'});
     setAttributeDescription("sphericalFov", "Field of view for the spherical projection");
 }
 

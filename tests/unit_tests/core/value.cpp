@@ -1,6 +1,7 @@
 #include <doctest.h>
 #include <random>
 #include <vector>
+#include <iostream>
 
 #include "./core/serialize/serialize_value.h"
 #include "./core/serializer.h"
@@ -12,6 +13,13 @@ using namespace Splash;
 /*************/
 TEST_CASE("Testing type change")
 {
+    SUBCASE("Converting from a bool")
+    {
+        auto value = Value(true);
+        CHECK(value.as<bool>() == true);
+        CHECK(value.as<string>() == "true");
+    }
+
     SUBCASE("Converting from a float")
     {
         auto value = Value(5.f);
@@ -121,6 +129,7 @@ TEST_CASE("Testing Value serialization")
 {
     string testString("One to rule them all");
 
+    CHECK(Serial::getSize(Value(true)) == sizeof(Value::Type) + sizeof(bool));
     CHECK(Serial::getSize(Value(42)) == sizeof(Value::Type) + sizeof(int64_t));
     CHECK(Serial::getSize(Value(2.71828f)) == sizeof(Value::Type) + sizeof(double));
     CHECK(Serial::getSize(Value(testString)) == sizeof(Value::Type) + sizeof(uint32_t) + testString.size() * sizeof(char));
@@ -173,6 +182,14 @@ TEST_CASE("Testing Value serialization")
         CHECK(*reinterpret_cast<Value::Type*>(bufferPtr) == Value::Type::real);
         bufferPtr += sizeof(Value::Type);
         CHECK(*reinterpret_cast<double*>(bufferPtr) == data.as<Values>()[1].as<double>());
+    }
+
+    {
+        vector<uint8_t> buffer;
+        auto data = Value(false);
+        Serial::serialize(data, buffer);
+        auto outData = Serial::deserialize<Value>(buffer);
+        CHECK(data == outData);
     }
 
     {

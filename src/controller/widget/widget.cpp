@@ -261,11 +261,96 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
         if (attribute.empty() || attribute.size() > 4)
             continue;
 
-        switch (attribute[0].getTypeAsChar())
+        switch (attribute[0].getType())
         {
         default:
             continue;
-        case 'n':
+        case Value::Type::boolean:
+        {
+            ImGui::PushID(attrName.c_str());
+            if (ImGui::Button("L"))
+                setObjectAttribute(objName, "switchLock", {attrName});
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Lock / Unlock this attribute");
+            ImGui::SameLine();
+
+            if (ImGui::Button("R"))
+                setObjectAttribute(objName, attrName, attribute);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("If pressed, resend the value as-is");
+            ImGui::SameLine();
+
+            ImGui::PopID();
+            auto tmp = attribute[0].as<bool>();
+            if (ImGui::Checkbox(attrName.c_str(), &tmp))
+                setObjectAttribute(objName, attrName, {static_cast<bool>(tmp)});
+
+            break;
+        }
+        case Value::Type::integer:
+        {
+            ImGui::PushID(attrName.c_str());
+            if (ImGui::Button("L"))
+                setObjectAttribute(objName, "switchLock", {attrName});
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Lock / Unlock this attribute");
+            ImGui::SameLine();
+
+            if (ImGui::Button("R"))
+                setObjectAttribute(objName, attrName, attribute);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("If pressed, resend the value as-is");
+            ImGui::SameLine();
+
+            ImGui::PopID();
+
+            switch (attribute.size())
+            {
+            default:
+                continue;
+            case 1:
+            {
+                auto tmp = attribute[0].as<int>();
+                const float step = 1;
+                if (ImGui::InputInt(attrName.c_str(), &tmp, step, step, ImGuiInputTextFlags_EnterReturnsTrue))
+                    setObjectAttribute(objName, attrName, {static_cast<int>(tmp)});
+                break;
+            }
+            case 2:
+            {
+                array<int, 2> tmp;
+                tmp[0] = attribute[0].as<int>();
+                tmp[1] = attribute[1].as<int>();
+                if (ImGui::InputInt2(attrName.c_str(), tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
+                    setObjectAttribute(objName, attrName, {tmp[0], tmp[1]});
+                break;
+            }
+            case 3:
+            {
+                array<int, 3> tmp;
+                tmp[0] = attribute[0].as<int>();
+                tmp[1] = attribute[1].as<int>();
+                tmp[2] = attribute[2].as<int>();
+                if (ImGui::InputInt3(attrName.c_str(), tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
+                    setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2]});
+                break;
+            }
+            case 4:
+            {
+                array<int, 4> tmp;
+                tmp[0] = attribute[0].as<int>();
+                tmp[1] = attribute[1].as<int>();
+                tmp[2] = attribute[2].as<int>();
+                tmp[3] = attribute[3].as<int>();
+                if (ImGui::InputInt4(attrName.c_str(), tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
+                    setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2], tmp[3]});
+                break;
+            }
+            }
+
+            break;
+        }
+        case Value::Type::real:
         {
             ImGui::PushID(attrName.c_str());
             if (ImGui::Button("L"))
@@ -292,45 +377,38 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                 continue;
             case 1:
             {
-                float tmp = attribute[0].as<float>();
-                auto type = attribute[0].getType();
-                float step = type == Value::Type::real ? 0.01 * tmp : 1.f;
+                auto tmp = attribute[0].as<float>();
+                float step = 0.01 * tmp;
                 if (ImGui::InputFloat(attrName.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                {
-                    // Make sure that we store the same type
-                    if (type == Value::Type::real)
-                        setObjectAttribute(objName, attrName, {static_cast<float>(tmp)});
-                    else
-                        setObjectAttribute(objName, attrName, {static_cast<int>(tmp)});
-                }
+                    setObjectAttribute(objName, attrName, {static_cast<float>(tmp)});
                 break;
             }
             case 2:
             {
-                vector<float> tmp;
-                tmp.push_back(attribute[0].as<float>());
-                tmp.push_back(attribute[1].as<float>());
+                array<float, 2> tmp;
+                tmp[0] = attribute[0].as<float>();
+                tmp[1] = attribute[1].as<float>();
                 if (ImGui::InputFloat2(attrName.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
                     setObjectAttribute(objName, attrName, {tmp[0], tmp[1]});
                 break;
             }
             case 3:
             {
-                vector<float> tmp;
-                tmp.push_back(attribute[0].as<float>());
-                tmp.push_back(attribute[1].as<float>());
-                tmp.push_back(attribute[2].as<float>());
+                array<float, 3> tmp;
+                tmp[0] = attribute[0].as<float>();
+                tmp[1] = attribute[1].as<float>();
+                tmp[2] = attribute[2].as<float>();
                 if (ImGui::InputFloat3(attrName.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
                     setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2]});
                 break;
             }
             case 4:
             {
-                vector<float> tmp;
-                tmp.push_back(attribute[0].as<float>());
-                tmp.push_back(attribute[1].as<float>());
-                tmp.push_back(attribute[2].as<float>());
-                tmp.push_back(attribute[3].as<float>());
+                array<float, 4> tmp;
+                tmp[0] = attribute[0].as<float>();
+                tmp[1] = attribute[1].as<float>();
+                tmp[2] = attribute[2].as<float>();
+                tmp[3] = attribute[3].as<float>();
                 if (ImGui::InputFloat4(attrName.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
                     setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2], tmp[3]});
                 break;
@@ -339,14 +417,14 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
 
             break;
         }
-        case 'v':
+        case Value::Type::values:
         {
             // We skip anything that looks like a vector / matrix
             // (for usefulness reasons...)
             Values values = attribute[0].as<Values>();
             if (values.size() > 16)
             {
-                if (values[0].getTypeAsChar() == 'n')
+                if (values[0].isConvertibleToType(Value::Type::real))
                 {
                     float minValue = numeric_limits<float>::max();
                     float maxValue = numeric_limits<float>::min();
@@ -371,7 +449,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
             }
             break;
         }
-        case 's':
+        case Value::Type::string:
         {
             for (const auto& v : attribute)
             {

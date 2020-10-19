@@ -93,8 +93,6 @@ class Image_GPhoto : public Image_Sequence
     std::vector<GPhotoCamera> _cameras;
     int _selectedCameraIndex{-1};
 
-    int _cooldownTime{1000}; // Some cameras have a hard time changing parameters after a capture
-
     /**
      * Detect connected cameras
      */

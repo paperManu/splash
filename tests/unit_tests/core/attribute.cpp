@@ -15,7 +15,7 @@ TEST_CASE("Testing Attribute usage")
             return true;
         },
         [&]() -> Values { return {value}; },
-        {'n'});
+        {'i'});
     attr.setDescription("A very simple attribute");
     CHECK_EQ(attr.getDescription(), "A very simple attribute");
     CHECK_EQ(attr.getSyncMethod(), Attribute::Sync::auto_sync);
@@ -47,7 +47,7 @@ TEST_CASE("Testing Attribute usage")
         [&]() -> Values {
             return {value, "some string"};
         },
-        {'n', 's'});
+        {'i', 's'});
     CHECK_FALSE(attr({3.14159}));
 
     attr = Attribute("attribute",

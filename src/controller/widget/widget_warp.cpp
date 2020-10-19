@@ -41,9 +41,9 @@ void GuiWarp::render()
         }
 
         if (_currentWarp == i)
-            setObjectAttribute(warp->getName(), "showControlLattice", {1});
+            setObjectAttribute(warp->getName(), "showControlLattice", {true});
         else
-            setObjectAttribute(warp->getName(), "showControlLattice", {0});
+            setObjectAttribute(warp->getName(), "showControlLattice", {false});
 
         warp->render();
 
@@ -127,7 +127,7 @@ void GuiWarp::update()
 
     if (_currentWarpName != "")
     {
-        setObjectAttribute(_currentWarpName, "showControlLattice", {0});
+        setObjectAttribute(_currentWarpName, "showControlLattice", {false});
         _currentWarpName = "";
     }
 }

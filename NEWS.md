@@ -1,6 +1,15 @@
 Splash release notes
 ===================
 
+Splash 0.8.16 (2020-10-19)
+-------------------------
+Improvements:
+* Added bool as possible Value underlying type
+* Added Debian package and Blender addon to website
+
+Bugs fixed:
+* Fixed release script not handling multi-digits patch numbers correctly
+
 Splash 0.8.14 (2020-10-05)
 -------------------------
 Improvements:

@@ -274,7 +274,7 @@ void Mesh_BezierPatch::registerAttributes()
 
             return v;
         },
-        {'n', 'n'});
+        {'i', 'i'});
     setAttributeDescription("patchControl", "Set the control points positions");
 
     addAttribute("patchSize",
@@ -285,7 +285,7 @@ void Mesh_BezierPatch::registerAttributes()
         [&]() -> Values {
             return {_patch.size.x, _patch.size.y};
         },
-        {'n', 'n'});
+        {'i', 'i'});
     setAttributeDescription("patchSize", "Set the Bezier patch control resolution");
 
     addAttribute("patchResolution",
@@ -296,7 +296,7 @@ void Mesh_BezierPatch::registerAttributes()
             return true;
         },
         [&]() -> Values { return {_patchResolution}; },
-        {'n'});
+        {'i'});
     setAttributeDescription("patchResolution", "Set the Bezier patch final resolution");
 }
 
