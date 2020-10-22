@@ -374,7 +374,9 @@ void Link::handleInputMessages()
                     if (!_socketMessageIn->recv(msg, zmq::recv_flags::none))
                         return {};
 
-                    if (valueType == Value::Type::integer)
+                    if (valueType == Value::Type::boolean)
+                        values.push_back(*(bool*)msg.data());
+                    else if (valueType == Value::Type::integer)
                         values.push_back(*(int64_t*)msg.data());
                     else if (valueType == Value::Type::real)
                         values.push_back(*(double*)msg.data());
