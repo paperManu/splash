@@ -307,8 +307,8 @@ void Factory::registerObjects()
             return object;
         },
         GraphObject::Category::IMAGE,
-        "video through shared memory",
-        "Image object reading frames from a Shmdata shared memory.",
+        "video through memory shared with shmdata",
+        "Image object reading frames from a shmdata shared memory.",
         true);
 #endif
 
