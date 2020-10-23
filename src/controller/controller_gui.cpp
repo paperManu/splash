@@ -543,6 +543,7 @@ void Gui::drawMainTab()
         }
     }
 
+#if HAVE_PORTAUDIO
     ImGui::Separator();
     ImGui::Text("Master clock");
     auto clockDeviceValue = getWorldAttribute("clockDeviceName"); 
@@ -564,6 +565,7 @@ void Gui::drawMainTab()
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Loose clock: if activated, the master clock is only "
                           "used as an indication, not a hard constraint");
+#endif
 
     ImGui::Separator();
     ImGui::Text("Blending parameters");
@@ -924,6 +926,7 @@ void Gui::render()
             ImGui::EndChild();
         }
 
+#if HAVE_PORTAUDIO
         // Master clock
         ImGui::Spacing();
         ImGui::Separator();
@@ -965,6 +968,7 @@ void Gui::render()
             ImGui::PopFont();
         }
         ImGui::EndChild();
+#endif
 
         ImGui::End();
     }
