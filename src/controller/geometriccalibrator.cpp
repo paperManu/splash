@@ -231,7 +231,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
             continue;
         }
         _nextPosition = false;
-        setObjectAttribute("gui", "hide", {1});
+        setObjectAttribute("gui", "hide", {true});
 
         // If an error happens while capturing this position, this flag will be set to true
         bool abortCurrentPosition = false;

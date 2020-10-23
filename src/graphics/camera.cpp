@@ -1566,19 +1566,12 @@ void Camera::registerAttributes()
     addAttribute(
         "hide",
         [&](const Values& args) {
-            if (args[0].as<int>() > 0)
-                _hidden = true;
-            else if (args[0].as<int>() == 0)
-                _hidden = false;
-            else
-                _hidden = !_hidden;
+            _hidden = args[0].as<bool>();
             return true;
         },
         [&]() -> Values { return {_hidden}; },
         {'b'});
-    setAttributeDescription("hide", R"(If set to 1, prevent from drawing this camera.
- If set to 0, the camera can be drawn.
- If set to -1, switches the 'hide' state.)");
+    setAttributeDescription("hide", "If true, prevent from drawing this camera.");
 
     addAttribute("wireframe",
         [&](const Values& args) {
