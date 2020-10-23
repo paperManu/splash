@@ -1117,12 +1117,12 @@ void Camera::registerAttributes()
     addAttribute(
         "size",
         [&](const Values& args) {
-            _newWidth = args[0].as<int>();
-            _newHeight = args[1].as<int>();
+            _newWidth = args[0].as<float>();
+            _newHeight = args[1].as<float>();
             return true;
         },
         [&]() -> Values {
-            return {_width, _height};
+            return {static_cast<int>(_width), static_cast<int>(_height)};
         },
         {'i', 'i'});
     setAttributeDescription("size", "Set the render size");
