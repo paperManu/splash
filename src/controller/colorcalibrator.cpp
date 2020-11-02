@@ -91,7 +91,7 @@ void ColorCalibrator::update()
         // All cameras to white
         for (auto& params : _calibrationParams)
         {
-            setObjectAttribute(params.camName, "hide", {1});
+            setObjectAttribute(params.camName, "hide", {true});
             setObjectAttribute(params.camName, "flashBG", {1});
             setObjectAttribute(params.camName, "clearColor", {0.7, 0.7, 0.7, 1.0});
         }
@@ -104,7 +104,7 @@ void ColorCalibrator::update()
 
         // All cameras to normal
         for (auto& params : _calibrationParams)
-            setObjectAttribute(params.camName, "hide", {0});
+            setObjectAttribute(params.camName, "hide", {false});
 
         //
         // Compute the camera response function
@@ -113,7 +113,7 @@ void ColorCalibrator::update()
             captureHDR(9, 0.33);
 
         for (auto& params : _calibrationParams)
-            setObjectAttribute(params.camName, "hide", {1});
+            setObjectAttribute(params.camName, "hide", {true});
 
         //
         // Find the location of each projection
@@ -319,7 +319,7 @@ void ColorCalibrator::update()
         //
         for (auto& params : _calibrationParams)
         {
-            setObjectAttribute(params.camName, "hide", {0});
+            setObjectAttribute(params.camName, "hide", {false});
             setObjectAttribute(params.camName, "flashBG", {0});
             setObjectAttribute(params.camName, "clearColor", {});
         }

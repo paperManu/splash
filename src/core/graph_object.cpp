@@ -216,7 +216,8 @@ bool GraphObject::setRenderingPriority(Priority priority)
 /*************/
 void GraphObject::registerAttributes()
 {
-    addAttribute("alias",
+    addAttribute(
+        "alias",
         [&](const Values& args) {
             auto alias = args[0].as<string>();
             setAlias(alias);
@@ -226,7 +227,8 @@ void GraphObject::registerAttributes()
         {'s'});
     setAttributeDescription("alias", "Alias name");
 
-    addAttribute("savable",
+    addAttribute(
+        "savable",
         [&](const Values& args) {
             auto savable = args[0].as<bool>();
             setSavable(savable);
@@ -236,7 +238,8 @@ void GraphObject::registerAttributes()
         {'b'});
     setAttributeDescription("savable", "If true, the object will be saved in the configuration file. This should NOT be modified by hand");
 
-    addAttribute("priorityShift",
+    addAttribute(
+        "priorityShift",
         [&](const Values& args) {
             _priorityShift = args[0].as<int>();
             return true;
@@ -271,7 +274,8 @@ void GraphObject::registerAttributes()
         },
         {'s'});
 
-    addAttribute("timestamp", [](const Values&) { return true; }, [&]() -> Values { return {getTimestamp()}; });
+    addAttribute(
+        "timestamp", [](const Values&) { return true; }, [&]() -> Values { return {getTimestamp()}; }, {'i'});
     setAttributeDescription("timestamp", "Timestamp (in µs) for the current buffer, based on the latest image data created/received");
 }
 

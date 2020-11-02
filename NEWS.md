@@ -1,6 +1,18 @@
 Splash release notes
 ===================
 
+Splash 0.8.18 (2020-11-02)
+-------------------------
+Improvements:
+* Added support for int64 in the GUI
+* Improved short description of image_shmdata
+* Added configuration file upgrade to 0.8.20
+
+Bugs fixed:
+* Fixed crash when not compiled with Portaudio support
+* Fixed Camera "hide" parameter which was too complicated for its own good
+* Fixed Link handling of boolean Value
+
 Splash 0.8.16 (2020-10-19)
 -------------------------
 Improvements:

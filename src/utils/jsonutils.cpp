@@ -1,5 +1,7 @@
 #include "./utils/jsonutils.h"
 
+#include <algorithm>
+
 namespace Splash
 {
 namespace Utils
@@ -104,6 +106,53 @@ bool checkAndUpgradeConfiguration(Json::Value& configuration)
         configuration = newConfig;
     }
 
+    if ((versionMajor == 0 && versionMinor < 8) || (versionMajor == 0 && versionMinor == 8 && versionMaintainance < 20))
+    {
+        Json::Value newConfig = configuration;
+
+        const static std::array boolAttributes{"16bits",
+            "decorated",
+            "flip",
+            "flop",
+            "forceRealtime",
+            "looseClock",
+            "fullscreen",
+            "guiOnly",
+            "hide",
+            "invertChannels",
+            "keepRatio",
+            "pattern",
+            "savable",
+            "srgb",
+            "weightedCalibrationPoints"};
+
+        for (auto& scene : newConfig["scenes"])
+        {
+            if (!scene.isMember("objects"))
+                continue;
+
+            for (auto& object : scene["objects"])
+            {
+                for (auto& attributeName : object.getMemberNames())
+                {
+                    if (std::find(boolAttributes.cbegin(), boolAttributes.cend(), attributeName) == boolAttributes.cend())
+                        continue;
+
+                    try
+                    {
+                        object[attributeName][0] = object[attributeName][0].asBool();
+                    }
+                    catch (const Json::LogicError&)
+                    {
+                        continue;
+                    }
+                }
+            }
+        }
+
+        configuration = newConfig;
+    }
+
     configuration["version"] = std::string(PACKAGE_VERSION);
 
     return true;
@@ -199,5 +248,5 @@ Values jsonToValues(const Json::Value& values)
     return outValues;
 }
 
-} // end of namespace
-} // end of namespace
+} // namespace Utils
+} // namespace Splash

@@ -310,39 +310,39 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                 continue;
             case 1:
             {
-                auto tmp = attribute[0].as<int>();
-                const float step = 1;
-                if (ImGui::InputInt(attrName.c_str(), &tmp, step, step, ImGuiInputTextFlags_EnterReturnsTrue))
-                    setObjectAttribute(objName, attrName, {static_cast<int>(tmp)});
+                auto tmp = attribute[0].as<int64_t>();
+                static const float step = 1;
+                if (ImGui::InputScalar(attrName.c_str(), ImGuiDataType_S64, &tmp, &step, &step, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
+                    setObjectAttribute(objName, attrName, {static_cast<int64_t>(tmp)});
                 break;
             }
             case 2:
             {
-                array<int, 2> tmp;
-                tmp[0] = attribute[0].as<int>();
-                tmp[1] = attribute[1].as<int>();
-                if (ImGui::InputInt2(attrName.c_str(), tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
+                array<int64_t, 2> tmp;
+                tmp[0] = attribute[0].as<int64_t>();
+                tmp[1] = attribute[1].as<int64_t>();
+                if (ImGui::InputScalarN(attrName.c_str(), ImGuiDataType_S64, tmp.data(), 2, nullptr, nullptr, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
                     setObjectAttribute(objName, attrName, {tmp[0], tmp[1]});
                 break;
             }
             case 3:
             {
-                array<int, 3> tmp;
-                tmp[0] = attribute[0].as<int>();
-                tmp[1] = attribute[1].as<int>();
-                tmp[2] = attribute[2].as<int>();
-                if (ImGui::InputInt3(attrName.c_str(), tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
+                array<int64_t, 3> tmp;
+                tmp[0] = attribute[0].as<int64_t>();
+                tmp[1] = attribute[1].as<int64_t>();
+                tmp[2] = attribute[2].as<int64_t>();
+                if (ImGui::InputScalarN(attrName.c_str(), ImGuiDataType_S64, tmp.data(), 3, nullptr, nullptr, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
                     setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2]});
                 break;
             }
             case 4:
             {
-                array<int, 4> tmp;
-                tmp[0] = attribute[0].as<int>();
-                tmp[1] = attribute[1].as<int>();
-                tmp[2] = attribute[2].as<int>();
-                tmp[3] = attribute[3].as<int>();
-                if (ImGui::InputInt4(attrName.c_str(), tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
+                array<int64_t, 4> tmp;
+                tmp[0] = attribute[0].as<int64_t>();
+                tmp[1] = attribute[1].as<int64_t>();
+                tmp[2] = attribute[2].as<int64_t>();
+                tmp[3] = attribute[3].as<int64_t>();
+                if (ImGui::InputScalarN(attrName.c_str(), ImGuiDataType_S64, tmp.data(), 4, nullptr, nullptr, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
                     setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2], tmp[3]});
                 break;
             }

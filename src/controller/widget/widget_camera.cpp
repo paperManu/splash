@@ -84,7 +84,8 @@ void GuiCamera::render()
             // If shift is pressed, we hide / unhide this camera
             if (io.KeyCtrl)
             {
-                setObjectAttribute(camera->getName(), "hide", {-1});
+                auto isHidden = getObjectAttribute(camera->getName(), "hide");
+                setObjectAttribute(camera->getName(), "hide", {!isHidden[0].as<bool>()});
             }
             else
             {
@@ -102,13 +103,13 @@ void GuiCamera::render()
 
                 // Keep the same set of cameras visible
                 for (const auto& cam : cameras)
-                    setObjectAttribute(cam->getName(), "hide", {1});
+                    setObjectAttribute(cam->getName(), "hide", {true});
 
                 for (const auto& camName : visibleCameras)
-                    setObjectAttribute(camName, "hide", {0});
+                    setObjectAttribute(camName, "hide", {false});
 
                 // Ensure the selected camera is visible...
-                setObjectAttribute(camera->getName(), "hide", {0});
+                setObjectAttribute(camera->getName(), "hide", {false});
 
                 _camerasColorized = false;
                 setObjectAttribute(_camera->getName(), "frame", {false});
@@ -300,7 +301,7 @@ void GuiCamera::nextCamera()
     // Ensure that all cameras are shown
     _camerasHidden = false;
     _camerasColorized = false;
-    setObjectsOfType("camera", "hide", {0});
+    setObjectsOfType("camera", "hide", {false});
 
     setObjectAttribute(_camera->getName(), "frame", {0});
     setObjectAttribute(_camera->getName(), "displayCalibration", {0});
@@ -416,7 +417,7 @@ void GuiCamera::hideOtherCameras(bool hide)
     auto cameras = getObjectsPtr(getObjectsOfType("camera"));
     for (auto& cam : cameras)
         if (cam != _camera)
-            setObjectAttribute(cam->getName(), "hide", {(int)hide});
+            setObjectAttribute(cam->getName(), "hide", {hide});
     _camerasHidden = hide;
 }
 
