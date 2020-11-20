@@ -140,13 +140,35 @@ bool checkAndUpgradeConfiguration(Json::Value& configuration)
 
                     try
                     {
-                        object[attributeName][0] = object[attributeName][0].asBool();
+                        if (object[attributeName].isArray())
+                            object[attributeName][0] = object[attributeName][0].asBool();
+                        else
+                            object[attributeName] = object[attributeName].asBool();
                     }
                     catch (const Json::LogicError&)
                     {
                         continue;
                     }
                 }
+            }
+        }
+
+        auto& world = newConfig["world"];
+        for (auto& attributeName : world.getMemberNames())
+        {
+            if (std::find(boolAttributes.cbegin(), boolAttributes.cend(), attributeName) == boolAttributes.cend())
+                continue;
+
+            try
+            {
+                if (world[attributeName].isArray())
+                    world[attributeName][0] = world[attributeName][0].asBool();
+                else
+                    world[attributeName] = world[attributeName].asBool();
+            }
+            catch (const Json::LogicError&)
+            {
+                continue;
             }
         }
 
@@ -199,7 +221,9 @@ Values jsonToValues(const Json::Value& values)
 {
     Values outValues;
 
-    if (values.isInt())
+    if (values.isBool())
+        outValues.emplace_back(values.asBool());
+    else if (values.isInt())
         outValues.emplace_back(values.asInt());
     else if (values.isDouble())
         outValues.emplace_back(values.asFloat());
