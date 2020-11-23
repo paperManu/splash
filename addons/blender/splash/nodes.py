@@ -493,8 +493,9 @@ class SplashSceneNode(SplashBaseNode):
 
     def init(self, context):
         self.name = 'GPU'
+        self.inputs.new('NodeSocketBool', 'Force GPU').default_value = False
         self.inputs.new('NodeSocketInt', 'GPU Id').default_value = 0
-        self.inputs.new('NodeSocketInt', 'VSync').default_value = 1
+        self.inputs.new('NodeSocketBool', 'VSync').default_value = True
 
         self.inputs.new('SplashLinkSocket', "Input link")
         self.outputs.new('SplashLinkSocket', "Output link")
@@ -502,12 +503,10 @@ class SplashSceneNode(SplashBaseNode):
     def exportProperties(self, exportPath):
         values = {}
         values['name'] = "\"" + self.name + "\""
-        values['display'] = self.inputs['GPU Id'].default_value
-        if self.inputs['VSync'].default_value == 1:
-            values['swapInterval'] = 1
-        else:
-            values['swapInterval'] = 0
+        if self.inputs['Force GPU'].default_value:
+            values['display'] = self.inputs['GPU Id'].default_value
 
+        values['swapInterval'] = int(self.inputs['VSync'].default_value)
         return values
 
     def update(self):
