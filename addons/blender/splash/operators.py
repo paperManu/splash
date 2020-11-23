@@ -23,6 +23,7 @@ import struct
 import time
 import os
 import numpy
+
 from bpy.types import Operator
 from bpy.props import StringProperty, BoolProperty
 from math import floor
@@ -91,6 +92,11 @@ class SplashExportNodeTree(Operator):
             if not tree_valid:
                 message = "Splash tree exporting error: " + tree_error
                 print(message)
+                bpy.context.window_manager.popup_menu(
+                    lambda self, context: self.layout.label(text=tree_error),
+                    title="Splash export error",
+                    icon='INFO'
+                )
                 return {'CANCELLED'}
             print(tree_error)
 
