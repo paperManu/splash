@@ -137,14 +137,14 @@ void GuiCamera::render()
     if (ImGui::Button("Calibrate camera"))
         doCalibration();
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Calibrate the selected camera\n(C while hovering the view)");
+        ImGui::SetTooltip("Calibrate the selected camera\n('%s' while hovering the view)", getLocalKeyName('C'));
     ImGui::SameLine();
 
     if (ImGui::Button("Revert camera"))
         revertCalibration();
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Revert the selected camera to its previous "
-                          "calibration\n(Ctrl + Z while hovering the view)");
+                          "calibration\n(Ctrl+%s while hovering the view)", getLocalKeyName('Z'));
     ImGui::SameLine();
 
     if (ImGui::Button("Reset camera") && _camera)
@@ -159,14 +159,14 @@ void GuiCamera::render()
 
     ImGui::Checkbox("Hide other cameras", &_hideCameras);
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Hide all but the selected camera\n(H while hovering the view)");
+        ImGui::SetTooltip("Hide all but the selected camera\n(%s while hovering the view)", getLocalKeyName('H'));
     ImGui::SameLine();
 
     if (ImGui::Checkbox("Show targets", &_showCalibrationPoints))
         showAllCalibrationPoints(static_cast<Camera::CalibrationPointsVisibility>(_showCalibrationPoints));
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Show the target positions for the calibration "
-                          "points\n(A while hovering the view)");
+                          "points\n(%s while hovering the view)", getLocalKeyName('A'));
     ImGui::SameLine();
 
     static bool showAllCamerasPoints = false;
@@ -174,7 +174,7 @@ void GuiCamera::render()
         showAllCamerasCalibrationPoints();
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Show this camera's calibration points in other "
-                          "cameras\n(O while hovering the view)");
+                          "cameras\n(%s while hovering the view)", getLocalKeyName('O'));
     ImGui::SameLine();
 
     // Colorization of the wireframe rendering. Applied after the GUI camera
@@ -183,7 +183,7 @@ void GuiCamera::render()
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Activate colorization of the wireframe rendering, green "
                           "for selected camera and magenta for the other "
-                          "cameras\n(V while hovering the view)");
+                          "cameras\n(%s while hovering the view)", getLocalKeyName('V'));
     ImGui::SameLine();
 
     ImGui::Checkbox("Activate joystick", &_joystickActivated);

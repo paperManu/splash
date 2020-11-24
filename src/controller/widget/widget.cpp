@@ -6,6 +6,8 @@
 #include <array>
 #include <filesystem>
 #include <fstream>
+
+#include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <imgui_internal.h>
 
@@ -510,6 +512,12 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
         }
     }
     ImGui::PopItemWidth();
+}
+
+/*************/
+const char* GuiWidget::getLocalKeyName(char key)
+{
+    return glfwGetKeyName(key, 0);
 }
 
 } // namespace Splash

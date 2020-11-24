@@ -86,7 +86,7 @@ Window::~Window()
 }
 
 /*************/
-int Window::getChars(GLFWwindow*& win, unsigned int& codepoint)
+int Window::getChar(GLFWwindow*& win, unsigned int& codepoint)
 {
     lock_guard<mutex> lock(_callbackMutex);
     if (_chars.size() == 0)
@@ -101,18 +101,18 @@ int Window::getChars(GLFWwindow*& win, unsigned int& codepoint)
 }
 
 /*************/
-int Window::getKeys(GLFWwindow*& win, int& key, int& action, int& mods)
+int Window::getKey(GLFWwindow*& win, int& key, int& action, int& mods)
 {
     lock_guard<mutex> lock(_callbackMutex);
     if (_keys.size() == 0)
         return 0;
 
     win = _keys.front().first;
-    vector<int> keys = _keys.front().second;
+    vector<int> key_pressed = _keys.front().second;
 
-    key = keys[0];
-    action = keys[2];
-    mods = keys[3];
+    key = key_pressed[0];
+    action = key_pressed[2];
+    mods = key_pressed[3];
 
     _keys.pop_front();
 
