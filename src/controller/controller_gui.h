@@ -262,6 +262,15 @@ class Gui : public ControllerObject
     void initImWidgets();
 
     /**
+     * Get the corresponding UTF-8 character for a given keyboard key,
+     * based on the US layout. Basically it converts US layout keys to
+     * the layout currently in use.
+     * \param key Key to look for, as the ASCII character from the US layout
+     * \return Return the keyboard key in the current locale
+     */
+    const char* getLocalKeyName(char key);
+
+    /**
      * \brief ImGui render function
      * \param draw_data Data sent by ImGui for drawing
      */

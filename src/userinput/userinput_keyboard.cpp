@@ -23,7 +23,7 @@ void Keyboard::updateMethod()
     {
         GLFWwindow* win;
         int key, action, mods;
-        if (!Window::getKeys(win, key, action, mods))
+        if (!Window::getKey(win, key, action, mods))
             break;
 
         State substate;
@@ -51,7 +51,7 @@ void Keyboard::updateMethod()
     {
         GLFWwindow* win;
         unsigned int unicodeChar;
-        if (!Window::getChars(win, unicodeChar))
+        if (!Window::getChar(win, unicodeChar))
             break;
 
         State substate;

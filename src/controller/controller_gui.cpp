@@ -440,13 +440,13 @@ void Gui::drawMainTab()
     if (ImGui::Button("Compute blending map", ImVec2(availableSize[0] / 3.f, 32.f)))
         computeBlending(true);
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("To use once cameras are calibrated (Ctrl+B, Ctrl+Alt+B to compute at each frames)");
+        ImGui::SetTooltip("To use once cameras are calibrated (Ctrl+%s, Ctrl+Alt+%s to compute at each frames)", getLocalKeyName('B'), getLocalKeyName('B'));
 
     ImGui::SameLine();
     if (ImGui::Button("Flash background", ImVec2(availableSize[0] / 3.f, 32.f)))
         setObjectsOfType("camera", "flashBG", {});
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Set the background as light gray (Ctrl+F)");
+        ImGui::SetTooltip("Set the background as light gray (Ctrl+%s)", getLocalKeyName('F'));
 
     ImGui::SameLine();
     if (ImGui::Button("Wireframe / Textured", ImVec2(availableSize[0] / 3.f, 32.f)))
@@ -455,7 +455,7 @@ void Gui::drawMainTab()
         setWorldAttribute("wireframe", {(int)_wireframe});
     }
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Switch objects between wireframe and textured (Ctrl+T and Ctrl+W)");
+        ImGui::SetTooltip("Switch objects between wireframe and textured (Ctrl+%s and Ctrl+%s)", getLocalKeyName('T'), getLocalKeyName('W'));
 
 #if HAVE_GPHOTO and HAVE_OPENCV
     ImGui::Separator();
@@ -608,13 +608,15 @@ void Gui::drawMenuBar()
     {
         if (ImGui::BeginMenu("File"))
         {
-            if (ImGui::MenuItem("Open configuration (Ctrl+O)", nullptr))
+            static std::string menuOpenConfig = std::string("Open configuration (Ctrl+") + getLocalKeyName('O') + ")";
+            if (ImGui::MenuItem(menuOpenConfig.c_str(), nullptr))
             {
                 _menuAction = MenuAction::OpenConfiguration;
                 _showFileSelector = true;
             }
 
-            if (ImGui::MenuItem("Open project (Ctrl+Shift+O)", nullptr))
+            static std::string menuOpenProject = std::string("Open project (Ctrl+Shift+") + getLocalKeyName('O') + ")";
+            if (ImGui::MenuItem(menuOpenProject.c_str(), nullptr))
             {
                 _menuAction = MenuAction::OpenProject;
                 _showFileSelector = true;
@@ -625,11 +627,14 @@ void Gui::drawMenuBar()
                 _showFileSelector = true;
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("Save configuration (Ctrl+S)", nullptr))
+            static std::string menuSaveConfiguration = std::string("Save configuration (Ctrl+") + getLocalKeyName('S') + ")";
+            if (ImGui::MenuItem(menuSaveConfiguration.c_str(), nullptr))
             {
                 setWorldAttribute("save", {_configurationPath});
             }
-            if (ImGui::MenuItem("Save configuration as... (Ctrl+Shift+S)", nullptr))
+
+            static std::string menuSaveConfigurationAs = std::string("Save configuration as... (Ctrl+Shift+") + getLocalKeyName('S') + ")";
+            if (ImGui::MenuItem(menuSaveConfigurationAs.c_str(), nullptr))
             {
                 _menuAction = MenuAction::SaveConfigurationAs;
                 _showFileSelector = true;
@@ -767,46 +772,6 @@ void Gui::renderSplashScreen()
 /*************/
 void Gui::renderHelp()
 {
-    string helpText = R"(Tab: show / hide this GUI
-General shortcuts:
-  Ctrl+O: open a configuration
-  Ctrl+Shift+O: open a project
-  Ctrl+S: save the current configuration
-  Ctrl+Shift+S: save configuration as...
-  Ctrl+F: white background instead of black
-  Ctrl+B: compute the blending between all projectors
-  Ctrl+Alt+B: compute the blending between all projectors at every frame
-  Ctrl+M: hide/show the OS cursor
-  Ctrl+T: textured draw mode
-  Ctrl+W: wireframe draw mode
-
-Views panel:
-  Ctrl + left click on a camera thumbnail: hide / show the given camera
-  Space: switch between projectors
-  A: show / hide the target calibration point
-  C: calibrate the selected camera
-  H: hide all but the selected camera
-  O: show calibration points from all cameras
-  Ctrl+Z: revert camera to previous calibration
-
-Node view (inside Control panel):
-  Shift + left click: link the clicked node to the selected one
-  Ctrl + left click: unlink the clicked node from the selected one
-
-Camera view (inside the Camera panel):
-  Middle click: rotate camera
-  Shift + middle click: pan camera
-  Control + middle click: zoom in / out
-
-Joystick controls (may vary with the controller):
-  Directions: move the selected calibration point
-  Button 1: select previous calibration point
-  Button 2: select next calibration point
-  Button 3: hide all but the selected cameras
-  Button 4: calibrate
-  Button 5: move calibration point slower
-  Button 6: move calibration point faster
-  Button 7: flash the background to light gray)";
 
     static bool isOpen{false};
     int helpWidth = 400, helpHeight = 400;
@@ -814,7 +779,47 @@ Joystick controls (may vary with the controller):
     auto parentWindowPos = ImGui::GetWindowPos();
     ImGui::SetNextWindowPos(ImVec2(parentWindowPos[0] + (parentWindowSize[0] - helpWidth) / 2.f, parentWindowPos[1] + 100.f));
     ImGui::Begin("Help", &isOpen, ImVec2(helpWidth, helpHeight), 1.f, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("%s", helpText.c_str());
+
+    ImGui::Text("Tab: show / hide this GUI");
+    ImGui::Text("General shortcuts:");
+    ImGui::Text("  Ctrl+%s: open a configuration", getLocalKeyName('O'));
+    ImGui::Text("  Ctrl+Shift+%s: open a project", getLocalKeyName('O'));
+    ImGui::Text("  Ctrl+%s: save the current configuration", getLocalKeyName('S'));
+    ImGui::Text("  Ctrl+Shift+%s: save configuration as...", getLocalKeyName('S'));
+    ImGui::Text("  Ctrl+%s: white background instead of black", getLocalKeyName('F'));
+    ImGui::Text("  Ctrl+%s: compute the blending between all projectors", getLocalKeyName('B'));
+    ImGui::Text("  Ctrl+Alt+%s: compute the blending between all projectors at every frame", getLocalKeyName('B'));
+    ImGui::Text("  Ctrl+%s: hide/show the OS cursor", getLocalKeyName('M'));
+    ImGui::Text("  Ctrl+%s: textured draw mode", getLocalKeyName('T'));
+    ImGui::Text("  Ctrl+%s: wireframe draw mode", getLocalKeyName('W'));
+    ImGui::Text(" ");
+    ImGui::Text("Views panel:");
+    ImGui::Text("  Ctrl + left click on a camera thumbnail: hide / show the given camera");
+    ImGui::Text("  Space: switch between projectors");
+    ImGui::Text("  %s: show / hide the target calibration point", getLocalKeyName('A'));
+    ImGui::Text("  %s: calibrate the selected camera", getLocalKeyName('C'));
+    ImGui::Text("  %s: hide all but the selected camera", getLocalKeyName('H'));
+    ImGui::Text("  %s: show calibration points from all cameras", getLocalKeyName('O'));
+    ImGui::Text("  Ctrl+%s: revert camera to previous calibration", getLocalKeyName('Z'));
+    ImGui::Text(" ");
+    ImGui::Text("Node view (inside Control panel):");
+    ImGui::Text("  Shift + left click: link the clicked node to the selected one");
+    ImGui::Text("  Ctrl + left click: unlink the clicked node from the selected one");
+    ImGui::Text(" ");
+    ImGui::Text("Camera view (inside the Camera panel):");
+    ImGui::Text("  Middle click: rotate camera");
+    ImGui::Text("  Shift + middle click: pan camera");
+    ImGui::Text("  Control + middle click: zoom in / out");
+    ImGui::Text(" ");
+    ImGui::Text("Joystick controls (may vary with the controller):");
+    ImGui::Text("  Directions: move the selected calibration point");
+    ImGui::Text("  Button 1: select previous calibration point");
+    ImGui::Text("  Button 2: select next calibration point");
+    ImGui::Text("  Button 3: hide all but the selected cameras");
+    ImGui::Text("  Button 4: calibrate");
+    ImGui::Text("  Button 5: move calibration point slower");
+    ImGui::Text("  Button 6: move calibration point faster");
+    ImGui::Text("  Button 7: flash the background to light gray");
 
     auto& io = ImGui::GetIO();
     if (io.MouseClicked[0])
@@ -1391,6 +1396,12 @@ void Gui::initImWidgets()
         return text;
     });
     _guiBottomWidgets.push_back(dynamic_pointer_cast<GuiWidget>(logBox));
+}
+
+/*************/
+const char* Gui::getLocalKeyName(char key)
+{
+    return glfwGetKeyName(key, 0);
 }
 
 /*************/

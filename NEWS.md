@@ -1,6 +1,16 @@
 Splash release notes
 ===================
 
+Splash 0.8.20 (2020-11-30)
+-------------------------
+Improvements:
+* Added localization for keyboard shortcuts
+* Added error message popup in the Blender addon
+* Updated Blender addon to not force a GPU by default
+
+Bugs fixed:
+* Fixed configuration upgrade not handling non-array values correctly
+
 Splash 0.8.18 (2020-11-02)
 -------------------------
 Improvements:

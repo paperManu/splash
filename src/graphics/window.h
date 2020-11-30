@@ -76,7 +76,7 @@ class Window : public GraphObject
      * \param codepoint Character code
      * \return Return the number of characters in the queue before calling this method
      */
-    static int getChars(GLFWwindow*& win, unsigned int& codepoint);
+    static int getChar(GLFWwindow*& win, unsigned int& codepoint);
 
     /**
      * \brief Get the next grabbed key in the queue
@@ -86,7 +86,7 @@ class Window : public GraphObject
      * \param mods Key modifier
      * \return Return the number of actions in the queue before calling this method
      */
-    static int getKeys(GLFWwindow*& win, int& key, int& action, int& mods);
+    static int getKey(GLFWwindow*& win, int& key, int& action, int& mods);
 
     /**
      * \brief Get the grabbed mouse action
