@@ -499,12 +499,13 @@ void Object::transferVisibilityFromTexToAttr(int width, int height, int primitiv
         _computeShaderTransferVisibilityToAttr->setAttribute("computePhase", {"transferVisibilityToAttr"});
     }
 
+    _computeShaderTransferVisibilityToAttr->setAttribute("uniform", {"_texSize", static_cast<float>(width), static_cast<float>(height)});
+    _computeShaderTransferVisibilityToAttr->setAttribute("uniform", {"_idShift", primitiveIdShift});
+
     for (auto& geom : _geometries)
     {
         geom->update();
         geom->activateAsSharedBuffer();
-        _computeShaderTransferVisibilityToAttr->setAttribute("uniform", {"_texSize", static_cast<float>(width), static_cast<float>(height)});
-        _computeShaderTransferVisibilityToAttr->setAttribute("uniform", {"_idShift", primitiveIdShift});
         _computeShaderTransferVisibilityToAttr->doCompute(width / 32 + 1, height / 32 + 1);
         glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
         geom->deactivate();

@@ -20,11 +20,6 @@ Blender::Blender(RootObject* root)
 }
 
 /*************/
-Blender::~Blender()
-{
-}
-
-/*************/
 void Blender::update()
 {
     auto scene = dynamic_cast<Scene*>(_root);
@@ -59,29 +54,41 @@ void Blender::update()
         // Only the master scene computes the blending
         if (isMaster)
         {
-            auto cameras = getObjectsPtr(getObjectsOfType("camera"));
-            auto objects = getObjLinkedToCameras();
+            std::vector<std::shared_ptr<Camera>> cameras;
+            std::vector<std::shared_ptr<Object>> objects;
 
-            if (cameras.size() != 0)
+            auto objectList = getObjectsPtr(getObjectsOfType("camera"));
+            std::transform(objectList.cbegin(), objectList.cend(), std::back_inserter(cameras), [](auto cameraPtr) {
+                auto camera = std::dynamic_pointer_cast<Camera>(cameraPtr);
+                assert(camera != nullptr);
+                return camera;
+            });
+
+            objectList = getObjLinkedToCameras();
+            std::transform(objectList.cbegin(), objectList.cend(), std::back_inserter(objects), [](auto objectPtr) {
+                auto object = std::dynamic_pointer_cast<Object>(objectPtr);
+                assert(object != nullptr);
+                return object;
+            });
+
+            if (!cameras.empty())
             {
-                for (auto& it : objects)
-                    std::dynamic_pointer_cast<Object>(it)->resetTessellation();
+                for (auto& object : objects)
+                    object->resetTessellation();
 
                 // Tessellate
-                for (auto& it : cameras)
+                for (auto& camera : cameras)
                 {
-                    auto camera = std::dynamic_pointer_cast<Camera>(it);
                     camera->computeVertexVisibility();
                     camera->blendingTessellateForCurrentCamera();
                 }
 
-                for (auto& it : objects)
-                    std::dynamic_pointer_cast<Object>(it)->resetBlendingAttribute();
+                for (auto& object : objects)
+                    object->resetBlendingAttribute();
 
                 // Compute each camera contribution
-                for (auto& it : cameras)
+                for (auto& camera : cameras)
                 {
-                    auto camera = std::dynamic_pointer_cast<Camera>(it);
                     camera->computeVertexVisibility();
                     camera->computeBlendingContribution();
                 }
@@ -154,7 +161,8 @@ void Blender::registerAttributes()
 {
     ControllerObject::registerAttributes();
 
-    addAttribute("mode",
+    addAttribute(
+        "mode",
         [&](const Values& args) {
             auto mode = args[0].as<std::string>();
             if (mode == "none")
@@ -194,4 +202,4 @@ void Blender::registerAttributes()
     setAttributeSyncMethod("blendingUpdated", Attribute::Sync::force_sync);
 }
 
-} // end of namespace
+} // namespace Splash

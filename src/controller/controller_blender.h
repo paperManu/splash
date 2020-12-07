@@ -42,11 +42,6 @@ class Blender : public ControllerObject
     Blender(RootObject* root);
 
     /**
-     * \brief Destructor
-     */
-    ~Blender() final;
-
-    /**
      * \brief Update the blending
      */
     void update() final;

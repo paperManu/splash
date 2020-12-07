@@ -128,10 +128,16 @@ void Camera::computeVertexVisibility()
     }
 
     // Render with the current texture, with no marker or frame
+    // and no multisampling to allow for reading the vertices ID
     bool drawFrame = _drawFrame;
     bool displayCalibration = _displayCalibration;
+    auto multisample = _multisample;
+
+    _multisample = 0;
     _drawFrame = _displayCalibration = false;
     render();
+
+    _multisample = multisample;
     _drawFrame = drawFrame;
     _displayCalibration = displayCalibration;
 
