@@ -452,7 +452,7 @@ void Gui::drawMainTab()
     if (ImGui::Button("Wireframe / Textured", ImVec2(availableSize[0] / 3.f, 32.f)))
     {
         _wireframe = !_wireframe;
-        setWorldAttribute("wireframe", {(int)_wireframe});
+        setWorldAttribute("wireframe", {_wireframe});
     }
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Switch objects between wireframe and textured (Ctrl+%s and Ctrl+%s)", getLocalKeyName('T'), getLocalKeyName('W'));
