@@ -6,8 +6,6 @@
 #include "./utils/osutils.h"
 #include "./utils/timer.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -49,10 +47,10 @@ bool Mesh::operator==(Mesh& otherMesh) const
 }
 
 /*************/
-vector<float> Mesh::getVertCoords() const
+std::vector<float> Mesh::getVertCoords() const
 {
-    lock_guard<Spinlock> lock(_readMutex);
-    vector<float> coords;
+    std::lock_guard<Spinlock> lock(_readMutex);
+    std::vector<float> coords;
     for (auto& v : _mesh.vertices)
     {
         coords.push_back(v[0]);
@@ -64,10 +62,10 @@ vector<float> Mesh::getVertCoords() const
 }
 
 /*************/
-vector<float> Mesh::getUVCoords() const
+std::vector<float> Mesh::getUVCoords() const
 {
-    lock_guard<Spinlock> lock(_readMutex);
-    vector<float> coords;
+    std::lock_guard<Spinlock> lock(_readMutex);
+    std::vector<float> coords;
     for (auto& u : _mesh.uvs)
     {
         coords.push_back(u[0]);
@@ -77,10 +75,10 @@ vector<float> Mesh::getUVCoords() const
 }
 
 /*************/
-vector<float> Mesh::getNormals() const
+std::vector<float> Mesh::getNormals() const
 {
-    lock_guard<Spinlock> lock(_readMutex);
-    vector<float> normals;
+    std::lock_guard<Spinlock> lock(_readMutex);
+    std::vector<float> normals;
     for (auto& n : _mesh.normals)
     {
         normals.push_back(n[0]);
@@ -92,10 +90,10 @@ vector<float> Mesh::getNormals() const
 }
 
 /*************/
-vector<float> Mesh::getAnnexe() const
+std::vector<float> Mesh::getAnnexe() const
 {
-    lock_guard<Spinlock> lock(_readMutex);
-    vector<float> annexe;
+    std::lock_guard<Spinlock> lock(_readMutex);
+    std::vector<float> annexe;
     for (auto& a : _mesh.annexe)
     {
         annexe.push_back(a[0]);
@@ -107,7 +105,7 @@ vector<float> Mesh::getAnnexe() const
 }
 
 /*************/
-bool Mesh::read(const string& filename)
+bool Mesh::read(const std::string& filename)
 {
     if (!_isConnectedToRemote)
     {
@@ -123,7 +121,7 @@ bool Mesh::read(const string& filename)
         mesh.uvs = objLoader.getUVs();
         mesh.normals = objLoader.getNormals();
 
-        lock_guard<shared_mutex> lock(_writeMutex);
+        std::lock_guard<std::shared_mutex> lock(_writeMutex);
         _mesh = mesh;
         updateTimestamp();
     }
@@ -132,21 +130,21 @@ bool Mesh::read(const string& filename)
 }
 
 /*************/
-shared_ptr<SerializedObject> Mesh::serialize() const
+std::shared_ptr<SerializedObject> Mesh::serialize() const
 {
-    auto obj = make_shared<SerializedObject>();
+    auto obj = std::make_shared<SerializedObject>();
 
     if (Timer::get().isDebug())
         Timer::get() << "serialize " + _name;
 
     // For this, we will use the getVertex, getUV, etc. methods to create a serialized representation of the mesh
-    vector<vector<float>> data;
+    std::vector<std::vector<float>> data;
     data.push_back(getVertCoords());
     data.push_back(getUVCoords());
     data.push_back(getNormals());
     data.push_back(getAnnexe());
 
-    lock_guard<Spinlock> lock(_readMutex);
+    std::lock_guard<Spinlock> lock(_readMutex);
     int nbrVertices = data[0].size() / 4;
     int totalSize = sizeof(nbrVertices); // We add to all this the total number of vertices
     for (auto& d : data)
@@ -155,13 +153,13 @@ shared_ptr<SerializedObject> Mesh::serialize() const
 
     auto currentObjPtr = obj->data();
     const char* ptr = reinterpret_cast<const char*>(&nbrVertices);
-    copy(ptr, ptr + sizeof(nbrVertices), currentObjPtr);
+    std::copy(ptr, ptr + sizeof(nbrVertices), currentObjPtr);
     currentObjPtr += sizeof(nbrVertices);
 
     for (auto& d : data)
     {
         ptr = reinterpret_cast<const char*>(d.data());
-        copy(ptr, ptr + d.size() * sizeof(float), currentObjPtr);
+        std::copy(ptr, ptr + d.size() * sizeof(float), currentObjPtr);
         currentObjPtr += d.size() * sizeof(float);
     }
 
@@ -172,7 +170,7 @@ shared_ptr<SerializedObject> Mesh::serialize() const
 }
 
 /*************/
-bool Mesh::deserialize(const shared_ptr<SerializedObject>& obj)
+bool Mesh::deserialize(const std::shared_ptr<SerializedObject>& obj)
 {
     if (obj.get() == nullptr || obj->size() == 0)
         return false;
@@ -185,7 +183,7 @@ bool Mesh::deserialize(const shared_ptr<SerializedObject>& obj)
     char* ptr = reinterpret_cast<char*>(&nbrVertices);
 
     auto currentObjPtr = obj->data();
-    copy(currentObjPtr, currentObjPtr + sizeof(nbrVertices), ptr); // This will fail if float have different size between sender and receiver
+    std::copy(currentObjPtr, currentObjPtr + sizeof(nbrVertices), ptr); // This will fail if float have different size between sender and receiver
     currentObjPtr += sizeof(nbrVertices);
 
     if (nbrVertices < 0 || nbrVertices > static_cast<int>(obj->size()))
@@ -194,16 +192,16 @@ bool Mesh::deserialize(const shared_ptr<SerializedObject>& obj)
         return false;
     }
 
-    vector<vector<float>> data;
-    data.push_back(vector<float>(nbrVertices * 4));
-    data.push_back(vector<float>(nbrVertices * 2));
-    data.push_back(vector<float>(nbrVertices * 4));
+    std::vector<std::vector<float>> data;
+    data.push_back(std::vector<float>(nbrVertices * 4));
+    data.push_back(std::vector<float>(nbrVertices * 2));
+    data.push_back(std::vector<float>(nbrVertices * 4));
 
     bool hasAnnexe = false;
     if (obj->size() > static_cast<uint32_t>(nbrVertices) * 4 * 14) // Check whether there is an annexe buffer in all this
     {
         hasAnnexe = true;
-        data.push_back(vector<float>(nbrVertices * 4));
+        data.push_back(std::vector<float>(nbrVertices * 4));
     }
 
     // Let's read the values
@@ -212,7 +210,7 @@ bool Mesh::deserialize(const shared_ptr<SerializedObject>& obj)
         for (auto& d : data)
         {
             ptr = reinterpret_cast<char*>(d.data());
-            copy(currentObjPtr, currentObjPtr + d.size() * sizeof(float), ptr);
+            std::copy(currentObjPtr, currentObjPtr + d.size() * sizeof(float), ptr);
             currentObjPtr += d.size() * sizeof(float);
         }
 
@@ -278,8 +276,8 @@ void Mesh::update()
 {
     if (_meshUpdated)
     {
-        lock_guard<Spinlock> lock(_readMutex);
-        shared_lock<shared_mutex> lockWrite(_writeMutex);
+        std::lock_guard<Spinlock> lock(_readMutex);
+        std::shared_lock<std::shared_mutex> lockWrite(_writeMutex);
         _mesh = _bufferMesh;
         _meshUpdated = false;
     }
@@ -296,8 +294,8 @@ void Mesh::createDefaultMesh(int subdiv)
 
     MeshContainer mesh;
 
-    vector<glm::vec2> positions;
-    vector<glm::vec2> uvs;
+    std::vector<glm::vec2> positions;
+    std::vector<glm::vec2> uvs;
 
     for (int v = 0; v < subdiv + 2; ++v)
     {
@@ -346,7 +344,7 @@ void Mesh::createDefaultMesh(int subdiv)
         }
     }
 
-    lock_guard<shared_mutex> lock(_writeMutex);
+    std::lock_guard<std::shared_mutex> lock(_writeMutex);
     _mesh = std::move(mesh);
 
     updateTimestamp();
@@ -359,7 +357,7 @@ void Mesh::registerAttributes()
 
     addAttribute("file",
         [&](const Values& args) {
-            _filepath = args[0].as<string>();
+            _filepath = args[0].as<std::string>();
             return read(Utils::getFullPathFromFilePath(_filepath, _root->getConfigurationPath()));
         },
         [&]() -> Values { return {_filepath}; },

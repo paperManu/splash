@@ -5,8 +5,6 @@
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -23,9 +21,9 @@ Mesh_Shmdata::~Mesh_Shmdata()
 }
 
 /*************/
-bool Mesh_Shmdata::read(const string& filename)
+bool Mesh_Shmdata::read(const std::string& filename)
 {
-    _reader = make_unique<shmdata::Follower>(filename, [&](void* data, size_t size) { onData(data, size); }, [&](const string& caps) { onCaps(caps); }, [&]() {}, &_logger);
+    _reader = std::make_unique<shmdata::Follower>(filename, [&](void* data, size_t size) { onData(data, size); }, [&](const std::string& caps) { onCaps(caps); }, [&]() {}, &_logger);
 
     return true;
 }
@@ -42,7 +40,7 @@ void Mesh_Shmdata::init()
 }
 
 /*************/
-void Mesh_Shmdata::onCaps(const string& dataType)
+void Mesh_Shmdata::onCaps(const std::string& dataType)
 {
     Log::get() << Log::MESSAGE << "Mesh_Shmdata::" << __FUNCTION__ << " - Trying to connect with the following caps: " << dataType << Log::endl;
     if (dataType == "application/x-polymesh")
@@ -70,9 +68,9 @@ void Mesh_Shmdata::onData(void* data, int /*data_size*/)
     int verticeNbr = *(intPtr++);
     int polyNbr = *(intPtr++);
 
-    vector<glm::vec4> vertices(verticeNbr);
-    vector<glm::vec2> uvs(verticeNbr);
-    vector<glm::vec3> normals(verticeNbr);
+    std::vector<glm::vec4> vertices(verticeNbr);
+    std::vector<glm::vec2> uvs(verticeNbr);
+    std::vector<glm::vec3> normals(verticeNbr);
 
     floatPtr += 2;
     // First, create the vertices with no UV, normals or faces
@@ -114,7 +112,7 @@ void Mesh_Shmdata::onData(void* data, int /*data_size*/)
         intPtr += size;
     }
 
-    lock_guard<shared_mutex> lock(_writeMutex);
+    std::lock_guard<std::shared_mutex> lock(_writeMutex);
     if (Timer::get().isDebug())
         Timer::get() << "mesh_shmdata " + _name;
 

@@ -29,7 +29,7 @@
 #include "./controller/colorcalibrator.h"
 #endif
 
-using namespace std;
+namespace filesystem = std::filesystem;
 
 namespace Splash
 {
@@ -37,7 +37,7 @@ namespace Splash
 namespace SplashImGui
 {
 /*********/
-bool FileSelectorParseDir(const string& sourcePath, vector<string>& list, const vector<string>& extensions, bool showNormalFiles)
+bool FileSelectorParseDir(const std::string& sourcePath, std::vector<std::string>& list, const std::vector<std::string>& extensions, bool showNormalFiles)
 {
     // Make the path absolute and if path is a file, get its parent directory
     bool isDirectoryPath = filesystem::is_directory(sourcePath);
@@ -46,19 +46,19 @@ bool FileSelectorParseDir(const string& sourcePath, vector<string>& list, const 
     if (isDirectoryPath)
     {
         list.clear();
-        vector<string> files = Utils::listDirContent(path);
+        std::vector<std::string> files = Utils::listDirContent(path);
 
         // Alphabetical order
-        std::sort(files.begin(), files.end(), [](string a, string b) { return a < b; });
+        std::sort(files.begin(), files.end(), [](std::string a, std::string b) { return a < b; });
 
         // if path is not root add ".." to the list
         if (path != path.root_path())
             list.push_back("..");
 
         // But we put directories first
-        std::copy_if(files.begin(), files.end(), std::back_inserter(list), [&path](string p) { return std::filesystem::is_directory(path / p); });
+        std::copy_if(files.begin(), files.end(), std::back_inserter(list), [&path](std::string p) { return std::filesystem::is_directory(path / p); });
 
-        std::copy_if(files.begin(), files.end(), std::back_inserter(list), [&path](string p) { return !std::filesystem::is_directory(path / p); });
+        std::copy_if(files.begin(), files.end(), std::back_inserter(list), [&path](std::string p) { return !std::filesystem::is_directory(path / p); });
 
         // Filter files based:
         // * on extension -> only show some specific extensions
@@ -66,7 +66,7 @@ bool FileSelectorParseDir(const string& sourcePath, vector<string>& list, const 
         // * hidden files
         list.erase(std::remove_if(list.begin(),
                        list.end(),
-                       [&extensions, &path, &showNormalFiles](const string& p) {
+                       [&extensions, &path, &showNormalFiles](const std::string& p) {
                            // remove hidden files and directories
                            if (p.size() > 2 && p[0] == '.')
                                return true;
@@ -98,7 +98,7 @@ bool FileSelectorParseDir(const string& sourcePath, vector<string>& list, const 
 }
 
 /*********/
-bool FileSelector(const string& label, string& path, bool& cancelled, const vector<string>& extensions, bool showNormalFiles, bool newFile)
+bool FileSelector(const std::string& label, std::string& path, bool& cancelled, const std::vector<std::string>& extensions, bool showNormalFiles, bool newFile)
 {
     path = Utils::getPathFromFilePath(path);
 
@@ -109,17 +109,17 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
 
     ImGui::PushID(label.c_str());
 
-    string windowName = "Select file path";
+    std::string windowName = "Select file path";
     if (label.size() != 0)
         windowName += " - " + label;
 
     ImGui::Begin(windowName.c_str(), nullptr, ImVec2(400, 600), 0.99f);
 
     ImGui::PushItemWidth(-64.f);
-    vector<string> fileList;
+    std::vector<std::string> fileList;
 
-    string newPath = Utils::getPathFromFilePath(path);
-    string newFilename = Utils::getFilenameFromFilePath(path);
+    std::string newPath = Utils::getPathFromFilePath(path);
+    std::string newFilename = Utils::getFilenameFromFilePath(path);
     if (SplashImGui::InputText("Path##FileSelectFullPath", newPath))
     {
         path = Utils::getPathFromFilePath(newPath);
@@ -142,7 +142,7 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
     }
 
     ImGui::BeginChild("##filelist", ImVec2(0, -48), true);
-    static unordered_map<string, uint32_t> selectedId{};
+    static std::unordered_map<std::string, uint32_t> selectedId{};
     if (selectedId.find(label) == selectedId.end())
         selectedId[label] = 0;
     for (uint32_t i = 0; i < fileList.size(); ++i)
@@ -236,7 +236,7 @@ bool InputText(const char* label, std::string& str, ImGuiInputTextFlags flags)
 
 /*************/
 /*************/
-GuiWidget::GuiWidget(Scene* scene, const string& name)
+GuiWidget::GuiWidget(Scene* scene, const std::string& name)
     : ControllerObject(scene)
     , _scene(scene)
 {
@@ -244,10 +244,10 @@ GuiWidget::GuiWidget(Scene* scene, const string& name)
 }
 
 /*************/
-void GuiWidget::drawAttributes(const string& objName, const unordered_map<string, Values>& attributes)
+void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_map<std::string, Values>& attributes)
 {
     auto objAlias = getObjectAlias(objName);
-    vector<string> attributeNames;
+    std::vector<std::string> attributeNames;
     for (const auto& attr : attributes)
         attributeNames.push_back(attr.first);
     sort(attributeNames.begin(), attributeNames.end());
@@ -320,7 +320,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
             }
             case 2:
             {
-                array<int64_t, 2> tmp;
+                std::array<int64_t, 2> tmp;
                 tmp[0] = attribute[0].as<int64_t>();
                 tmp[1] = attribute[1].as<int64_t>();
                 if (ImGui::InputScalarN(attrName.c_str(), ImGuiDataType_S64, tmp.data(), 2, nullptr, nullptr, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
@@ -329,7 +329,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
             }
             case 3:
             {
-                array<int64_t, 3> tmp;
+                std::array<int64_t, 3> tmp;
                 tmp[0] = attribute[0].as<int64_t>();
                 tmp[1] = attribute[1].as<int64_t>();
                 tmp[2] = attribute[2].as<int64_t>();
@@ -339,7 +339,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
             }
             case 4:
             {
-                array<int64_t, 4> tmp;
+                std::array<int64_t, 4> tmp;
                 tmp[0] = attribute[0].as<int64_t>();
                 tmp[1] = attribute[1].as<int64_t>();
                 tmp[2] = attribute[2].as<int64_t>();
@@ -387,7 +387,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
             }
             case 2:
             {
-                array<float, 2> tmp;
+                std::array<float, 2> tmp;
                 tmp[0] = attribute[0].as<float>();
                 tmp[1] = attribute[1].as<float>();
                 if (ImGui::InputFloat2(attrName.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
@@ -396,7 +396,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
             }
             case 3:
             {
-                array<float, 3> tmp;
+                std::array<float, 3> tmp;
                 tmp[0] = attribute[0].as<float>();
                 tmp[1] = attribute[1].as<float>();
                 tmp[2] = attribute[2].as<float>();
@@ -406,7 +406,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
             }
             case 4:
             {
-                array<float, 4> tmp;
+                std::array<float, 4> tmp;
                 tmp[0] = attribute[0].as<float>();
                 tmp[1] = attribute[1].as<float>();
                 tmp[2] = attribute[2].as<float>();
@@ -428,9 +428,9 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
             {
                 if (values[0].isConvertibleToType(Value::Type::real))
                 {
-                    float minValue = numeric_limits<float>::max();
-                    float maxValue = numeric_limits<float>::min();
-                    vector<float> samples;
+                    float minValue = std::numeric_limits<float>::max();
+                    float maxValue = std::numeric_limits<float>::min();
+                    std::vector<float> samples;
                     for (const auto& v : values)
                     {
                         auto value = v.as<float>();
@@ -443,7 +443,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                         samples.data(),
                         samples.size(),
                         samples.size(),
-                        ("[" + to_string(minValue) + ", " + to_string(maxValue) + "]").c_str(),
+                        ("[" + std::to_string(minValue) + ", " + std::to_string(maxValue) + "]").c_str(),
                         minValue,
                         maxValue,
                         ImVec2(0, 100));
@@ -459,7 +459,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                 if (attrName.find("file") == 0)
                 {
 
-                    string tmp = v.as<string>();
+                    std::string tmp = v.as<std::string>();
                     ImGui::PushID((objName + attrName).c_str());
                     if (SplashImGui::InputText("", tmp, ImGuiInputTextFlags_EnterReturnsTrue))
                         setObjectAttribute(objName, attrName, {tmp});
@@ -467,7 +467,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                     // Callback for dragndrop: replace the file path in the field
                     if (ImGui::IsItemHovered())
                         UserInput::setCallback(
-                            UserInput::State("dragndrop"), [=](const UserInput::State& state) { setObjectAttribute(objName, attrName, {state.value[0].as<string>()}); });
+                            UserInput::State("dragndrop"), [=](const UserInput::State& state) { setObjectAttribute(objName, attrName, {state.value[0].as<std::string>()}); });
                     else // Not really necessary as the GUI sets a default dragndrop callback at each frame, but anyway
                         UserInput::resetCallback(UserInput::State("dragndrop"));
 
@@ -478,9 +478,9 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                     }
                     if (_fileSelectorTarget == objName)
                     {
-                        static string path = _root->getMediaPath();
+                        static std::string path = _root->getMediaPath();
                         bool cancelled;
-                        vector<string> extensions{{".bmp"}, {".jpg"}, {".png"}, {".tga"}, {".tif"}, {".avi"}, {".mov"}, {".mp4"}, {".obj"}};
+                        std::vector<std::string> extensions{{".bmp"}, {".jpg"}, {".png"}, {".tga"}, {".tif"}, {".avi"}, {".mov"}, {".mp4"}, {".obj"}};
                         if (SplashImGui::FileSelector(objAlias, path, cancelled, extensions))
                         {
                             if (!cancelled)
@@ -495,7 +495,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                 // For everything else ...
                 else
                 {
-                    string tmp = v.as<string>();
+                    std::string tmp = v.as<std::string>();
                     if (SplashImGui::InputText(attrName.c_str(), tmp, ImGuiInputTextFlags_EnterReturnsTrue))
                         setObjectAttribute(objName, attrName, {tmp});
                 }
@@ -508,7 +508,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
         {
             auto answer = getObjectAttributeDescription(objName, attrName);
             if (answer.size() != 0)
-                ImGui::SetTooltip("%s", answer[0].as<string>().c_str());
+                ImGui::SetTooltip("%s", answer[0].as<std::string>().c_str());
         }
     }
     ImGui::PopItemWidth();

@@ -15,7 +15,7 @@
 #include "./utils/osutils.h"
 #include "./utils/timer.h"
 
-using namespace std;
+namespace chrono = std::chrono;
 
 namespace Splash
 {
@@ -77,7 +77,7 @@ float Image_FFmpeg::getMediaDuration() const
 }
 
 /*************/
-bool Image_FFmpeg::read(const string& filename)
+bool Image_FFmpeg::read(const std::string& filename)
 {
     const auto filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
 
@@ -115,19 +115,19 @@ bool Image_FFmpeg::read(const string& filename)
 
     // Launch the loops
     _continueRead = true;
-    _videoDisplayThread = thread([&]() { videoDisplayLoop(); });
+    _videoDisplayThread = std::thread([&]() { videoDisplayLoop(); });
 #if HAVE_PORTAUDIO
-    _audioThread = thread([&]() { audioLoop(); });
+    _audioThread = std::thread([&]() { audioLoop(); });
 #endif
-    _readLoopThread = thread([&]() { readLoop(); });
+    _readLoopThread = std::thread([&]() { readLoop(); });
 
     return true;
 }
 
 /*************/
-string Image_FFmpeg::tagToFourCC(unsigned int tag)
+std::string Image_FFmpeg::tagToFourCC(unsigned int tag)
 {
-    string fourcc;
+    std::string fourcc;
     fourcc.resize(4);
 
     unsigned int sum = 0;
@@ -192,7 +192,7 @@ bool Image_FFmpeg::setupAudioOutput(AVCodecContext* audioCodecContext)
         break;
     }
 
-    _speaker = make_unique<Speaker>();
+    _speaker = std::make_unique<Speaker>();
     if (!_speaker)
         return false;
 
@@ -246,7 +246,7 @@ void Image_FFmpeg::readLoop()
     _videoFormat.resize(1024);
     avcodec_string(const_cast<char*>(_videoFormat.data()), _videoFormat.size(), videoCodecContext, 0);
 
-    videoCodecContext->thread_count = min(Utils::getCoreCount(), 16);
+    videoCodecContext->thread_count = std::min(Utils::getCoreCount(), 16);
     auto videoCodec = avcodec_find_decoder(videoCodecContext->codec_id);
     auto isHap = false;
 
@@ -258,7 +258,7 @@ void Image_FFmpeg::readLoop()
         _intraOnly = false; // We don't know, so we consider it's not
 
     auto fourcc = tagToFourCC(videoCodecContext->codec_tag);
-    if (fourcc.find("Hap") != string::npos)
+    if (fourcc.find("Hap") != std::string::npos)
     {
         isHap = true;
         _intraOnly = true; // Hap is necessarily intra only
@@ -329,7 +329,7 @@ void Image_FFmpeg::readLoop()
     }
 
     int numBytes = av_image_get_buffer_size(AV_PIX_FMT_YUYV422, videoCodecContext->width, videoCodecContext->height, 1);
-    vector<unsigned char> buffer(numBytes);
+    std::vector<unsigned char> buffer(numBytes);
 
     struct SwsContext* swsContext = nullptr;
     if (!isHap)
@@ -358,7 +358,7 @@ void Image_FFmpeg::readLoop()
     while (_continueRead)
     {
         auto shouldContinueLoop = [&]() -> bool {
-            lock_guard<mutex> lock(_videoSeekMutex);
+            std::lock_guard<std::mutex> lock(_videoSeekMutex);
             return _continueRead && av_read_frame(_avContext, &packet) >= 0;
         };
 
@@ -367,7 +367,7 @@ void Image_FFmpeg::readLoop()
             // Reading the video
             if (packet.stream_index == _videoStreamIndex && _videoSeekMutex.try_lock())
             {
-                auto img = unique_ptr<ImageBuffer>();
+                auto img = std::unique_ptr<ImageBuffer>();
                 uint64_t timing = 0;
                 bool hasFrame = false;
 
@@ -389,7 +389,7 @@ void Image_FFmpeg::readLoop()
                         img.reset(new ImageBuffer(spec));
 
                         unsigned char* pixels = reinterpret_cast<unsigned char*>(img->data());
-                        copy(buffer.begin(), buffer.end(), pixels);
+                        std::copy(buffer.begin(), buffer.end(), pixels);
 
                         if (packet.pts != AV_NOPTS_VALUE)
                             timing = static_cast<uint64_t>((double)frame->best_effort_timestamp * _videoTimeBase * 1e6);
@@ -452,7 +452,7 @@ void Image_FFmpeg::readLoop()
 
                 int64_t totalBufferSize = 0;
                 {
-                    lock_guard<mutex> lockFrames(_videoQueueMutex);
+                    std::lock_guard<std::mutex> lockFrames(_videoQueueMutex);
                     if (hasFrame)
                     {
                         // Add the frame size to the history
@@ -477,9 +477,9 @@ void Image_FFmpeg::readLoop()
                 // _maximumBufferSize is divided by 2 as another frame queue is held by the display loop
                 while (timedFramesBuffered > 0 && totalBufferSize > _maximumBufferSize / 2 && _continueRead)
                 {
-                    this_thread::sleep_for(chrono::milliseconds(5));
-                    lock_guard<mutex> lockSeek(_videoSeekMutex);
-                    lock_guard<mutex> lockQueue(_videoQueueMutex);
+                    std::this_thread::sleep_for(chrono::milliseconds(5));
+                    std::lock_guard<std::mutex> lockSeek(_videoSeekMutex);
+                    std::lock_guard<std::mutex> lockQueue(_videoQueueMutex);
                     timedFramesBuffered = _timedFrames.size();
                 }
             }
@@ -506,14 +506,14 @@ void Image_FFmpeg::readLoop()
                     auto linesize = dataSize / audioCodecContext->channels;
                     if (_planar)
                         for (int c = 0; c < audioCodecContext->channels; ++c)
-                            copy(frame->extended_data[c], frame->extended_data[c] + linesize, buffer.data() + c * linesize);
+                            std::copy(frame->extended_data[c], frame->extended_data[c] + linesize, buffer.data() + c * linesize);
                     else
-                        copy(frame->extended_data[0], frame->extended_data[0] + dataSize, buffer.data());
+                        std::copy(frame->extended_data[0], frame->extended_data[0] + dataSize, buffer.data());
 
                     TimedAudioFrame timedFrame;
                     timedFrame.frame = std::move(buffer);
                     timedFrame.timing = timing;
-                    lock_guard<mutex> lockAudio(_audioMutex);
+                    std::lock_guard<std::mutex> lockAudio(_audioMutex);
                     _audioQueue.push_back(std::move(timedFrame));
 
                     av_frame_unref(frame);
@@ -527,13 +527,13 @@ void Image_FFmpeg::readLoop()
         }
 
         // This prevents looping to happen before the queue has been consumed
-        lock_guard<mutex> lockEnd(_videoEndMutex);
+        std::lock_guard<std::mutex> lockEnd(_videoEndMutex);
 
         // If we loop, seek to the beginning, or whatever time is set in _trimStart
         if (_loopOnVideo)
             seek(static_cast<float>(_trimStart) / 1e6, false);
         else
-            this_thread::sleep_for(chrono::milliseconds(50));
+            std::this_thread::sleep_for(chrono::milliseconds(50));
     }
 
     av_frame_free(&rgbFrame);
@@ -560,14 +560,14 @@ void Image_FFmpeg::audioLoop()
 {
     while (_continueRead)
     {
-        auto localQueue = deque<TimedAudioFrame>();
+        auto localQueue = std::deque<TimedAudioFrame>();
         {
-            lock_guard<mutex> lockAudio(_audioMutex);
+            std::lock_guard<std::mutex> lockAudio(_audioMutex);
             std::swap(localQueue, _audioQueue);
         }
 
         if (localQueue.empty())
-            this_thread::sleep_for(chrono::milliseconds(10));
+            std::this_thread::sleep_for(chrono::milliseconds(10));
 
         while (!localQueue.empty() && _continueRead && _speaker)
         {
@@ -581,7 +581,7 @@ void Image_FFmpeg::audioLoop()
 
             while (localQueue[0].timing - currentTime > 100000)
             {
-                this_thread::sleep_for(chrono::milliseconds(5));
+                std::this_thread::sleep_for(chrono::milliseconds(5));
                 currentTime = Timer::getTime() - _startTime;
             }
 
@@ -599,7 +599,7 @@ void Image_FFmpeg::seek(float seconds, bool clearQueues)
     if (!_avContext)
         return;
 
-    lock_guard<mutex> lock(_videoSeekMutex);
+    std::lock_guard<std::mutex> lock(_videoSeekMutex);
 
     int seekFlag = 0;
     if (_elapsedTime > seconds)
@@ -619,7 +619,7 @@ void Image_FFmpeg::seek(float seconds, bool clearQueues)
     }
     else
     {
-        lock_guard<mutex> lockQueue(_videoQueueMutex);
+        std::lock_guard<std::mutex> lockQueue(_videoQueueMutex);
         // As seeking will no necessarily go to the desired timestamp, but to the closest i-frame,
         // we will set _startTime at the next frame in the videoDisplayLoop
         _startTime = -1;
@@ -638,7 +638,7 @@ void Image_FFmpeg::seek(float seconds, bool clearQueues)
 /*************/
 void Image_FFmpeg::seek_async(float seconds, bool clearQueues)
 {
-    _seekFuture = async(launch::async, [=]() {
+    _seekFuture = std::async(std::launch::async, [=]() {
         seek(seconds, clearQueues);
         _timeJump = false;
     });
@@ -649,16 +649,16 @@ void Image_FFmpeg::videoDisplayLoop()
 {
     while (_continueRead)
     {
-        auto localQueue = deque<TimedFrame>();
+        auto localQueue = std::deque<TimedFrame>();
         if (!_timedFrames.empty())
         {
-            lock_guard<mutex> lockFrames(_videoQueueMutex);
+            std::lock_guard<std::mutex> lockFrames(_videoQueueMutex);
             std::swap(localQueue, _timedFrames);
             _framesSize.clear();
         }
         else
         {
-            this_thread::sleep_for(chrono::milliseconds(1));
+            std::this_thread::sleep_for(chrono::milliseconds(1));
             continue;
         }
 
@@ -666,7 +666,7 @@ void Image_FFmpeg::videoDisplayLoop()
         if (!localQueue.empty() && _startTime == -1)
             _startTime = Timer::getTime() - localQueue[0].timing;
 
-        lock_guard<mutex> lockEnd(_videoEndMutex);
+        std::lock_guard<std::mutex> lockEnd(_videoEndMutex);
         while (!localQueue.empty() && _continueRead)
         {
             // If seek, clear the local queue as the frames should not be shown
@@ -697,7 +697,7 @@ void Image_FFmpeg::videoDisplayLoop()
                 if (_paused || (clockIsPaused && useClock))
                 {
                     _startTime = Timer::getTime() - _currentTime;
-                    this_thread::sleep_for(chrono::milliseconds(2));
+                    std::this_thread::sleep_for(chrono::milliseconds(2));
                     continue;
                 }
                 else if (useClock && _clockTime != -1l)
@@ -756,14 +756,14 @@ void Image_FFmpeg::videoDisplayLoop()
 
                 // Wait for the right time to display the frame
                 if (waitTime > 0)
-                    this_thread::sleep_for(chrono::microseconds(waitTime));
+                    std::this_thread::sleep_for(chrono::microseconds(waitTime));
 
                 _elapsedTime = timedFrame.timing;
 
                 {
-                    lock_guard<shared_mutex> lock(_writeMutex);
+                    std::lock_guard<std::shared_mutex> lock(_writeMutex);
                     if (!_bufferImage)
-                        _bufferImage = make_unique<ImageBuffer>();
+                        _bufferImage = std::make_unique<ImageBuffer>();
                     std::swap(_bufferImage, timedFrame.frame);
                     _imageUpdated = true;
                 }
@@ -792,7 +792,7 @@ void Image_FFmpeg::registerAttributes()
 
     addAttribute("bufferSize",
         [&](const Values& args) {
-            int64_t sizeMB = max(16, args[0].as<int>());
+            int64_t sizeMB = std::max(16, args[0].as<int>());
             _maximumBufferSize = sizeMB * (int64_t)1048576;
             return true;
         },
@@ -812,7 +812,7 @@ void Image_FFmpeg::registerAttributes()
 #if HAVE_PORTAUDIO
     addAttribute("audioDeviceOutput",
         [&](const Values& args) {
-            _audioDeviceOutput = args[0].as<string>();
+            _audioDeviceOutput = args[0].as<std::string>();
             _audioDeviceOutputUpdated = true;
             return true;
         },

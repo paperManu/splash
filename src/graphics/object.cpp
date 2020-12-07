@@ -16,8 +16,6 @@
 #include <glm/gtx/string_cast.hpp>
 #include <limits>
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -61,7 +59,7 @@ void Object::activate()
     auto shaderIt = _graphicsShaders.find(_fill);
     if (shaderIt == _graphicsShaders.end())
     {
-        _shader = make_shared<Shader>();
+        _shader = std::make_shared<Shader>();
         _graphicsShaders[_fill] = _shader;
     }
     else
@@ -72,8 +70,8 @@ void Object::activate()
     // Set the shader depending on a few other parameters
     Values shaderParameters{};
     for (uint32_t i = 0; i < _textures.size(); ++i)
-        shaderParameters.push_back("TEX_" + to_string(i + 1));
-    shaderParameters.push_back("TEXCOUNT " + to_string(_textures.size()));
+        shaderParameters.push_back("TEX_" + std::to_string(i + 1));
+    shaderParameters.push_back("TEXCOUNT " + std::to_string(_textures.size()));
 
     for (auto& p : _fillParameters)
         shaderParameters.push_back(p);
@@ -123,14 +121,14 @@ void Object::activate()
     for (auto& t : _textures)
     {
         t->lock();
-        _shader->setTexture(t, texUnit, t->getPrefix() + to_string(texUnit));
+        _shader->setTexture(t, texUnit, t->getPrefix() + std::to_string(texUnit));
 
         // Get texture specific uniforms and send them to the shader
         auto texUniforms = t->getShaderUniforms();
         for (auto u : texUniforms)
         {
             Values parameters;
-            parameters.push_back(Value(t->getPrefix() + to_string(texUnit) + "_" + u.first));
+            parameters.push_back(Value(t->getPrefix() + std::to_string(texUnit) + "_" + u.first));
             for (auto value : u.second)
                 parameters.push_back(value);
             _shader->setAttribute("uniform", parameters);
@@ -215,55 +213,55 @@ int Object::getVerticesNumber() const
 }
 
 /*************/
-bool Object::linkIt(const shared_ptr<GraphObject>& obj)
+bool Object::linkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (obj->getType().find("texture") != string::npos)
+    if (obj->getType().find("texture") != std::string::npos)
     {
-        auto filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", getName() + "_" + obj->getName() + "_filter").lock());
+        auto filter = std::dynamic_pointer_cast<Filter>(_root->createObject("filter", getName() + "_" + obj->getName() + "_filter").lock());
         filter->setSavable(_savable); // We always save the filters as they hold user-specified values, if this is savable
         if (filter->linkTo(obj))
             return linkTo(filter);
         else
             return false;
     }
-    else if (obj->getType().find("filter") != string::npos)
+    else if (obj->getType().find("filter") != std::string::npos)
     {
-        auto tex = dynamic_pointer_cast<Texture>(obj);
+        auto tex = std::dynamic_pointer_cast<Texture>(obj);
         addTexture(tex);
         return true;
     }
-    else if (obj->getType().find("virtual_probe") != string::npos)
+    else if (obj->getType().find("virtual_probe") != std::string::npos)
     {
-        auto tex = dynamic_pointer_cast<Texture>(obj);
+        auto tex = std::dynamic_pointer_cast<Texture>(obj);
         addTexture(tex);
         return true;
     }
-    else if (obj->getType().find("queue") != string::npos)
+    else if (obj->getType().find("queue") != std::string::npos)
     {
-        auto tex = dynamic_pointer_cast<Texture>(obj);
+        auto tex = std::dynamic_pointer_cast<Texture>(obj);
         addTexture(tex);
         return true;
     }
-    else if (obj->getType().find("image") != string::npos)
+    else if (obj->getType().find("image") != std::string::npos)
     {
-        auto filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", getName() + "_" + obj->getName() + "_filter").lock());
+        auto filter = std::dynamic_pointer_cast<Filter>(_root->createObject("filter", getName() + "_" + obj->getName() + "_filter").lock());
         filter->setSavable(_savable); // We always save the filters as they hold user-specified values, if this is savable
         if (filter->linkTo(obj))
             return linkTo(filter);
         else
             return false;
     }
-    else if (obj->getType().find("mesh") != string::npos)
+    else if (obj->getType().find("mesh") != std::string::npos)
     {
-        auto geom = dynamic_pointer_cast<Geometry>(_root->createObject("geometry", getName() + "_" + obj->getName() + "_geom").lock());
+        auto geom = std::dynamic_pointer_cast<Geometry>(_root->createObject("geometry", getName() + "_" + obj->getName() + "_geom").lock());
         if (geom->linkTo(obj))
             return linkTo(geom);
         else
             return false;
     }
-    else if (obj->getType().find("geometry") != string::npos)
+    else if (obj->getType().find("geometry") != std::string::npos)
     {
-        auto geom = dynamic_pointer_cast<Geometry>(obj);
+        auto geom = std::dynamic_pointer_cast<Geometry>(obj);
         addGeometry(geom);
         return true;
     }
@@ -272,10 +270,10 @@ bool Object::linkIt(const shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void Object::unlinkIt(const shared_ptr<GraphObject>& obj)
+void Object::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
     auto type = obj->getType();
-    if (type.find("texture") != string::npos)
+    if (type.find("texture") != std::string::npos)
     {
         auto filterName = getName() + "_" + obj->getName() + "_filter";
 
@@ -287,7 +285,7 @@ void Object::unlinkIt(const shared_ptr<GraphObject>& obj)
 
         _root->disposeObject(filterName);
     }
-    else if (type.find("image") != string::npos)
+    else if (type.find("image") != std::string::npos)
     {
         auto filterName = getName() + "_" + obj->getName() + "_filter";
 
@@ -299,17 +297,17 @@ void Object::unlinkIt(const shared_ptr<GraphObject>& obj)
 
         _root->disposeObject(filterName);
     }
-    else if (type.find("filter") != string::npos)
+    else if (type.find("filter") != std::string::npos)
     {
-        auto tex = dynamic_pointer_cast<Texture>(obj);
+        auto tex = std::dynamic_pointer_cast<Texture>(obj);
         removeTexture(tex);
     }
-    else if (obj->getType().find("virtual_screen") != string::npos)
+    else if (obj->getType().find("virtual_screen") != std::string::npos)
     {
-        auto tex = dynamic_pointer_cast<Texture>(obj);
+        auto tex = std::dynamic_pointer_cast<Texture>(obj);
         removeTexture(tex);
     }
-    else if (type.find("mesh") != string::npos)
+    else if (type.find("mesh") != std::string::npos)
     {
         auto geomName = getName() + "_" + obj->getName() + "_geom";
 
@@ -321,14 +319,14 @@ void Object::unlinkIt(const shared_ptr<GraphObject>& obj)
 
         _root->disposeObject(geomName);
     }
-    else if (type.find("geometry") != string::npos)
+    else if (type.find("geometry") != std::string::npos)
     {
-        auto geom = dynamic_pointer_cast<Geometry>(obj);
+        auto geom = std::dynamic_pointer_cast<Geometry>(obj);
         removeGeometry(geom);
     }
-    else if (obj->getType().find("queue") != string::npos)
+    else if (obj->getType().find("queue") != std::string::npos)
     {
-        auto tex = dynamic_pointer_cast<Texture>(obj);
+        auto tex = std::dynamic_pointer_cast<Texture>(obj);
         removeTexture(tex);
     }
 }
@@ -336,7 +334,7 @@ void Object::unlinkIt(const shared_ptr<GraphObject>& obj)
 /*************/
 float Object::pickVertex(glm::dvec3 p, glm::dvec3& v)
 {
-    float distance = numeric_limits<float>::max();
+    float distance = std::numeric_limits<float>::max();
     glm::dvec3 closestVertex;
     float tmpDist;
     for (auto& geom : _geometries)
@@ -354,7 +352,7 @@ float Object::pickVertex(glm::dvec3 p, glm::dvec3& v)
 }
 
 /*************/
-void Object::removeGeometry(const shared_ptr<Geometry>& geometry)
+void Object::removeGeometry(const std::shared_ptr<Geometry>& geometry)
 {
     auto geomIt = find(_geometries.begin(), _geometries.end(), geometry);
     if (geomIt != _geometries.end())
@@ -362,7 +360,7 @@ void Object::removeGeometry(const shared_ptr<Geometry>& geometry)
 }
 
 /*************/
-void Object::removeTexture(const shared_ptr<Texture>& tex)
+void Object::removeTexture(const std::shared_ptr<Texture>& tex)
 {
     auto texIterator = find(_textures.begin(), _textures.end(), tex);
     if (texIterator != _textures.end())
@@ -372,11 +370,11 @@ void Object::removeTexture(const shared_ptr<Texture>& tex)
 /*************/
 void Object::resetVisibility(int primitiveIdShift)
 {
-    lock_guard<mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 
     if (!_computeShaderResetVisibility)
     {
-        _computeShaderResetVisibility = make_shared<Shader>(Shader::prgCompute);
+        _computeShaderResetVisibility = std::make_shared<Shader>(Shader::prgCompute);
         _computeShaderResetVisibility->setAttribute("computePhase", {"resetVisibility"});
     }
 
@@ -398,11 +396,11 @@ void Object::resetVisibility(int primitiveIdShift)
 /*************/
 void Object::resetBlendingAttribute()
 {
-    lock_guard<mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 
     if (!_computeShaderResetBlendingAttributes)
     {
-        _computeShaderResetBlendingAttributes = make_shared<Shader>(Shader::prgCompute);
+        _computeShaderResetBlendingAttributes = std::make_shared<Shader>(Shader::prgCompute);
         _computeShaderResetBlendingAttributes->setAttribute("computePhase", {"resetBlending"});
     }
 
@@ -423,7 +421,7 @@ void Object::resetBlendingAttribute()
 /*************/
 void Object::resetTessellation()
 {
-    lock_guard<mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 
     for (auto& geom : _geometries)
     {
@@ -434,11 +432,11 @@ void Object::resetTessellation()
 /*************/
 void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float fovX, float fovY, float blendWidth, float blendPrecision)
 {
-    lock_guard<mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 
     if (!_feedbackShaderSubdivideCamera)
     {
-        _feedbackShaderSubdivideCamera = make_shared<Shader>(Shader::prgFeedback);
+        _feedbackShaderSubdivideCamera = std::make_shared<Shader>(Shader::prgFeedback);
         _feedbackShaderSubdivideCamera->setAttribute("feedbackPhase", {"tessellateFromCamera"});
         _feedbackShaderSubdivideCamera->setAttribute("feedbackVaryings", {"GEOM_OUT.vertex", "GEOM_OUT.texCoord", "GEOM_OUT.normal", "GEOM_OUT.annexe"});
     }
@@ -493,11 +491,11 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
 /*************/
 void Object::transferVisibilityFromTexToAttr(int width, int height, int primitiveIdShift)
 {
-    lock_guard<mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 
     if (!_computeShaderTransferVisibilityToAttr)
     {
-        _computeShaderTransferVisibilityToAttr = make_shared<Shader>(Shader::prgCompute);
+        _computeShaderTransferVisibilityToAttr = std::make_shared<Shader>(Shader::prgCompute);
         _computeShaderTransferVisibilityToAttr->setAttribute("computePhase", {"transferVisibilityToAttr"});
     }
 
@@ -516,11 +514,11 @@ void Object::transferVisibilityFromTexToAttr(int width, int height, int primitiv
 /*************/
 void Object::computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth)
 {
-    lock_guard<mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 
     if (!_computeShaderComputeBlending)
     {
-        _computeShaderComputeBlending = make_shared<Shader>(Shader::prgCompute);
+        _computeShaderComputeBlending = std::make_shared<Shader>(Shader::prgCompute);
         _computeShaderComputeBlending->setAttribute("computePhase", {"computeCameraContribution"});
     }
 
@@ -630,10 +628,10 @@ void Object::registerAttributes()
 
     addAttribute("fill",
         [&](const Values& args) {
-            _fill = args[0].as<string>();
+            _fill = args[0].as<std::string>();
             _fillParameters.clear();
             for (uint32_t i = 1; i < args.size(); ++i)
-                _fillParameters.push_back(args[i].as<string>());
+                _fillParameters.push_back(args[i].as<std::string>());
             return true;
         },
         [&]() -> Values { return {_fill}; },

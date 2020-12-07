@@ -1,7 +1,5 @@
 #include "./graphics/filter_color_curves.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -16,7 +14,7 @@ FilterColorCurves::FilterColorCurves(RootObject* root)
 void FilterColorCurves::updateShaderParameters()
 {
     if (!_colorCurves.empty()) // Validity of color curve has been checked earlier
-        _screen->setAttribute("fill", {"color_curves_filter", "COLOR_CURVE_COUNT " + to_string(static_cast<int>(_colorCurves[0].size()))});
+        _screen->setAttribute("fill", {"color_curves_filter", "COLOR_CURVE_COUNT " + std::to_string(static_cast<int>(_colorCurves[0].size()))});
 
     // This is a trick to force the shader compilation
     _screen->activate();

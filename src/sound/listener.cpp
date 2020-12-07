@@ -3,8 +3,6 @@
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -22,7 +20,7 @@ Listener::~Listener()
 }
 
 /*************/
-void Listener::setParameters(uint32_t channels, uint32_t sampleRate, Sound_Engine::SampleFormat format, const string& deviceName)
+void Listener::setParameters(uint32_t channels, uint32_t sampleRate, Sound_Engine::SampleFormat format, const std::string& deviceName)
 {
     _channels = std::max((uint32_t)1, channels);
     _sampleRate = sampleRate;

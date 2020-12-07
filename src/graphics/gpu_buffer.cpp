@@ -1,7 +1,5 @@
 #include "./graphics/gpu_buffer.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -40,7 +38,7 @@ GpuBuffer::GpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, 
 
     if (data == nullptr)
     {
-        auto zeroBuffer = vector<char>(size * _elementSize * _baseSize, 0);
+        auto zeroBuffer = std::vector<char>(size * _elementSize * _baseSize, 0);
         glNamedBufferData(_glId, size * _elementSize * _baseSize, zeroBuffer.data(), usage);
     }
     else
@@ -68,7 +66,7 @@ void GpuBuffer::clear()
 }
 
 /*************/
-vector<char> GpuBuffer::getBufferAsVector(size_t vertexNbr)
+std::vector<char> GpuBuffer::getBufferAsVector(size_t vertexNbr)
 {
     if (!_glId || !_type || !_usage || !_elementSize)
         return {};
@@ -100,14 +98,14 @@ vector<char> GpuBuffer::getBufferAsVector(size_t vertexNbr)
     glCopyNamedBufferSubData(_glId, _copyBufferId, 0, 0, vectorSize);
 
     // Read the copy buffer
-    auto buffer = vector<char>(vectorSize);
+    auto buffer = std::vector<char>(vectorSize);
     glGetNamedBufferSubData(_copyBufferId, 0, buffer.size(), buffer.data());
 
     return buffer;
 }
 
 /*************/
-void GpuBuffer::setBufferFromVector(const vector<char>& buffer)
+void GpuBuffer::setBufferFromVector(const std::vector<char>& buffer)
 {
     if (!_glId || !_type || !_usage || !_elementSize)
         return;

@@ -42,16 +42,16 @@
 #include "./controller/geometriccalibrator.h"
 #endif
 
-using namespace std;
+namespace chrono = std::chrono;
 
 namespace Splash
 {
 
 bool Scene::_hasNVSwapGroup{false};
-vector<int> Scene::_glVersion{0, 0};
+std::vector<int> Scene::_glVersion{0, 0};
 std::string Scene::_glVendor{};
 std::string Scene::_glRenderer{};
-vector<string> Scene::_ghostableTypes{"camera", "warp"};
+std::vector<std::string> Scene::_ghostableTypes{"camera", "warp"};
 
 /*************/
 Scene::Scene(Context context)
@@ -70,7 +70,7 @@ Scene::Scene(Context context)
 
     // We have to reset the factory to create a Scene factory
     _factory.reset(new Factory(this));
-    _blender = make_shared<Blender>(this);
+    _blender = std::make_shared<Blender>(this);
     if (_blender)
     {
         _blender->setName("blender");
@@ -87,7 +87,7 @@ Scene::~Scene()
     if (_mainWindow)
     {
         _mainWindow->setAsCurrentContext();
-        lock_guard<recursive_mutex> lockObjects(_objectsMutex); // We don't want any friend to try accessing the objects
+        std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex); // We don't want any friend to try accessing the objects
 
         // Free objects cleanly
         for (auto& obj : _objects)
@@ -103,13 +103,13 @@ Scene::~Scene()
 }
 
 /*************/
-std::shared_ptr<GraphObject> Scene::addObject(const string& type, const string& name)
+std::shared_ptr<GraphObject> Scene::addObject(const std::string& type, const std::string& name)
 {
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
 #endif
 
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+    std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
 
     // If we run in background mode, don't create any window
     if (_runInBackground && type == "window")
@@ -139,10 +139,10 @@ std::shared_ptr<GraphObject> Scene::addObject(const string& type, const string& 
         if (_gui != nullptr)
         {
             if (obj->getType() == "object")
-                link(obj, dynamic_pointer_cast<GraphObject>(_gui));
+                link(obj, std::dynamic_pointer_cast<GraphObject>(_gui));
             else if (obj->getType() == "window" && !_guiLinkedToWindow)
             {
-                link(dynamic_pointer_cast<GraphObject>(_gui), obj);
+                link(std::dynamic_pointer_cast<GraphObject>(_gui), obj);
                 _guiLinkedToWindow = true;
             }
         }
@@ -152,7 +152,7 @@ std::shared_ptr<GraphObject> Scene::addObject(const string& type, const string& 
 }
 
 /*************/
-void Scene::addGhost(const string& type, const string& name)
+void Scene::addGhost(const std::string& type, const std::string& name)
 {
     if (find(_ghostableTypes.begin(), _ghostableTypes.end(), type) == _ghostableTypes.end())
         return;
@@ -170,7 +170,7 @@ void Scene::addGhost(const string& type, const string& name)
 }
 
 /*************/
-bool Scene::link(const string& first, const string& second)
+bool Scene::link(const std::string& first, const std::string& second)
 {
     return link(getObject(first), getObject(second));
 }
@@ -181,14 +181,14 @@ bool Scene::link(const std::shared_ptr<GraphObject>& first, const std::shared_pt
     if (!first || !second)
         return false;
 
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+    std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
     bool result = second->linkTo(first);
 
     return result;
 }
 
 /*************/
-void Scene::unlink(const string& first, const string& second)
+void Scene::unlink(const std::string& first, const std::string& second)
 {
     unlink(getObject(first), getObject(second));
 }
@@ -205,10 +205,10 @@ void Scene::unlink(const std::shared_ptr<GraphObject>& first, const std::shared_
 /*************/
 void Scene::setEnableJoystickInput(bool enable)
 {
-    static string joystickName = "joystick";
+    static std::string joystickName = "joystick";
     if (!_joystick && enable)
     {
-        _joystick = make_shared<Joystick>(this);
+        _joystick = std::make_shared<Joystick>(this);
         _joystick->setName(joystickName);
         _objects[_joystick->getName()] = _joystick;
     }
@@ -227,11 +227,11 @@ bool Scene::getEnableJoystickInput() const
 }
 
 /*************/
-void Scene::remove(const string& name)
+void Scene::remove(const std::string& name)
 {
     std::shared_ptr<GraphObject> obj;
 
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+    std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
 
     if (_objects.find(name) != _objects.end())
         _objects.erase(name);
@@ -245,10 +245,10 @@ void Scene::render()
     bool expectedAtomicValue = false;
     if (!_doUploadTextures.compare_exchange_strong(expectedAtomicValue, false, std::memory_order_acq_rel))
     {
-        lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+        std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
         for (auto& obj : _objects)
         {
-            auto texture = dynamic_pointer_cast<Texture>(obj.second);
+            auto texture = std::dynamic_pointer_cast<Texture>(obj.second);
             if (texture)
                 texture->update();
         }
@@ -259,9 +259,9 @@ void Scene::render()
         PROFILEGL("Render loop")
 #endif
         // Create lists of objects to update and to render
-        map<GraphObject::Priority, vector<shared_ptr<GraphObject>>> objectList{};
+        std::map<GraphObject::Priority, std::vector<std::shared_ptr<GraphObject>>> objectList{};
         {
-            lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+            std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
             for (auto obj = _objects.cbegin(); obj != _objects.cend(); ++obj)
             {
                 // We also run all pending tasks for every object
@@ -274,7 +274,7 @@ void Scene::render()
                 auto listIt = objectList.find(priority);
                 if (listIt == objectList.end())
                 {
-                    auto entry = objectList.emplace(std::make_pair(priority, vector<shared_ptr<GraphObject>>()));
+                    auto entry = objectList.emplace(std::make_pair(priority, std::vector<std::shared_ptr<GraphObject>>()));
                     if (entry.second == true)
                         listIt = entry.first;
                     else
@@ -304,7 +304,7 @@ void Scene::render()
                     if (obj->wasUpdated())
                     {
                         // If a mesh has been updated, force blending update
-                        addTask([=]() { dynamic_pointer_cast<Blender>(_blender)->forceUpdate(); });
+                        addTask([=]() { std::dynamic_pointer_cast<Blender>(_blender)->forceUpdate(); });
                         obj->setNotUpdated();
                     }
                 if (objectCategory == GraphObject::Category::IMAGE || objectCategory == GraphObject::Category::TEXTURE)
@@ -326,7 +326,7 @@ void Scene::render()
             Timer::get() << "swap";
             for (auto& obj : _objects)
                 if (obj.second->getType() == "window")
-                    dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
+                    std::dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
             Timer::get() >> "swap";
         }
     }
@@ -380,7 +380,7 @@ void Scene::run()
         }
         else
         {
-            this_thread::sleep_for(chrono::milliseconds(50));
+            std::this_thread::sleep_for(chrono::milliseconds(50));
         }
 
         Timer::get() << "tree_update";
@@ -409,11 +409,11 @@ void Scene::updateInputs()
 {
     glfwPollEvents();
 
-    auto keyboard = dynamic_pointer_cast<Keyboard>(_keyboard);
+    auto keyboard = std::dynamic_pointer_cast<Keyboard>(_keyboard);
     if (keyboard)
         _gui->setKeyboardState(keyboard->getState(_name));
 
-    auto mouse = dynamic_pointer_cast<Mouse>(_mouse);
+    auto mouse = std::dynamic_pointer_cast<Mouse>(_mouse);
     if (mouse)
         _gui->setMouseState(mouse->getState(_name));
 
@@ -423,13 +423,13 @@ void Scene::updateInputs()
 }
 
 /*************/
-void Scene::setAsMaster(const string& configFilePath)
+void Scene::setAsMaster(const std::string& configFilePath)
 {
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+    std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
 
     _isMaster = true;
 
-    _gui = make_shared<Gui>(_mainWindow, this);
+    _gui = std::make_shared<Gui>(_mainWindow, this);
     if (_gui)
     {
         _gui->setName("gui");
@@ -437,9 +437,9 @@ void Scene::setAsMaster(const string& configFilePath)
         _objects["gui"] = _gui;
     }
 
-    _keyboard = make_shared<Keyboard>(this);
-    _mouse = make_shared<Mouse>(this);
-    _dragndrop = make_shared<DragNDrop>(this);
+    _keyboard = std::make_shared<Keyboard>(this);
+    _mouse = std::make_shared<Mouse>(this);
+    _dragndrop = std::make_shared<DragNDrop>(this);
 
     if (_keyboard)
     {
@@ -459,34 +459,34 @@ void Scene::setAsMaster(const string& configFilePath)
 
 #if HAVE_GPHOTO and HAVE_OPENCV
     // Initialize the color calibration object
-    _colorCalibrator = make_shared<ColorCalibrator>(this);
+    _colorCalibrator = std::make_shared<ColorCalibrator>(this);
     _colorCalibrator->setName("colorCalibrator");
     _objects["colorCalibrator"] = _colorCalibrator;
 #endif
 
 #if HAVE_CALIMIRO
-    _geometricCalibrator = make_shared<GeometricCalibrator>(this);
+    _geometricCalibrator = std::make_shared<GeometricCalibrator>(this);
     _geometricCalibrator->setName("geometricCalibrator");
     _objects["geometricCalibrator"] = _geometricCalibrator;
 #endif
 }
 
 /*************/
-void Scene::sendMessageToWorld(const string& message, const Values& value)
+void Scene::sendMessageToWorld(const std::string& message, const Values& value)
 {
     RootObject::sendMessage("world", message, value);
 }
 
 /*************/
-Values Scene::sendMessageToWorldWithAnswer(const string& message, const Values& value, const unsigned long long timeout)
+Values Scene::sendMessageToWorldWithAnswer(const std::string& message, const Values& value, const unsigned long long timeout)
 {
     return sendMessageWithAnswer("world", message, value, timeout);
 }
 
 /*************/
-shared_ptr<GlWindow> Scene::getNewSharedWindow(const string& name)
+std::shared_ptr<GlWindow> Scene::getNewSharedWindow(const std::string& name)
 {
-    string windowName;
+    std::string windowName;
     name.size() == 0 ? windowName = "Splash::Window" : windowName = "Splash::" + name;
 
     if (!_mainWindow)
@@ -504,7 +504,7 @@ shared_ptr<GlWindow> Scene::getNewSharedWindow(const string& name)
         Log::get() << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;
         return {nullptr};
     }
-    auto glWindow = make_shared<GlWindow>(window, _mainWindow->get());
+    auto glWindow = std::make_shared<GlWindow>(window, _mainWindow->get());
 
     glWindow->setAsCurrentContext();
 #ifdef DEBUGGL
@@ -540,10 +540,10 @@ shared_ptr<GlWindow> Scene::getNewSharedWindow(const string& name)
 }
 
 /*************/
-vector<int> Scene::findGLVersion()
+std::vector<int> Scene::findGLVersion()
 {
-    vector<vector<int>> glVersionList{{4, 5}};
-    vector<int> detectedVersion{0, 0};
+    std::vector<std::vector<int>> glVersionList{{4, 5}};
+    std::vector<int> detectedVersion{0, 0};
 
     for (auto version : glVersionList)
     {
@@ -567,7 +567,7 @@ vector<int> Scene::findGLVersion()
 }
 
 /*************/
-void Scene::init(const string& name)
+void Scene::init(const std::string& name)
 {
     glfwSetErrorCallback(Scene::glfwErrorCallback);
 
@@ -611,7 +611,7 @@ void Scene::init(const string& name)
         return;
     }
 
-    _mainWindow = make_shared<GlWindow>(window, window);
+    _mainWindow = std::make_shared<GlWindow>(window, window);
     _isInitialized = true;
 
     _mainWindow->setAsCurrentContext();
@@ -647,7 +647,7 @@ void Scene::init(const string& name)
     _mainWindow->releaseContext();
 
     // Create the link and connect to the World
-    _link = make_unique<Link>(this, name);
+    _link = std::make_unique<Link>(this, name);
     _link->connectTo("world");
     sendMessageToWorld("sceneLaunched", {});
 }
@@ -679,8 +679,8 @@ void Scene::glfwErrorCallback(int /*code*/, const char* msg)
 /*************/
 void Scene::glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, void* /*userParam*/)
 {
-    string typeString{"OTHER"};
-    string severityString{""};
+    std::string typeString{"OTHER"};
+    std::string severityString{""};
     Log::Priority logType{Log::MESSAGE};
 
     switch (type)
@@ -738,9 +738,9 @@ void Scene::registerAttributes()
     addAttribute("addObject",
         [&](const Values& args) {
             addTask([=]() {
-                string type = args[0].as<string>();
-                string name = args[1].as<string>();
-                string sceneName = args.size() > 2 ? args[2].as<string>() : "";
+                std::string type = args[0].as<std::string>();
+                std::string name = args[1].as<std::string>();
+                std::string sceneName = args.size() > 2 ? args[2].as<std::string>() : "";
 
                 if (sceneName == _name)
                     addObject(type, name);
@@ -759,12 +759,12 @@ void Scene::registerAttributes()
                 // We wait until we can indeed delete the object
                 bool expectedAtomicValue = false;
                 while (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true, std::memory_order_acquire))
-                    this_thread::sleep_for(chrono::milliseconds(1));
+                    std::this_thread::sleep_for(chrono::milliseconds(1));
                 OnScopeExit { _objectsCurrentlyUpdated.store(false, std::memory_order_release); };
 
-                lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+                std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
 
-                auto objectName = args[0].as<string>();
+                auto objectName = args[0].as<std::string>();
                 auto object = getObject(objectName);
                 if (!object)
                     return;
@@ -781,7 +781,7 @@ void Scene::registerAttributes()
 
     addAttribute("duration",
         [&](const Values& args) {
-            Timer::get().setDuration(args[0].as<string>(), args[1].as<int>());
+            Timer::get().setDuration(args[0].as<std::string>(), args[1].as<int>());
             return true;
         },
         {'s', 'i'});
@@ -807,8 +807,8 @@ void Scene::registerAttributes()
     addAttribute("link",
         [&](const Values& args) {
             addTask([=]() {
-                string src = args[0].as<string>();
-                string dst = args[1].as<string>();
+                std::string src = args[0].as<std::string>();
+                std::string dst = args[1].as<std::string>();
                 link(src, dst);
             });
 
@@ -819,7 +819,7 @@ void Scene::registerAttributes()
 
     addAttribute("log",
         [&](const Values& args) {
-            Log::get().setLog(args[0].as<uint64_t>(), args[1].as<string>(), (Log::Priority)args[2].as<int>());
+            Log::get().setLog(args[0].as<uint64_t>(), args[1].as<std::string>(), (Log::Priority)args[2].as<int>());
             return true;
         },
         {'i', 's', 'i'});
@@ -849,7 +849,7 @@ void Scene::registerAttributes()
     addAttribute("remove",
         [&](const Values& args) {
             addTask([=]() {
-                string name = args[1].as<string>();
+                std::string name = args[1].as<std::string>();
                 remove(name);
             });
 
@@ -863,7 +863,7 @@ void Scene::registerAttributes()
             if (args.empty())
                 setAsMaster();
             else
-                setAsMaster(args[0].as<string>());
+                setAsMaster(args[0].as<std::string>());
         });
         return true;
     });
@@ -884,10 +884,10 @@ void Scene::registerAttributes()
 
     addAttribute("swapTest", [&](const Values& args) {
         addTask([=]() {
-            lock_guard<recursive_mutex> lock(_objectsMutex);
+            std::lock_guard<std::recursive_mutex> lock(_objectsMutex);
             for (auto& obj : _objects)
                 if (obj.second->getType() == "window")
-                    dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTest", args);
+                    std::dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTest", args);
         });
         return true;
     }, {'i'});
@@ -895,10 +895,10 @@ void Scene::registerAttributes()
 
     addAttribute("swapTestColor", [&](const Values& args) {
         addTask([=]() {
-            lock_guard<recursive_mutex> lock(_objectsMutex);
+            std::lock_guard<std::recursive_mutex> lock(_objectsMutex);
             for (auto& obj : _objects)
                 if (obj.second->getType() == "window")
-                    dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTestColor", args);
+                    std::dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTestColor", args);
         });
         return true;
     });
@@ -922,8 +922,8 @@ void Scene::registerAttributes()
     addAttribute("unlink",
         [&](const Values& args) {
             addTask([=]() {
-                string src = args[0].as<string>();
-                string dst = args[1].as<string>();
+                std::string src = args[0].as<std::string>();
+                std::string dst = args[1].as<std::string>();
                 unlink(src, dst);
             });
 
@@ -935,10 +935,10 @@ void Scene::registerAttributes()
     addAttribute("wireframe",
         [&](const Values& args) {
             addTask([=]() {
-                lock_guard<recursive_mutex> lock(_objectsMutex);
+                std::lock_guard<std::recursive_mutex> lock(_objectsMutex);
                 for (auto& obj : _objects)
                     if (obj.second->getType() == "camera")
-                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", args);
+                        std::dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", args);
             });
 
             return true;
@@ -948,7 +948,7 @@ void Scene::registerAttributes()
 
 #if HAVE_GPHOTO and HAVE_OPENCV
     addAttribute("calibrateColor", [&](const Values&) {
-        auto calibrator = dynamic_pointer_cast<ColorCalibrator>(_colorCalibrator);
+        auto calibrator = std::dynamic_pointer_cast<ColorCalibrator>(_colorCalibrator);
         if (calibrator)
             calibrator->update();
         return true;
@@ -956,7 +956,7 @@ void Scene::registerAttributes()
     setAttributeDescription("calibrateColor", "Launch projectors color calibration");
 
     addAttribute("calibrateColorResponseFunction", [&](const Values&) {
-        auto calibrator = dynamic_pointer_cast<ColorCalibrator>(_colorCalibrator);
+        auto calibrator = std::dynamic_pointer_cast<ColorCalibrator>(_colorCalibrator);
         if (calibrator)
             calibrator->updateCRF();
         return true;
@@ -966,7 +966,7 @@ void Scene::registerAttributes()
 
 #if HAVE_CALIMIRO
     addAttribute("calibrateGeometry", [&](const Values&) {
-        auto calibrator = dynamic_pointer_cast<GeometricCalibrator>(_geometricCalibrator);
+        auto calibrator = std::dynamic_pointer_cast<GeometricCalibrator>(_geometricCalibrator);
         if (calibrator)
             calibrator->calibrate();
         return true;
@@ -984,7 +984,7 @@ void Scene::registerAttributes()
     addAttribute(
         "swapInterval",
         [&](const Values& args) {
-            _swapInterval = max(-1, args[0].as<int>());
+            _swapInterval = std::max(-1, args[0].as<int>());
             _targetFrameDuration = updateTargetFrameDuration();
             return true;
         },

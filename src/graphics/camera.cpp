@@ -58,7 +58,6 @@
         0.2, 0.2, 1.0, 1.0                                                                                                                                                         \
     }
 
-using namespace std;
 using namespace glm;
 
 namespace Splash
@@ -77,8 +76,8 @@ Camera::Camera(RootObject* root)
         return;
 
     // Intialize FBO, textures and everything OpenGL
-    _msFbo = make_unique<Framebuffer>(_root);
-    _outFbo = make_unique<Framebuffer>(_root);
+    _msFbo = std::make_unique<Framebuffer>(_root);
+    _outFbo = std::make_unique<Framebuffer>(_root);
     _msFbo->setMultisampling(_multisample);
     _msFbo->setSixteenBpc(_render16bits);
     _outFbo->setSixteenBpc(_render16bits);
@@ -112,7 +111,7 @@ void Camera::computeBlendingContribution()
 void Camera::computeVertexVisibility()
 {
     // We want to render the object with a specific texture, containing the primitive IDs
-    vector<Values> shaderFill;
+    std::vector<Values> shaderFill;
     int primitiveIdShift = 0; // The primitive ID is shifted by the number of vertices already drawn
     for (auto& o : _objects)
     {
@@ -208,8 +207,8 @@ bool Camera::doCalibration()
     // Variables we do not want to keep between tries
     dvec3 eyeOriginal = _eye;
 
-    double minValue = numeric_limits<double>::max();
-    vector<double> selectedValues(9);
+    double minValue = std::numeric_limits<double>::max();
+    std::vector<double> selectedValues(9);
 
     gsl_multimin_fminimizer* minimizer;
     minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 9);
@@ -241,7 +240,7 @@ bool Camera::doCalibration()
 
             size_t iter = 0;
             int status = GSL_CONTINUE;
-            double localMinimum = numeric_limits<double>::max();
+            double localMinimum = std::numeric_limits<double>::max();
             while (status == GSL_CONTINUE && iter < 1000 && localMinimum > 64.0)
             {
                 iter++;
@@ -283,7 +282,7 @@ bool Camera::doCalibration()
 
         size_t iter = 0;
         int status = GSL_CONTINUE;
-        double localMinimum = numeric_limits<double>::max();
+        double localMinimum = std::numeric_limits<double>::max();
         while (status == GSL_CONTINUE && iter < 10000 && localMinimum > 0.5)
         {
             iter++;
@@ -359,7 +358,7 @@ bool Camera::doCalibration()
     auto scene = dynamic_cast<Scene*>(_root);
     if (scene && scene->isMaster())
     {
-        const vector<string> properties{"eye", "target", "up", "fov", "principalPoint"};
+        const std::vector<std::string> properties{"eye", "target", "up", "fov", "principalPoint"};
         for (auto& p : properties)
         {
             Values values;
@@ -380,11 +379,11 @@ void Camera::drawModelOnce(const std::string& modelName, const glm::dmat4& rtMat
 }
 
 /*************/
-bool Camera::linkIt(const shared_ptr<GraphObject>& obj)
+bool Camera::linkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (dynamic_pointer_cast<Object>(obj))
+    if (std::dynamic_pointer_cast<Object>(obj))
     {
-        auto obj3D = dynamic_pointer_cast<Object>(obj);
+        auto obj3D = std::dynamic_pointer_cast<Object>(obj);
         _objects.push_back(obj3D);
 
         sendCalibrationPointsToObjects();
@@ -395,7 +394,7 @@ bool Camera::linkIt(const shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void Camera::unlinkIt(const shared_ptr<GraphObject>& obj)
+void Camera::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
     auto objIterator = find_if(_objects.begin(), _objects.end(), [&](const std::weak_ptr<Object> o) {
         if (o.expired())
@@ -425,7 +424,7 @@ Values Camera::pickVertex(float x, float y)
     // Unproject the point
     dvec3 screenPoint(realX, realY, depth);
 
-    float distance = numeric_limits<float>::max();
+    float distance = std::numeric_limits<float>::max();
     dvec4 vertex;
     for (auto& o : _objects)
     {
@@ -475,7 +474,7 @@ Values Camera::pickCalibrationPoint(float x, float y)
     dmat4 projM = computeProjectionMatrix();
     dvec4 viewport(0, 0, _width, _height);
 
-    double minDist = numeric_limits<double>::max();
+    double minDist = std::numeric_limits<double>::max();
     int index = -1;
 
     for (uint32_t i = 0; i < _calibrationPoints.size(); ++i)
@@ -837,7 +836,7 @@ void Camera::removeCalibrationPoint(const Values& point, bool unlessSet)
         dmat4 projM = computeProjectionMatrix();
         dvec4 viewport(0, 0, _width, _height);
 
-        double minDist = numeric_limits<double>::max();
+        double minDist = std::numeric_limits<double>::max();
         int index = -1;
 
         for (uint32_t i = 0; i < _calibrationPoints.size(); ++i)
@@ -927,7 +926,7 @@ double Camera::calibrationCostFunc(const gsl_vector* v, void* params)
 
     // Some limits for the calibration parameters
     if (fov < 4.0 || fov > 120.0 || abs(cx - 0.5) > 1.0 || abs(cy - 0.5) > 1.0)
-        return numeric_limits<double>::max();
+        return std::numeric_limits<double>::max();
 
     dvec3 eye;
     dvec3 target;
@@ -948,9 +947,9 @@ double Camera::calibrationCostFunc(const gsl_vector* v, void* params)
     }
     target += eye;
 
-    vector<dvec3> objectPoints;
-    vector<dvec3> imagePoints;
-    vector<float> pointsWeight;
+    std::vector<dvec3> objectPoints;
+    std::vector<dvec3> imagePoints;
+    std::vector<float> pointsWeight;
     for (auto& point : camera._calibrationPoints)
     {
         if (!point.isSet)
@@ -1016,8 +1015,8 @@ dmat4 Camera::computeViewMatrix()
 /*************/
 void Camera::loadDefaultModels()
 {
-    auto datapath = string(DATADIR);
-    map<string, string> files{
+    auto datapath = std::string(DATADIR);
+    std::map<std::string, std::string> files{
         {"3d_marker", datapath + "/3d_marker.obj"}, {"2d_marker", datapath + "/2d_marker.obj"}, {"camera", datapath + "/camera.obj"}, {"probe", datapath + "/probe.obj"}};
 
     auto scene = dynamic_cast<Scene*>(_root);
@@ -1387,7 +1386,7 @@ void Camera::registerAttributes()
     addAttribute(
         "multisampling",
         [&](const Values& args) {
-            static vector<int> validSampleValues{0, 2, 4, 8, 16};
+            static std::vector<int> validSampleValues{0, 2, 4, 8, 16};
 
             auto multisample = args[0].as<int>();
             int selectedValue = 0;
@@ -1575,7 +1574,7 @@ void Camera::registerAttributes()
 
     addAttribute("wireframe",
         [&](const Values& args) {
-            string primitive;
+            std::string primitive;
             if (args[0].as<bool>() == 0)
                 primitive = "texture";
             else

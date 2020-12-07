@@ -1,7 +1,5 @@
 #include "./userinput/userinput_mouse.h"
 
-using namespace std;
-
 namespace Splash
 {
 /*************/

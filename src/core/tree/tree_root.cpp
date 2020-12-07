@@ -4,7 +4,7 @@
 
 #include "./utils/log.h"
 
-using namespace std;
+namespace chrono = std::chrono;
 
 namespace Splash
 {
@@ -32,21 +32,21 @@ bool Root::operator==(const Root& rhs) const
 }
 
 /*************/
-bool Root::addBranchAt(const string& path, unique_ptr<Branch>&& branch, bool silent)
+bool Root::addBranchAt(const std::string& path, std::unique_ptr<Branch>&& branch, bool silent)
 {
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(processPath(path));
     if (!holdingBranch)
         return false;
 
     auto branchPath = holdingBranch->getPath() + branch->getName();
-    if (!holdingBranch->addBranch(move(branch)))
+    if (!holdingBranch->addBranch(std::move(branch)))
         return false;
 
     if (!silent)
     {
         auto seeds = generateSeedsForBranch(getBranchAt(branchPath));
-        lock_guard<recursive_mutex> lock(_updatesMutex);
+        std::lock_guard<std::recursive_mutex> lock(_updatesMutex);
         _updates.merge(seeds, [](const auto& a, const auto& b) { return std::get<2>(a) < std::get<2>(b); });
     }
 
@@ -54,21 +54,21 @@ bool Root::addBranchAt(const string& path, unique_ptr<Branch>&& branch, bool sil
 }
 
 /*************/
-bool Root::addLeafAt(const string& path, unique_ptr<Leaf>&& leaf, bool silent)
+bool Root::addLeafAt(const std::string& path, std::unique_ptr<Leaf>&& leaf, bool silent)
 {
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(processPath(path));
     if (!holdingBranch)
         return false;
 
     auto leafPath = holdingBranch->getPath() + leaf->getName();
-    if (!holdingBranch->addLeaf(move(leaf)))
+    if (!holdingBranch->addLeaf(std::move(leaf)))
         return false;
 
     if (!silent)
     {
         auto seeds = generateSeedsForLeaf(getLeafAt(leafPath));
-        lock_guard<recursive_mutex> lock(_updatesMutex);
+        std::lock_guard<std::recursive_mutex> lock(_updatesMutex);
         _updates.merge(seeds, [](const auto& a, const auto& b) { return std::get<2>(a) < std::get<2>(b); });
     }
 
@@ -76,7 +76,7 @@ bool Root::addLeafAt(const string& path, unique_ptr<Leaf>&& leaf, bool silent)
 }
 
 /*************/
-Branch::UpdateCallbackID Root::addCallbackToBranchAt(const string& path, Branch::Task target, const Branch::UpdateCallback& cb, bool pending)
+Branch::UpdateCallbackID Root::addCallbackToBranchAt(const std::string& path, Branch::Task target, const Branch::UpdateCallback& cb, bool pending)
 {
     auto branch = getBranchAt(path);
     if (!branch && !pending)
@@ -85,12 +85,12 @@ Branch::UpdateCallbackID Root::addCallbackToBranchAt(const string& path, Branch:
     if (branch)
         return branch->addCallback(target, cb);
 
-    _branchCallbacksToRegister.push_back(make_tuple(path, target, cb));
+    _branchCallbacksToRegister.push_back(std::make_tuple(path, target, cb));
     return -1;
 }
 
 /*************/
-Leaf::UpdateCallbackID Root::addCallbackToLeafAt(const string& path, const Leaf::UpdateCallback& cb, bool pending)
+Leaf::UpdateCallbackID Root::addCallbackToLeafAt(const std::string& path, const Leaf::UpdateCallback& cb, bool pending)
 {
     auto leaf = getLeafAt(path);
     if (!leaf && !pending)
@@ -104,7 +104,7 @@ Leaf::UpdateCallbackID Root::addCallbackToLeafAt(const string& path, const Leaf:
 }
 
 /*************/
-bool Root::removeCallbackFromBranchAt(const string& path, int id)
+bool Root::removeCallbackFromBranchAt(const std::string& path, int id)
 {
     auto branch = getBranchAt(path);
     if (!branch)
@@ -114,7 +114,7 @@ bool Root::removeCallbackFromBranchAt(const string& path, int id)
 }
 
 /*************/
-bool Root::removeCallbackFromLeafAt(const string& path, int id)
+bool Root::removeCallbackFromLeafAt(const std::string& path, int id)
 {
     auto leaf = getLeafAt(path);
     if (!leaf)
@@ -126,29 +126,29 @@ bool Root::removeCallbackFromLeafAt(const string& path, int id)
 /*************/
 void Root::addSeedToQueue(Tree::Task taskType, Values args, chrono::system_clock::time_point timestamp)
 {
-    auto seed = make_tuple(taskType, args, timestamp, UUID(false));
-    lock_guard<mutex> lock(_taskMutex);
+    auto seed = std::make_tuple(taskType, args, timestamp, UUID(false));
+    std::lock_guard<std::mutex> lock(_taskMutex);
     _seedQueue.push_back(seed);
 }
 
 /*************/
-void Root::addSeedsToQueue(list<Seed> seeds)
+void Root::addSeedsToQueue(std::list<Seed> seeds)
 {
-    lock_guard<mutex> lock(_taskMutex);
+    std::lock_guard<std::mutex> lock(_taskMutex);
     _seedQueue.merge(seeds, [](const auto& a, const auto& b) { return std::get<2>(a) < std::get<2>(b); });
 }
 
 /*************/
 void Root::clearSeedList()
 {
-    lock_guard<recursive_mutex> lock(_updatesMutex);
+    std::lock_guard<std::recursive_mutex> lock(_updatesMutex);
     _updates.clear();
 }
 
 /*************/
 void Root::cutdown()
 {
-    _rootBranch = make_unique<Tree::Branch>("");
+    _rootBranch = std::make_unique<Tree::Branch>("");
     _seedQueue.clear();
     _updates.clear();
     _branchCallbacksToRegister.clear();
@@ -156,7 +156,7 @@ void Root::cutdown()
 }
 
 /*************/
-bool Root::createBranchAt(const string& path, bool silent)
+bool Root::createBranchAt(const std::string& path, bool silent)
 {
     auto parts = processPath(path);
     if (parts.empty())
@@ -170,11 +170,11 @@ bool Root::createBranchAt(const string& path, bool silent)
     auto newBranchName = parts.back();
     parts.pop_back();
 
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
     {
-        string parentPath;
+        std::string parentPath;
         for (const auto& part : parts)
             parentPath += "/" + part;
 
@@ -185,8 +185,8 @@ bool Root::createBranchAt(const string& path, bool silent)
         assert(holdingBranch);
     }
 
-    auto newBranch = make_unique<Branch>(newBranchName);
-    if (!holdingBranch->addBranch(move(newBranch)))
+    auto newBranch = std::make_unique<Branch>(newBranchName);
+    if (!holdingBranch->addBranch(std::move(newBranch)))
     {
 #ifdef DEBUG
         Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Branch " << holdingBranch->getPath() << " already has a branch named " << newBranchName << Log::endl;
@@ -196,9 +196,9 @@ bool Root::createBranchAt(const string& path, bool silent)
 
     if (!silent)
     {
-        lock_guard<recursive_mutex> lock(_updatesMutex);
-        auto seed = make_tuple(Task::AddBranch, Values({path}), chrono::system_clock::now(), _uuid);
-        _updates.emplace_back(move(seed));
+        std::lock_guard<std::recursive_mutex> lock(_updatesMutex);
+        auto seed = std::make_tuple(Task::AddBranch, Values({path}), chrono::system_clock::now(), _uuid);
+        _updates.emplace_back(std::move(seed));
     }
 
     return true;
@@ -219,11 +219,11 @@ bool Root::createLeafAt(const std::string& path, Values value, bool silent)
     auto newLeafName = parts.back();
     parts.pop_back();
 
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
     {
-        string parentPath;
+        std::string parentPath;
         for (const auto& part : parts)
             parentPath += "/" + part;
 
@@ -234,8 +234,8 @@ bool Root::createLeafAt(const std::string& path, Values value, bool silent)
         assert(holdingBranch);
     }
 
-    auto newLeaf = make_unique<Leaf>(newLeafName, value);
-    if (!holdingBranch->addLeaf(move(newLeaf)))
+    auto newLeaf = std::make_unique<Leaf>(newLeafName, value);
+    if (!holdingBranch->addLeaf(std::move(newLeaf)))
     {
 #ifdef DEBUG
         Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Branch " << holdingBranch->getPath() << " already has a leaf named " << newLeafName << Log::endl;
@@ -245,16 +245,16 @@ bool Root::createLeafAt(const std::string& path, Values value, bool silent)
 
     if (!silent)
     {
-        lock_guard<recursive_mutex> lock(_updatesMutex);
-        auto seed = make_tuple(Task::AddLeaf, Values({path, value}), chrono::system_clock::now(), _uuid);
-        _updates.emplace_back(move(seed));
+        std::lock_guard<std::recursive_mutex> lock(_updatesMutex);
+        auto seed = std::make_tuple(Task::AddLeaf, Values({path, value}), chrono::system_clock::now(), _uuid);
+        _updates.emplace_back(std::move(seed));
     }
 
     return true;
 }
 
 /*************/
-unique_ptr<Branch> Root::cutBranchAt(const string& path, bool silent)
+std::unique_ptr<Branch> Root::cutBranchAt(const std::string& path, bool silent)
 {
     auto parts = processPath(path);
     if (parts.empty())
@@ -268,22 +268,22 @@ unique_ptr<Branch> Root::cutBranchAt(const string& path, bool silent)
     auto branchName = parts.back();
     parts.pop_back();
 
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
         return nullptr;
 
     if (!silent)
     {
-        lock_guard<recursive_mutex> lock(_updatesMutex);
-        _updates.emplace_back(make_tuple(Task::RemoveBranch, Values({path}), chrono::system_clock::now(), _uuid));
+        std::lock_guard<std::recursive_mutex> lock(_updatesMutex);
+        _updates.emplace_back(std::make_tuple(Task::RemoveBranch, Values({path}), chrono::system_clock::now(), _uuid));
     }
 
     return holdingBranch->cutBranch(branchName);
 }
 
 /*************/
-unique_ptr<Leaf> Root::cutLeafAt(const string& path, bool silent)
+std::unique_ptr<Leaf> Root::cutLeafAt(const std::string& path, bool silent)
 {
     auto parts = processPath(path);
     if (parts.empty())
@@ -297,24 +297,24 @@ unique_ptr<Leaf> Root::cutLeafAt(const string& path, bool silent)
     auto leafName = parts.back();
     parts.pop_back();
 
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
         return nullptr;
 
     if (!silent)
     {
-        lock_guard<recursive_mutex> lock(_updatesMutex);
-        _updates.emplace_back(make_tuple(Task::RemoveLeaf, Values({path}), chrono::system_clock::now(), _uuid));
+        std::lock_guard<std::recursive_mutex> lock(_updatesMutex);
+        _updates.emplace_back(std::make_tuple(Task::RemoveLeaf, Values({path}), chrono::system_clock::now(), _uuid));
     }
 
     return holdingBranch->cutLeaf(leafName);
 }
 
 /*************/
-bool Root::getError(string& error)
+bool Root::getError(std::string& error)
 {
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
 
     if (!_hasError)
     {
@@ -330,7 +330,7 @@ bool Root::getError(string& error)
 }
 
 /*************/
-list<string> Root::getBranchListAt(const string& path) const
+std::list<std::string> Root::getBranchListAt(const std::string& path) const
 {
     auto parts = processPath(path);
     if (path != "/" && parts.empty())
@@ -341,7 +341,7 @@ list<string> Root::getBranchListAt(const string& path) const
         return {};
     }
 
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
         return {};
@@ -350,7 +350,7 @@ list<string> Root::getBranchListAt(const string& path) const
 }
 
 /*************/
-list<string> Root::getLeafListAt(const string& path) const
+std::list<std::string> Root::getLeafListAt(const std::string& path) const
 {
     auto parts = processPath(path);
     if (path != "/" && parts.empty())
@@ -361,7 +361,7 @@ list<string> Root::getLeafListAt(const string& path) const
         return {};
     }
 
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
         return {};
@@ -370,7 +370,7 @@ list<string> Root::getLeafListAt(const string& path) const
 }
 
 /*************/
-bool Root::getValueForLeafAt(const string& path, Value& value) const
+bool Root::getValueForLeafAt(const std::string& path, Value& value) const
 {
     auto parts = processPath(path);
     if (parts.empty())
@@ -384,7 +384,7 @@ bool Root::getValueForLeafAt(const string& path, Value& value) const
     auto leafName = parts.back();
     parts.pop_back();
 
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
         return false;
@@ -398,7 +398,7 @@ bool Root::getValueForLeafAt(const string& path, Value& value) const
 }
 
 /*************/
-bool Root::hasBranchAt(const string& path) const
+bool Root::hasBranchAt(const std::string& path) const
 {
     auto parts = processPath(path);
     if (parts.empty())
@@ -407,7 +407,7 @@ bool Root::hasBranchAt(const string& path) const
     auto branchName = parts.back();
     parts.pop_back();
 
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
         return false;
@@ -419,7 +419,7 @@ bool Root::hasBranchAt(const string& path) const
 }
 
 /*************/
-bool Root::hasLeafAt(const string& path) const
+bool Root::hasLeafAt(const std::string& path) const
 {
     auto parts = processPath(path);
     if (parts.empty())
@@ -433,7 +433,7 @@ bool Root::hasLeafAt(const string& path) const
     auto leafName = parts.back();
     parts.pop_back();
 
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
         return false;
@@ -445,7 +445,7 @@ bool Root::hasLeafAt(const string& path) const
 }
 
 /*************/
-bool Root::setValueForLeafAt(const string& path, const Value& value, int64_t timestamp, bool silent)
+bool Root::setValueForLeafAt(const std::string& path, const Value& value, int64_t timestamp, bool silent)
 {
     chrono::system_clock::time_point timePoint;
     if (timestamp)
@@ -457,9 +457,9 @@ bool Root::setValueForLeafAt(const string& path, const Value& value, int64_t tim
 }
 
 /*************/
-bool Root::setValueForLeafAt(const string& path, const Value& value, chrono::system_clock::time_point timestamp, bool silent)
+bool Root::setValueForLeafAt(const std::string& path, const Value& value, chrono::system_clock::time_point timestamp, bool silent)
 {
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto leaf = getLeafAt(processPath(path));
     if (!leaf)
         return false;
@@ -472,25 +472,25 @@ bool Root::setValueForLeafAt(const string& path, const Value& value, chrono::sys
 
     if (!silent)
     {
-        lock_guard<recursive_mutex> lock(_updatesMutex);
-        auto seed = make_tuple(Task::SetLeaf, Values({path, value}), timestamp, _uuid);
-        _updates.emplace_back(move(seed));
+        std::lock_guard<std::recursive_mutex> lock(_updatesMutex);
+        auto seed = std::make_tuple(Task::SetLeaf, Values({path, value}), timestamp, _uuid);
+        _updates.emplace_back(std::move(seed));
     }
 
     return true;
 }
 
 /*************/
-list<Seed> Root::getUpdateSeedList()
+std::list<Seed> Root::getUpdateSeedList()
 {
-    list<Seed> updates;
-    lock_guard<recursive_mutex> lock(_updatesMutex);
+    std::list<Seed> updates;
+    std::lock_guard<std::recursive_mutex> lock(_updatesMutex);
     swap(updates, _updates);
     return updates;
 }
 
 /*************/
-string Root::print() const
+std::string Root::print() const
 {
     if (!_rootBranch)
         return {};
@@ -502,13 +502,13 @@ string Root::print() const
 bool Root::processQueue(bool propagate)
 {
     _taskMutex.lock();
-    list<Seed> tasks;
+    std::list<Seed> tasks;
     swap(tasks, _seedQueue);
     _taskMutex.unlock();
 
     tasks.sort([](const auto& a, const auto& b) { return std::get<2>(a) < std::get<2>(b); });
 
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     for (const auto& seed : tasks)
     {
         auto& task = std::get<0>(seed);
@@ -528,17 +528,17 @@ bool Root::processQueue(bool propagate)
                 _hasError = true;
                 _errorMsg = "Task type not recognized";
             }
-            throw runtime_error(_errorMsg);
+            throw std::runtime_error(_errorMsg);
         }
         case Task::AddBranch:
         {
             if (args.size() != 1)
             {
-                auto errorStr = "Root::" + string(__FUNCTION__) + " - Wrong number of arguments for task AddBranch";
-                throw runtime_error(errorStr);
+                auto errorStr = "Root::" + std::string(__FUNCTION__) + " - Wrong number of arguments for task AddBranch";
+                throw std::runtime_error(errorStr);
             }
 
-            auto branchPath = args[0].as<string>();
+            auto branchPath = args[0].as<std::string>();
             if (!createBranchAt(branchPath, true))
             {
                 _hasError = true;
@@ -551,11 +551,11 @@ bool Root::processQueue(bool propagate)
         {
             if (args.size() < 1)
             {
-                auto errorStr = "Root::" + string(__FUNCTION__) + " - Wrong number of arguments for task AddLeaf";
-                throw runtime_error(errorStr);
+                auto errorStr = "Root::" + std::string(__FUNCTION__) + " - Wrong number of arguments for task AddLeaf";
+                throw std::runtime_error(errorStr);
             }
 
-            auto leafPath = args[0].as<string>();
+            auto leafPath = args[0].as<std::string>();
             auto values = args.size() == 2 ? args[1].as<Values>() : Values();
             if (createLeafAt(leafPath, values, true))
             {
@@ -569,11 +569,11 @@ bool Root::processQueue(bool propagate)
         {
             if (args.size() != 1)
             {
-                auto errorStr = "Root::" + string(__FUNCTION__) + " - Wrong number of arguments for task RemoveBranch";
-                throw runtime_error(errorStr);
+                auto errorStr = "Root::" + std::string(__FUNCTION__) + " - Wrong number of arguments for task RemoveBranch";
+                throw std::runtime_error(errorStr);
             }
 
-            auto branchPath = args[0].as<string>();
+            auto branchPath = args[0].as<std::string>();
             if (!removeBranchAt(branchPath, true))
             {
                 _hasError = true;
@@ -586,11 +586,11 @@ bool Root::processQueue(bool propagate)
         {
             if (args.size() != 1)
             {
-                auto errorStr = "Root::" + string(__FUNCTION__) + " - Wrong number of arguments for task RemoveLeaf";
-                throw runtime_error(errorStr);
+                auto errorStr = "Root::" + std::string(__FUNCTION__) + " - Wrong number of arguments for task RemoveLeaf";
+                throw std::runtime_error(errorStr);
             }
 
-            auto leafPath = args[0].as<string>();
+            auto leafPath = args[0].as<std::string>();
             if (!removeLeafAt(leafPath, true))
             {
                 _hasError = true;
@@ -603,12 +603,12 @@ bool Root::processQueue(bool propagate)
         {
             if (args.size() != 2)
             {
-                auto errorStr = "Root::" + string(__FUNCTION__) + " - Wrong number of arguments for task RenamedBranch";
-                throw runtime_error(errorStr);
+                auto errorStr = "Root::" + std::string(__FUNCTION__) + " - Wrong number of arguments for task RenamedBranch";
+                throw std::runtime_error(errorStr);
             }
 
-            auto branchPath = args[0].as<string>();
-            auto branchName = args[1].as<string>();
+            auto branchPath = args[0].as<std::string>();
+            auto branchName = args[1].as<std::string>();
             if (!renameBranchAt(branchPath, branchName, true))
             {
                 _hasError = true;
@@ -621,12 +621,12 @@ bool Root::processQueue(bool propagate)
         {
             if (args.size() != 2)
             {
-                auto errorStr = "Root::" + string(__FUNCTION__) + " - Wrong number of arguments for task RenamedLeaf";
-                throw runtime_error(errorStr);
+                auto errorStr = "Root::" + std::string(__FUNCTION__) + " - Wrong number of arguments for task RenamedLeaf";
+                throw std::runtime_error(errorStr);
             }
 
-            auto leafPath = args[0].as<string>();
-            auto leafName = args[1].as<string>();
+            auto leafPath = args[0].as<std::string>();
+            auto leafName = args[1].as<std::string>();
             if (!renameLeafAt(leafPath, leafName, true))
             {
                 _hasError = true;
@@ -639,10 +639,10 @@ bool Root::processQueue(bool propagate)
         {
             if (args.size() < 1)
             {
-                auto errorStr = "Root::" + string(__FUNCTION__) + " - Wrong number of arguments for task SetLeaf";
-                throw runtime_error(errorStr);
+                auto errorStr = "Root::" + std::string(__FUNCTION__) + " - Wrong number of arguments for task SetLeaf";
+                throw std::runtime_error(errorStr);
             }
-            auto leafPath = args[0].as<string>();
+            auto leafPath = args[0].as<std::string>();
             auto& value = args[1];
             if (!setValueForLeafAt(leafPath, value, timestamp, true))
             {
@@ -664,7 +664,7 @@ bool Root::processQueue(bool propagate)
 }
 
 /*************/
-bool Root::removeBranchAt(const string& path, bool silent)
+bool Root::removeBranchAt(const std::string& path, bool silent)
 {
     auto parts = processPath(path);
     if (parts.empty())
@@ -678,7 +678,7 @@ bool Root::removeBranchAt(const string& path, bool silent)
     auto branchToRemove = parts.back();
     parts.pop_back();
 
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
     {
@@ -699,16 +699,16 @@ bool Root::removeBranchAt(const string& path, bool silent)
 
     if (!silent)
     {
-        lock_guard<recursive_mutex> lock(_updatesMutex);
-        auto seed = make_tuple(Task::RemoveBranch, Values({path}), chrono::system_clock::now(), _uuid);
-        _updates.emplace_back(move(seed));
+        std::lock_guard<std::recursive_mutex> lock(_updatesMutex);
+        auto seed = std::make_tuple(Task::RemoveBranch, Values({path}), chrono::system_clock::now(), _uuid);
+        _updates.emplace_back(std::move(seed));
     }
 
     return true;
 }
 
 /*************/
-bool Root::removeLeafAt(const string& path, bool silent)
+bool Root::removeLeafAt(const std::string& path, bool silent)
 {
     auto parts = processPath(path);
     if (parts.empty())
@@ -722,7 +722,7 @@ bool Root::removeLeafAt(const string& path, bool silent)
     auto leafToRemove = parts.back();
     parts.pop_back();
 
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
     {
@@ -742,16 +742,16 @@ bool Root::removeLeafAt(const string& path, bool silent)
 
     if (!silent)
     {
-        lock_guard<recursive_mutex> lock(_updatesMutex);
-        auto seed = make_tuple(Task::RemoveLeaf, Values({path}), chrono::system_clock::now(), _uuid);
-        _updates.emplace_back(move(seed));
+        std::lock_guard<std::recursive_mutex> lock(_updatesMutex);
+        auto seed = std::make_tuple(Task::RemoveLeaf, Values({path}), chrono::system_clock::now(), _uuid);
+        _updates.emplace_back(std::move(seed));
     }
 
     return true;
 }
 
 /*************/
-bool Root::renameBranchAt(const string& path, const string& name, bool silent)
+bool Root::renameBranchAt(const std::string& path, const std::string& name, bool silent)
 {
     auto parts = processPath(path);
     if (parts.empty())
@@ -765,7 +765,7 @@ bool Root::renameBranchAt(const string& path, const string& name, bool silent)
     auto branchToRename = parts.back();
     parts.pop_back();
 
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
     {
@@ -785,16 +785,16 @@ bool Root::renameBranchAt(const string& path, const string& name, bool silent)
 
     if (!silent)
     {
-        lock_guard<recursive_mutex> lock(_updatesMutex);
-        auto seed = make_tuple(Task::RenameBranch, Values({path, name}), chrono::system_clock::now(), _uuid);
-        _updates.emplace_back(move(seed));
+        std::lock_guard<std::recursive_mutex> lock(_updatesMutex);
+        auto seed = std::make_tuple(Task::RenameBranch, Values({path, name}), chrono::system_clock::now(), _uuid);
+        _updates.emplace_back(std::move(seed));
     }
 
     return true;
 }
 
 /*************/
-bool Root::renameLeafAt(const string& path, const string& name, bool silent)
+bool Root::renameLeafAt(const std::string& path, const std::string& name, bool silent)
 {
     auto parts = processPath(path);
     if (parts.empty())
@@ -808,7 +808,7 @@ bool Root::renameLeafAt(const string& path, const string& name, bool silent)
     auto leafToRename = parts.back();
     parts.pop_back();
 
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
     {
@@ -828,23 +828,23 @@ bool Root::renameLeafAt(const string& path, const string& name, bool silent)
 
     if (!silent)
     {
-        lock_guard<recursive_mutex> lock(_updatesMutex);
-        auto seed = make_tuple(Task::RenameLeaf, Values({path, name}), chrono::system_clock::now(), _uuid);
-        _updates.emplace_back(move(seed));
+        std::lock_guard<std::recursive_mutex> lock(_updatesMutex);
+        auto seed = std::make_tuple(Task::RenameLeaf, Values({path, name}), chrono::system_clock::now(), _uuid);
+        _updates.emplace_back(std::move(seed));
     }
 
     return true;
 }
 
 /*************/
-list<Seed> Root::generateSeedsForBranch(Branch* branch)
+std::list<Seed> Root::generateSeedsForBranch(Branch* branch)
 {
-    list<Seed> seeds;
+    std::list<Seed> seeds;
     if (!branch)
         return seeds;
 
-    lock_guard<recursive_mutex> lockUpdates(_updatesMutex);
-    seeds.emplace_back(make_tuple(Task::AddBranch, Values({branch->getPath()}), chrono::system_clock::now(), _uuid));
+    std::lock_guard<std::recursive_mutex> lockUpdates(_updatesMutex);
+    seeds.emplace_back(std::make_tuple(Task::AddBranch, Values({branch->getPath()}), chrono::system_clock::now(), _uuid));
     for (const auto& branchName : branch->getBranchList())
     {
         auto childBranch = getBranchAt(branch->getPath() + branchName);
@@ -861,22 +861,22 @@ list<Seed> Root::generateSeedsForBranch(Branch* branch)
 }
 
 /*************/
-list<Seed> Root::generateSeedsForLeaf(Leaf* leaf)
+std::list<Seed> Root::generateSeedsForLeaf(Leaf* leaf)
 {
-    list<Seed> seeds;
+    std::list<Seed> seeds;
     if (!leaf)
         return seeds;
 
-    lock_guard<recursive_mutex> lockUpdates(_updatesMutex);
-    seeds.emplace_back(make_tuple(Task::AddLeaf, Values({leaf->getPath()}), chrono::system_clock::now(), _uuid));
-    seeds.emplace_back(make_tuple(Task::SetLeaf, Values({leaf->getPath(), leaf->get()}), chrono::system_clock::now(), _uuid));
+    std::lock_guard<std::recursive_mutex> lockUpdates(_updatesMutex);
+    seeds.emplace_back(std::make_tuple(Task::AddLeaf, Values({leaf->getPath()}), chrono::system_clock::now(), _uuid));
+    seeds.emplace_back(std::make_tuple(Task::SetLeaf, Values({leaf->getPath(), leaf->get()}), chrono::system_clock::now(), _uuid));
     return seeds;
 }
 
 /*************/
-list<Seed> Root::getSeedsForPath(const string& path)
+std::list<Seed> Root::getSeedsForPath(const std::string& path)
 {
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
 
     if (hasLeafAt(path))
         return generateSeedsForLeaf(getLeafAt(path));
@@ -887,7 +887,7 @@ list<Seed> Root::getSeedsForPath(const string& path)
 }
 
 /*************/
-Branch* Root::getBranchAt(const vector<string>& path) const
+Branch* Root::getBranchAt(const std::vector<std::string>& path) const
 {
     Branch* branch = _rootBranch.get();
     for (const auto& part : path)
@@ -907,15 +907,15 @@ Branch* Root::getBranchAt(const vector<string>& path) const
 }
 
 /*************/
-Branch* Root::getBranchAt(const string& path) const
+Branch* Root::getBranchAt(const std::string& path) const
 {
     auto parts = processPath(path);
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     return getBranchAt(parts);
 }
 
 /*************/
-Leaf* Root::getLeafAt(const string& path) const
+Leaf* Root::getLeafAt(const std::string& path) const
 {
     auto parts = processPath(path);
     if (parts.empty())
@@ -926,12 +926,12 @@ Leaf* Root::getLeafAt(const string& path) const
         return nullptr;
     }
 
-    lock_guard<recursive_mutex> lockTree(_treeMutex);
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     return getLeafAt(parts);
 }
 
 /*************/
-Leaf* Root::getLeafAt(const vector<string>& path) const
+Leaf* Root::getLeafAt(const std::vector<std::string>& path) const
 {
     Branch* branch = _rootBranch.get();
     auto leafName = path.back();
@@ -966,13 +966,13 @@ Leaf* Root::getLeafAt(const vector<string>& path) const
 }
 
 /*************/
-vector<string> Root::processPath(const string& path)
+std::vector<std::string> Root::processPath(const std::string& path)
 {
     if (path[0] != '/')
-        throw invalid_argument("Tree path should start with a '/'");
+        throw std::invalid_argument("Tree path should start with a '/'");
 
     size_t start = 1;
-    vector<string> parts;
+    std::vector<std::string> parts;
     parts.reserve(8);
     while (true)
     {
@@ -981,7 +981,7 @@ vector<string> Root::processPath(const string& path)
         {
             start++;
         }
-        else if (end != string::npos)
+        else if (end != std::string::npos)
         {
             parts.push_back(path.substr(start, end - start));
             start = end + 1;
@@ -1000,10 +1000,10 @@ vector<string> Root::processPath(const string& path)
 /*************/
 void Root::registerPendingCallbacks()
 {
-    _branchCallbacksToRegister.remove_if([this](const tuple<string, Branch::Task, Branch::UpdateCallback>& callback) {
+    _branchCallbacksToRegister.remove_if([this](const std::tuple<std::string, Branch::Task, Branch::UpdateCallback>& callback) {
         return addCallbackToBranchAt(std::get<0>(callback), std::get<1>(callback), std::get<2>(callback));
     });
-    _leafCallbacksToRegister.remove_if([this](const pair<string, Leaf::UpdateCallback>& callback) { return addCallbackToLeafAt(callback.first, callback.second); });
+    _leafCallbacksToRegister.remove_if([this](const std::pair<std::string, Leaf::UpdateCallback>& callback) { return addCallbackToLeafAt(callback.first, callback.second); });
 }
 
 } // namespace Tree

@@ -3,12 +3,10 @@
 #include "./core/graph_object.h"
 #include "./utils/log.h"
 
-using namespace std;
-
 namespace Splash
 {
 
-atomic_uint CallbackHandle::_nextCallbackId{1};
+std::atomic_uint CallbackHandle::_nextCallbackId{1};
 
 /*************/
 CallbackHandle::~CallbackHandle()
@@ -19,7 +17,7 @@ CallbackHandle::~CallbackHandle()
 }
 
 /*************/
-Attribute::Attribute(const string& name, const function<bool(const Values&)>& setFunc, const function<Values()>& getFunc, const vector<char>& types)
+Attribute::Attribute(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::function<Values()>& getFunc, const std::vector<char>& types)
     : _name(name)
     , _setFunc(setFunc)
     , _getFunc(getFunc)
@@ -40,7 +38,7 @@ Attribute& Attribute::operator=(Attribute&& a)
         _defaultSetAndGet = a._defaultSetAndGet;
         _objectName = move(a._objectName);
         _description = move(a._description);
-        _values = move(a._values);
+        _values = std::move(a._values);
         _valuesTypes = move(a._valuesTypes);
         _syncMethod = a._syncMethod;
         _callbacks = move(a._callbacks);
@@ -57,14 +55,14 @@ bool Attribute::operator()(const Values& args)
 
     // Run all set callbacks
     {
-        lock_guard<mutex> lockCb(_callbackMutex);
+        std::lock_guard<std::mutex> lockCb(_callbackMutex);
         for (auto& cb : _callbacks)
             cb.second(_objectName, _name);
     }
 
     if (!_setFunc && _defaultSetAndGet)
     {
-        lock_guard<mutex> lock(_defaultFuncMutex);
+        std::lock_guard<std::mutex> lock(_defaultFuncMutex);
         _values = args;
 
         _valuesTypes.clear();
@@ -94,8 +92,8 @@ bool Attribute::operator()(const Values& args)
         auto type = args[i].getTypeAsChar();
         auto expected = _valuesTypes[i];
 
-        Log::get() << Log::WARNING << _objectName << "~~" << _name << " - Argument " << i << " is of wrong type " << string(&type, &type + 1) << ", expected "
-                   << string(&expected, &expected + 1) << Log::endl;
+        Log::get() << Log::WARNING << _objectName << "~~" << _name << " - Argument " << i << " is of wrong type " << std::string(&type, &type + 1) << ", expected "
+                   << std::string(&expected, &expected + 1) << Log::endl;
         return false;
     }
 
@@ -107,7 +105,7 @@ Values Attribute::operator()() const
 {
     if (!_getFunc && _defaultSetAndGet)
     {
-        lock_guard<mutex> lock(_defaultFuncMutex);
+        std::lock_guard<std::mutex> lock(_defaultFuncMutex);
         return _values;
     }
     else if (!_getFunc)
@@ -123,7 +121,7 @@ Values Attribute::getArgsTypes() const
 {
     Values types{};
     for (const auto& type : _valuesTypes)
-        types.push_back(Value(string(&type, 1)));
+        types.push_back(Value(std::string(&type, 1)));
     return types;
 }
 
@@ -139,9 +137,9 @@ bool Attribute::lock(const Values& v)
 }
 
 /*************/
-CallbackHandle Attribute::registerCallback(weak_ptr<BaseObject> caller, Callback cb)
+CallbackHandle Attribute::registerCallback(std::weak_ptr<BaseObject> caller, Callback cb)
 {
-    lock_guard<mutex> lockCb(_callbackMutex);
+    std::lock_guard<std::mutex> lockCb(_callbackMutex);
     auto handle = CallbackHandle(caller, _name);
     _callbacks[handle.getId()] = cb;
     return handle;
@@ -150,7 +148,7 @@ CallbackHandle Attribute::registerCallback(weak_ptr<BaseObject> caller, Callback
 /*************/
 bool Attribute::unregisterCallback(const CallbackHandle& handle)
 {
-    lock_guard<mutex> lockCb(_callbackMutex);
+    std::lock_guard<std::mutex> lockCb(_callbackMutex);
     auto callback = _callbacks.find(handle.getId());
     if (callback == _callbacks.end())
         return false;

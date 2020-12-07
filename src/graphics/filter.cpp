@@ -7,7 +7,7 @@
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
-using namespace std;
+namespace chrono = std::chrono;
 
 namespace Splash
 {
@@ -24,14 +24,14 @@ Filter::Filter(RootObject* root)
     if (!_root)
         return;
 
-    _fbo = make_unique<Framebuffer>(_root);
+    _fbo = std::make_unique<Framebuffer>(_root);
     _fbo->getColorTexture()->setAttribute("filtering", {true});
     _fbo->setSixteenBpc(_sixteenBpc);
 
     // Setup the virtual screen
-    _screen = make_shared<Object>(_root);
+    _screen = std::make_shared<Object>(_root);
     _screen->setAttribute("fill", {"image_filter"});
-    auto virtualScreen = make_shared<Geometry>(_root);
+    auto virtualScreen = std::make_shared<Geometry>(_root);
     _screen->addGeometry(virtualScreen);
 }
 
@@ -42,9 +42,9 @@ void Filter::bind()
 }
 
 /*************/
-unordered_map<string, Values> Filter::getShaderUniforms() const
+std::unordered_map<std::string, Values> Filter::getShaderUniforms() const
 {
-    unordered_map<string, Values> uniforms;
+    std::unordered_map<std::string, Values> uniforms;
     uniforms["size"] = {static_cast<float>(_fbo->getColorTexture()->getSpec().width), static_cast<float>(_fbo->getColorTexture()->getSpec().height)};
     return uniforms;
 }
@@ -55,12 +55,12 @@ bool Filter::linkIt(const std::shared_ptr<GraphObject>& obj)
     if (!obj)
         return false;
 
-    if (dynamic_pointer_cast<Texture>(obj))
+    if (std::dynamic_pointer_cast<Texture>(obj))
     {
         if (!_inTextures.empty() && _inTextures[_inTextures.size() - 1].expired())
             _screen->removeTexture(_inTextures[_inTextures.size() - 1].lock());
 
-        auto tex = dynamic_pointer_cast<Texture>(obj);
+        auto tex = std::dynamic_pointer_cast<Texture>(obj);
         _screen->addTexture(tex);
         _inTextures.push_back(tex);
         _sizeOverride[0] = -1;
@@ -68,17 +68,17 @@ bool Filter::linkIt(const std::shared_ptr<GraphObject>& obj)
 
         return true;
     }
-    else if (dynamic_pointer_cast<Image>(obj))
+    else if (std::dynamic_pointer_cast<Image>(obj))
     {
-        auto tex = dynamic_pointer_cast<Texture_Image>(_root->createObject("texture_image", getName() + "_" + obj->getName() + "_tex").lock());
+        auto tex = std::dynamic_pointer_cast<Texture_Image>(_root->createObject("texture_image", getName() + "_" + obj->getName() + "_tex").lock());
         if (tex->linkTo(obj))
             return linkTo(tex);
         else
             return false;
     }
-    else if (dynamic_pointer_cast<Camera>(obj).get())
+    else if (std::dynamic_pointer_cast<Camera>(obj).get())
     {
-        auto cam = dynamic_pointer_cast<Camera>(obj).get();
+        auto cam = std::dynamic_pointer_cast<Camera>(obj).get();
         auto tex = cam->getTexture();
         return linkTo(tex);
     }
@@ -95,7 +95,7 @@ void Filter::unbind()
 /*************/
 void Filter::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (dynamic_pointer_cast<Texture>(obj).get())
+    if (std::dynamic_pointer_cast<Texture>(obj).get())
     {
         for (uint32_t i = 0; i < _inTextures.size();)
         {
@@ -103,7 +103,7 @@ void Filter::unlinkIt(const std::shared_ptr<GraphObject>& obj)
                 continue;
 
             auto inTex = _inTextures[i].lock();
-            auto tex = dynamic_pointer_cast<Texture>(obj);
+            auto tex = std::dynamic_pointer_cast<Texture>(obj);
             if (inTex == tex)
             {
                 _screen->removeTexture(tex);
@@ -115,7 +115,7 @@ void Filter::unlinkIt(const std::shared_ptr<GraphObject>& obj)
             }
         }
     }
-    else if (dynamic_pointer_cast<Image>(obj).get())
+    else if (std::dynamic_pointer_cast<Image>(obj).get())
     {
         auto textureName = getName() + "_" + obj->getName() + "_tex";
 
@@ -127,9 +127,9 @@ void Filter::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 
         _root->disposeObject(textureName);
     }
-    else if (dynamic_pointer_cast<Camera>(obj).get())
+    else if (std::dynamic_pointer_cast<Camera>(obj).get())
     {
-        auto cam = dynamic_pointer_cast<Camera>(obj);
+        auto cam = std::dynamic_pointer_cast<Camera>(obj);
         auto tex = cam->getTexture();
         unlinkFrom(tex);
     }

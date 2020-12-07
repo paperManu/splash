@@ -6,13 +6,11 @@
 #include "./image/queue.h"
 #include "./utils/osutils.h"
 
-using namespace std;
-
 namespace Splash
 {
 
 /*************/
-GuiMedia::GuiMedia(Scene* scene, const string& name)
+GuiMedia::GuiMedia(Scene* scene, const std::string& name)
     : GuiWidget(scene, name)
 {
     auto types = getTypesFromCategory(GraphObject::Category::IMAGE);
@@ -40,8 +38,8 @@ void GuiMedia::render()
     for (const auto& media : mediaList)
     {
         auto filters = getFiltersForImage(media);
-        shared_ptr<Filter> filter;
-        if (!filters.empty() && (filter = dynamic_pointer_cast<Filter>(filters.front())))
+        std::shared_ptr<Filter> filter;
+        if (!filters.empty() && (filter = std::dynamic_pointer_cast<Filter>(filters.front())))
         {
             auto spec = filter->getSpec();
 
@@ -81,7 +79,7 @@ void GuiMedia::render()
     if (_mediaTypeIndex.find(_selectedMediaName) == _mediaTypeIndex.end())
         _mediaTypeIndex[_selectedMediaName] = 0;
 
-    vector<const char*> mediaTypes;
+    std::vector<const char*> mediaTypes;
     for (const auto& type : _mediaTypes)
         mediaTypes.push_back(type.first.c_str());
 
@@ -95,7 +93,7 @@ void GuiMedia::render()
     drawAttributes(_selectedMediaName, attributes);
 
     // Display the playlist if this is a queue
-    if (dynamic_pointer_cast<QueueSurrogate>(media))
+    if (std::dynamic_pointer_cast<QueueSurrogate>(media))
     {
         if (ImGui::TreeNode("Playlist"))
         {
@@ -115,7 +113,7 @@ void GuiMedia::render()
                 for (auto& source : playlist)
                 {
                     auto values = source.as<Values>();
-                    auto idStack = to_string(index) + values[0].as<string>();
+                    auto idStack = std::to_string(index) + values[0].as<std::string>();
 
                     ImGui::PushID((idStack + "up").c_str());
                     if (ImGui::Button("<<"))
@@ -143,7 +141,7 @@ void GuiMedia::render()
                     ImGui::SameLine();
                     ImGui::PushItemWidth(96);
                     ImGui::PushID((idStack + "media_type").c_str());
-                    ImGui::Text("%s", _mediaTypesReversed[values[0].as<string>()].c_str());
+                    ImGui::Text("%s", _mediaTypesReversed[values[0].as<std::string>()].c_str());
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Media type");
                     ImGui::PopID();
@@ -194,7 +192,7 @@ void GuiMedia::render()
                     ImGui::SameLine();
                     ImGui::PushItemWidth(-0.01f);
                     ImGui::PushID((idStack + "path").c_str());
-                    ImGui::Text("%s", values[1].as<string>().c_str());
+                    ImGui::Text("%s", values[1].as<std::string>().c_str());
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Media path");
                     ImGui::PopID();
@@ -278,7 +276,7 @@ void GuiMedia::render()
             ImGui::SameLine();
             ImGui::PushItemWidth(-32.f); // Go up to the other edge, minus this value
             ImGui::PushID("newMediaFile");
-            string filepath = _newMedia[1].as<string>();
+            std::string filepath = _newMedia[1].as<std::string>();
             if (SplashImGui::InputText("", filepath, ImGuiInputTextFlags_EnterReturnsTrue))
                 _newMedia[1] = filepath;
             if (ImGui::IsItemHovered())
@@ -291,9 +289,9 @@ void GuiMedia::render()
 
             if (_fileSelectorTarget == mediaAlias)
             {
-                static string path = _root->getMediaPath();
+                static std::string path = _root->getMediaPath();
                 bool cancelled;
-                static const vector<string> extensions{{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"}, {"avi"}, {"mov"}, {"mp4"}};
+                static const std::vector<std::string> extensions{{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"}, {"avi"}, {"mov"}, {"mp4"}};
                 if (SplashImGui::FileSelector(mediaAlias, path, cancelled, extensions))
                 {
                     if (!cancelled)
@@ -311,7 +309,7 @@ void GuiMedia::render()
         }
 
         // Display the filters associated with this queue
-        auto filter = dynamic_pointer_cast<QueueSurrogate>(media)->getFilter();
+        auto filter = std::dynamic_pointer_cast<QueueSurrogate>(media)->getFilter();
         auto filterName = filter->getName();
         if (ImGui::TreeNode(("Filter: " + filterName).c_str()))
         {
@@ -353,7 +351,7 @@ void GuiMedia::render()
             auto filterName = filterAsObj->getName();
             if (ImGui::TreeNode(("Filter preview: " + filterName).c_str()))
             {
-                auto filter = dynamic_pointer_cast<Filter>(filterAsObj);
+                auto filter = std::dynamic_pointer_cast<Filter>(filterAsObj);
                 auto spec = filter->getSpec();
                 auto ratio = static_cast<float>(spec.height) / static_cast<float>(spec.width);
 
@@ -371,10 +369,10 @@ void GuiMedia::render()
 }
 
 /*************/
-void GuiMedia::replaceMedia(const string& previousMedia, const string& alias, const string& type)
+void GuiMedia::replaceMedia(const std::string& previousMedia, const std::string& alias, const std::string& type)
 {
     // We get the list of all objects linked to previousMedia
-    auto targetObjects = list<weak_ptr<GraphObject>>();
+    auto targetObjects = std::list<std::weak_ptr<GraphObject>>();
     auto objects = getObjectsPtr(getObjectList());
     for (auto& object : objects)
     {
@@ -412,9 +410,9 @@ int GuiMedia::updateWindowFlags()
 }
 
 /*************/
-list<shared_ptr<GraphObject>> GuiMedia::getSceneMedia()
+std::list<std::shared_ptr<GraphObject>> GuiMedia::getSceneMedia()
 {
-    auto mediaList = list<shared_ptr<GraphObject>>();
+    auto mediaList = std::list<std::shared_ptr<GraphObject>>();
     auto mediaTypes = getTypesFromCategory(GraphObject::Category::IMAGE);
 
     for (const auto& type : mediaTypes)
@@ -434,9 +432,9 @@ list<shared_ptr<GraphObject>> GuiMedia::getSceneMedia()
 }
 
 /*************/
-list<shared_ptr<GraphObject>> GuiMedia::getFiltersForImage(const shared_ptr<GraphObject>& image)
+std::list<std::shared_ptr<GraphObject>> GuiMedia::getFiltersForImage(const std::shared_ptr<GraphObject>& image)
 {
-    auto filterList = list<shared_ptr<GraphObject>>();
+    auto filterList = std::list<std::shared_ptr<GraphObject>>();
     auto allFilters = getObjectsPtr(getObjectsOfType("filter"));
     for (auto& obj : allFilters)
     {

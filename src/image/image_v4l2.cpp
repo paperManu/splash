@@ -14,7 +14,6 @@
 #define NUMERATOR 1001
 #define DIVISOR 10
 
-using namespace std;
 using Splash::Utils::xioctl;
 
 namespace Splash
@@ -53,7 +52,7 @@ void Image_V4L2::init()
 /*************/
 bool Image_V4L2::doCapture()
 {
-    lock_guard<mutex> lockStart(_startStopMutex);
+    std::lock_guard<std::mutex> lockStart(_startStopMutex);
 
     if (_capturing)
         return true;
@@ -84,7 +83,7 @@ bool Image_V4L2::doCapture()
 /*************/
 void Image_V4L2::stopCapture()
 {
-    lock_guard<mutex> lockStop(_startStopMutex);
+    std::lock_guard<std::mutex> lockStop(_startStopMutex);
 
     if (!_capturing)
         return;
@@ -108,10 +107,10 @@ void Image_V4L2::captureThreadFunc()
         while (_captureThreadRun)
         {
             if (!_bufferImage || _bufferImage->getSpec() != _imageBuffers[buffer.index]->getSpec())
-                _bufferImage = make_unique<ImageBuffer>(_spec);
+                _bufferImage = std::make_unique<ImageBuffer>(_spec);
 
             {
-                unique_lock<shared_mutex> lockWrite(_writeMutex);
+                std::unique_lock<std::shared_mutex> lockWrite(_writeMutex);
                 result = ::read(_deviceFd, _bufferImage->data(), _spec.rawSize());
                 _imageUpdated = true;
             }
@@ -172,18 +171,18 @@ void Image_V4L2::captureThreadFunc()
                     assert(buffer.index < _bufferCount);
 
                     if (!_bufferImage || _bufferImage->getSpec() != _imageBuffers[buffer.index]->getSpec())
-                        _bufferImage = make_unique<ImageBuffer>(_spec);
+                        _bufferImage = std::make_unique<ImageBuffer>(_spec);
 
                     if (_ioMethod == V4L2_MEMORY_MMAP)
                     {
                         auto& imageBuffer = _imageBuffers[buffer.index];
-                        unique_lock<shared_mutex> lockWrite(_writeMutex);
-                        _bufferImage = make_unique<ImageBuffer>(imageBuffer->getSpec(), imageBuffer->data());
+                        std::unique_lock<std::shared_mutex> lockWrite(_writeMutex);
+                        _bufferImage = std::make_unique<ImageBuffer>(imageBuffer->getSpec(), imageBuffer->data());
                         _imageUpdated = true;
                     }
                     else if (_ioMethod == V4L2_MEMORY_USERPTR)
                     {
-                        unique_lock<shared_mutex> lockWrite(_writeMutex);
+                        std::unique_lock<std::shared_mutex> lockWrite(_writeMutex);
                         _bufferImage.swap(_imageBuffers[buffer.index]);
                         _imageUpdated = true;
                     }
@@ -212,9 +211,9 @@ void Image_V4L2::captureThreadFunc()
                 _v4l2SourceFormat.type = V4L2_BUF_TYPE_CAPTURE_SOURCE;
                 if (xioctl(_deviceFd, RGB133_VIDIOC_G_SRC_FMT, &_v4l2SourceFormat) >= 0)
                 {
-                    auto sourceFormatAsString = to_string(_v4l2SourceFormat.fmt.pix.width) + "x" + to_string(_v4l2SourceFormat.fmt.pix.height) + string("@") +
-                                                to_string((float)_v4l2SourceFormat.fmt.pix.priv / 1000.f) + "Hz, format " +
-                                                string(reinterpret_cast<char*>(&_v4l2SourceFormat.fmt.pix.pixelformat), 4);
+                    auto sourceFormatAsString = std::to_string(_v4l2SourceFormat.fmt.pix.width) + "x" + std::to_string(_v4l2SourceFormat.fmt.pix.height) + std::string("@") +
+                                                std::to_string((float)_v4l2SourceFormat.fmt.pix.priv / 1000.f) + "Hz, format " +
+                                                std::string(reinterpret_cast<char*>(&_v4l2SourceFormat.fmt.pix.pixelformat), 4);
 
                     if (!_automaticResizing)
                     {
@@ -254,8 +253,8 @@ void Image_V4L2::captureThreadFunc()
     }
 
     // Reset to a default image
-    unique_lock<shared_mutex> lockWrite(_writeMutex);
-    _bufferImage = make_unique<ImageBuffer>(ImageBufferSpec(512, 512, 4, 32));
+    std::unique_lock<std::shared_mutex> lockWrite(_writeMutex);
+    _bufferImage = std::make_unique<ImageBuffer>(ImageBufferSpec(512, 512, 4, 32));
     _bufferImage->zero();
     _imageUpdated = true;
     updateTimestamp();
@@ -408,7 +407,7 @@ bool Image_V4L2::initializeCapture()
                 return false;
             }
 
-            _imageBuffers.push_back(make_unique<ImageBuffer>(_spec, static_cast<uint8_t*>(mappedMemory), true));
+            _imageBuffers.push_back(std::make_unique<ImageBuffer>(_spec, static_cast<uint8_t*>(mappedMemory), true));
 
             result = xioctl(_deviceFd, VIDIOC_QBUF, &buffer);
             if (result < 0)
@@ -426,7 +425,7 @@ bool Image_V4L2::initializeCapture()
 
         for (uint32_t i = 0; i < _bufferCount; ++i)
         {
-            _imageBuffers.push_back(make_unique<ImageBuffer>(_spec));
+            _imageBuffers.push_back(std::make_unique<ImageBuffer>(_spec));
 
             memset(&buffer, 0, sizeof(buffer));
             buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -553,7 +552,7 @@ bool Image_V4L2::openCaptureDevice(const std::string& devicePath)
         Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - Unable to set the desired video format, trying to revert to the original one" << Log::endl;
 
     Log::get() << Log::MESSAGE << "Image_V4L2::" << __FUNCTION__ << " - Trying to set capture format to: " << _outputWidth << "x" << _outputHeight << ", format "
-               << string(reinterpret_cast<char*>(&_outputPixelFormat), 4) << Log::endl;
+               << std::string(reinterpret_cast<char*>(&_outputPixelFormat), 4) << Log::endl;
 
     // Get the real video format
     memset(&_v4l2Format, 0, sizeof(_v4l2Format));
@@ -570,12 +569,12 @@ bool Image_V4L2::openCaptureDevice(const std::string& devicePath)
     _outputPixelFormat = _v4l2Format.fmt.pix.pixelformat;
 
     Log::get() << Log::MESSAGE << "Image_V4L2::" << __FUNCTION__ << " - Capture format set to: " << _outputWidth << "x" << _outputHeight << " for format "
-               << string(reinterpret_cast<char*>(&_outputPixelFormat), 4) << Log::endl;
+               << std::string(reinterpret_cast<char*>(&_outputPixelFormat), 4) << Log::endl;
 
     switch (_outputPixelFormat)
     {
     default:
-        Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - Input format not supported: " << string(reinterpret_cast<char*>(&_outputPixelFormat), 4) << Log::endl;
+        Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - Input format not supported: " << std::string(reinterpret_cast<char*>(&_outputPixelFormat), 4) << Log::endl;
         return false;
     case V4L2_PIX_FMT_RGB24:
         _spec = ImageBufferSpec(_outputWidth, _outputHeight, 3, 24, ImageBufferSpec::Type::UINT8, "RGB");
@@ -641,7 +640,7 @@ bool Image_V4L2::enumerateCaptureDeviceInputs()
             return false;
         }
         Log::get() << Log::MESSAGE << "Image_V4L2::" << __FUNCTION__ << " - Detected input "
-                   << string(reinterpret_cast<char*>(&_v4l2Inputs[i].name[0]), sizeof(_v4l2Inputs[i].name)) << " of type " << _v4l2Inputs[i].type << Log::endl;
+                   << std::string(reinterpret_cast<char*>(&_v4l2Inputs[i].name[0]), sizeof(_v4l2Inputs[i].name)) << " of type " << _v4l2Inputs[i].type << Log::endl;
     }
 
     return true;
@@ -683,7 +682,7 @@ bool Image_V4L2::enumerateCaptureFormats()
         else
         {
             Log::get() << Log::MESSAGE << "Image_V4L2::" << __FUNCTION__ << " - Detected format "
-                       << string(reinterpret_cast<char*>(&_v4l2Formats[i].description), sizeof(_v4l2Formats[i].description)) << Log::endl;
+                       << std::string(reinterpret_cast<char*>(&_v4l2Formats[i].description), sizeof(_v4l2Formats[i].description)) << Log::endl;
         }
     }
 
@@ -719,7 +718,7 @@ bool Image_V4L2::enumerateVideoStandards()
             return false;
         }
         Log::get() << Log::MESSAGE << "Image_V4L2::" << __FUNCTION__
-                   << " - Detected video standard: " << string(reinterpret_cast<char*>(&_v4l2Standards[i].name[0]), sizeof(_v4l2Standards[i].name)) << Log::endl;
+                   << " - Detected video standard: " << std::string(reinterpret_cast<char*>(&_v4l2Standards[i].name[0]), sizeof(_v4l2Standards[i].name)) << Log::endl;
     }
 
     return true;
@@ -780,10 +779,10 @@ void Image_V4L2::registerAttributes()
 
     addAttribute("device",
         [&](const Values& args) {
-            auto path = args[0].as<string>();
+            auto path = args[0].as<std::string>();
             auto index = -1;
 
-            if (path.find("/dev/video") == string::npos)
+            if (path.find("/dev/video") == std::string::npos)
                 Log::get() << Log::WARNING << "Image_V4L2~~device"
                            << " - V4L2 device path should start with /dev/video" << path << Log::endl;
 
@@ -802,7 +801,7 @@ void Image_V4L2::registerAttributes()
             stopCapture();
 
             if (index != -1) // Only the index is specified
-                _devicePath = "/dev/video" + to_string(index);
+                _devicePath = "/dev/video" + std::to_string(index);
             else if (path.empty() || path[0] != '/') // No path specified, or an invalid one
                 _devicePath = "";
             else
@@ -838,12 +837,12 @@ void Image_V4L2::registerAttributes()
             auto isCapturing = _capturing;
             stopCapture();
 
-            auto format = args[0].as<string>();
-            if (format.find("RGB") != string::npos)
+            auto format = args[0].as<std::string>();
+            if (format.find("RGB") != std::string::npos)
                 _outputPixelFormat = V4L2_PIX_FMT_RGB24;
-            else if (format.find("BGR") != string::npos)
+            else if (format.find("BGR") != std::string::npos)
                 _outputPixelFormat = V4L2_PIX_FMT_BGR24;
-            else if (format.find("YUYV") != string::npos)
+            else if (format.find("YUYV") != std::string::npos)
                 _outputPixelFormat = V4L2_PIX_FMT_YUYV;
             else
                 _outputPixelFormat = V4L2_PIX_FMT_RGB24;
@@ -854,7 +853,7 @@ void Image_V4L2::registerAttributes()
             return true;
         },
         [&]() -> Values {
-            string format;
+            std::string format;
             switch (_outputPixelFormat)
             {
             default:

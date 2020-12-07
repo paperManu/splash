@@ -5,7 +5,6 @@
 
 #include "./utils/resizable_array.h"
 
-using namespace std;
 using namespace Splash;
 
 /*************/
@@ -63,7 +62,7 @@ int checkCopy(int size, int shift)
     if (array.size() != newArray.size())
         return -1;
 
-    for (int i = 0; i < newArray.size(); ++i)
+    for (uint32_t i = 0; i < newArray.size(); ++i)
         if (newArray[i] != array[i])
             return -2;
 
@@ -72,7 +71,7 @@ int checkCopy(int size, int shift)
     if (array.size() != newArray.size())
         return -3;
 
-    for (int i = 0; i < newArray.size(); ++i)
+    for (uint32_t i = 0; i < newArray.size(); ++i)
         if (newArray[i] != array[i])
             return -4;
 
@@ -89,7 +88,7 @@ TEST_CASE("Testing ResizableArray copy")
 /*************/
 TEST_CASE("Testing ResizableArray constructor from iterators")
 {
-    vector<int> data(256, 42);
+    std::vector<int> data(256, 42);
     auto array = ResizableArray(&data[0], &data[255]);
     CHECK_EQ(array[128], 42);
 }
@@ -97,13 +96,13 @@ TEST_CASE("Testing ResizableArray constructor from iterators")
 /*************/
 TEST_CASE("Testing ResizableArray move constructor and operator")
 {
-    vector<int> data(256, 42);
+    std::vector<int> data(256, 42);
     auto array = ResizableArray(&data[0], &data[255]);
 
-    auto otherArray = ResizableArray(move(array));
+    auto otherArray = ResizableArray(std::move(array));
     CHECK_EQ(otherArray[128], 42);
 
     ResizableArray<int> anotherOne;
-    anotherOne = move(otherArray);
+    anotherOne = std::move(otherArray);
     CHECK_EQ(anotherOne[128], 42);
 }

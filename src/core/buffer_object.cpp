@@ -2,8 +2,6 @@
 
 #include "./core/root_object.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -27,7 +25,7 @@ bool BufferObject::deserialize()
 }
 
 /*************/
-void BufferObject::setSerializedObject(const shared_ptr<SerializedObject>& obj)
+void BufferObject::setSerializedObject(const std::shared_ptr<SerializedObject>& obj)
 {
     if (_serializedObjectWaitingMutex.try_lock())
     {
@@ -35,8 +33,8 @@ void BufferObject::setSerializedObject(const shared_ptr<SerializedObject>& obj)
         _newSerializedObject = true;
 
         // Deserialize it right away, in a separate thread
-        _deserializeFuture = async(launch::async, [this]() {
-            lock_guard<shared_mutex> lock(_writeMutex);
+        _deserializeFuture = std::async(std::launch::async, [this]() {
+            std::lock_guard<std::shared_mutex> lock(_writeMutex);
             deserialize();
             _serializedObjectWaitingMutex.unlock();
         });
@@ -46,7 +44,7 @@ void BufferObject::setSerializedObject(const shared_ptr<SerializedObject>& obj)
 /*************/
 void BufferObject::updateTimestamp(int64_t timestamp)
 {
-    lock_guard<Spinlock> lock(_timestampMutex);
+    std::lock_guard<Spinlock> lock(_timestampMutex);
     if (timestamp != -1)
         _timestamp = timestamp;
     else

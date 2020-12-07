@@ -10,24 +10,22 @@
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
-using namespace std;
-
 namespace Splash
 {
 
 /*************/
-Link::Link(RootObject* root, const string& name)
+Link::Link(RootObject* root, const std::string& name)
 {
     try
     {
         _rootObject = root;
         _name = name;
-        _context = make_unique<zmq::context_t>(2);
+        _context = std::make_unique<zmq::context_t>(2);
 
-        _socketMessageOut = make_unique<zmq::socket_t>(*_context, ZMQ_PUB);
-        _socketMessageIn = make_unique<zmq::socket_t>(*_context, ZMQ_SUB);
-        _socketBufferOut = make_unique<zmq::socket_t>(*_context, ZMQ_PUB);
-        _socketBufferIn = make_unique<zmq::socket_t>(*_context, ZMQ_SUB);
+        _socketMessageOut = std::make_unique<zmq::socket_t>(*_context, ZMQ_PUB);
+        _socketMessageIn = std::make_unique<zmq::socket_t>(*_context, ZMQ_SUB);
+        _socketBufferOut = std::make_unique<zmq::socket_t>(*_context, ZMQ_PUB);
+        _socketBufferIn = std::make_unique<zmq::socket_t>(*_context, ZMQ_SUB);
 
         // High water mark set to zero for the outputs
         int hwm = 0;
@@ -43,11 +41,11 @@ Link::Link(RootObject* root, const string& name)
     auto socketPrefix = _rootObject->getSocketPrefix();
     _basePath = "ipc:///tmp/splash_";
     if (!socketPrefix.empty())
-        _basePath += socketPrefix + string("_");
+        _basePath += socketPrefix + std::string("_");
 
     _running = true;
-    _bufferInThread = thread([&]() { handleInputBuffers(); });
-    _messageInThread = thread([&]() { handleInputMessages(); });
+    _bufferInThread = std::thread([&]() { handleInputBuffers(); });
+    _messageInThread = std::thread([&]() { handleInputMessages(); });
 }
 
 /*************/
@@ -70,7 +68,7 @@ Link::~Link()
 }
 
 /*************/
-void Link::connectTo(const string& name)
+void Link::connectTo(const std::string& name)
 {
     if (find(_connectedTargets.begin(), _connectedTargets.end(), name) == _connectedTargets.end())
         _connectedTargets.push_back(name);
@@ -90,7 +88,7 @@ void Link::connectTo(const string& name)
     }
 
     // Wait a bit for the connection to be up
-    this_thread::sleep_for(chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     _connectedToOuter = true;
 }
 
@@ -107,7 +105,7 @@ void Link::connectTo(const std::string& name, RootObject* peer)
         return;
 
     // Wait a bit for the connection to be up
-    this_thread::sleep_for(chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     _connectedToInner = true;
 }
 
@@ -138,10 +136,10 @@ void Link::disconnectFrom(const std::string& name)
 }
 
 /*************/
-bool Link::waitForBufferSending(chrono::milliseconds maximumWait)
+bool Link::waitForBufferSending(std::chrono::milliseconds maximumWait)
 {
     bool returnValue;
-    chrono::milliseconds totalWait{0};
+    std::chrono::milliseconds totalWait{0};
 
     while (true)
     {
@@ -155,15 +153,15 @@ bool Link::waitForBufferSending(chrono::milliseconds maximumWait)
             returnValue = false;
             break;
         }
-        totalWait = totalWait + chrono::milliseconds(1);
-        this_thread::sleep_for(chrono::milliseconds(1));
+        totalWait = totalWait + std::chrono::milliseconds(1);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
     return returnValue;
 }
 
 /*************/
-bool Link::sendBuffer(const string& name, shared_ptr<SerializedObject> buffer)
+bool Link::sendBuffer(const std::string& name, std::shared_ptr<SerializedObject> buffer)
 {
     if (_connectedToInner)
     {
@@ -174,7 +172,7 @@ bool Link::sendBuffer(const string& name, shared_ptr<SerializedObject> buffer)
             // we make a copy of the buffer right now
             if (rootObject && _connectedToOuter)
             {
-                auto copiedBuffer = make_shared<SerializedObject>();
+                auto copiedBuffer = std::make_shared<SerializedObject>();
                 *copiedBuffer = *buffer;
                 rootObject->setFromSerializedObject(name, copiedBuffer);
             }
@@ -189,7 +187,7 @@ bool Link::sendBuffer(const string& name, shared_ptr<SerializedObject> buffer)
     {
         try
         {
-            lock_guard<Spinlock> lock(_bufferSendMutex);
+            std::lock_guard<Spinlock> lock(_bufferSendMutex);
             auto bufferPtr = buffer.get();
 
             _otgMutex.lock();
@@ -216,14 +214,14 @@ bool Link::sendBuffer(const string& name, shared_ptr<SerializedObject> buffer)
 }
 
 /*************/
-bool Link::sendBuffer(const string& name, const shared_ptr<BufferObject>& object)
+bool Link::sendBuffer(const std::string& name, const std::shared_ptr<BufferObject>& object)
 {
     auto buffer = object->serialize();
     return sendBuffer(name, std::move(buffer));
 }
 
 /*************/
-bool Link::sendMessage(const string& name, const string& attribute, const Values& message)
+bool Link::sendMessage(const std::string& name, const std::string& attribute, const Values& message)
 {
     if (_connectedToInner)
     {
@@ -239,7 +237,7 @@ bool Link::sendMessage(const string& name, const string& attribute, const Values
     {
         try
         {
-            lock_guard<Spinlock> lock(_msgSendMutex);
+            std::lock_guard<Spinlock> lock(_msgSendMutex);
 
             // First we send the name of the target
             zmq::message_t msg(name.size() + 1);
@@ -318,7 +316,7 @@ bool Link::sendMessage(const string& name, const string& attribute, const Values
 void Link::freeOlderBuffer(void* data, void* hint)
 {
     Link* ctx = (Link*)hint;
-    lock_guard<Spinlock> lock(ctx->_otgMutex);
+    std::lock_guard<Spinlock> lock(ctx->_otgMutex);
     uint32_t index = 0;
     for (; index < ctx->_otgBuffers.size(); ++index)
         if (ctx->_otgBuffers[index]->data() == data)
@@ -363,7 +361,7 @@ void Link::handleInputMessages()
 
                 if (!_socketMessageIn->recv(msg, zmq::recv_flags::none))
                     return {};
-                string valueName(static_cast<char*>(msg.data()));
+                std::string valueName(static_cast<char*>(msg.data()));
 
                 if (valueType == Value::Type::values)
                 {
@@ -381,7 +379,7 @@ void Link::handleInputMessages()
                     else if (valueType == Value::Type::real)
                         values.push_back(*(double*)msg.data());
                     else if (valueType == Value::Type::string)
-                        values.push_back(string((char*)msg.data()));
+                        values.push_back(std::string((char*)msg.data()));
                 }
 
                 if (!valueName.empty())
@@ -394,14 +392,14 @@ void Link::handleInputMessages()
         {
             if (!_socketMessageIn->recv(msg, zmq::recv_flags::dontwait)) // name of the target
             {
-                std::this_thread::sleep_for(1ms);
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
                 continue;
             }
-            string name((char*)msg.data());
+            std::string name((char*)msg.data());
             if (!_socketMessageIn->recv(msg, zmq::recv_flags::none)) // target's attribute
                 return;
 
-            string attribute((char*)msg.data());
+            std::string attribute((char*)msg.data());
 
             Values values = recvMessage();
 
@@ -440,14 +438,14 @@ void Link::handleInputBuffers()
 
             if (!_socketBufferIn->recv(msg, zmq::recv_flags::dontwait))
             {
-                std::this_thread::sleep_for(1ms);
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
                 continue;
             }
-            string name((char*)msg.data());
+            std::string name((char*)msg.data());
 
             if (!_socketBufferIn->recv(msg, zmq::recv_flags::none))
                 continue;
-            auto buffer = make_shared<SerializedObject>(static_cast<uint8_t*>(msg.data()), static_cast<uint8_t*>(msg.data()) + msg.size());
+            auto buffer = std::make_shared<SerializedObject>(static_cast<uint8_t*>(msg.data()), static_cast<uint8_t*>(msg.data()) + msg.size());
 
             if (_rootObject)
                 _rootObject->setFromSerializedObject(name, buffer);

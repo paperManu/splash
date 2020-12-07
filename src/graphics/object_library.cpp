@@ -3,24 +3,22 @@
 #include <fstream>
 #include <utility>
 
-using namespace std;
-
 namespace Splash
 {
 
 /*************/
-bool ObjectLibrary::loadModel(const string& name, const string& filename)
+bool ObjectLibrary::loadModel(const std::string& name, const std::string& filename)
 {
     if (_library.find(name) != _library.end())
         return false;
 
-    string filepath = filename;
+    std::string filepath = filename;
 
-    if (!ifstream(filepath, ios::in | ios::binary))
+    if (!std::ifstream(filepath, std::ios::in | std::ios::binary))
     {
-        if (ifstream(string(DATADIR) + filepath, ios::in | ios::binary))
+        if (std::ifstream(std::string(DATADIR) + filepath, std::ios::in | std::ios::binary))
         {
-            filepath = string(DATADIR) + filepath;
+            filepath = std::string(DATADIR) + filepath;
         }
         else
         {
@@ -29,22 +27,22 @@ bool ObjectLibrary::loadModel(const string& name, const string& filename)
         }
     }
 
-    auto mesh = make_shared<Mesh>(_root);
+    auto mesh = std::make_shared<Mesh>(_root);
     mesh->setAttribute("file", {filepath});
 
     // We create the geometry manually for it not to be registered in the root
-    auto geometry = make_shared<Geometry>(_root);
+    auto geometry = std::make_shared<Geometry>(_root);
     geometry->setMesh(mesh);
 
-    auto obj = make_unique<Object>(_root);
+    auto obj = std::make_unique<Object>(_root);
     obj->addGeometry(geometry);
 
-    _library[name] = move(obj);
+    _library[name] = std::move(obj);
     return true;
 }
 
 /*************/
-Object* ObjectLibrary::getModel(const string& name)
+Object* ObjectLibrary::getModel(const std::string& name)
 {
     auto objectIt = _library.find(name);
     if (objectIt == _library.end())
@@ -53,8 +51,8 @@ Object* ObjectLibrary::getModel(const string& name)
         // can not be created in the constructor of the library
         if (!_defaultObject)
         {
-            auto geometry = make_shared<Geometry>(_root);
-            _defaultObject = make_unique<Object>(_root);
+            auto geometry = std::make_shared<Geometry>(_root);
+            _defaultObject = std::make_unique<Object>(_root);
             _defaultObject->addGeometry(geometry);
         }
 

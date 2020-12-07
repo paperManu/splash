@@ -16,21 +16,20 @@
 #include <functional>
 #include <glm/gtc/matrix_transform.hpp>
 
-using namespace std;
 using namespace std::placeholders;
 
 namespace Splash
 {
 
 /*************/
-mutex Window::_callbackMutex;
-deque<pair<GLFWwindow*, vector<int>>> Window::_keys;
-deque<pair<GLFWwindow*, unsigned int>> Window::_chars;
-deque<pair<GLFWwindow*, vector<int>>> Window::_mouseBtn;
-pair<GLFWwindow*, vector<double>> Window::_mousePos;
-deque<pair<GLFWwindow*, vector<double>>> Window::_scroll;
-vector<string> Window::_pathDropped;
-atomic_bool Window::_quitFlag;
+std::mutex Window::_callbackMutex;
+std::deque<std::pair<GLFWwindow*, std::vector<int>>> Window::_keys;
+std::deque<std::pair<GLFWwindow*, unsigned int>> Window::_chars;
+std::deque<std::pair<GLFWwindow*, std::vector<int>>> Window::_mouseBtn;
+std::pair<GLFWwindow*, std::vector<double>> Window::_mousePos;
+std::deque<std::pair<GLFWwindow*, std::vector<double>>> Window::_scroll;
+std::vector<std::string> Window::_pathDropped;
+std::atomic_bool Window::_quitFlag;
 
 int Window::_swappableWindowsCount{0};
 
@@ -88,7 +87,7 @@ Window::~Window()
 /*************/
 int Window::getChar(GLFWwindow*& win, unsigned int& codepoint)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    std::lock_guard<std::mutex> lock(_callbackMutex);
     if (_chars.size() == 0)
         return 0;
 
@@ -103,12 +102,12 @@ int Window::getChar(GLFWwindow*& win, unsigned int& codepoint)
 /*************/
 int Window::getKey(GLFWwindow*& win, int& key, int& action, int& mods)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    std::lock_guard<std::mutex> lock(_callbackMutex);
     if (_keys.size() == 0)
         return 0;
 
     win = _keys.front().first;
-    vector<int> key_pressed = _keys.front().second;
+    std::vector<int> key_pressed = _keys.front().second;
 
     key = key_pressed[0];
     action = key_pressed[2];
@@ -122,12 +121,12 @@ int Window::getKey(GLFWwindow*& win, int& key, int& action, int& mods)
 /*************/
 int Window::getMouseBtn(GLFWwindow*& win, int& btn, int& action, int& mods)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    std::lock_guard<std::mutex> lock(_callbackMutex);
     if (_mouseBtn.size() == 0)
         return 0;
 
     win = _mouseBtn.front().first;
-    vector<int> mouse = _mouseBtn.front().second;
+    std::vector<int> mouse = _mouseBtn.front().second;
 
     btn = mouse[0];
     action = mouse[1];
@@ -141,7 +140,7 @@ int Window::getMouseBtn(GLFWwindow*& win, int& btn, int& action, int& mods)
 /*************/
 void Window::getMousePos(GLFWwindow*& win, int& xpos, int& ypos)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    std::lock_guard<std::mutex> lock(_callbackMutex);
     if (_mousePos.second.size() != 2)
         return;
 
@@ -153,7 +152,7 @@ void Window::getMousePos(GLFWwindow*& win, int& xpos, int& ypos)
 /*************/
 int Window::getScroll(GLFWwindow*& win, double& xoffset, double& yoffset)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    std::lock_guard<std::mutex> lock(_callbackMutex);
     if (_scroll.size() == 0)
         return 0;
 
@@ -167,22 +166,22 @@ int Window::getScroll(GLFWwindow*& win, double& xoffset, double& yoffset)
 }
 
 /*************/
-vector<string> Window::getPathDropped()
+std::vector<std::string> Window::getPathDropped()
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    std::lock_guard<std::mutex> lock(_callbackMutex);
     auto paths = _pathDropped;
     _pathDropped.clear();
     return paths;
 }
 
 /*************/
-bool Window::linkIt(const shared_ptr<GraphObject>& obj)
+bool Window::linkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (dynamic_pointer_cast<Gui>(obj))
+    if (std::dynamic_pointer_cast<Gui>(obj))
     {
         if (_guiTexture != nullptr)
             _screenGui->removeTexture(_guiTexture);
-        _gui = dynamic_pointer_cast<Gui>(obj);
+        _gui = std::dynamic_pointer_cast<Gui>(obj);
         _guiTexture = _gui->getTexture();
         _screenGui->addTexture(_guiTexture);
         return true;
@@ -191,22 +190,22 @@ bool Window::linkIt(const shared_ptr<GraphObject>& obj)
     if (_guiOnly)
         return false;
 
-    if (dynamic_pointer_cast<Texture>(obj))
+    if (std::dynamic_pointer_cast<Texture>(obj))
     {
-        auto tex = dynamic_pointer_cast<Texture>(obj);
+        auto tex = std::dynamic_pointer_cast<Texture>(obj);
         setTexture(tex);
         return true;
     }
-    else if (dynamic_pointer_cast<Image>(obj))
+    else if (std::dynamic_pointer_cast<Image>(obj))
     {
-        auto tex = dynamic_pointer_cast<Texture_Image>(_root->createObject("texture_image", getName() + "_" + obj->getName() + "_tex").lock());
+        auto tex = std::dynamic_pointer_cast<Texture_Image>(_root->createObject("texture_image", getName() + "_" + obj->getName() + "_tex").lock());
         tex->setResizable(0);
         if (tex->linkTo(obj))
             return linkTo(tex);
         else
             return false;
     }
-    else if (dynamic_pointer_cast<Camera>(obj))
+    else if (std::dynamic_pointer_cast<Camera>(obj))
     {
         auto scene = dynamic_cast<Scene*>(_root);
         if (!scene)
@@ -225,18 +224,18 @@ bool Window::linkIt(const shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void Window::unlinkIt(const shared_ptr<GraphObject>& obj)
+void Window::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (dynamic_pointer_cast<Texture>(obj))
+    if (std::dynamic_pointer_cast<Texture>(obj))
     {
-        auto tex = dynamic_pointer_cast<Texture>(obj);
+        auto tex = std::dynamic_pointer_cast<Texture>(obj);
         unsetTexture(tex);
     }
-    else if (dynamic_pointer_cast<Image>(obj))
+    else if (std::dynamic_pointer_cast<Image>(obj))
     {
         // Look for the corresponding texture
-        string texName = getName() + "_" + obj->getName() + "_tex";
-        shared_ptr<Texture> tex = nullptr;
+        std::string texName = getName() + "_" + obj->getName() + "_tex";
+        std::shared_ptr<Texture> tex = nullptr;
         for (auto& inTex : _inTextures)
         {
             if (inTex.expired())
@@ -252,7 +251,7 @@ void Window::unlinkIt(const shared_ptr<GraphObject>& obj)
             _root->disposeObject(texName);
         }
     }
-    else if (dynamic_pointer_cast<Camera>(obj))
+    else if (std::dynamic_pointer_cast<Camera>(obj))
     {
         auto warpName = getName() + "_" + obj->getName() + "_warp";
 
@@ -263,9 +262,9 @@ void Window::unlinkIt(const shared_ptr<GraphObject>& obj)
             _root->disposeObject(warpName);
         }
     }
-    else if (dynamic_pointer_cast<Gui>(obj))
+    else if (std::dynamic_pointer_cast<Gui>(obj))
     {
-        auto gui = dynamic_pointer_cast<Gui>(obj);
+        auto gui = std::dynamic_pointer_cast<Gui>(obj);
         if (gui->getTexture() == _guiTexture)
         {
             _screenGui->removeTexture(_guiTexture);
@@ -399,11 +398,11 @@ void Window::setupFBOs()
         glCreateFramebuffers(1, &_renderFbo);
 
     glNamedFramebufferTexture(_renderFbo, GL_DEPTH_ATTACHMENT, 0, 0);
-    _depthTexture = make_shared<Texture_Image>(_root, _windowRect[2], _windowRect[3], "D", nullptr);
+    _depthTexture = std::make_shared<Texture_Image>(_root, _windowRect[2], _windowRect[3], "D", nullptr);
     glNamedFramebufferTexture(_renderFbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
 
     glNamedFramebufferTexture(_renderFbo, GL_COLOR_ATTACHMENT0, 0, 0);
-    _colorTexture = make_shared<Texture_Image>(_root);
+    _colorTexture = std::make_shared<Texture_Image>(_root);
     _colorTexture->setAttribute("filtering", {false});
     _colorTexture->reset(_windowRect[2], _windowRect[3], "sRGBA", nullptr);
     glNamedFramebufferTexture(_renderFbo, GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
@@ -485,9 +484,9 @@ void Window::showCursor(bool visibility)
 }
 
 /*************/
-void Window::setTexture(const shared_ptr<Texture>& tex)
+void Window::setTexture(const std::shared_ptr<Texture>& tex)
 {
-    auto textureIt = find_if(_inTextures.begin(), _inTextures.end(), [&](const weak_ptr<Texture>& t) {
+    auto textureIt = find_if(_inTextures.begin(), _inTextures.end(), [&](const std::weak_ptr<Texture>& t) {
         if (t.expired())
             return false;
         auto texture = t.lock();
@@ -504,9 +503,9 @@ void Window::setTexture(const shared_ptr<Texture>& tex)
 }
 
 /*************/
-void Window::unsetTexture(const shared_ptr<Texture>& tex)
+void Window::unsetTexture(const std::shared_ptr<Texture>& tex)
 {
-    auto textureIt = find_if(_inTextures.begin(), _inTextures.end(), [&](const weak_ptr<Texture>& t) {
+    auto textureIt = find_if(_inTextures.begin(), _inTextures.end(), [&](const std::weak_ptr<Texture>& t) {
         if (t.expired())
             return false;
         auto texture = t.lock();
@@ -525,31 +524,31 @@ void Window::unsetTexture(const shared_ptr<Texture>& tex)
 /*************/
 void Window::keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods)
 {
-    lock_guard<mutex> lock(_callbackMutex);
-    vector<int> keys{key, scancode, action, mods};
-    _keys.push_back(pair<GLFWwindow*, vector<int>>(win, keys));
+    std::lock_guard<std::mutex> lock(_callbackMutex);
+    std::vector<int> keys{key, scancode, action, mods};
+    _keys.push_back(std::pair<GLFWwindow*, std::vector<int>>(win, keys));
 }
 
 /*************/
 void Window::charCallback(GLFWwindow* win, unsigned int codepoint)
 {
-    lock_guard<mutex> lock(_callbackMutex);
-    _chars.push_back(pair<GLFWwindow*, unsigned int>(win, codepoint));
+    std::lock_guard<std::mutex> lock(_callbackMutex);
+    _chars.push_back(std::pair<GLFWwindow*, unsigned int>(win, codepoint));
 }
 
 /*************/
 void Window::mouseBtnCallback(GLFWwindow* win, int button, int action, int mods)
 {
-    lock_guard<mutex> lock(_callbackMutex);
-    vector<int> btn{button, action, mods};
-    _mouseBtn.push_back(pair<GLFWwindow*, vector<int>>(win, btn));
+    std::lock_guard<std::mutex> lock(_callbackMutex);
+    std::vector<int> btn{button, action, mods};
+    _mouseBtn.push_back(std::pair<GLFWwindow*, std::vector<int>>(win, btn));
 }
 
 /*************/
 void Window::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
 {
-    lock_guard<mutex> lock(_callbackMutex);
-    vector<double> pos{xpos, ypos};
+    std::lock_guard<std::mutex> lock(_callbackMutex);
+    std::vector<double> pos{xpos, ypos};
     _mousePos.first = win;
     _mousePos.second = move(pos);
 }
@@ -557,23 +556,23 @@ void Window::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
 /*************/
 void Window::scrollCallback(GLFWwindow* win, double xoffset, double yoffset)
 {
-    lock_guard<mutex> lock(_callbackMutex);
-    vector<double> scroll{xoffset, yoffset};
-    _scroll.push_back(pair<GLFWwindow*, vector<double>>(win, scroll));
+    std::lock_guard<std::mutex> lock(_callbackMutex);
+    std::vector<double> scroll{xoffset, yoffset};
+    _scroll.push_back(std::pair<GLFWwindow*, std::vector<double>>(win, scroll));
 }
 
 /*************/
 void Window::pathdropCallback(GLFWwindow* /*win*/, int count, const char** paths)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    std::lock_guard<std::mutex> lock(_callbackMutex);
     for (int i = 0; i < count; ++i)
-        _pathDropped.push_back(string(paths[i]));
+        _pathDropped.push_back(std::string(paths[i]));
 }
 
 /*************/
 void Window::closeCallback(GLFWwindow* /*win*/)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    std::lock_guard<std::mutex> lock(_callbackMutex);
     _quitFlag = true;
 }
 
@@ -603,14 +602,14 @@ bool Window::setProjectionSurface()
     glGetError();
 #endif
 
-    _screen = make_shared<Object>(_root);
+    _screen = std::make_shared<Object>(_root);
     _screen->setAttribute("fill", {"window"});
-    auto virtualScreen = make_shared<Geometry>(_root);
+    auto virtualScreen = std::make_shared<Geometry>(_root);
     _screen->addGeometry(virtualScreen);
 
-    _screenGui = make_shared<Object>(_root);
+    _screenGui = std::make_shared<Object>(_root);
     _screenGui->setAttribute("fill", {"window"});
-    virtualScreen = make_shared<Geometry>(_root);
+    virtualScreen = std::make_shared<Geometry>(_root);
     _screenGui->addGeometry(virtualScreen);
 
 #ifdef DEBUG
@@ -650,7 +649,7 @@ void Window::setWindowDecoration(bool hasDecoration)
         return;
     }
 
-    _window = make_shared<GlWindow>(window, _window->getMainWindow());
+    _window = std::make_shared<GlWindow>(window, _window->getMainWindow());
     updateSwapInterval(_swapInterval);
     _resized = true;
 
@@ -666,7 +665,7 @@ void Window::updateSwapInterval(int swapInterval)
     if (!_window->setAsCurrentContext())
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
 
-    _swapInterval = max<int>(-1, swapInterval);
+    _swapInterval = std::max<int>(-1, swapInterval);
     glfwSwapInterval(_swapInterval);
 
     _window->releaseContext();

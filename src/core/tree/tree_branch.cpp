@@ -4,8 +4,6 @@
 
 #include "./core/tree/tree_leaf.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -13,7 +11,7 @@ namespace Tree
 {
 
 /*************/
-Branch::Branch(const string& name, Branch* parent)
+Branch::Branch(const std::string& name, Branch* parent)
     : _name(name)
     , _parentBranch(parent)
 {
@@ -50,7 +48,7 @@ bool Branch::operator==(const Branch& rhs) const
 }
 
 /*************/
-bool Branch::addBranch(unique_ptr<Branch>&& branch)
+bool Branch::addBranch(std::unique_ptr<Branch>&& branch)
 {
     if (!branch)
         return false;
@@ -69,7 +67,7 @@ bool Branch::addBranch(unique_ptr<Branch>&& branch)
 }
 
 /*************/
-bool Branch::addLeaf(unique_ptr<Leaf>&& leaf)
+bool Branch::addLeaf(std::unique_ptr<Leaf>&& leaf)
 {
     if (!leaf)
         return false;
@@ -90,7 +88,7 @@ bool Branch::addLeaf(unique_ptr<Leaf>&& leaf)
 /*************/
 Branch::UpdateCallbackID Branch::addCallback(Task target, const UpdateCallback& callback)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    std::lock_guard<std::mutex> lock(_callbackMutex);
     auto id = ++_currentCallbackID;
     _callbackTargetIds[target].emplace(id);
     _callbacks[id] = callback;
@@ -100,7 +98,7 @@ Branch::UpdateCallbackID Branch::addCallback(Task target, const UpdateCallback& 
 /*************/
 bool Branch::removeCallback(int id)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    std::lock_guard<std::mutex> lock(_callbackMutex);
     auto callbackIt = _callbacks.find(id);
     if (callbackIt == _callbacks.end())
         return false;
@@ -111,13 +109,13 @@ bool Branch::removeCallback(int id)
 }
 
 /*************/
-unique_ptr<Branch> Branch::cutBranch(const string& branchName)
+std::unique_ptr<Branch> Branch::cutBranch(const std::string& branchName)
 {
     auto branchIt = _branches.find(branchName);
     if (branchIt == _branches.end())
         return {nullptr};
 
-    unique_ptr<Branch> branch{nullptr};
+    std::unique_ptr<Branch> branch{nullptr};
     swap(branchIt->second, branch);
     _branches.erase(branchIt);
     branch->setParent(nullptr);
@@ -125,13 +123,13 @@ unique_ptr<Branch> Branch::cutBranch(const string& branchName)
 }
 
 /*************/
-unique_ptr<Leaf> Branch::cutLeaf(const string& leafName)
+std::unique_ptr<Leaf> Branch::cutLeaf(const std::string& leafName)
 {
     auto leafIt = _leaves.find(leafName);
     if (leafIt == _leaves.end())
         return {nullptr};
 
-    unique_ptr<Leaf> leaf{nullptr};
+    std::unique_ptr<Leaf> leaf{nullptr};
     swap(leafIt->second, leaf);
     _leaves.erase(leafIt);
     leaf->setParent(nullptr);
@@ -139,7 +137,7 @@ unique_ptr<Leaf> Branch::cutLeaf(const string& leafName)
 }
 
 /*************/
-Branch* Branch::getBranch(const string& path)
+Branch* Branch::getBranch(const std::string& path)
 {
     auto branchIt = _branches.find(path);
     if (branchIt == _branches.end())
@@ -149,16 +147,16 @@ Branch* Branch::getBranch(const string& path)
 }
 
 /*************/
-list<string> Branch::getBranchList() const
+std::list<std::string> Branch::getBranchList() const
 {
-    list<string> branchList;
+    std::list<std::string> branchList;
     for (const auto& branch : _branches)
         branchList.push_back(branch.first);
     return branchList;
 }
 
 /*************/
-Leaf* Branch::getLeaf(const string& path)
+Leaf* Branch::getLeaf(const std::string& path)
 {
     auto leafIt = _leaves.find(path);
     if (leafIt == _leaves.end())
@@ -168,18 +166,18 @@ Leaf* Branch::getLeaf(const string& path)
 }
 
 /*************/
-list<string> Branch::getLeafList() const
+std::list<std::string> Branch::getLeafList() const
 {
-    list<string> leafList;
+    std::list<std::string> leafList;
     for (const auto& leaf : _leaves)
         leafList.push_back(leaf.first);
     return leafList;
 }
 
 /*************/
-string Branch::getPath() const
+std::string Branch::getPath() const
 {
-    string path{};
+    std::string path{};
     if (_parentBranch)
         path = _parentBranch->getPath() + _name + "/";
     else
@@ -189,9 +187,9 @@ string Branch::getPath() const
 }
 
 /*************/
-string Branch::print(int indent) const
+std::string Branch::print(int indent) const
 {
-    string description;
+    std::string description;
     for (int i = 0; i < indent / 2; ++i)
         description += "| ";
     description += "|-- " + _name + "\n";
@@ -206,7 +204,7 @@ string Branch::print(int indent) const
 }
 
 /*************/
-bool Branch::removeBranch(const string& name)
+bool Branch::removeBranch(const std::string& name)
 {
     if (!hasBranch(name))
         return false;
@@ -221,7 +219,7 @@ bool Branch::removeBranch(const string& name)
 }
 
 /*************/
-bool Branch::removeLeaf(const string& name)
+bool Branch::removeLeaf(const std::string& name)
 {
     if (!hasLeaf(name))
         return false;
@@ -235,7 +233,7 @@ bool Branch::removeLeaf(const string& name)
 }
 
 /*************/
-bool Branch::renameBranch(const string& name, const string& newName)
+bool Branch::renameBranch(const std::string& name, const std::string& newName)
 {
     if (_branches.find(name) == _branches.end())
         return false;
@@ -251,7 +249,7 @@ bool Branch::renameBranch(const string& name, const string& newName)
 }
 
 /*************/
-bool Branch::renameLeaf(const string& name, const string& newName)
+bool Branch::renameLeaf(const std::string& name, const std::string& newName)
 {
     if (_leaves.find(newName) != _leaves.end())
         return false;

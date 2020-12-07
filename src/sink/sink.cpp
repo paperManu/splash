@@ -6,8 +6,6 @@
 #include "./graphics/texture.h"
 #include "./utils/timer.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -39,24 +37,24 @@ Sink::~Sink()
 }
 
 /*************/
-string Sink::getCaps() const
+std::string Sink::getCaps() const
 {
-    return "video/x-raw,format=(string)" + _spec.format + ",width=(int)" + to_string(_spec.width) + ",height=(int)" + to_string(_spec.height) + ",framerate=(fraction)" +
-           to_string(_framerate) + "/1,pixel-aspect-ratio=(fraction)1/1";
+    return "video/x-raw,format=(string)" + _spec.format + ",width=(int)" + std::to_string(_spec.width) + ",height=(int)" + std::to_string(_spec.height) + ",framerate=(fraction)" +
+           std::to_string(_framerate) + "/1,pixel-aspect-ratio=(fraction)1/1";
 }
 
 /*************/
-bool Sink::linkIt(const shared_ptr<GraphObject>& obj)
+bool Sink::linkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (auto objAsFilter = dynamic_pointer_cast<Filter>(obj); objAsFilter)
+    if (auto objAsFilter = std::dynamic_pointer_cast<Filter>(obj); objAsFilter)
     {
         objAsFilter->setSixteenBpc(false);
-        _inputFilter = dynamic_pointer_cast<Filter>(obj);
+        _inputFilter = std::dynamic_pointer_cast<Filter>(obj);
         return true;
     }
-    else if (auto objAsTexture = dynamic_pointer_cast<Texture>(obj); objAsTexture)
+    else if (auto objAsTexture = std::dynamic_pointer_cast<Texture>(obj); objAsTexture)
     {
-        auto filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", getName() + "_" + obj->getName() + "_filter").lock());
+        auto filter = std::dynamic_pointer_cast<Filter>(_root->createObject("filter", getName() + "_" + obj->getName() + "_filter").lock());
         filter->setSavable(_savable); // We always save the filters as they hold user-specified values, if this is savable
         if (filter->linkTo(obj))
             return linkTo(filter);
@@ -68,14 +66,14 @@ bool Sink::linkIt(const shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void Sink::unlinkIt(const shared_ptr<GraphObject>& obj)
+void Sink::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (auto objAsFilter = dynamic_pointer_cast<Filter>(obj); objAsFilter)
+    if (auto objAsFilter = std::dynamic_pointer_cast<Filter>(obj); objAsFilter)
     {
         objAsFilter->setSixteenBpc(true);
         _inputFilter.reset();
     }
-    else if (auto objAsTexture = dynamic_pointer_cast<Texture>(obj); objAsTexture)
+    else if (auto objAsTexture = std::dynamic_pointer_cast<Texture>(obj); objAsTexture)
     {
         auto filterName = getName() + "_" + obj->getName() + "_filter";
 
@@ -209,7 +207,7 @@ void Sink::registerAttributes()
     addAttribute(
         "bufferCount",
         [&](const Values& args) {
-            _pboCount = max(args[0].as<int>(), 2);
+            _pboCount = std::max(args[0].as<int>(), 2);
             return true;
         },
         [&]() -> Values { return {_pboCount}; },
@@ -219,7 +217,7 @@ void Sink::registerAttributes()
     addAttribute(
         "framerate",
         [&](const Values& args) {
-            _framerate = max(1, args[0].as<int>());
+            _framerate = std::max(1, args[0].as<int>());
             return true;
         },
         [&]() -> Values { return {_framerate}; },

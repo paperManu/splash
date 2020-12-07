@@ -8,14 +8,14 @@
 #include "./utils/log.h"
 #include "./utils/osutils.h"
 
-using namespace std;
+namespace chrono = std::chrono;
 
 namespace Splash
 {
 
 /*************/
 std::recursive_mutex PythonEmbedded::_pythonMutex{};
-atomic_int PythonEmbedded::_pythonInstances{0};
+std::atomic_int PythonEmbedded::_pythonInstances{0};
 PyThreadState* PythonEmbedded::_pythonGlobalThreadState{nullptr};
 PyObject* PythonEmbedded::SplashError{nullptr};
 std::string PythonEmbedded::_capsuleName{"splash._splash"};
@@ -194,7 +194,7 @@ PyObject* PythonEmbedded::pythonGetObjectAlias(PyObject* /*self*/, PyObject* arg
         return Py_BuildValue("s", "");
     }
 
-    return Py_BuildValue("s", that->getObjectAlias(string(strName)).c_str());
+    return Py_BuildValue("s", that->getObjectAlias(std::string(strName)).c_str());
 }
 
 /*************/
@@ -324,8 +324,8 @@ PyObject* PythonEmbedded::pythonGetObjectDescription(PyObject* /*self*/, PyObjec
         return Py_BuildValue("ss", "", "");
     }
 
-    auto description = that->getDescription(string(strType));
-    auto shortDescription = that->getShortDescription(string(strType));
+    auto description = that->getDescription(std::string(strType));
+    auto shortDescription = that->getShortDescription(std::string(strType));
     return Py_BuildValue("ss", description.c_str(), shortDescription.c_str());
 }
 
@@ -364,14 +364,14 @@ PyObject* PythonEmbedded::pythonGetObjectAttributeDescription(PyObject* /*self*/
         return Py_BuildValue("s", "");
     }
 
-    auto result = that->getObjectAttributeDescription(string(strName), string(strAttr));
+    auto result = that->getObjectAttributeDescription(std::string(strName), std::string(strAttr));
     if (result.size() == 0)
     {
         PyErr_Warn(PyExc_Warning, "Wrong argument type or number");
         return Py_BuildValue("s", "");
     }
 
-    auto description = result[0].as<string>();
+    auto description = result[0].as<std::string>();
     return Py_BuildValue("s", description.c_str());
 }
 
@@ -408,7 +408,7 @@ PyObject* PythonEmbedded::pythonGetObjectType(PyObject* /*self*/, PyObject* args
         return PyList_New(0);
     }
 
-    return convertFromValue(that->getObjectPtr(string(strName))->getType());
+    return convertFromValue(that->getObjectPtr(std::string(strName))->getType());
 }
 
 /*************/
@@ -494,7 +494,7 @@ PyObject* PythonEmbedded::pythonGetObjectAttribute(PyObject* /*self*/, PyObject*
         return PyList_New(0);
     }
 
-    auto result = that->getObjectAttribute(string(strName), string(strAttr));
+    auto result = that->getObjectAttribute(std::string(strName), std::string(strAttr));
 
     return convertFromValue(result, static_cast<bool>(asDict));
 }
@@ -532,7 +532,7 @@ PyObject* PythonEmbedded::pythonGetObjectAttributes(PyObject* /*self*/, PyObject
         return PyDict_New();
     }
 
-    auto result = that->getObjectAttributes(string(strName));
+    auto result = that->getObjectAttributes(std::string(strName));
     auto pyResult = PyDict_New();
     for (auto& r : result)
     {
@@ -706,7 +706,7 @@ PyObject* PythonEmbedded::pythonSetGlobal(PyObject* /*self*/, PyObject* args, Py
     }
 
     auto value = convertToValue(pyValue).as<Values>();
-    that->setWorldAttribute(string(attrName), value);
+    that->setWorldAttribute(std::string(attrName), value);
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -752,7 +752,7 @@ PyObject* PythonEmbedded::pythonSetObject(PyObject* /*self*/, PyObject* args, Py
     }
 
     auto value = convertToValue(pyValue).as<Values>();
-    that->setObjectAttribute(string(strName), string(strAttr), value);
+    that->setObjectAttribute(std::string(strName), std::string(strAttr), value);
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -798,7 +798,7 @@ PyObject* PythonEmbedded::pythonSetObjectsOfType(PyObject* /*self*/, PyObject* a
     }
 
     auto value = convertToValue(pyValue).as<Values>();
-    that->setObjectsOfType(string(strType), string(strAttr), value);
+    that->setObjectsOfType(std::string(strType), std::string(strAttr), value);
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -839,14 +839,14 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* /*self*/, PyObject*
         return Py_False;
     }
 
-    auto attributeName = string(strAttr);
+    auto attributeName = std::string(strAttr);
 
     // Check whether the variable is global to the script
     auto moduleDict = PyModule_GetDict(that->_pythonModule);
     auto object = PyDict_GetItemString(moduleDict, attributeName.c_str());
     if (!object)
     {
-        PyErr_Warn(PyExc_Warning, (string("Could not find object named ") + attributeName + " in the global scope").c_str());
+        PyErr_Warn(PyExc_Warning, (std::string("Could not find object named ") + attributeName + " in the global scope").c_str());
         Py_INCREF(Py_False);
         return Py_False;
     }
@@ -860,12 +860,12 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* /*self*/, PyObject*
     that->addAttribute(
         attributeName,
         [=](const Values& args) {
-            lock_guard<mutex> lock(that->_attributesMutex);
+            std::lock_guard<std::mutex> lock(that->_attributesMutex);
             that->_attributesToUpdate[attributeName] = args;
             return true;
         },
         [=]() -> Values {
-            lock_guard<mutex> lock(that->_attributesMutex);
+            std::lock_guard<std::mutex> lock(that->_attributesMutex);
             return that->_attributesValue[attributeName];
         },
         {});
@@ -930,10 +930,10 @@ PyObject* PythonEmbedded::pythonRegisterAttributeCallback(PyObject* /*self*/, Py
         return Py_BuildValue("I", 0);
     }
 
-    auto callbackFunc = [that, callable](const string& obj, const string& attr) {
-        lock_guard<mutex> lockCb(that->_attributeCallbackMutex);
+    auto callbackFunc = [that, callable](const std::string& obj, const std::string& attr) {
+        std::lock_guard<std::mutex> lockCb(that->_attributeCallbackMutex);
 
-        unique_lock<recursive_mutex> pythonMutexLock(_pythonMutex);
+        std::unique_lock<std::recursive_mutex> pythonMutexLock(_pythonMutex);
         PyEval_AcquireThread(that->_pythonGlobalThreadState);
         PyThreadState_Swap(that->_pythonLocalThreadState);
 
@@ -951,7 +951,7 @@ PyObject* PythonEmbedded::pythonRegisterAttributeCallback(PyObject* /*self*/, Py
         PyEval_ReleaseThread(that->_pythonGlobalThreadState);
     };
 
-    lock_guard<mutex> lockCb(that->_attributeCallbackMutex);
+    std::lock_guard<std::mutex> lockCb(that->_attributeCallbackMutex);
     auto handle = splashObject->registerCallback(attributeName, callbackFunc);
     auto pyHandleId = Py_BuildValue("I", handle.getId());
     that->_attributeCallbackHandles[handle.getId()] = std::move(handle);
@@ -1000,7 +1000,7 @@ PyObject* PythonEmbedded::pythonUnregisterAttributeCallback(PyObject* /*self*/, 
         return Py_False;
     }
 
-    lock_guard<mutex> lockCb(that->_attributeCallbackMutex);
+    std::lock_guard<std::mutex> lockCb(that->_attributeCallbackMutex);
     auto callbackIt = that->_attributeCallbackHandles.find(callbackId);
     if (callbackIt == that->_attributeCallbackHandles.end())
     {
@@ -1115,19 +1115,19 @@ PythonEmbedded::~PythonEmbedded()
     stop();
     if (_pythonInstances.fetch_sub(1) == 1)
     {
-        unique_lock<recursive_mutex> pythonMutexLock(_pythonMutex);
+        std::unique_lock<std::recursive_mutex> pythonMutexLock(_pythonMutex);
         PyEval_AcquireThread(_pythonGlobalThreadState);
         Py_Finalize();
     }
 }
 
 /*************/
-bool PythonEmbedded::setScriptFile(const string& src)
+bool PythonEmbedded::setScriptFile(const std::string& src)
 {
     _scriptName = Utils::getFilenameFromFilePath(src);
     _filepath = Utils::getPathFromFilePath(src, _root->getConfigurationPath());
 
-    if (!ifstream(_filepath + _scriptName, ios::in | ios::binary))
+    if (!std::ifstream(_filepath + _scriptName, std::ios::in | std::ios::binary))
     {
         Log::get() << Log::WARNING << "PythonEmbedded::" << __FUNCTION__ << " - Could not load script file " << src << Log::endl;
         return false;
@@ -1144,7 +1144,7 @@ bool PythonEmbedded::run()
     if (_filepath == "")
         return false;
 
-    _loopThread = thread([&]() {
+    _loopThread = std::thread([&]() {
         _doLoop = true;
         loop();
     });
@@ -1167,7 +1167,7 @@ void PythonEmbedded::loop()
     PyObject* pName;
 
     // Create the sub-interpreter
-    unique_lock<recursive_mutex> pythonMutexLock(_pythonMutex);
+    std::unique_lock<std::recursive_mutex> pythonMutexLock(_pythonMutex);
     PyEval_AcquireThread(_pythonGlobalThreadState);
     _pythonLocalThreadState = Py_NewInterpreter();
     PyThreadState_Swap(_pythonLocalThreadState);
@@ -1185,9 +1185,9 @@ void PythonEmbedded::loop()
     // Set the script arguments
     PyRun_SimpleString(("sys.argv = []"));
     for (auto& arg : _pythonArgs)
-        PyRun_SimpleString(("sys.argv.append(\"" + arg.as<string>() + "\")").c_str());
+        PyRun_SimpleString(("sys.argv.append(\"" + arg.as<std::string>() + "\")").c_str());
 
-    string moduleName = _scriptName.substr(0, _scriptName.rfind("."));
+    std::string moduleName = _scriptName.substr(0, _scriptName.rfind("."));
     pName = PyUnicode_FromString(moduleName.c_str());
 
     _pythonModule = PyImport_Import(pName);
@@ -1223,7 +1223,7 @@ void PythonEmbedded::loop()
             auto moduleDict = PyModule_GetDict(_pythonModule);
 
             // Update Python objects linked to a custom attribute
-            unique_lock<mutex> lockAttributes(_attributesMutex);
+            std::unique_lock<std::mutex> lockAttributes(_attributesMutex);
             for (auto& [attributeName, value] : _attributesToUpdate)
             {
                 PyObject* object = nullptr;
@@ -1233,7 +1233,7 @@ void PythonEmbedded::loop()
                     object = convertFromValue(value);
 
                 if (PyDict_SetItemString(moduleDict, attributeName.c_str(), object) == -1)
-                    PyErr_Warn(PyExc_Warning, (string("Could not set object named ") + attributeName).c_str());
+                    PyErr_Warn(PyExc_Warning, (std::string("Could not set object named ") + attributeName).c_str());
 
                 Py_DECREF(object);
             }
@@ -1259,7 +1259,7 @@ void PythonEmbedded::loop()
                 auto object = PyDict_GetItemString(moduleDict, attributeName.c_str());
                 if (!object)
                 {
-                    PyErr_Warn(PyExc_Warning, (string("Could not find object named ") + attributeName).c_str());
+                    PyErr_Warn(PyExc_Warning, (std::string("Could not find object named ") + attributeName).c_str());
                     continue;
                 }
 
@@ -1326,7 +1326,7 @@ void PythonEmbedded::loop()
 }
 
 /*************/
-PyObject* PythonEmbedded::getFuncFromModule(PyObject* module, const string& name)
+PyObject* PythonEmbedded::getFuncFromModule(PyObject* module, const std::string& name)
 {
     auto pFunc = PyObject_GetAttrString(module, name.c_str());
 
@@ -1343,7 +1343,7 @@ PyObject* PythonEmbedded::getFuncFromModule(PyObject* module, const string& name
 /*************/
 PyObject* PythonEmbedded::convertFromValue(const Value& value, bool toDict)
 {
-    function<PyObject*(const Value&)> parseValue;
+    std::function<PyObject*(const Value&)> parseValue;
 
     parseValue = [&](const Value& v) -> PyObject* {
         PyObject* pyValue = nullptr;
@@ -1357,7 +1357,7 @@ PyObject* PythonEmbedded::convertFromValue(const Value& value, bool toDict)
         }
         else if (v.getType() == Value::Type::string)
         {
-            pyValue = Py_BuildValue("s", v.as<string>().c_str());
+            pyValue = Py_BuildValue("s", v.as<std::string>().c_str());
         }
         else if (v.getType() == Value::Type::buffer)
         {
@@ -1391,7 +1391,7 @@ PyObject* PythonEmbedded::convertFromValue(const Value& value, bool toDict)
 /*************/
 Value PythonEmbedded::convertToValue(PyObject* pyObject)
 {
-    function<Value(PyObject*)> parsePyObject;
+    std::function<Value(PyObject*)> parsePyObject;
     parsePyObject = [&](PyObject* obj) -> Value {
         Value value;
         if (PyList_Check(obj))
@@ -1422,7 +1422,7 @@ Value PythonEmbedded::convertToValue(PyObject* pyObject)
             value = "";
             const char* strPtr = PyUnicode_AsUTF8(obj);
             if (strPtr)
-                value = string(strPtr);
+                value = std::string(strPtr);
         }
 
         return value;
@@ -1442,13 +1442,13 @@ void PythonEmbedded::registerAttributes()
     });
 
     addAttribute(
-        "file", [&](const Values& args) { return setScriptFile(args[0].as<string>()); }, [&]() -> Values { return {_filepath + _scriptName}; }, {'s'});
+        "file", [&](const Values& args) { return setScriptFile(args[0].as<std::string>()); }, [&]() -> Values { return {_filepath + _scriptName}; }, {'s'});
     setAttributeDescription("file", "Set the path to the source Python file");
 
     addAttribute(
         "loopRate",
         [&](const Values& args) {
-            _updateRate = max(1, args[0].as<int>());
+            _updateRate = std::max(1, args[0].as<int>());
             return true;
         },
         [&]() -> Values { return {_updateRate}; },

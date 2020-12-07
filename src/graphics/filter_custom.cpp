@@ -1,7 +1,5 @@
 #include "./graphics/filter_custom.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -14,13 +12,13 @@ FilterCustom::FilterCustom(RootObject* root)
 }
 
 /*************/
-bool FilterCustom::setFilterSource(const string& source)
+bool FilterCustom::setFilterSource(const std::string& source)
 {
-    auto shader = make_shared<Shader>();
+    auto shader = std::make_shared<Shader>();
     // Save the value for all existing uniforms
     auto uniformValues = _filterUniforms;
 
-    map<Shader::ShaderType, string> shaderSources;
+    std::map<Shader::ShaderType, std::string> shaderSources;
     shaderSources[Shader::ShaderType::fragment] = source;
     if (!shader->setSource(shaderSources))
     {
@@ -58,7 +56,7 @@ bool FilterCustom::setFilterSource(const string& source)
         if (u.first.empty() || u.first[0] == '_')
             continue;
 
-        vector<char> types;
+        std::vector<char> types;
         for (auto& v : u.second)
             types.push_back(v.getTypeAsChar());
 
@@ -93,7 +91,7 @@ void FilterCustom::registerAttributes()
     addAttribute(
         "filterSource",
         [&](const Values& args) {
-            auto src = args[0].as<string>();
+            auto src = args[0].as<std::string>();
             if (src.empty())
                 return true; // No shader specified
             _shaderSource = src;
@@ -108,17 +106,17 @@ void FilterCustom::registerAttributes()
     addAttribute(
         "fileFilterSource",
         [&](const Values& args) {
-            auto srcFile = args[0].as<string>();
+            auto srcFile = args[0].as<std::string>();
             if (srcFile.empty())
                 return true; // No shader specified
 
-            ifstream in(srcFile, ios::in | ios::binary);
+            std::ifstream in(srcFile, std::ios::in | std::ios::binary);
             if (in)
             {
-                string contents;
-                in.seekg(0, ios::end);
+                std::string contents;
+                in.seekg(0, std::ios::end);
                 contents.resize(in.tellg());
-                in.seekg(0, ios::beg);
+                in.seekg(0, std::ios::beg);
                 in.read(&contents[0], contents.size());
                 in.close();
 

@@ -9,8 +9,6 @@
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -30,7 +28,7 @@ Image_OpenCV::~Image_OpenCV()
 }
 
 /*************/
-bool Image_OpenCV::read(const string& filename)
+bool Image_OpenCV::read(const std::string& filename)
 {
     try
     {
@@ -47,7 +45,7 @@ bool Image_OpenCV::read(const string& filename)
         _readLoopThread.join();
 
     _continueReading = true;
-    _readLoopThread = thread([&]() { readLoop(); });
+    _readLoopThread = std::thread([&]() { readLoop(); });
 
     return true;
 }
@@ -68,9 +66,9 @@ void Image_OpenCV::readLoop()
 {
     std::unique_ptr<cv::VideoCapture> videoCapture{nullptr};
     if (_inputIndex >= 0)
-        videoCapture = make_unique<cv::VideoCapture>(_inputIndex);
+        videoCapture = std::make_unique<cv::VideoCapture>(_inputIndex);
     else
-        videoCapture = make_unique<cv::VideoCapture>(_filepath);
+        videoCapture = std::make_unique<cv::VideoCapture>(_filepath);
 
     if (!videoCapture->isOpened())
     {
@@ -136,12 +134,12 @@ void Image_OpenCV::readLoop()
         unsigned char* pixels = reinterpret_cast<unsigned char*>(_readBuffer.data());
 
         unsigned int imageSize = capture.rows * capture.cols * capture.channels();
-        copy(capture.data, capture.data + imageSize, pixels);
+        std::copy(capture.data, capture.data + imageSize, pixels);
 
         {
-            lock_guard<shared_mutex> lockWrite(_writeMutex);
+            std::lock_guard<std::shared_mutex> lockWrite(_writeMutex);
             if (!_bufferImage)
-                _bufferImage = make_unique<ImageBuffer>();
+                _bufferImage = std::make_unique<ImageBuffer>();
             std::swap(*_bufferImage, _readBuffer);
             _imageUpdated = true;
         }
@@ -156,13 +154,13 @@ void Image_OpenCV::readLoop()
 }
 
 /*************/
-map<int, double> Image_OpenCV::parseCVOptions(const std::string& options)
+std::map<int, double> Image_OpenCV::parseCVOptions(const std::string& options)
 {
-    regex re("(([^=]+)=([^ ,]+))+");
-    auto sre_begin = sregex_iterator(options.begin(), options.end(), re);
-    auto sre_end = sregex_iterator();
+    std::regex re("(([^=]+)=([^ ,]+))+");
+    auto sre_begin = std::sregex_iterator(options.begin(), options.end(), re);
+    auto sre_end = std::sregex_iterator();
 
-    map<int, double> result;
+    std::map<int, double> result;
     for (auto i = sre_begin; i != sre_end; ++i)
     {
         std::smatch match = *i;
@@ -174,7 +172,7 @@ map<int, double> Image_OpenCV::parseCVOptions(const std::string& options)
         }
         catch (...)
         {
-            Log::get() << Log::WARNING << "Image_OpenCV::" << __FUNCTION__ << "Key " << string(match[2]) << " is not an integer, or value " << string(match[3])
+            Log::get() << Log::WARNING << "Image_OpenCV::" << __FUNCTION__ << "Key " << std::string(match[2]) << " is not an integer, or value " << std::string(match[3])
                        << " is not a floating point value" << Log::endl;
             continue;
         }
@@ -226,7 +224,7 @@ void Image_OpenCV::registerAttributes()
 
     addAttribute("cvOptions",
         [&](const Values& args) {
-            _cvOptions = args[0].as<string>();
+            _cvOptions = args[0].as<std::string>();
             _cvOptionsUpdated = true;
             return true;
         },

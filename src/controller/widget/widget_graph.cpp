@@ -2,8 +2,6 @@
 
 #include <imgui.h>
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -26,7 +24,7 @@ void GuiGraph::render()
                 assert(value.size() == 1);
                 if (_durationGraph.find(durationName) == _durationGraph.end())
                 {
-                    _durationGraph[durationName] = deque<unsigned long long>(value[0].as<float>());
+                    _durationGraph[durationName] = std::deque<unsigned long long>(value[0].as<float>());
                 }
                 else
                 {
@@ -36,7 +34,7 @@ void GuiGraph::render()
                 }
 
                 float maxValue{0.f};
-                vector<float> values;
+                std::vector<float> values;
                 for (const auto& v : _durationGraph[durationName])
                 {
                     auto floatValue = static_cast<float>(v);
@@ -44,10 +42,10 @@ void GuiGraph::render()
                     values.push_back(floatValue * 0.001f);
                 }
 
-                maxValue = ceil(maxValue * 0.1f) * 10.f;
+                maxValue = std::ceil(maxValue * 0.1f) * 10.f;
 
                 ImGui::PlotLines(
-                    "", values.data(), values.size(), values.size(), (leafName + " - " + to_string((int)maxValue) + "ms").c_str(), 0.f, maxValue, ImVec2(width - 30, 80));
+                    "", values.data(), values.size(), values.size(), (leafName + " - " + std::to_string((int)maxValue) + "ms").c_str(), 0.f, maxValue, ImVec2(width - 30, 80));
             }
 
             ImGui::TreePop();

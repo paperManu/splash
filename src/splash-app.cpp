@@ -36,7 +36,6 @@
 #include "./utils/timer.h"
 
 using namespace Splash;
-using namespace std;
 
 /*************/
 RootObject::Context parseArguments(int argc, char** argv)
@@ -48,7 +47,7 @@ RootObject::Context parseArguments(int argc, char** argv)
     context.executablePath = Utils::getCurrentExecutablePath();
 
     // Parse the other args
-    context.configurationFile = string(DATADIR) + "splash.json";
+    context.configurationFile = std::string(DATADIR) + "splash.json";
 
     while (true)
     {
@@ -83,25 +82,25 @@ RootObject::Context parseArguments(int argc, char** argv)
         default:
         case 'h':
         {
-            cout << "Basic usage: splash [options] [config.json] -- [python script argument]" << endl;
-            cout << "Options:" << endl;
-            cout << "\t-o (--open) [filename] : set [filename] as the configuration file to open" << endl;
-            cout << "\t-d (--debug) : activate debug messages (if Splash was compiled with -DDEBUG)" << endl;
-            cout << "\t-t (--timer) : activate more timers, at the cost of performance" << endl;
+            std::cout << "Basic usage: splash [options] [config.json] -- [python script argument]\n";
+            std::cout << "Options:\n";
+            std::cout << "\t-o (--open) [filename] : set [filename] as the configuration file to open\n";
+            std::cout << "\t-d (--debug) : activate debug messages (if Splash was compiled with -DDEBUG)\n";
+            std::cout << "\t-t (--timer) : activate more timers, at the cost of performance\n";
 #if HAVE_LINUX
-            cout << "\t-D (--forceDisplay) : force the display on which to show all windows" << endl;
-            cout << "\t-S (--displayServer) : set the display server ID" << endl;
+            std::cout << "\t-D (--forceDisplay) : force the display on which to show all windows\n";
+            std::cout << "\t-S (--displayServer) : set the display server ID\n";
 #endif
-            cout << "\t-s (--silent) : disable all messages" << endl;
-            cout << "\t-i (--info) : get description for all objects attributes" << endl;
-            cout << "\t-H (--hide) : run Splash in background" << endl;
-            cout << "\t-P (--python) : add the given Python script to the loaded configuration" << endl;
-            cout << "                  any argument after -- will be sent to the script" << endl;
-            cout << "\t-l (--log2file) : write the logs to /var/log/splash.log, if possible" << endl;
-            cout << "\t-p (--prefix) : set the shared memory socket paths prefix (defaults to the PID)" << endl;
-            cout << "\t-c (--child): run as a child controlled by a master Splash process" << endl;
-            cout << "\t-x (--doNotSpawn): do not spawn subprocesses, which have to be ran manually" << endl;
-            cout << endl;
+            std::cout << "\t-s (--silent) : disable all messages\n";
+            std::cout << "\t-i (--info) : get description for all objects attributes\n";
+            std::cout << "\t-H (--hide) : run Splash in background\n";
+            std::cout << "\t-P (--python) : add the given Python script to the loaded configuration\n";
+            std::cout << "                  any argument after -- will be sent to the script\n";
+            std::cout << "\t-l (--log2file) : write the logs to /var/log/splash.log, if possible\n";
+            std::cout << "\t-p (--prefix) : set the shared memory socket paths prefix (defaults to the PID)\n";
+            std::cout << "\t-c (--child): run as a child controlled by a master Splash process\n";
+            std::cout << "\t-x (--doNotSpawn): do not spawn subprocesses, which have to be ran manually\n";
+            std::cout << "\n";
             exit(0);
         }
         case 'd':
@@ -111,22 +110,22 @@ RootObject::Context parseArguments(int argc, char** argv)
         }
         case 'D':
         {
-            auto regDisplayFull = regex("(:[0-9]\\.[0-9])", regex_constants::extended);
-            auto regDisplayInt = regex("[0-9]", regex_constants::extended);
-            smatch match;
+            auto regDisplayFull = std::regex("(:[0-9]\\.[0-9])", std::regex_constants::extended);
+            auto regDisplayInt = std::regex("[0-9]", std::regex_constants::extended);
+            std::smatch match;
 
-            context.forcedDisplay = string(optarg);
-            if (regex_match(*context.forcedDisplay, match, regDisplayFull))
+            context.forcedDisplay = std::string(optarg);
+            if (std::regex_match(*context.forcedDisplay, match, regDisplayFull))
             {
                 Log::get() << Log::MESSAGE << "Splash::" << __FUNCTION__ << " - Display forced to " << *context.forcedDisplay << Log::endl;
             }
-            else if (regex_match(*context.forcedDisplay, match, regDisplayInt))
+            else if (std::regex_match(*context.forcedDisplay, match, regDisplayInt))
             {
                 Log::get() << Log::MESSAGE << "Splash::" << __FUNCTION__ << " - Display forced to :0." << *context.forcedDisplay << Log::endl;
             }
             else
             {
-                Log::get() << Log::WARNING << "Splash::" << __FUNCTION__ << " - " << string(optarg) << ": argument expects a positive integer, or a string in the form of \":x.y\""
+                Log::get() << Log::WARNING << "Splash::" << __FUNCTION__ << " - " << std::string(optarg) << ": argument expects a positive integer, or a string in the form of \":x.y\""
                            << Log::endl;
                 exit(0);
             }
@@ -134,17 +133,17 @@ RootObject::Context parseArguments(int argc, char** argv)
         }
         case 'S':
         {
-            auto regInt = regex("[0-9]+", regex_constants::extended);
-            smatch match;
+            auto regInt = std::regex("[0-9]+", std::regex_constants::extended);
+            std::smatch match;
 
-            context.displayServer = string(optarg);
-            if (regex_match(context.displayServer, match, regInt))
+            context.displayServer = std::string(optarg);
+            if (std::regex_match(context.displayServer, match, regInt))
             {
                 Log::get() << Log::MESSAGE << "Splash::" << __FUNCTION__ << " - Display server forced to :" << context.displayServer << Log::endl;
             }
             else
             {
-                Log::get() << Log::WARNING << "Splash::" << __FUNCTION__ << " - " << string(optarg) << ": argument expects a positive integer" << Log::endl;
+                Log::get() << Log::WARNING << "Splash::" << __FUNCTION__ << " - " << std::string(optarg) << ": argument expects a positive integer" << Log::endl;
                 exit(0);
             }
             break;
@@ -156,14 +155,14 @@ RootObject::Context parseArguments(int argc, char** argv)
         }
         case 'P':
         {
-            context.pythonScriptPath = Utils::getFullPathFromFilePath(string(optarg), Utils::getCurrentWorkingDirectory());
+            context.pythonScriptPath = Utils::getFullPathFromFilePath(std::string(optarg), Utils::getCurrentWorkingDirectory());
             context.pythonArgs.push_back(*context.pythonScriptPath);
 
             // Build the Python arg list
             bool isPythonArg = false;
             for (int i = 0; i < argc; ++i)
             {
-                if (!isPythonArg && "--" == string(argv[i]))
+                if (!isPythonArg && "--" == std::string(argv[i]))
                 {
                     isPythonArg = true;
                     continue;
@@ -174,7 +173,7 @@ RootObject::Context parseArguments(int argc, char** argv)
                 }
                 else
                 {
-                    context.pythonArgs.push_back(string(argv[i]));
+                    context.pythonArgs.push_back(std::string(argv[i]));
                 }
             }
             break;
@@ -192,12 +191,12 @@ RootObject::Context parseArguments(int argc, char** argv)
         case 'o':
         {
             context.defaultConfigurationFile = false;
-            context.configurationFile = string(optarg);
+            context.configurationFile = std::string(optarg);
             break;
         }
         case 'p':
         {
-            context.socketPrefix = string(optarg);
+            context.socketPrefix = std::string(optarg);
             break;
         }
         case 's':
@@ -226,12 +225,12 @@ RootObject::Context parseArguments(int argc, char** argv)
     // Find last argument index, or "--"
     int lastArgIndex = 0;
     for (; lastArgIndex < argc; ++lastArgIndex)
-        if (string(argv[lastArgIndex]) == "--")
+        if (std::string(argv[lastArgIndex]) == "--")
             break;
 
-    string lastArg = "";
+    std::string lastArg = "";
     if (optind < lastArgIndex)
-        lastArg = string(argv[optind]);
+        lastArg = std::string(argv[optind]);
 
     if (context.childProcess)
     {
@@ -264,11 +263,11 @@ int main(int argc, char** argv)
     }
     else
     {
-        cout << endl;
-        cout << "\t             \033[33;1m- Splash -\033[0m" << endl;
-        cout << "\t\033[1m- Modular multi-output video mapper -\033[0m" << endl;
-        cout << "\t          \033[1m- Version " << PACKAGE_VERSION << " -\033[0m" << endl;
-        cout << endl;
+        std::cout << "\n";
+        std::cout << "\t             \033[33;1m- Splash -\033[0m\n";
+        std::cout << "\t\033[1m- Modular multi-output video mapper -\033[0m\n";
+        std::cout << "\t          \033[1m- Version " << PACKAGE_VERSION << " -\033[0m\n";
+        std::cout << "\n";
 
         World world(context);
         world.run();

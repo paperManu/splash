@@ -22,7 +22,6 @@
 
 #include "./utils/osutils.h"
 
-using namespace std;
 using namespace Splash;
 
 /*************/

@@ -1,7 +1,5 @@
 #include "./graphics/filter_black_level.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -34,7 +32,7 @@ void FilterBlackLevel::render()
         if (deltaT != 0.f)
         {
             auto blackLevelProgress = std::min(1.f, deltaT / _autoBlackLevelSpeed); // Limit to 1.f, otherwise the black level resonates
-            newBlackLevel = min(_autoBlackLevelTargetValue, max(0.f, newBlackLevel));
+            newBlackLevel = std::min(_autoBlackLevelTargetValue, std::max(0.f, newBlackLevel));
             _autoBlackLevel = newBlackLevel * blackLevelProgress + _autoBlackLevel * (1.f - blackLevelProgress);
             _filterUniforms["_blackLevel"] = {_autoBlackLevel / 255.0};
         }

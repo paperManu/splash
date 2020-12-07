@@ -2,16 +2,16 @@
 
 #include "./core/scene.h"
 
-using namespace std;
+namespace chrono = std::chrono;
 
 namespace Splash
 {
 
-mutex UserInput::_callbackMutex;
-map<UserInput::State, function<void(const UserInput::State&)>, UserInput::StateCompare> UserInput::_callbacks;
+std::mutex UserInput::_callbackMutex;
+std::map<UserInput::State, std::function<void(const UserInput::State&)>, UserInput::StateCompare> UserInput::_callbacks;
 
 /*************/
-UserInput::State::State(const string& a, const Values& v, int m, const string& w)
+UserInput::State::State(const std::string& a, const Values& v, int m, const std::string& w)
     : action(a)
     , value(v)
     , modifiers(m)
@@ -34,7 +34,7 @@ UserInput::UserInput(RootObject* root)
 {
     _type = "userinput";
     registerAttributes();
-    _updateThread = thread([&]() {
+    _updateThread = std::thread([&]() {
         _running = true;
         updateLoop();
     });
@@ -49,9 +49,9 @@ UserInput::~UserInput()
 }
 
 /*************/
-bool UserInput::capture(const string& id)
+bool UserInput::capture(const std::string& id)
 {
-    lock_guard<mutex> lock(_captureMutex);
+    std::lock_guard<std::mutex> lock(_captureMutex);
     if (_captured)
         return false;
 
@@ -61,10 +61,10 @@ bool UserInput::capture(const string& id)
 }
 
 /*************/
-vector<UserInput::State> UserInput::getState(const string& id)
+std::vector<UserInput::State> UserInput::getState(const std::string& id)
 {
-    lock_guard<mutex> lockState(_stateMutex);
-    lock_guard<mutex> lockCapture(_captureMutex);
+    std::lock_guard<std::mutex> lockState(_stateMutex);
+    std::lock_guard<std::mutex> lockCapture(_captureMutex);
 
     if (_captured && _capturer != id)
         return {};
@@ -77,9 +77,9 @@ vector<UserInput::State> UserInput::getState(const string& id)
 }
 
 /*************/
-void UserInput::release(const string& id)
+void UserInput::release(const std::string& id)
 {
-    lock_guard<mutex> lock(_captureMutex);
+    std::lock_guard<std::mutex> lock(_captureMutex);
     if (id == _capturer)
     {
         _captured = false;
@@ -110,21 +110,21 @@ bool UserInput::StateCompare::operator()(const UserInput::State& lhs, const User
 /*************/
 void UserInput::resetCallback(const UserInput::State& state)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    std::lock_guard<std::mutex> lock(_callbackMutex);
     const auto callbackIt = _callbacks.find(state);
     if (callbackIt != _callbacks.end())
         _callbacks.erase(callbackIt);
 }
 
 /*************/
-void UserInput::setCallback(const UserInput::State& state, const function<void(const UserInput::State&)>& cb)
+void UserInput::setCallback(const UserInput::State& state, const std::function<void(const UserInput::State&)>& cb)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    std::lock_guard<std::mutex> lock(_callbackMutex);
     _callbacks[state] = cb;
 }
 
 /*************/
-string UserInput::getWindowName(const GLFWwindow* glfwWindow) const
+std::string UserInput::getWindowName(const GLFWwindow* glfwWindow) const
 {
     if (!glfwWindow)
         return {};
@@ -133,7 +133,7 @@ string UserInput::getWindowName(const GLFWwindow* glfwWindow) const
     if (!scene)
         return {};
 
-    auto windows = list<shared_ptr<GraphObject>>();
+    auto windows = std::list<std::shared_ptr<GraphObject>>();
     auto lock = scene->getLockOnObjects();
     for (auto& obj : scene->_objects)
         if (obj.second->getType() == "window")
@@ -141,7 +141,7 @@ string UserInput::getWindowName(const GLFWwindow* glfwWindow) const
 
     for (auto& w : windows)
     {
-        auto window = dynamic_pointer_cast<Window>(w);
+        auto window = std::dynamic_pointer_cast<Window>(w);
         if (window->isWindow(const_cast<GLFWwindow*>(glfwWindow)))
             return window->getName();
     }
@@ -156,16 +156,16 @@ void UserInput::updateLoop()
     {
         auto start = Timer::getTime();
         {
-            lock_guard<mutex> lockStates(_stateMutex);
+            std::lock_guard<std::mutex> lockStates(_stateMutex);
             updateMethod();
 
-            lock_guard<mutex> lockCallbacks(_callbackMutex);
+            std::lock_guard<std::mutex> lockCallbacks(_callbackMutex);
             updateCallbacks();
         }
         auto end = Timer::getTime();
         auto delta = end - start;
         int64_t loopDuration = 1e6 / _updateRate;
-        this_thread::sleep_for(chrono::microseconds(loopDuration - delta));
+        std::this_thread::sleep_for(chrono::microseconds(loopDuration - delta));
     }
 }
 
@@ -194,7 +194,7 @@ void UserInput::registerAttributes()
 
     addAttribute("updateRate",
         [&](const Values& args) {
-            _updateRate = max(10, args[0].as<int>());
+            _updateRate = std::max(10, args[0].as<int>());
             return true;
         },
         [&]() -> Values { return {_updateRate}; },

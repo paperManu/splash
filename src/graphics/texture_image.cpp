@@ -6,8 +6,6 @@
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -21,7 +19,7 @@ Texture_Image::Texture_Image(RootObject* root)
 }
 
 /*************/
-Texture_Image::Texture_Image(RootObject* root, GLsizei width, GLsizei height, const string& pixelFormat, const GLvoid* data, int multisample, bool cubemap)
+Texture_Image::Texture_Image(RootObject* root, GLsizei width, GLsizei height, const std::string& pixelFormat, const GLvoid* data, int multisample, bool cubemap)
     : Texture(root)
 {
     init();
@@ -38,15 +36,15 @@ Texture_Image::~Texture_Image()
     Log::get() << Log::DEBUGGING << "Texture_Image::~Texture_Image - Destructor" << Log::endl;
 #endif
 
-    lock_guard<mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     glDeleteTextures(1, &_glTex);
     glDeleteBuffers(2, _pbos);
 }
 
 /*************/
-Texture_Image& Texture_Image::operator=(const shared_ptr<Image>& img)
+Texture_Image& Texture_Image::operator=(const std::shared_ptr<Image>& img)
 {
-    _img = weak_ptr<Image>(img);
+    _img = std::weak_ptr<Image>(img);
     return *this;
 }
 
@@ -94,7 +92,7 @@ RgbValue Texture_Image::getMeanValue() const
 }
 
 /*************/
-unordered_map<string, Values> Texture_Image::getShaderUniforms() const
+std::unordered_map<std::string, Values> Texture_Image::getShaderUniforms() const
 {
     auto uniforms = _shaderUniforms;
     uniforms["size"] = {static_cast<float>(_spec.width), static_cast<float>(_spec.height)};
@@ -121,11 +119,11 @@ ImageBuffer Texture_Image::grabMipmap(unsigned int level) const
 /*************/
 bool Texture_Image::linkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (dynamic_pointer_cast<Image>(obj))
+    if (std::dynamic_pointer_cast<Image>(obj))
     {
-        auto img = dynamic_pointer_cast<Image>(obj);
+        auto img = std::dynamic_pointer_cast<Image>(obj);
         img->setDirty();
-        _img = weak_ptr<Image>(img);
+        _img = std::weak_ptr<Image>(img);
         return true;
     }
 
@@ -133,26 +131,26 @@ bool Texture_Image::linkIt(const std::shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void Texture_Image::unlinkIt(const shared_ptr<GraphObject>& obj)
+void Texture_Image::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (dynamic_pointer_cast<Image>(obj))
+    if (std::dynamic_pointer_cast<Image>(obj))
     {
-        auto img = dynamic_pointer_cast<Image>(obj);
+        auto img = std::dynamic_pointer_cast<Image>(obj);
         if (img == _img.lock())
             _img.reset();
     }
 }
 
 /*************/
-shared_ptr<Image> Texture_Image::read()
+std::shared_ptr<Image> Texture_Image::read()
 {
-    auto img = make_shared<Image>(_root, _spec);
+    auto img = std::make_shared<Image>(_root, _spec);
     glGetTextureImage(_glTex, 0, _texFormat, _texType, img->getSpec().rawSize(), (GLvoid*)img->data());
     return img;
 }
 
 /*************/
-void Texture_Image::reset(int width, int height, const string& pixelFormat, const GLvoid* data, int multisample, bool cubemap)
+void Texture_Image::reset(int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisample, bool cubemap)
 {
     if (width == 0 || height == 0)
     {
@@ -336,7 +334,7 @@ GLenum Texture_Image::getChannelOrder(const ImageBufferSpec& spec)
 /*************/
 void Texture_Image::update()
 {
-    lock_guard<mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 
     // If _img is nullptr, this texture is not set from an Image
     if (_img.expired())

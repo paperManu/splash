@@ -4,8 +4,6 @@
 
 #include "./core/root_object.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -24,21 +22,21 @@ GraphObject::~GraphObject()
 }
 
 /*************/
-Attribute& GraphObject::operator[](const string& attr)
+Attribute& GraphObject::operator[](const std::string& attr)
 {
-    unique_lock<recursive_mutex> lock(_attribMutex);
+    std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     auto attribFunction = _attribFunctions.find(attr);
     return attribFunction->second;
 }
 
 /*************/
-Attribute& GraphObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const vector<char>& types)
+Attribute& GraphObject::addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types)
 {
     return BaseObject::addAttribute(name, set, types);
 }
 
 /*************/
-Attribute& GraphObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const function<const Values()>& get, const vector<char>& types)
+Attribute& GraphObject::addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types)
 {
     auto& attribute = BaseObject::addAttribute(name, set, get, types);
     initializeTree();
@@ -46,7 +44,7 @@ Attribute& GraphObject::addAttribute(const string& name, const function<bool(con
 }
 
 /*************/
-void GraphObject::setAttributeDescription(const string& name, const string& description)
+void GraphObject::setAttributeDescription(const std::string& name, const std::string& description)
 {
     BaseObject::setAttributeDescription(name, description);
     initializeTree();
@@ -69,7 +67,7 @@ void GraphObject::linkToParent(GraphObject* obj)
         Value value;
         tree->getValueForLeafAt(path, value);
         auto parents = value.as<Values>();
-        if (find_if(parents.begin(), parents.end(), [&](const Value& a) { return a.as<string>() == obj->getName(); }) == parents.end())
+        if (find_if(parents.begin(), parents.end(), [&](const Value& a) { return a.as<std::string>() == obj->getName(); }) == parents.end())
         {
             parents.emplace_back(obj->getName());
             tree->setValueForLeafAt(path, parents);
@@ -94,18 +92,18 @@ void GraphObject::unlinkFromParent(GraphObject* obj)
         Value value;
         tree->getValueForLeafAt(path, value);
         auto parents = value.as<Values>();
-        parents.erase(remove_if(parents.begin(), parents.end(), [&](const Value& a) { return a.as<string>() == obj->getName(); }), parents.end());
+        parents.erase(remove_if(parents.begin(), parents.end(), [&](const Value& a) { return a.as<std::string>() == obj->getName(); }), parents.end());
         tree->setValueForLeafAt(path, parents);
     }
 }
 
 /*************/
-bool GraphObject::linkTo(const shared_ptr<GraphObject>& obj)
+bool GraphObject::linkTo(const std::shared_ptr<GraphObject>& obj)
 {
     if (obj.get() == this)
         return false;
 
-    auto objectIt = find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const weak_ptr<GraphObject>& o) {
+    auto objectIt = find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const std::weak_ptr<GraphObject>& o) {
         auto object = o.lock();
         if (!object)
             return false;
@@ -136,7 +134,7 @@ bool GraphObject::linkTo(const shared_ptr<GraphObject>& obj)
         Value value;
         tree->getValueForLeafAt(path, value);
         auto children = value.as<Values>();
-        if (find_if(children.begin(), children.end(), [&](const Value& a) { return a.as<string>() == obj->getName(); }) == children.end())
+        if (find_if(children.begin(), children.end(), [&](const Value& a) { return a.as<std::string>() == obj->getName(); }) == children.end())
         {
             children.emplace_back(obj->getName());
             tree->setValueForLeafAt(path, children);
@@ -147,9 +145,9 @@ bool GraphObject::linkTo(const shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void GraphObject::unlinkFrom(const shared_ptr<GraphObject>& obj)
+void GraphObject::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
 {
-    auto objectIt = find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const weak_ptr<GraphObject>& o) {
+    auto objectIt = find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const std::weak_ptr<GraphObject>& o) {
         auto object = o.lock();
         if (!object)
             return true;
@@ -175,13 +173,13 @@ void GraphObject::unlinkFrom(const shared_ptr<GraphObject>& obj)
         Value value;
         tree->getValueForLeafAt(path, value);
         auto children = value.as<Values>();
-        children.erase(remove_if(children.begin(), children.end(), [&](const Value& a) { return a.as<string>() == obj->getName(); }), children.end());
+        children.erase(remove_if(children.begin(), children.end(), [&](const Value& a) { return a.as<std::string>() == obj->getName(); }), children.end());
         tree->setValueForLeafAt(path, children);
     }
 }
 
 /*************/
-void GraphObject::setName(const string& name)
+void GraphObject::setName(const std::string& name)
 {
     if (name.empty())
         return;
@@ -219,7 +217,7 @@ void GraphObject::registerAttributes()
     addAttribute(
         "alias",
         [&](const Values& args) {
-            auto alias = args[0].as<string>();
+            auto alias = args[0].as<std::string>();
             setAlias(alias);
             return true;
         },
@@ -251,12 +249,12 @@ void GraphObject::registerAttributes()
 
     addAttribute("switchLock",
         [&](const Values& args) {
-            unique_lock<recursive_mutex> lock(_attribMutex);
-            auto attribIterator = _attribFunctions.find(args[0].as<string>());
+            std::unique_lock<std::recursive_mutex> lock(_attribMutex);
+            auto attribIterator = _attribFunctions.find(args[0].as<std::string>());
             if (attribIterator == _attribFunctions.end())
                 return false;
 
-            string status;
+            std::string status;
             auto& attribFunctor = attribIterator->second;
             if (attribFunctor.isLocked())
             {
@@ -269,7 +267,7 @@ void GraphObject::registerAttributes()
                 attribFunctor.lock();
             }
 
-            Log::get() << Log::MESSAGE << _name << "~~" << args[0].as<string>() << " - " << status << Log::endl;
+            Log::get() << Log::MESSAGE << _name << "~~" << args[0].as<std::string>() << " - " << status << Log::endl;
             return true;
         },
         {'s'});
@@ -309,7 +307,7 @@ void GraphObject::initializeTree()
     // Create the leaves for the attributes in the tree
     {
         auto attrPath = path + "/attributes/";
-        lock_guard<recursive_mutex> lock(_attribMutex);
+        std::lock_guard<std::recursive_mutex> lock(_attribMutex);
         for (const auto& attribute : _attribFunctions)
         {
             if (!attribute.second.hasGetter())
@@ -320,7 +318,7 @@ void GraphObject::initializeTree()
                 continue;
 
             tree->createLeafAt(leafPath);
-            _treeCallbackIds[attributeName] = tree->addCallbackToLeafAt(leafPath, [=](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
+            _treeCallbackIds[attributeName] = tree->addCallbackToLeafAt(leafPath, [=](const Value& value, const std::chrono::system_clock::time_point& /*timestamp*/) {
                 auto attribIt = _attribFunctions.find(attributeName);
                 if (attribIt == _attribFunctions.end())
                     return;
@@ -339,13 +337,13 @@ void GraphObject::initializeTree()
         {
             if (d[1].size() == 0)
                 continue;
-            auto attrName = d[0].as<string>();
+            auto attrName = d[0].as<std::string>();
             auto attrPath = docPath + attrName;
             tree->createBranchAt(attrPath);
             tree->createLeafAt(attrPath + "/description");
             tree->createLeafAt(attrPath + "/arguments");
 
-            auto description = d[1].as<string>();
+            auto description = d[1].as<std::string>();
             auto arguments = d[2].as<Values>();
             tree->setValueForLeafAt(attrPath + "/description", description);
             tree->setValueForLeafAt(attrPath + "/arguments", arguments);
@@ -353,7 +351,7 @@ void GraphObject::initializeTree()
     }
 
     // Remove leaves for attributes which do not exist anymore
-    lock_guard<recursive_mutex> lock(_attribMutex);
+    std::lock_guard<std::recursive_mutex> lock(_attribMutex);
     for (const auto& leafName : tree->getLeafListAt(path + "/attributes"))
     {
         if (_attribFunctions.find(leafName) != _attribFunctions.end())

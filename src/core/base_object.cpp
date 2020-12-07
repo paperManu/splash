@@ -4,22 +4,20 @@
 
 #include "./utils/log.h"
 
-using namespace std;
-
 namespace Splash
 {
 
 /*************/
-void BaseObject::addTask(const function<void()>& task)
+void BaseObject::addTask(const std::function<void()>& task)
 {
-    lock_guard<recursive_mutex> lock(_taskMutex);
+    std::lock_guard<std::recursive_mutex> lock(_taskMutex);
     _taskQueue.push_back(task);
 }
 
 /*************/
-void BaseObject::addPeriodicTask(const string& name, const function<void()>& task, uint32_t period)
+void BaseObject::addPeriodicTask(const std::string& name, const std::function<void()>& task, uint32_t period)
 {
-    unique_lock<mutex> lock(_periodicTaskMutex, std::try_to_lock);
+    std::unique_lock<std::mutex> lock(_periodicTaskMutex, std::try_to_lock);
     if (!lock.owns_lock())
     {
         Log::get() << Log::WARNING << "RootObject::" << __FUNCTION__ << " - A periodic task cannot add another periodic task" << Log::endl;
@@ -40,9 +38,9 @@ void BaseObject::addPeriodicTask(const string& name, const function<void()>& tas
 }
 
 /*************/
-bool BaseObject::setAttribute(const string& attrib, const Values& args)
+bool BaseObject::setAttribute(const std::string& attrib, const Values& args)
 {
-    unique_lock<recursive_mutex> lock(_attribMutex);
+    std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     auto attribFunction = _attribFunctions.find(attrib);
     bool attribNotPresent = (attribFunction == _attribFunctions.end());
 
@@ -61,9 +59,9 @@ bool BaseObject::setAttribute(const string& attrib, const Values& args)
 }
 
 /*************/
-bool BaseObject::getAttribute(const string& attrib, Values& args) const
+bool BaseObject::getAttribute(const std::string& attrib, Values& args) const
 {
-    unique_lock<recursive_mutex> lock(_attribMutex);
+    std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     auto attribFunction = _attribFunctions.find(attrib);
     if (attribFunction == _attribFunctions.end())
     {
@@ -77,7 +75,7 @@ bool BaseObject::getAttribute(const string& attrib, Values& args) const
 }
 
 /*************/
-optional<Values> BaseObject::getAttribute(const string& attrib) const
+std::optional<Values> BaseObject::getAttribute(const std::string& attrib) const
 {
     Values value;
     if (!getAttribute(attrib, value))
@@ -86,19 +84,19 @@ optional<Values> BaseObject::getAttribute(const string& attrib) const
 }
 
 /*************/
-vector<std::string> BaseObject::getAttributesList() const
+std::vector<std::string> BaseObject::getAttributesList() const
 {
-    unique_lock<recursive_mutex> lock(_attribMutex);
-    vector<string> attributeNames;
+    std::unique_lock<std::recursive_mutex> lock(_attribMutex);
+    std::vector<std::string> attributeNames;
     for (const auto& [name, attribute] : _attribFunctions)
         attributeNames.push_back(name);
     return attributeNames;
 }
 
 /*************/
-string BaseObject::getAttributeDescription(const string& name) const
+std::string BaseObject::getAttributeDescription(const std::string& name) const
 {
-    unique_lock<recursive_mutex> lock(_attribMutex);
+    std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     auto attr = _attribFunctions.find(name);
     if (attr != _attribFunctions.end())
         return attr->second.getDescription();
@@ -109,7 +107,7 @@ string BaseObject::getAttributeDescription(const string& name) const
 /*************/
 Values BaseObject::getAttributesDescriptions() const
 {
-    unique_lock<recursive_mutex> lock(_attribMutex);
+    std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     Values descriptions;
     for (const auto& attr : _attribFunctions)
         descriptions.push_back(Values({attr.first, attr.second.getDescription(), attr.second.getArgsTypes()}));
@@ -117,9 +115,9 @@ Values BaseObject::getAttributesDescriptions() const
 }
 
 /*************/
-Attribute::Sync BaseObject::getAttributeSyncMethod(const string& name)
+Attribute::Sync BaseObject::getAttributeSyncMethod(const std::string& name)
 {
-    unique_lock<recursive_mutex> lock(_attribMutex);
+    std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     auto attr = _attribFunctions.find(name);
     if (attr != _attribFunctions.end())
         return attr->second.getSyncMethod();
@@ -128,50 +126,50 @@ Attribute::Sync BaseObject::getAttributeSyncMethod(const string& name)
 }
 
 /*************/
-void BaseObject::runAsyncTask(const function<void(void)>& func)
+void BaseObject::runAsyncTask(const std::function<void(void)>& func)
 {
-    lock_guard<mutex> lockTasks(_asyncTaskMutex);
+    std::lock_guard<std::mutex> lockTasks(_asyncTaskMutex);
     auto taskId = _nextAsyncTaskId++;
-    _asyncTasks[taskId] = async(launch::async, [this, func, taskId]() -> void {
+    _asyncTasks[taskId] = std::async(std::launch::async, [this, func, taskId]() -> void {
         func();
         addTask([this, taskId]() -> void {
-            lock_guard<mutex> lockTasks(_asyncTaskMutex);
+            std::lock_guard<std::mutex> lockTasks(_asyncTaskMutex);
             _asyncTasks.erase(taskId);
         });
     });
 }
 
 /*************/
-Attribute& BaseObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const vector<char>& types)
+Attribute& BaseObject::addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types)
 {
-    unique_lock<recursive_mutex> lock(_attribMutex);
+    std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     _attribFunctions[name] = Attribute(name, set, nullptr, types);
     _attribFunctions[name].setObjectName(_name);
     return _attribFunctions[name];
 }
 
 /*************/
-Attribute& BaseObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const function<const Values()>& get, const vector<char>& types)
+Attribute& BaseObject::addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types)
 {
-    unique_lock<recursive_mutex> lock(_attribMutex);
+    std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     _attribFunctions[name] = Attribute(name, set, get, types);
     _attribFunctions[name].setObjectName(_name);
     return _attribFunctions[name];
 }
 
 /*************/
-bool BaseObject::hasAttribute(const string& name) const
+bool BaseObject::hasAttribute(const std::string& name) const
 {
-    unique_lock<recursive_mutex> lock(_attribMutex);
+    std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     if (_attribFunctions.find(name) == _attribFunctions.end())
         return false;
     return true;
 }
 
 /*************/
-void BaseObject::setAttributeDescription(const string& name, const string& description)
+void BaseObject::setAttributeDescription(const std::string& name, const std::string& description)
 {
-    unique_lock<recursive_mutex> lock(_attribMutex);
+    std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     auto attr = _attribFunctions.find(name);
     if (attr != _attribFunctions.end())
     {
@@ -180,27 +178,27 @@ void BaseObject::setAttributeDescription(const string& name, const string& descr
 }
 
 /*************/
-void BaseObject::setAttributeSyncMethod(const string& name, const Attribute::Sync& method)
+void BaseObject::setAttributeSyncMethod(const std::string& name, const Attribute::Sync& method)
 {
-    unique_lock<recursive_mutex> lock(_attribMutex);
+    std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     auto attr = _attribFunctions.find(name);
     if (attr != _attribFunctions.end())
         attr->second.setSyncMethod(method);
 }
 
 /*************/
-void BaseObject::removeAttribute(const string& name)
+void BaseObject::removeAttribute(const std::string& name)
 {
-    unique_lock<recursive_mutex> lock(_attribMutex);
+    std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     auto attr = _attribFunctions.find(name);
     if (attr != _attribFunctions.end())
         _attribFunctions.erase(attr);
 }
 
 /*************/
-void BaseObject::removePeriodicTask(const string& name)
+void BaseObject::removePeriodicTask(const std::string& name)
 {
-    unique_lock<mutex> lock(_periodicTaskMutex, std::try_to_lock);
+    std::unique_lock<std::mutex> lock(_periodicTaskMutex, std::try_to_lock);
     if (!lock.owns_lock())
     {
         Log::get() << Log::WARNING << "RootObject::" << __FUNCTION__ << " - A periodic task cannot remove a periodic task" << Log::endl;
@@ -213,9 +211,9 @@ void BaseObject::removePeriodicTask(const string& name)
 }
 
 /*************/
-CallbackHandle BaseObject::registerCallback(const string& attr, Attribute::Callback cb)
+CallbackHandle BaseObject::registerCallback(const std::string& attr, Attribute::Callback cb)
 {
-    unique_lock<recursive_mutex> lock(_attribMutex);
+    std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     auto attribute = _attribFunctions.find(attr);
     if (attribute == _attribFunctions.end())
         return CallbackHandle();
@@ -229,7 +227,7 @@ bool BaseObject::unregisterCallback(const CallbackHandle& handle)
     if (!handle)
         return false;
 
-    unique_lock<recursive_mutex> lock(_attribMutex);
+    std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     auto attribute = _attribFunctions.find(handle.getAttribute());
     if (attribute == _attribFunctions.end())
         return false;
@@ -240,7 +238,7 @@ bool BaseObject::unregisterCallback(const CallbackHandle& handle)
 /*************/
 void BaseObject::runTasks()
 {
-    unique_lock<recursive_mutex> lock(_taskMutex);
+    std::unique_lock<std::recursive_mutex> lock(_taskMutex);
     decltype(_taskQueue) tasks;
     std::swap(tasks, _taskQueue);
     _taskQueue.clear();
@@ -249,7 +247,7 @@ void BaseObject::runTasks()
     for (const auto& task : tasks)
         task();
 
-    unique_lock<mutex> lockRecurrsiveTasks(_periodicTaskMutex);
+    std::unique_lock<std::mutex> lockRecurrsiveTasks(_periodicTaskMutex);
     auto currentTime = Timer::getTime() / 1000;
     for (auto& task : _periodicTasks)
     {
