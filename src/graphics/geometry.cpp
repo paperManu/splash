@@ -91,14 +91,13 @@ void Geometry::activateForFeedback()
     _feedbackMaxNbrPrimitives = std::max(_verticesNumber / 3, _feedbackMaxNbrPrimitives);
     if (_glTemporaryBuffers.size() < _glBuffers.size() || _buffersDirty || _feedbackMaxNbrPrimitives * 6 > _temporaryBufferSize)
     {
-        _glTemporaryBuffers.clear();
         _temporaryBufferSize = _feedbackMaxNbrPrimitives * 6; // 3 vertices per primitive, times two to keep some margin for future updates
-        for (auto& buffer : _glBuffers)
+        for (size_t i = 0; i < _glBuffers.size(); ++i)
         {
             // This creates a copy of the buffer
-            auto altBuffer = std::make_shared<GpuBuffer>(*buffer);
+            auto altBuffer = std::make_shared<GpuBuffer>(*_glBuffers[i]);
             altBuffer->resize(_temporaryBufferSize);
-            _glTemporaryBuffers.push_back(altBuffer);
+            _glTemporaryBuffers[i] = altBuffer;
         }
         _buffersResized = true;
     }
@@ -108,7 +107,10 @@ void Geometry::activateForFeedback()
     }
 
     for (unsigned int i = 0; i < _glTemporaryBuffers.size(); ++i)
+    {
+        _glTemporaryBuffers[i]->clear();
         glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, i, _glTemporaryBuffers[i]->getId());
+    }
 
     glBeginQuery(GL_PRIMITIVES_GENERATED, _feedbackQuery);
 }
@@ -146,11 +148,21 @@ void Geometry::deactivateFeedback()
 }
 
 /*************/
+std::vector<char> Geometry::getGpuBufferAsVector(Geometry::BufferType type)
+{
+    auto typeId = static_cast<int>(type);
+    if (_useAlternativeBuffers && _glAlternativeBuffers[typeId] != nullptr)
+        return _glAlternativeBuffers[typeId]->getBufferAsVector();
+    else
+        return _glBuffers[typeId]->getBufferAsVector();
+}
+
+/*************/
 std::shared_ptr<SerializedObject> Geometry::serialize() const
 {
     auto serializedObject = std::make_shared<SerializedObject>();
     serializedObject->resize(sizeof(int));
-    *(int*)(serializedObject->data()) = _alternativeVerticesNumber;
+    *(reinterpret_cast<int*>(serializedObject->data())) = _alternativeVerticesNumber;
     for (auto& buffer : _glAlternativeBuffers)
     {
         auto newBuffer = buffer->getBufferAsVector(_alternativeVerticesNumber);
@@ -236,7 +248,6 @@ void Geometry::update()
     // Update the vertex buffers if mesh was updated
     if (_timestamp != _mesh->getTimestamp())
     {
-        _glBuffers.clear();
         _mesh->update();
 
         std::vector<float> vertices = _mesh->getVertCoords();
@@ -244,26 +255,26 @@ void Geometry::update()
             return;
 
         _verticesNumber = vertices.size() / 4;
-        _glBuffers.push_back(std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, vertices.data()));
+        _glBuffers[0] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, vertices.data());
 
         std::vector<float> texcoords = _mesh->getUVCoords();
         if (!texcoords.empty())
-            _glBuffers.push_back(std::make_shared<GpuBuffer>(2, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, texcoords.data()));
+            _glBuffers[1] = std::make_shared<GpuBuffer>(2, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, texcoords.data());
         else
-            _glBuffers.push_back(std::make_shared<GpuBuffer>(2, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr));
+            _glBuffers[1] = std::make_shared<GpuBuffer>(2, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr);
 
         std::vector<float> normals = _mesh->getNormals();
         if (!normals.empty())
-            _glBuffers.push_back(std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, normals.data()));
+            _glBuffers[2] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, normals.data());
         else
-            _glBuffers.push_back(std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr));
+            _glBuffers[2] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr);
 
         // An additional annexe buffer, to be filled by compute shaders. Contains a vec4 for each vertex
         std::vector<float> annexe = _mesh->getAnnexe();
         if (!annexe.empty())
-            _glBuffers.push_back(std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, annexe.data()));
+            _glBuffers[3] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, annexe.data());
         else
-            _glBuffers.push_back(std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr));
+            _glBuffers[3] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr);
 
         for (auto& v : _vertexArray)
             glDeleteVertexArrays(1, &(v.second));
@@ -282,10 +293,7 @@ void Geometry::update()
     {
         std::lock_guard<std::shared_mutex> lock(_writeMutex);
 
-        if (_glTemporaryBuffers.size() != 4)
-            _glTemporaryBuffers.resize(4);
-
-        _temporaryVerticesNumber = *(int*)(_serializedMesh.data());
+        _temporaryVerticesNumber = *(reinterpret_cast<int*>(_serializedMesh.data()));
         _temporaryBufferSize = _temporaryVerticesNumber;
 
         if (!_glTemporaryBuffers[0])
@@ -331,7 +339,7 @@ void Geometry::update()
 
         for (uint32_t idx = 0; idx < _glBuffers.size(); ++idx)
         {
-            if (_useAlternativeBuffers && _glAlternativeBuffers.size() != 0 && _glAlternativeBuffers[0])
+            if (_useAlternativeBuffers && _glAlternativeBuffers[0] != nullptr)
             {
                 glBindBuffer(GL_ARRAY_BUFFER, _glAlternativeBuffers[idx]->getId());
                 glVertexAttribPointer((GLuint)idx, _glAlternativeBuffers[idx]->getElementSize(), GL_FLOAT, GL_FALSE, 0, 0);

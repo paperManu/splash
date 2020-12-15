@@ -89,7 +89,8 @@ struct ShaderSources
                 // d2
                 dist = clamp(dist / blendDist, vec2(0.0), vec2(1.0));
                 float weight = 2.0 / (1.0 / dist.x + 1.0 / dist.y);
-                weight = pow(max(0.0, min(1.0, weight)), 2.0);
+                weight = max(0.0, min(1.0, weight));
+                weight = weight * weight;
 
                 // d4 (and d3 if pow(x, 1.0))
                 //float weight = pow(abs(dist.x / blendDist * dist.y / blendDist), 1.5);
@@ -167,9 +168,9 @@ struct ShaderSources
             }
         )"}};
 
-/**
- * Version directive, included at the start of all shaders
- */
+    /**
+     * Version directive, included at the start of all shaders
+     */
     const std::string VERSION_DIRECTIVE_GL4{R"(
         #version 450 core
     )"};
@@ -351,14 +352,21 @@ struct ShaderSources
         };
 
         uniform int _vertexNbr;
-        uniform mat4 _mvp;
-        uniform mat4 _mNormal;
+        uniform mat4 _mv; // Model View matrix
+        uniform mat4 _mvp; // Model View Projection matrix
+        uniform mat4 _mNormal; // Normal matrix
         uniform float _blendWidth = 0.1;
 
         void main(void)
         {
+            // After this pass, the annexe buffer holds:
+            // x: number of cameras seeing this vertex
+            // y: the blending value for the current camera
+            // z: the distance to the given vertex, in normalized space
+            
             int globalID = int(gl_GlobalInvocationID.x);
             vec4 screenVertex[3];
+            vec4 cameraSpaceVertex[3];
             bvec3 vertexVisible;
 
             if (globalID < _vertexNbr / 3)
@@ -369,12 +377,21 @@ struct ShaderSources
 
                     // If this vertex was marked as non visible, we can return
                     if (annexe[vertexId].z == 0.0)
+                    {
+                        // We set the w coordinate to 0
+                        for (int idx = 0; idx < 3; ++idx)
+                        {
+                            int vertexId = globalID * 3 + idx;
+                            annexe[vertexId].w = 0.0;
+                        }
                         return;
+                     }
 
                     vec2 distToCenter;
                     vec4 normalizedSpaceVertex = vertex[vertexId];
                     vertexVisible[idx] = projectAndCheckVisibility(normalizedSpaceVertex, _mvp, 0.005, distToCenter);
                     screenVertex[idx] = normalizedSpaceVertex;
+                    cameraSpaceVertex[idx] = _mv * vec4(vertex[vertexId].xyz, 1.0);
                 }
 
                 vec3 projectedNormal = normalVector(screenVertex[0].xyz, screenVertex[1].xyz, screenVertex[2].xyz);
@@ -384,6 +401,7 @@ struct ShaderSources
                     {
                         int vertexId = globalID * 3 + idx;
                         annexe[vertexId].xy += vec2(1.0, getSmoothBlendFromVertex(screenVertex[idx], _blendWidth));
+                        annexe[vertexId].w = cameraSpaceVertex[vertexId].z;
                     }
                 }
             }
@@ -1284,8 +1302,13 @@ struct ShaderSources
         layout(location = 3) in vec4 _annexe;
 
         uniform mat4 _modelViewProjectionMatrix;
+        uniform mat4 _modelViewMatrix;
         uniform mat4 _normalMatrix;
         uniform vec4 _cameraAttributes = vec4(0.05, 1.0, 1.0, 1.0); // blendWidth, brightness, saturation, contrast
+
+    #ifdef VERTEXBLENDING
+        uniform float _farthestVertex = 0.0;
+    #endif
 
         out VertexData
         {
@@ -1305,13 +1328,26 @@ struct ShaderSources
             vertexOut.texCoord = _texCoord;
             vertexOut.annexe = _annexe;
 
-            vec4 projectedVertex = vertexOut.position / vertexOut.position.w;
+            const vec4 projectedVertex = vertexOut.position / vertexOut.position.w;
             if (projectedVertex.z >= 0.0)
             {
-                if (_annexe.y == 0.0)
-                    vertexOut.blendingValue = 1.0;
-                else
-                    vertexOut.blendingValue = min(1.0, getSmoothBlendFromVertex(projectedVertex, _cameraAttributes.x) / _annexe.y);
+    #ifdef VERTEXBLENDING
+                // Compute the distance to the camera, then compare it to the farthest
+                // vertex distance and adjust blending value based on this
+                const float vertexDistToCam = abs(_modelViewMatrix * vec4(_vertex.xyz, 1.0)).z;
+                // The luminance diminishes with the square of the distance
+                // luminanceRatio should always be less than 1.0, as
+                // _farthestVertex is by definition the highest possible distance
+                float luminanceRatio = 1.0;
+                if (_farthestVertex != 0.0)
+                {
+                    luminanceRatio = vertexDistToCam / _farthestVertex;
+                    luminanceRatio = luminanceRatio * luminanceRatio;
+                }
+                vertexOut.blendingValue = luminanceRatio * min(1.0, getSmoothBlendFromVertex(projectedVertex, _cameraAttributes.x) / _annexe.y);
+    #else
+                vertexOut.blendingValue = 1.0;
+    #endif
             }
         }
     )"};

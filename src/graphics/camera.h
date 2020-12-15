@@ -66,13 +66,13 @@ class Camera : public GraphObject
     };
 
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
     Camera(RootObject* root);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~Camera() override;
 
@@ -83,47 +83,53 @@ class Camera : public GraphObject
     Camera& operator=(const Camera&) = delete;
 
     /**
-     * \brief Tessellate the objects for this camera
+     * Tessellate the objects for this camera
      */
     void blendingTessellateForCurrentCamera();
 
     /**
-     * \brief Compute the blending for all objects seen by this camera
+     * Compute the blending for all objects seen by this camera
      */
     void computeBlendingContribution();
 
     /**
-     * \brief Compute the vertex visibility for all objects visible by this camera
+     * Compute the vertex visibility for all objects visible by this camera
      */
     void computeVertexVisibility();
 
     /**
-     * \brief Get the projection matrix
+     * Get the projection matrix
      * \return Return the projection matrix
      */
     glm::dmat4 computeProjectionMatrix();
 
     /**
-     * \brief Get the view matrix
+     * Get the view matrix
      * \return Return the view matrix
      */
     glm::dmat4 computeViewMatrix();
 
     /**
-     * \brief Compute the calibration given the calibration points
+     * Compute the calibration given the calibration points
      * \return Return true if all went well
      */
     bool doCalibration();
 
     /**
-     * \brief Add one of the core models to the next redraw, with the given transformation matrix
+     * Add one of the core models to the next redraw, with the given transformation matrix
      * \param modelName Name of the model, as known in the _models map
      * \param rtMatrix Model matrix
      */
     void drawModelOnce(const std::string& modelName, const glm::dmat4& rtMatrix);
 
     /**
-     * \brief Get the output texture for this camera
+     * Get the farthest visible vertex distance
+     * \return Return the distance
+     */
+    float getFarthestVisibleVertexDistance();
+
+    /**
+     * Get the output texture for this camera
      * \return Return a pointer to the output textures
      */
     std::shared_ptr<Texture_Image> getTexture() const
@@ -141,7 +147,7 @@ class Camera : public GraphObject
     virtual int64_t getTimestamp() const final { return _outFbo ? _outFbo->getColorTexture()->getTimestamp() : 0; }
 
     /**
-     * \brief Get the coordinates of the closest vertex to the given point
+     * Get the coordinates of the closest vertex to the given point
      * \param x Target x coordinate
      * \param y Target y coordinate
      * \return Return the coordinates of the closest vertex, or an empty Values if no vertex is close enough
@@ -149,7 +155,7 @@ class Camera : public GraphObject
     Values pickVertex(float x, float y);
 
     /**
-     * \brief Get the coordinates of the given fragment (world coordinates). Also returns its depth in camera space
+     * Get the coordinates of the given fragment (world coordinates). Also returns its depth in camera space
      * \param x Target x coordinate
      * \param y Target y coordinate
      * \param fragDepth Fragment depth
@@ -158,7 +164,7 @@ class Camera : public GraphObject
     Values pickFragment(float x, float y, float& fragDepth);
 
     /**
-     * \brief Get the coordinates of the closest calibration point
+     * Get the coordinates of the closest calibration point
      * \param x Target x coordinate
      * \param y Target y coordinate
      * \return Return the closest calibration point, or an empty Values if no point is close enough
@@ -166,7 +172,7 @@ class Camera : public GraphObject
     Values pickCalibrationPoint(float x, float y);
 
     /**
-     * \brief Pick the closest calibration point or vertex
+     * Pick the closest calibration point or vertex
      * \param x Target x coordinate
      * \param y Target y coordinate
      * \return Return the closest point or vertex, or an empty Values if none is close enough
@@ -174,37 +180,38 @@ class Camera : public GraphObject
     Values pickVertexOrCalibrationPoint(float x, float y);
 
     /**
-     * \brief Render this camera into its textures
+     * Render this camera into its textures
      */
     void render() override;
 
     /**
-     * \brief Set the given calibration point. This point is then selected
+     * Set the given calibration point. This point is then selected
+     * \param worldPoint Point to add in world coordinates
      * \return Return true if the point has been added or if it already existed
      */
     bool addCalibrationPoint(const Values& worldPoint);
 
     /**
-     * \brief Deselect the current calibration point
+     * Deselect the current calibration point
      */
     void deselectCalibrationPoint();
 
     /**
-     * \brief Move the selected calibration point
+     * Move the selected calibration point
      * \param dx Displacement along X
      * \param dy Displacement along Y
      */
     void moveCalibrationPoint(float dx, float dy);
 
     /**
-     * \brief Remove the given calibration point
+     * Remove the given calibration point
      * \param point Point to remove
      * \param unlessSet If true, does not remove the point if it is set
      */
     void removeCalibrationPoint(const Values& point, bool unlessSet = false);
 
     /**
-     * \brief Set the selected calibration point
+     * Set the selected calibration point
      * \param screenPoint Desired projected position of this calibration point
      * \return Return true if all went well
      */
@@ -212,13 +219,13 @@ class Camera : public GraphObject
 
   protected:
     /**
-     * \brief Try to link the given GraphObject to this object
+     * Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
     bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
 
     /**
-     * \brief Try to unlink the given GraphObject from this object
+     * Try to unlink the given GraphObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
@@ -310,12 +317,12 @@ class Camera : public GraphObject
     static double calibrationCostFunc(const gsl_vector* v, void* params);
 
     /**
-     * \brief Load some defaults models, like the locator for calibration
+     * Load some defaults models, like the locator for calibration
      */
     void loadDefaultModels();
 
     /**
-     * \brief Send calibration points to the model
+     * Send calibration points to the model
      */
     void sendCalibrationPointsToObjects();
 
@@ -325,7 +332,7 @@ class Camera : public GraphObject
     void removeCalibrationPointsFromObjects();
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 };

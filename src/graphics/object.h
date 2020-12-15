@@ -45,13 +45,13 @@ class Object : public GraphObject
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
     Object(RootObject* root);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~Object() override;
 
@@ -62,12 +62,12 @@ class Object : public GraphObject
     Object& operator=(const Object& o) = delete;
 
     /**
-     * \brief Activate this object for rendering
+     * Activate this object for rendering
      */
     void activate();
 
     /**
-     * \brief Compute the visibility for the mvp specified with setViewProjectionMatrix, for blending purposes
+     * Compute the visibility for the mvp specified with setViewProjectionMatrix, for blending purposes
      * \param viewMatrix View matrix
      * \param projectionMatrix Projection matrix
      * \param blendWidth Width of the blending zone between projectors
@@ -75,18 +75,18 @@ class Object : public GraphObject
     void computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth);
 
     /**
-     * \brief Deactivate this object for rendering
+     * Deactivate this object for rendering
      */
     void deactivate();
 
     /**
-     * \brief Add a geometry to this object
+     * Add a geometry to this object
      * \param geometry Geometry to add
      */
     void addGeometry(const std::shared_ptr<Geometry>& geometry) { _geometries.push_back(geometry); }
 
     /**
-     * \brief Add a texture to this object
+     * Add a texture to this object
      * \param texture Texture to add
      */
     void addTexture(const std::shared_ptr<Texture>& texture) { _textures.push_back(texture); }
@@ -105,42 +105,49 @@ class Object : public GraphObject
     virtual int64_t getTimestamp() const final;
 
     /**
-     * \brief Remove a calibration point
+     * Remove a calibration point
      * \param point Point coordinates
      */
     void removeCalibrationPoint(const glm::dvec3& point);
 
     /**
-     * \brief Draw the object
+     * Draw the object
      */
     void draw();
 
     /**
-     * \brief Get a reference to all the calibration points set
+     * Get a reference to all the calibration points set
      * \return Return a reference to the vector containing all calibration points
      */
     inline std::vector<glm::dvec3>& getCalibrationPoints() { return _calibrationPoints; }
 
     /**
-     * \brief Get the model matrix
+     * Get farthest visible vertex distance from last camera blending computation.
+     * This has to be called after computeCameraContribution
+     * \return Return the farthest visible vertex distance
+     */
+    inline float getFarthestVisibleVertexDistance() const { return _farthestVisibleVertexDistance; }
+
+    /**
+     * Get the model matrix
      * \return Return the model matrix
      */
     inline glm::dmat4 getModelMatrix() const { return computeModelMatrix(); }
 
     /**
-     * \brief Get the shader used for the object. This must be called while the object is active
+     * Get the shader used for the object. This must be called while the object is active
      * \return Return the shader
      */
     inline std::shared_ptr<Shader> getShader() const { return _shader; }
 
     /**
-     * \brief Get the number of vertices for this object
+     * Get the number of vertices for this object
      * \return Return the number of vertices
      */
     int getVerticesNumber() const;
 
     /**
-     * \brief Get the coordinates of the closest vertex to the given point
+     * Get the coordinates of the closest vertex to the given point
      * \param p Coordinates around which to look
      * \param v Found vertex coordinates
      * \return Return the distance between p and v
@@ -148,48 +155,48 @@ class Object : public GraphObject
     float pickVertex(glm::dvec3 p, glm::dvec3& v);
 
     /**
-     * \brief Remove a geometry from this object
+     * Remove a geometry from this object
      * \param geometry Geometry to remove
      */
     void removeGeometry(const std::shared_ptr<Geometry>& geometry);
 
     /**
-     * \brief Remove a texture from this object
+     * Remove a texture from this object
      * \param texture Texture to remove
      */
     void removeTexture(const std::shared_ptr<Texture>& texture);
 
     /**
-     * \brief Reset tessellation of all linked objects
+     * Reset tessellation of all linked objects
      */
     void resetTessellation();
 
     /**
-     * \brief Reset the visibility flag, as well as the faces ID
+     * Reset the visibility flag, as well as the faces ID
      * \param primitiveIdShift Shift for the ID of the vertices
      */
     void resetVisibility(int primitiveIdShift = 0);
 
     /**
-     * \brief Reset the attribute holding the number of camera and the blending value
+     * Reset the attribute holding the number of camera and the blending value
      */
     void resetBlendingAttribute();
 
     /**
-     * \brief Set the view and projection matrices
+     * Set the view and projection matrices
      * \param mv View matrix
      * \[aram mp Projection matrix
      */
     void setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp);
 
     /**
-     * \brief Set the model matrix. This overrides the position attribute
+     * Set the model matrix. This overrides the position attribute
      * \param model Model matrix
      */
     void setModelMatrix(const glm::dmat4& model) { _modelMatrix = model; }
 
     /**
-     * \brief Subdivide the objects wrt the given camera limits (for blending purposes)
+     * Subdivide the objects wrt the given camera limits (for blending purposes)
      * \param viewMatrix View matrix
      * \param projectionMatrix Projection matrix
      * \param fovX Horizontal FOV
@@ -201,7 +208,7 @@ class Object : public GraphObject
     void tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float fovX, float fovY, float blendWidth, float blendPrecision);
 
     /**
-     * \brief This transfers the visibility from the texture active as GL_TEXTURE0 to the vertices attributes
+     * This transfers the visibility from the texture active as GL_TEXTURE0 to the vertices attributes
      * \param width Width of the texture
      * \param height Height of the texture
      * \param primitiveIdShift Shift for the ID as rendered in the texture
@@ -209,19 +216,19 @@ class Object : public GraphObject
     void transferVisibilityFromTexToAttr(int width, int height, int primitiveIdShift);
 
     /**
-     * \brief Set the shader for this object
+     * Set the shader for this object
      */
     void setShader(const std::shared_ptr<Shader>& shader);
 
   protected:
     /**
-     * \brief Try to link the given GraphObject to this object
+     * Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
     bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
 
     /**
-     * \brief Try to unlink the given GraphObject from this object
+     * Try to unlink the given GraphObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
@@ -255,23 +262,32 @@ class Object : public GraphObject
     glm::dvec4 _color{0.0, 0.0, 0.0, 1.0};
     float _normalExponent{0.0};
 
+    // Depending on the current rendering pass, this can be either:
+    // - computed by computeCameraContribution, during blending computation
+    // - set as a result of overall blending computation by the Blender object,
+    //   and used to render the blending
+    float _farthestVisibleVertexDistance{0.f};
+    // If true, computes _farthestVisibleVertexDistance, otherwise sets it to 0.f
+    // (when calling computeCameraContribution())
+    bool _computeFarthestVisibleVertexDistance{false};
+
     // A copy of all the cameras' calibration points,
     // for display purposes. These are not saved
     std::vector<glm::dvec3> _calibrationPoints;
 
     /**
-     * \brief Init function called by constructor
+     * Init function called by constructor
      */
     void init();
 
     /**
-     * \brief Compute the matrix corresponding to the object position
+     * Compute the matrix corresponding to the object position
      * \return Return the model matrix
      */
     glm::dmat4 computeModelMatrix() const;
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 };

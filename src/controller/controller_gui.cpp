@@ -544,7 +544,7 @@ void Gui::drawMainTab()
 #if HAVE_PORTAUDIO
     ImGui::Separator();
     ImGui::Text("Master clock");
-    auto clockDeviceValue = getWorldAttribute("clockDeviceName"); 
+    auto clockDeviceValue = getWorldAttribute("clockDeviceName");
     assert(!clockDeviceValue.empty());
     auto clockDeviceName = clockDeviceValue[0].as<std::string>();
     if (SplashImGui::InputText("##clockDeviceName", clockDeviceName, ImGuiInputTextFlags_EnterReturnsTrue))
@@ -574,6 +574,20 @@ void Gui::drawMainTab()
     static auto blendPrecision = 0.1f;
     if (ImGui::InputFloat("Blending precision", &blendPrecision, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
         setObjectsOfType("camera", "blendPrecision", {blendPrecision});
+
+    auto depthAwareBlendingValue = getObjectAttribute("blender", "depthAwareBlending");
+    if (!depthAwareBlendingValue.empty())
+    {
+        auto depthAwareBlending = depthAwareBlendingValue[0].as<bool>();
+        if (ImGui::Checkbox("Activate depth-aware blending", &depthAwareBlending))
+            setObjectAttribute("blender", "depthAwareBlending", {depthAwareBlending});
+        if (ImGui::IsItemHovered())
+        {
+            auto description = getObjectAttributeDescription("blender", "depthAwareBlending");
+            if (!description.empty())
+                ImGui::SetTooltip("%s", description[0].as<std::string>().c_str());
+        }
+    }
 
     ImGui::Separator();
     ImGui::Text("Testing tools");
@@ -1492,7 +1506,8 @@ void Gui::registerAttributes()
     });
     setAttributeDescription("show", "Show the GUI");
 
-    addAttribute("fullscreen",
+    addAttribute(
+        "fullscreen",
         [&](const Values& args) {
             _fullscreen = args[0].as<bool>();
             if (_fullscreen)

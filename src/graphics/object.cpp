@@ -1,5 +1,7 @@
 #include "./graphics/object.h"
 
+#include <algorithm>
+
 #include "./graphics/filter.h"
 #include "./graphics/geometry.h"
 #include "./graphics/shader.h"
@@ -79,7 +81,11 @@ void Object::activate()
     if (_fill == "texture")
     {
         if (_vertexBlendingActive)
+        {
             shaderParameters.push_back("VERTEXBLENDING");
+            _shader->setAttribute("uniform", {"_farthestVertex", _farthestVisibleVertexDistance});
+        }
+
         if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
             shaderParameters.push_back("TEXTURE_RECT");
 
@@ -441,50 +447,49 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
         _feedbackShaderSubdivideCamera->setAttribute("feedbackVaryings", {"GEOM_OUT.vertex", "GEOM_OUT.texCoord", "GEOM_OUT.normal", "GEOM_OUT.annexe"});
     }
 
-    if (_feedbackShaderSubdivideCamera)
+    assert(_feedbackShaderSubdivideCamera != nullptr);
+
+    _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_blendWidth", blendWidth});
+    _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_blendPrecision", blendPrecision});
+    _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_sideness", _sideness});
+    _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_fov", fovX, fovY});
+
+    for (auto& geom : _geometries)
     {
-        for (auto& geom : _geometries)
+        do
         {
-            do
-            {
-                geom->update();
-                geom->activate();
+            geom->update();
+            geom->activate();
 
-                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_blendWidth", blendWidth});
-                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_blendPrecision", blendPrecision});
-                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_sideness", _sideness});
-                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_fov", fovX, fovY});
+            auto mv = viewMatrix * computeModelMatrix();
+            auto mvAsValues = Values(glm::value_ptr(mv), glm::value_ptr(mv) + 16);
+            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mv", mvAsValues});
 
-                auto mv = viewMatrix * computeModelMatrix();
-                auto mvAsValues = Values(glm::value_ptr(mv), glm::value_ptr(mv) + 16);
-                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mv", mvAsValues});
+            auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
+            auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
+            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mvp", mvpAsValues});
 
-                auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
-                auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
-                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mvp", mvpAsValues});
+            auto ip = glm::inverse(projectionMatrix);
+            auto ipAsValues = Values(glm::value_ptr(ip), glm::value_ptr(ip) + 16);
+            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_ip", ipAsValues});
 
-                auto ip = glm::inverse(projectionMatrix);
-                auto ipAsValues = Values(glm::value_ptr(ip), glm::value_ptr(ip) + 16);
-                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_ip", ipAsValues});
+            auto mNormal = projectionMatrix * glm::transpose(glm::inverse(viewMatrix * computeModelMatrix()));
+            auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
+            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mNormal", mNormalAsValues});
 
-                auto mNormal = projectionMatrix * glm::transpose(glm::inverse(viewMatrix * computeModelMatrix()));
-                auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
-                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mNormal", mNormalAsValues});
+            geom->activateForFeedback();
+            _feedbackShaderSubdivideCamera->activate();
+            glDrawArrays(GL_PATCHES, 0, geom->getVerticesNumber());
+            _feedbackShaderSubdivideCamera->deactivate();
 
-                geom->activateForFeedback();
-                _feedbackShaderSubdivideCamera->activate();
-                glDrawArrays(GL_PATCHES, 0, geom->getVerticesNumber());
-                _feedbackShaderSubdivideCamera->deactivate();
+            geom->deactivateFeedback();
+            geom->deactivate();
 
-                geom->deactivateFeedback();
-                geom->deactivate();
+            glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
+        } while (geom->hasBeenResized());
 
-                glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
-            } while (geom->hasBeenResized());
-
-            geom->swapBuffers();
-            geom->useAlternativeBuffers(true);
-        }
+        geom->swapBuffers();
+        geom->useAlternativeBuffers(true);
     }
 }
 
@@ -498,6 +503,8 @@ void Object::transferVisibilityFromTexToAttr(int width, int height, int primitiv
         _computeShaderTransferVisibilityToAttr = std::make_shared<Shader>(Shader::prgCompute);
         _computeShaderTransferVisibilityToAttr->setAttribute("computePhase", {"transferVisibilityToAttr"});
     }
+
+    assert(_computeShaderTransferVisibilityToAttr != nullptr);
 
     _computeShaderTransferVisibilityToAttr->setAttribute("uniform", {"_texSize", static_cast<float>(width), static_cast<float>(height)});
     _computeShaderTransferVisibilityToAttr->setAttribute("uniform", {"_idShift", primitiveIdShift});
@@ -523,32 +530,63 @@ void Object::computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 project
         _computeShaderComputeBlending->setAttribute("computePhase", {"computeCameraContribution"});
     }
 
-    if (_computeShaderComputeBlending)
+    assert(_computeShaderComputeBlending != nullptr);
+
+    _computeShaderComputeBlending->setAttribute("uniform", {"_sideness", _sideness});
+    _computeShaderComputeBlending->setAttribute("uniform", {"_blendWidth", blendWidth});
+
+    _farthestVisibleVertexDistance = 0.f;
+
+    for (auto& geom : _geometries)
     {
-        for (auto& geom : _geometries)
+        geom->update();
+        geom->activateAsSharedBuffer();
+
+        // Set uniforms
+        const auto verticesNbr = geom->getVerticesNumber();
+        _computeShaderComputeBlending->setAttribute("uniform", {"_vertexNbr", verticesNbr});
+
+        const auto mv = viewMatrix * computeModelMatrix();
+        const auto mvAsValues = Values(glm::value_ptr(mv), glm::value_ptr(mv) + 16);
+        _computeShaderComputeBlending->setAttribute("uniform", {"_mv", mvAsValues});
+
+        const auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
+        const auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
+        _computeShaderComputeBlending->setAttribute("uniform", {"_mvp", mvpAsValues});
+
+        const auto mNormal = projectionMatrix * glm::transpose(glm::inverse(viewMatrix * computeModelMatrix()));
+        const auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
+        _computeShaderComputeBlending->setAttribute("uniform", {"_mNormal", mNormalAsValues});
+
+        _computeShaderComputeBlending->doCompute(verticesNbr / 3);
+        geom->deactivate();
+
+        glMemoryBarrier(GL_TRANSFORM_FEEDBACK_BARRIER_BIT);
+
+        if (_computeFarthestVisibleVertexDistance)
         {
-            geom->update();
-            geom->activateAsSharedBuffer();
-
-            // Set uniforms
-            auto verticesNbr = geom->getVerticesNumber();
-            _computeShaderComputeBlending->setAttribute("uniform", {"_vertexNbr", verticesNbr});
-            _computeShaderComputeBlending->setAttribute("uniform", {"_sideness", _sideness});
-            _computeShaderComputeBlending->setAttribute("uniform", {"_blendWidth", blendWidth});
-
-            auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
-            auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
-            _computeShaderComputeBlending->setAttribute("uniform", {"_mvp", mvpAsValues});
-
-            auto mNormal = projectionMatrix * glm::transpose(glm::inverse(viewMatrix * computeModelMatrix()));
-            auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
-            _computeShaderComputeBlending->setAttribute("uniform", {"_mNormal", mNormalAsValues});
-
-            _computeShaderComputeBlending->doCompute(verticesNbr / 3);
-
-            geom->deactivate();
-
-            glMemoryBarrier(GL_TRANSFORM_FEEDBACK_BARRIER_BIT);
+            // Get the annexe buffer from the geometry, and get the farthest projected vertex
+            // Note that the annexe buffer holds float32 values
+            const auto annexeBufferAsChar = geom->getGpuBufferAsVector(Geometry::BufferType::Annexe);
+            if (!annexeBufferAsChar.empty())
+            {
+                size_t annexeBufferSize = annexeBufferAsChar.size() / 4;
+                const float* annexePtr = reinterpret_cast<const float*>(annexeBufferAsChar.data());
+                std::vector<float> distanceBuffer((size_t)annexeBufferSize / 4);
+                // Initialize the distanceBuffer using only the w component of the annexeBuffer
+                for (size_t i = 3; i < annexeBufferSize / 4; i += 4)
+                {
+                    // The vertices are farther away from the camera when the distance goes lower,
+                    // so we need to invert the values from the annexe buffer
+                    distanceBuffer[(i - 3) / 4] = -annexePtr[i];
+                }
+                const auto maxDistance = std::max_element(distanceBuffer.cbegin(), distanceBuffer.cend());
+                _farthestVisibleVertexDistance = std::max(_farthestVisibleVertexDistance, *maxDistance);
+            }
+        }
+        else
+        {
+            _farthestVisibleVertexDistance = 0.f;
         }
     }
 }
@@ -581,7 +619,22 @@ void Object::registerAttributes()
         {'b'});
     setAttributeDescription("activateVertexBlending", "If true, activate vertex blending");
 
-    addAttribute("position",
+    addAttribute("computeFarthestVisibleVertexDistance",
+        [&](const Values& args) {
+            _computeFarthestVisibleVertexDistance = args[0].as<bool>();
+            return true;
+        },
+        {'b'});
+
+    addAttribute("farthestVisibleVertexDistance",
+        [&](const Values& args) {
+            _farthestVisibleVertexDistance = args[0].as<float>();
+            return true;
+        },
+        {'r'});
+
+    addAttribute(
+        "position",
         [&](const Values& args) {
             _position = glm::dvec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
             return true;
@@ -592,7 +645,8 @@ void Object::registerAttributes()
         {'r', 'r', 'r'});
     setAttributeDescription("position", "Set the object position");
 
-    addAttribute("rotation",
+    addAttribute(
+        "rotation",
         [&](const Values& args) {
             _rotation = glm::dvec3(args[0].as<float>() * M_PI / 180.0, args[1].as<float>() * M_PI / 180.0, args[2].as<float>() * M_PI / 180.0);
             return true;
@@ -603,7 +657,8 @@ void Object::registerAttributes()
         {'r', 'r', 'r'});
     setAttributeDescription("rotation", "Set the object rotation");
 
-    addAttribute("scale",
+    addAttribute(
+        "scale",
         [&](const Values& args) {
             if (args.size() < 3)
                 _scale = glm::dvec3(args[0].as<float>(), args[0].as<float>(), args[0].as<float>());
@@ -618,7 +673,8 @@ void Object::registerAttributes()
         {'r'});
     setAttributeDescription("scale", "Set the object scale");
 
-    addAttribute("sideness",
+    addAttribute(
+        "sideness",
         [&](const Values& args) {
             _sideness = args[0].as<int>();
             return true;
@@ -627,7 +683,8 @@ void Object::registerAttributes()
         {'i'});
     setAttributeDescription("sideness", "Set the side culling for the object: 0 for double sided, 1 for front-face visible, 2 for back-face visible");
 
-    addAttribute("fill",
+    addAttribute(
+        "fill",
         [&](const Values& args) {
             _fill = args[0].as<std::string>();
             _fillParameters.clear();
@@ -641,7 +698,8 @@ void Object::registerAttributes()
         "Set the fill type (texture, wireframe, or color). A fourth choice is available: userDefined. The fragment shader has to be defined "
         "manually then. Additional parameters are sent as #define directives to the shader compiler.");
 
-    addAttribute("color",
+    addAttribute(
+        "color",
         [&](const Values& args) {
             _color = glm::dvec4(args[0].as<float>(), args[1].as<float>(), args[2].as<float>(), args[3].as<float>());
             return true;
@@ -652,7 +710,8 @@ void Object::registerAttributes()
         {'r', 'r', 'r', 'r'});
     setAttributeDescription("color", "Set the object color, used for the \"color\" fill mode, or when no texture is linked to the object.");
 
-    addAttribute("normalExponent",
+    addAttribute(
+        "normalExponent",
         [&](const Values& args) {
             _normalExponent = args[0].as<float>();
             return true;

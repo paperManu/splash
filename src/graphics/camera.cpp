@@ -108,6 +108,23 @@ void Camera::computeBlendingContribution()
 }
 
 /*************/
+float Camera::getFarthestVisibleVertexDistance()
+{
+    float farthestVisibleVertexDistance = 0.f;
+
+    for (auto& o : _objects)
+    {
+        if (o.expired())
+            continue;
+        auto obj = o.lock();
+
+        farthestVisibleVertexDistance = std::max(farthestVisibleVertexDistance, obj->getFarthestVisibleVertexDistance());
+    }
+
+    return farthestVisibleVertexDistance;
+}
+
+/*************/
 void Camera::computeVertexVisibility()
 {
     // We want to render the object with a specific texture, containing the primitive IDs
@@ -594,6 +611,9 @@ void Camera::render()
 
     if (!_hidden)
     {
+        const auto viewMatrix = computeViewMatrix();
+        const auto projectionMatrix = computeProjectionMatrix();
+
         // Draw the objects
         for (auto& o : _objects)
         {
@@ -630,13 +650,10 @@ void Camera::render()
                 objShader->setAttribute("uniform", {"_isColorLUT", 0});
             }
 
-            obj->setViewProjectionMatrix(computeViewMatrix(), computeProjectionMatrix());
+            obj->setViewProjectionMatrix(viewMatrix, projectionMatrix);
             obj->draw();
             obj->deactivate();
         }
-
-        auto viewMatrix = computeViewMatrix();
-        auto projectionMatrix = computeProjectionMatrix();
 
         auto scene = dynamic_cast<Scene*>(_root);
         assert(scene != nullptr);

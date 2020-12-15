@@ -31,14 +31,14 @@ void Blender::update()
     auto getObjLinkedToCameras = [&]() -> std::vector<std::shared_ptr<GraphObject>> {
         std::vector<std::shared_ptr<GraphObject>> objLinkedToCameras{};
 
-        auto cameras = getObjectsPtr(getObjectsOfType("camera"));
-        auto links = getObjectLinks();
+        const auto cameras = getObjectsPtr(getObjectsOfType("camera"));
+        const auto links = getObjectLinks();
         for (auto& camera : cameras)
         {
-            auto cameraLinks = links[camera->getName()];
+            const auto cameraLinks = links.at(camera->getName());
             for (auto& linked : cameraLinks)
             {
-                auto object = std::dynamic_pointer_cast<Object>(getObjectPtr(linked));
+                const auto object = std::dynamic_pointer_cast<Object>(getObjectPtr(linked));
                 if (object)
                     objLinkedToCameras.push_back(getObjectPtr(linked));
             }
@@ -71,6 +71,11 @@ void Blender::update()
                 return object;
             });
 
+            // If depth-aware depth computation is deactivated, also
+            // deactivate vertex depth computation to prevent wasting
+            // processing power
+            setObjectsOfType("object", "computeFarthestVisibleVertexDistance", {_depthAwareBlending});
+
             if (!cameras.empty())
             {
                 for (auto& object : objects)
@@ -87,11 +92,18 @@ void Blender::update()
                     object->resetBlendingAttribute();
 
                 // Compute each camera contribution
+                float maxVertexDistance = 0.f;
                 for (auto& camera : cameras)
                 {
                     camera->computeVertexVisibility();
                     camera->computeBlendingContribution();
+                    maxVertexDistance = std::max(maxVertexDistance, camera->getFarthestVisibleVertexDistance());
                 }
+
+                // Set the farthest visible vertex distance into all objects,
+                // so it can be used when rendering the blending
+                for (auto& object : objects)
+                    object->setAttribute("farthestVisibleVertexDistance", {maxVertexDistance});
             }
             else
             {
@@ -200,6 +212,19 @@ void Blender::registerAttributes()
     });
     setAttributeDescription("blendingUpdated", "Message sent by the master Scene to notify that a new blending has been computed");
     setAttributeSyncMethod("blendingUpdated", Attribute::Sync::force_sync);
+
+    addAttribute(
+        "depthAwareBlending",
+        [&](const Values& args) {
+            _depthAwareBlending = args[0].as<bool>();
+            return true;
+        },
+        [&]() -> Values { return {_depthAwareBlending}; },
+        {'b'});
+    setAttributeDescription("depthAwareBlending",
+        "When active, blending computation will adapt projections "
+        "intensity with respect towards the distance to the projectors,"
+        "to produce a uniform surface illumination");
 }
 
 } // namespace Splash
