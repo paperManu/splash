@@ -343,7 +343,7 @@ void Factory::registerObjects()
             return object;
         },
         GraphObject::Category::MESH,
-        "mesh through shared memory",
+        "mesh through shared memory with shmdata",
         "Mesh object reading data from a Shmdata shared memory.",
         true);
 #endif
