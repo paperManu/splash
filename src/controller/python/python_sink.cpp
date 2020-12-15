@@ -4,13 +4,13 @@
 
 #define SPLASH_PYTHON_MAX_TRIES 200
 
-using namespace std;
+namespace chrono = std::chrono;
 
 namespace Splash
 {
 
 /*************/
-atomic_int PythonSink::PythonSinkObject::sinkIndex{1};
+std::atomic_int PythonSink::PythonSinkObject::sinkIndex{1};
 
 /***********************/
 // Sink Python wrapper //
@@ -76,15 +76,15 @@ int PythonSink::pythonSinkInit(PythonSinkObject* self, PyObject* args, PyObject*
     self->lastBuffer = nullptr;
 
     auto index = self->sinkIndex.fetch_add(1);
-    self->sinkName = make_unique<string>(that->getName() + "_pythonsink_" + to_string(index));
+    self->sinkName = std::make_unique<std::string>(that->getName() + "_pythonsink_" + std::to_string(index));
     that->setInScene("addObject", {"sink", *self->sinkName, root->getName()});
 
     // Wait until the sink is created
     int triesLeft = SPLASH_PYTHON_MAX_TRIES;
     while (!self->sink && --triesLeft)
     {
-        self->sink = dynamic_pointer_cast<Sink>(root->getObject(*self->sinkName));
-        this_thread::sleep_for(chrono::milliseconds(5));
+        self->sink = std::dynamic_pointer_cast<Sink>(root->getObject(*self->sinkName));
+        std::this_thread::sleep_for(chrono::milliseconds(5));
     }
 
     if (triesLeft == 0)
@@ -137,7 +137,7 @@ PyObject* PythonSink::pythonSinkLink(PythonSinkObject* self, PyObject* args, PyO
     }
 
     if (!self->sink)
-        self->sink = dynamic_pointer_cast<Sink>(root->getObject(*self->sinkName));
+        self->sink = std::dynamic_pointer_cast<Sink>(root->getObject(*self->sinkName));
 
     if (!self->sink)
     {
@@ -162,7 +162,7 @@ PyObject* PythonSink::pythonSinkLink(PythonSinkObject* self, PyObject* args, PyO
 
     if (source)
     {
-        self->sourceName = make_unique<string>(source);
+        self->sourceName = std::make_unique<std::string>(source);
     }
     else
     {
@@ -180,7 +180,7 @@ PyObject* PythonSink::pythonSinkLink(PythonSinkObject* self, PyObject* args, PyO
         return Py_False;
     }
 
-    self->filterName = make_unique<string>(*self->sinkName + "_filter_" + *self->sourceName);
+    self->filterName = std::make_unique<std::string>(*self->sinkName + "_filter_" + *self->sourceName);
 
     // Filter is added locally, we don't need (nor want) it in any other Scene
     that->setInScene("addObject", {"filter", *self->filterName, root->getName()});
@@ -226,7 +226,7 @@ PyObject* PythonSink::pythonSinkUnlink(PythonSinkObject* self)
     }
 
     if (!self->sink)
-        self->sink = dynamic_pointer_cast<Sink>(root->getObject(*self->sinkName));
+        self->sink = std::dynamic_pointer_cast<Sink>(root->getObject(*self->sinkName));
 
     if (!self->sink)
     {
@@ -258,7 +258,7 @@ PyObject* PythonSink::pythonSinkUnlink(PythonSinkObject* self)
     auto objectList = that->getObjectList();
     while (std::find(objectList.begin(), objectList.end(), *self->filterName) != objectList.end())
     {
-        this_thread::sleep_for(chrono::milliseconds(5));
+        std::this_thread::sleep_for(chrono::milliseconds(5));
         objectList = that->getObjectList();
     }
 
@@ -302,7 +302,7 @@ PyObject* PythonSink::pythonSinkGrab(PythonSinkObject* self)
     while (!opened[0].as<bool>())
     {
         self->sink->getAttribute("opened", opened);
-        this_thread::sleep_for(chrono::milliseconds(5));
+        std::this_thread::sleep_for(chrono::milliseconds(5));
     }
 
     // Due to the asynchronicity of passing messages to Splash, the frame may still
@@ -315,8 +315,8 @@ PyObject* PythonSink::pythonSinkGrab(PythonSinkObject* self)
         if (frame.size() != self->width * self->height * 4 /* RGBA*/)
         {
             --triesLeft;
-            this_thread::sleep_for(chrono::milliseconds(5));
-            // Keeping the ratio may also have had some effects
+            std::this_thread::sleep_for(chrono::milliseconds(5));
+            // Keeping the ratio may also have some effects
             if (self->keepRatio)
             {
                 auto realSize = that->getObjectAttribute(*self->filterName, "sizeOverride");

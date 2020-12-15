@@ -7,7 +7,7 @@
 
 #define DISTANT_NAME_SUFFIX "_queue_source"
 
-using namespace std;
+namespace chrono = std::chrono;
 
 namespace Splash
 {
@@ -15,7 +15,7 @@ namespace Splash
 /*************/
 Queue::Queue(RootObject* root)
     : BufferObject(root)
-    , _factory(make_unique<Factory>(_root))
+    , _factory(std::make_unique<Factory>(_root))
 {
     _type = "queue";
 
@@ -30,7 +30,7 @@ Queue::Queue(RootObject* root)
 Queue::~Queue() {}
 
 /*************/
-shared_ptr<SerializedObject> Queue::serialize() const
+std::shared_ptr<SerializedObject> Queue::serialize() const
 {
     if (_currentSource)
         return _currentSource->serialize();
@@ -39,7 +39,7 @@ shared_ptr<SerializedObject> Queue::serialize() const
 }
 
 /*************/
-string Queue::getDistantName() const
+std::string Queue::getDistantName() const
 {
     return _name + DISTANT_NAME_SUFFIX;
 }
@@ -47,7 +47,7 @@ string Queue::getDistantName() const
 /*************/
 void Queue::update()
 {
-    lock_guard<mutex> lock(_playlistMutex);
+    std::lock_guard<std::mutex> lock(_playlistMutex);
 
     if (_playlist.size() == 0)
         return;
@@ -111,7 +111,7 @@ void Queue::update()
 
         if (sourceIndex >= _playlist.size())
         {
-            _currentSource = dynamic_pointer_cast<BufferObject>(_factory->create("image"));
+            _currentSource = std::dynamic_pointer_cast<BufferObject>(_factory->create("image"));
             _currentSource->setName(_name + DISTANT_NAME_SUFFIX);
             _root->sendMessage(_name, "source", {"image"});
         }
@@ -120,13 +120,13 @@ void Queue::update()
             auto& sourceParameters = _playlist[_currentSourceIndex];
 
             if (!_currentSource || _currentSource->getType() != sourceParameters.type)
-                _currentSource = dynamic_pointer_cast<BufferObject>(_factory->create(sourceParameters.type));
+                _currentSource = std::dynamic_pointer_cast<BufferObject>(_factory->create(sourceParameters.type));
 
             if (_currentSource)
                 _playing = true;
             else
-                _currentSource = dynamic_pointer_cast<BufferObject>(_factory->create("image"));
-            dynamic_pointer_cast<Image>(_currentSource)->zero();
+                _currentSource = std::dynamic_pointer_cast<BufferObject>(_factory->create("image"));
+            std::dynamic_pointer_cast<Image>(_currentSource)->zero();
             _currentSource->setName(_name + DISTANT_NAME_SUFFIX);
 
             _currentSource->setAttribute("file", {sourceParameters.filename});
@@ -169,9 +169,9 @@ void Queue::update()
 }
 
 /*************/
-void Queue::cleanPlaylist(vector<Source>& playlist)
+void Queue::cleanPlaylist(std::vector<Source>& playlist)
 {
-    auto cleanList = vector<Source>();
+    auto cleanList = std::vector<Source>();
 
     std::sort(playlist.begin(), playlist.end(), [](const Source& a, const Source& b) { return a.start < b.start; });
 
@@ -295,8 +295,8 @@ void Queue::registerAttributes()
 
     addAttribute("playlist",
         [&](const Values& args) {
-            lock_guard<mutex> lock(_playlistMutex);
-            vector<Source> playlist;
+            std::lock_guard<std::mutex> lock(_playlistMutex);
+            std::vector<Source> playlist;
 
             for (auto& it : args)
             {
@@ -305,8 +305,8 @@ void Queue::registerAttributes()
                 if (src.size() == 6) // We need at least type, name, start and stop for each input
                 {
                     Source source;
-                    source.type = src[0].as<string>();
-                    source.filename = src[1].as<string>();
+                    source.type = src[0].as<std::string>();
+                    source.filename = src[1].as<std::string>();
                     source.start = (int64_t)(src[2].as<float>() * 1e6);
                     source.stop = (int64_t)(src[3].as<float>() * 1e6);
                     source.freeRun = src[4].as<bool>();
@@ -329,7 +329,7 @@ void Queue::registerAttributes()
             return true;
         },
         [&]() -> Values {
-            lock_guard<mutex> lock(_playlistMutex);
+            std::lock_guard<std::mutex> lock(_playlistMutex);
             Values playlist;
 
             for (auto& src : _playlist)
@@ -383,9 +383,9 @@ void Queue::registerAttributes()
 /*************/
 QueueSurrogate::QueueSurrogate(RootObject* root)
     : Texture(root)
-    , _filter(make_shared<Filter>(root))
+    , _filter(std::make_shared<Filter>(root))
 {
-    _filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", "queueFilter_" + _name + to_string(_filterIndex++)).lock());
+    _filter = std::dynamic_pointer_cast<Filter>(_root->createObject("filter", "queueFilter_" + _name + std::to_string(_filterIndex++)).lock());
     _filter->setAttribute("savable", {false});
 
     registerAttributes();
@@ -404,7 +404,7 @@ void QueueSurrogate::unbind()
 }
 
 /*************/
-unordered_map<string, Values> QueueSurrogate::getShaderUniforms() const
+std::unordered_map<std::string, Values> QueueSurrogate::getShaderUniforms() const
 {
     return _filter->getShaderUniforms();
 }
@@ -430,9 +430,9 @@ void QueueSurrogate::registerAttributes()
 
         addTask([=]() {
             auto sourceName = _name + DISTANT_NAME_SUFFIX;
-            auto type = args[0].as<string>();
+            auto type = args[0].as<std::string>();
 
-            if (_source && type.find(_source->getType()) != string::npos)
+            if (_source && type.find(_source->getType()) != std::string::npos)
             {
                 return;
             }
@@ -443,11 +443,11 @@ void QueueSurrogate::registerAttributes()
                 _root->disposeObject(_name + "_source");
             }
 
-            auto object = shared_ptr<GraphObject>();
+            auto object = std::shared_ptr<GraphObject>();
 
-            if (type.find("image") != string::npos)
+            if (type.find("image") != std::string::npos)
             {
-                auto image = dynamic_pointer_cast<Image>(_root->createObject("image", _name + DISTANT_NAME_SUFFIX).lock());
+                auto image = std::dynamic_pointer_cast<Image>(_root->createObject("image", _name + DISTANT_NAME_SUFFIX).lock());
                 image->zero();
                 image->setRemoteType(type);
                 object = image;

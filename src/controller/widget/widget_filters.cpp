@@ -6,8 +6,6 @@
 
 #include "./graphics/filter.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -15,7 +13,7 @@ namespace Splash
 void GuiFilters::render()
 {
     auto types = getTypesFromCategory(GraphObject::Category::FILTER);
-    vector<shared_ptr<GraphObject>> filterList;
+    std::vector<std::shared_ptr<GraphObject>> filterList;
     for (const auto& type : types)
     {
         auto objectList = getObjectsPtr(getObjectsOfType(type));
@@ -30,7 +28,7 @@ void GuiFilters::render()
     auto leftMargin = static_cast<int>(ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x);
     for (const auto& object : filterList)
     {
-        auto filter = dynamic_pointer_cast<Filter>(object);
+        auto filter = std::dynamic_pointer_cast<Filter>(object);
         auto spec = filter->getSpec();
 
         int w = ImGui::GetWindowWidth() - 3 * leftMargin;
@@ -43,7 +41,7 @@ void GuiFilters::render()
     }
     ImGui::EndChild();
 
-    auto filter = dynamic_pointer_cast<Filter>(getObjectPtr(_selectedFilterName));
+    auto filter = std::dynamic_pointer_cast<Filter>(getObjectPtr(_selectedFilterName));
     if (!filter)
         return;
 
@@ -75,11 +73,11 @@ void GuiFilters::render()
             int curveCount = colorCurves->second.size();
             int w = ImGui::GetWindowWidth() - 3 * leftMargin;
 
-            const vector<string> channels{"Red", "Green", "Blue"};
+            const std::vector<std::string> channels{"Red", "Green", "Blue"};
             int curveId = 0;
             for (const auto& curve : colorCurves->second)
             {
-                vector<float> samples;
+                std::vector<float> samples;
                 for (const auto& v : curve.as<Values>())
                     samples.push_back(v.as<float>());
 
@@ -108,7 +106,7 @@ void GuiFilters::render()
                         int id = (mousePos.x - curvePos.x) * curve.size() / size.x;
 
                         auto newCurves = colorCurves->second;
-                        newCurves[curveId][id] = max(0.f, min(1.f, newCurves[curveId][id].as<float>() - deltaY));
+                        newCurves[curveId][id] = std::max(0.f, std::min(1.f, newCurves[curveId][id].as<float>() - deltaY));
                         setObjectAttribute(_selectedFilterName, colorCurves->first, newCurves);
                     }
                 }

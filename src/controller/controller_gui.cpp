@@ -24,8 +24,6 @@
 #include "./utils/osutils.h"
 #include "./utils/timer.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -41,7 +39,7 @@ GLuint Gui::_imGuiVboHandle, Gui::_imGuiElementsHandle, Gui::_imGuiVaoHandle;
 size_t Gui::_imGuiVboMaxSize = 20000;
 
 /*************/
-Gui::Gui(shared_ptr<GlWindow> w, RootObject* s)
+Gui::Gui(std::shared_ptr<GlWindow> w, RootObject* s)
     : ControllerObject(s)
 {
     _type = "gui";
@@ -56,13 +54,13 @@ Gui::Gui(shared_ptr<GlWindow> w, RootObject* s)
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
     glGetError();
 
-    _fbo = make_unique<Framebuffer>(_root);
+    _fbo = std::make_unique<Framebuffer>(_root);
     _fbo->setResizable(true);
 
     _window->releaseContext();
 
     // Create the default GUI camera
-    _guiCamera = make_shared<Camera>(s);
+    _guiCamera = std::make_shared<Camera>(s);
     _guiCamera->setAttribute("eye", {2.0, 2.0, 0.0});
     _guiCamera->setAttribute("target", {0.0, 0.0, 0.5});
     _guiCamera->setAttribute("size", {640, 480});
@@ -102,10 +100,10 @@ Gui::~Gui()
 /*************/
 void Gui::loadIcon()
 {
-    auto imagePath = string(DATADIR);
-    string path{"splash.png"};
+    auto imagePath = std::string(DATADIR);
+    std::string path{"splash.png"};
 
-    auto image = make_shared<Image>(_scene);
+    auto image = std::make_shared<Image>(_scene);
     image->setName("splash_icon");
     if (!image->read(imagePath + path))
     {
@@ -113,7 +111,7 @@ void Gui::loadIcon()
         return;
     }
 
-    _splashLogo = make_shared<Texture_Image>(_scene);
+    _splashLogo = std::make_shared<Texture_Image>(_scene);
     _splashLogo->linkTo(image);
     _splashLogo->update();
 }
@@ -131,9 +129,9 @@ void Gui::unicodeChar(unsigned int unicodeChar)
 void Gui::computeBlending(bool once)
 {
     auto blendingState = getObjectAttribute("blender", "mode");
-    string previousState = "none";
+    std::string previousState = "none";
     if (!blendingState.empty())
-        previousState = blendingState[0].as<string>();
+        previousState = blendingState[0].as<std::string>();
 
     if (previousState != "none")
     {
@@ -169,23 +167,23 @@ void Gui::calibrateColors()
 }
 
 /*************/
-void Gui::copyCameraParameters(const string& path)
+void Gui::copyCameraParameters(const std::string& path)
 {
     setWorldAttribute("copyCameraParameters", {path});
 }
 
 /*************/
-void Gui::setJoystick(const vector<float>& axes, const vector<uint8_t>& buttons)
+void Gui::setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons)
 {
     for (auto& w : _guiWidgets)
         w->setJoystick(axes, buttons);
 }
 
 /*************/
-void Gui::setJoystickState(const vector<UserInput::State>& state)
+void Gui::setJoystickState(const std::vector<UserInput::State>& state)
 {
-    vector<float> axes;
-    vector<uint8_t> buttons;
+    std::vector<float> axes;
+    std::vector<uint8_t> buttons;
 
     for (const auto& s : state)
     {
@@ -201,7 +199,7 @@ void Gui::setJoystickState(const vector<UserInput::State>& state)
 }
 
 /*************/
-void Gui::setKeyboardState(const vector<UserInput::State>& state)
+void Gui::setKeyboardState(const std::vector<UserInput::State>& state)
 {
     for (const auto& s : state)
     {
@@ -225,7 +223,7 @@ void Gui::setKeyboardState(const vector<UserInput::State>& state)
 }
 
 /*************/
-void Gui::setMouseState(const vector<UserInput::State>& state)
+void Gui::setMouseState(const std::vector<UserInput::State>& state)
 {
     if (!_window)
         return;
@@ -410,11 +408,11 @@ void Gui::mouseScroll(double /*xoffset*/, double yoffset)
 }
 
 /*************/
-bool Gui::linkIt(const shared_ptr<GraphObject>& obj)
+bool Gui::linkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (dynamic_pointer_cast<Object>(obj))
+    if (std::dynamic_pointer_cast<Object>(obj))
     {
-        auto object = dynamic_pointer_cast<Object>(obj);
+        auto object = std::dynamic_pointer_cast<Object>(obj);
         _guiCamera->linkTo(object);
         return true;
     }
@@ -423,9 +421,9 @@ bool Gui::linkIt(const shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void Gui::unlinkIt(const shared_ptr<GraphObject>& obj)
+void Gui::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
+    if (std::dynamic_pointer_cast<Object>(obj).get() != nullptr)
         _guiCamera->unlinkFrom(obj);
 }
 
@@ -452,7 +450,7 @@ void Gui::drawMainTab()
     if (ImGui::Button("Wireframe / Textured", ImVec2(availableSize[0] / 3.f, 32.f)))
     {
         _wireframe = !_wireframe;
-        setWorldAttribute("wireframe", {(int)_wireframe});
+        setWorldAttribute("wireframe", {_wireframe});
     }
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Switch objects between wireframe and textured (Ctrl+%s and Ctrl+%s)", getLocalKeyName('T'), getLocalKeyName('W'));
@@ -516,9 +514,9 @@ void Gui::drawMainTab()
     // Media directory
     ImGui::Separator();
     ImGui::Text("Media directory");
-    string mediaPath = _root->getMediaPath();
+    std::string mediaPath = _root->getMediaPath();
     if (SplashImGui::InputText("##MediaPath", mediaPath))
-        setWorldAttribute("mediaPath", {string(mediaPath)});
+        setWorldAttribute("mediaPath", {std::string(mediaPath)});
 
     ImGui::SameLine();
     static bool showMediaFileSelector{false};
@@ -526,7 +524,7 @@ void Gui::drawMainTab()
         showMediaFileSelector = true;
     if (showMediaFileSelector)
     {
-        static string path = _root->getMediaPath();
+        static std::string path = _root->getMediaPath();
         bool cancelled;
         if (SplashImGui::FileSelector("Media path", path, cancelled, {{"json"}}))
         {
@@ -546,9 +544,9 @@ void Gui::drawMainTab()
 #if HAVE_PORTAUDIO
     ImGui::Separator();
     ImGui::Text("Master clock");
-    auto clockDeviceValue = getWorldAttribute("clockDeviceName"); 
+    auto clockDeviceValue = getWorldAttribute("clockDeviceName");
     assert(!clockDeviceValue.empty());
-    auto clockDeviceName = clockDeviceValue[0].as<string>();
+    auto clockDeviceName = clockDeviceValue[0].as<std::string>();
     if (SplashImGui::InputText("##clockDeviceName", clockDeviceName, ImGuiInputTextFlags_EnterReturnsTrue))
         setWorldAttribute("clockDeviceName", {clockDeviceName});
     if (ImGui::IsItemHovered())
@@ -576,6 +574,20 @@ void Gui::drawMainTab()
     static auto blendPrecision = 0.1f;
     if (ImGui::InputFloat("Blending precision", &blendPrecision, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
         setObjectsOfType("camera", "blendPrecision", {blendPrecision});
+
+    auto depthAwareBlendingValue = getObjectAttribute("blender", "depthAwareBlending");
+    if (!depthAwareBlendingValue.empty())
+    {
+        auto depthAwareBlending = depthAwareBlendingValue[0].as<bool>();
+        if (ImGui::Checkbox("Activate depth-aware blending", &depthAwareBlending))
+            setObjectAttribute("blender", "depthAwareBlending", {depthAwareBlending});
+        if (ImGui::IsItemHovered())
+        {
+            auto description = getObjectAttributeDescription("blender", "depthAwareBlending");
+            if (!description.empty())
+                ImGui::SetTooltip("%s", description[0].as<std::string>().c_str());
+        }
+    }
 
     ImGui::Separator();
     ImGui::Text("Testing tools");
@@ -673,7 +685,7 @@ void Gui::drawMenuBar()
 
     if (_showFileSelector)
     {
-        static string path = _root->getConfigurationPath();
+        static std::string path = _root->getConfigurationPath();
         bool cancelled;
 
         if (_menuAction == MenuAction::OpenConfiguration)
@@ -844,7 +856,7 @@ void Gui::render()
     using namespace ImGui;
 
     // Callback for dragndrop: load the dropped file
-    UserInput::setCallback(UserInput::State("dragndrop"), [=](const UserInput::State& state) { setWorldAttribute("loadConfig", {state.value[0].as<string>()}); });
+    UserInput::setCallback(UserInput::State("dragndrop"), [=](const UserInput::State& state) { setWorldAttribute("loadConfig", {state.value[0].as<std::string>()}); });
 
     ImGuiIO& io = GetIO();
     io.MouseDrawCursor = _mouseHoveringWindow;
@@ -958,14 +970,14 @@ void Gui::render()
                 paused = clock[7].as<bool>();
             }
 
-            ostringstream stream;
-            stream << setfill('0') << setw(2) << year;
-            stream << "/" << setfill('0') << setw(2) << month;
-            stream << "/" << setfill('0') << setw(2) << day;
-            stream << " - " << setfill('0') << setw(2) << hour;
-            stream << ":" << setfill('0') << setw(2) << minute;
-            stream << ":" << setfill('0') << setw(2) << second;
-            stream << ":" << setfill('0') << setw(3) << frame;
+            std::ostringstream stream;
+            stream << std::setfill('0') << std::setw(2) << year;
+            stream << "/" << std::setfill('0') << std::setw(2) << month;
+            stream << "/" << std::setfill('0') << std::setw(2) << day;
+            stream << " - " << std::setfill('0') << std::setw(2) << hour;
+            stream << ":" << std::setfill('0') << std::setw(2) << minute;
+            stream << ":" << std::setfill('0') << std::setw(2) << second;
+            stream << ":" << std::setfill('0') << std::setw(3) << frame;
             stream << (paused ? " - Paused" : " - Playing");
 
             ImGui::PushFont(_guiFonts[FontType::Clock]);
@@ -1102,7 +1114,7 @@ void Gui::initImGui(int width, int height)
 
         GLint length;
         glGetProgramiv(_imGuiShaderHandle, GL_INFO_LOG_LENGTH, &length);
-        auto log = string(static_cast<size_t>(length), '0');
+        auto log = std::string(static_cast<size_t>(length), '0');
         glGetProgramInfoLog(_imGuiShaderHandle, length, &length, log.data());
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error log: \n" << log << Log::endl;
 
@@ -1135,13 +1147,13 @@ void Gui::initImGui(int width, int height)
     ImGuiIO& io = GetIO();
 
     // Fonts
-    static const vector<FontDefinition> fonts{{FontType::Default, "Roboto-Medium.ttf", 15}, {FontType::Clock, "DSEG14Classic-Light.ttf", 20}};
+    static const std::vector<FontDefinition> fonts{{FontType::Default, "Roboto-Medium.ttf", 15}, {FontType::Clock, "DSEG14Classic-Light.ttf", 20}};
     for (const auto& font : fonts)
     {
         assert(font.size > 0);
 
-        auto fullPath = string(DATADIR) + "../fonts/" + font.filename;
-        if (ifstream(fullPath, ios::in | ios::binary))
+        auto fullPath = std::string(DATADIR) + "../fonts/" + font.filename;
+        if (std::ifstream(fullPath, std::ios::in | std::ios::binary))
         {
             _guiFonts[font.type] = io.Fonts->AddFontFromFileTTF(fullPath.c_str(), font.size);
         }
@@ -1274,54 +1286,54 @@ void Gui::setClipboardText(void* userData, const char* text)
 void Gui::initImWidgets()
 {
     // Control
-    auto controlView = make_shared<GuiControl>(_scene, "Graph");
-    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(controlView));
+    auto controlView = std::make_shared<GuiControl>(_scene, "Graph");
+    _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(controlView));
 
     // Media
-    auto mediaSelector = make_shared<GuiMedia>(_scene, "Medias");
+    auto mediaSelector = std::make_shared<GuiMedia>(_scene, "Medias");
     _guiWidgets.push_back(mediaSelector);
 
     // Filters
-    auto filterPanel = make_shared<GuiFilters>(_scene, "Filters");
+    auto filterPanel = std::make_shared<GuiFilters>(_scene, "Filters");
     _guiWidgets.push_back(filterPanel);
 
     // Meshes
-    auto meshesSelector = make_shared<GuiMeshes>(_scene, "Meshes");
+    auto meshesSelector = std::make_shared<GuiMeshes>(_scene, "Meshes");
     _guiWidgets.push_back(meshesSelector);
 
     // GUI camera view
-    auto globalView = make_shared<GuiCamera>(_scene, "Cameras");
+    auto globalView = std::make_shared<GuiCamera>(_scene, "Cameras");
     globalView->setCamera(_guiCamera);
-    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(globalView));
+    _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(globalView));
 
     // Warp control
-    auto warpControl = make_shared<GuiWarp>(_scene, "Warps");
-    _guiWidgets.push_back(dynamic_pointer_cast<GuiWarp>(warpControl));
+    auto warpControl = std::make_shared<GuiWarp>(_scene, "Warps");
+    _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWarp>(warpControl));
 
     if (Log::get().getVerbosity() == Log::DEBUGGING)
     {
         // Performance graph
-        auto perfGraph = make_shared<GuiGraph>(_scene, "Performances");
-        _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(perfGraph));
+        auto perfGraph = std::make_shared<GuiGraph>(_scene, "Performances");
+        _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(perfGraph));
 
-        auto texturesView = make_shared<GuiTexturesView>(_scene, "Textures");
-        _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(texturesView));
+        auto texturesView = std::make_shared<GuiTexturesView>(_scene, "Textures");
+        _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(texturesView));
 
         // Tree view
-        auto treeView = make_shared<GuiTree>(_scene, "Tree view");
-        _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(treeView));
+        auto treeView = std::make_shared<GuiTree>(_scene, "Tree view");
+        _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(treeView));
     }
 
     // Bottom widgets
     // FPS and timings
-    auto timingBox = make_shared<GuiTextBox>(_scene, "Timings");
+    auto timingBox = std::make_shared<GuiTextBox>(_scene, "Timings");
     timingBox->setTextFunc([this]() {
-        static unordered_map<string, float> stats;
-        ostringstream stream;
+        static std::unordered_map<std::string, float> stats;
+        std::ostringstream stream;
         auto tree = _root->getTree();
 
         auto runningAverage = [](float a, float b) { return a * 0.9 + 0.001 * b * 0.1; };
-        auto getLeafValue = [&](const string& path) {
+        auto getLeafValue = [&](const std::string& path) {
             Value value;
             if (!tree->getValueForLeafAt(path, value))
                 return 0.f;
@@ -1337,9 +1349,9 @@ void Gui::initImWidgets()
             stats["world_upload"] = runningAverage(stats["world_upload"], getLeafValue("/world/durations/upload"));
 
             stream << "World:\n";
-            stream << "  World framerate: " << setprecision(4) << stats["world_loop_world_fps"] << " fps\n";
+            stream << "  World framerate: " << std::setprecision(4) << stats["world_loop_world_fps"] << " fps\n";
             stream << "  Time per world frame: " << stats["world_loop_world"] << " ms\n";
-            stream << "  Sending buffers to Scenes: " << setprecision(4) << stats["world_upload"] << " ms\n";
+            stream << "  Sending buffers to Scenes: " << std::setprecision(4) << stats["world_upload"] << " ms\n";
         }
 
         // Then the scenes
@@ -1361,41 +1373,41 @@ void Gui::initImWidgets()
             stats[branchName + "_swap"] = runningAverage(stats[branchName + "_swap"], getLeafValue(durationPath + "/swap"));
 
             stream << "- " + branchName + ":\n";
-            stream << "    Framerate: " << setprecision(4) << stats[branchName + "_loop_scene_fps"] << " fps\n";
+            stream << "    Framerate: " << std::setprecision(4) << stats[branchName + "_loop_scene_fps"] << " fps\n";
             stream << "    Time per frame: " << stats[branchName + "_loop_scene"] << " ms\n";
-            stream << "    Texture upload: " << setprecision(4) << stats[branchName + "_textureUpload"] << " ms\n";
-            stream << "    Blending: " << setprecision(4) << stats[branchName + "_blender"] << " ms\n";
-            stream << "    Filters: " << setprecision(4) << stats[branchName + "_filter"] << " ms\n";
-            stream << "    Cameras: " << setprecision(4) << stats[branchName + "_camera"] << " ms\n";
-            stream << "    Warps: " << setprecision(4) << stats[branchName + "_warp"] << " ms\n";
-            stream << "    Windows: " << setprecision(4) << stats[branchName + "_window"] << " ms\n";
-            stream << "    Swapping: " << setprecision(4) << stats[branchName + "_swap"] << " ms\n";
+            stream << "    Texture upload: " << std::setprecision(4) << stats[branchName + "_textureUpload"] << " ms\n";
+            stream << "    Blending: " << std::setprecision(4) << stats[branchName + "_blender"] << " ms\n";
+            stream << "    Filters: " << std::setprecision(4) << stats[branchName + "_filter"] << " ms\n";
+            stream << "    Cameras: " << std::setprecision(4) << stats[branchName + "_camera"] << " ms\n";
+            stream << "    Warps: " << std::setprecision(4) << stats[branchName + "_warp"] << " ms\n";
+            stream << "    Windows: " << std::setprecision(4) << stats[branchName + "_window"] << " ms\n";
+            stream << "    Swapping: " << std::setprecision(4) << stats[branchName + "_swap"] << " ms\n";
 
             if (tree->hasLeafAt(durationPath + "/gui"))
             {
                 stats[branchName + "_gui"] = runningAverage(stats[branchName + "_gui"], getLeafValue(durationPath + "/gui"));
-                stream << "    GUI rendering: " << setprecision(4) << stats[branchName + "_gui"] << " ms\n";
+                stream << "    GUI rendering: " << std::setprecision(4) << stats[branchName + "_gui"] << " ms\n";
             }
         }
 
         return stream.str();
     });
-    _guiBottomWidgets.push_back(dynamic_pointer_cast<GuiWidget>(timingBox));
+    _guiBottomWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(timingBox));
 
     // Log display
-    auto logBox = make_shared<GuiTextBox>(_scene, "Logs");
+    auto logBox = std::make_shared<GuiTextBox>(_scene, "Logs");
     logBox->setTextFunc([]() {
         int nbrLines = 10;
         // Convert the last lines of the text log
-        vector<string> logs = Log::get().getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
-        string text;
+        std::vector<std::string> logs = Log::get().getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
+        std::string text;
         uint32_t start = std::max(0, static_cast<int>(logs.size()) - nbrLines);
         for (uint32_t i = start; i < logs.size(); ++i)
-            text += logs[i] + string("\n");
+            text += logs[i] + std::string("\n");
 
         return text;
     });
-    _guiBottomWidgets.push_back(dynamic_pointer_cast<GuiWidget>(logBox));
+    _guiBottomWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(logBox));
 }
 
 /*************/
@@ -1494,7 +1506,8 @@ void Gui::registerAttributes()
     });
     setAttributeDescription("show", "Show the GUI");
 
-    addAttribute("fullscreen",
+    addAttribute(
+        "fullscreen",
         [&](const Values& args) {
             _fullscreen = args[0].as<bool>();
             if (_fullscreen)

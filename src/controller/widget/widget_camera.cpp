@@ -9,8 +9,6 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wchar-subscripts"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -21,14 +19,14 @@ void GuiCamera::captureJoystick()
         return;
 
     UserInput::setCallback(UserInput::State("joystick_0_buttons"), [&](const UserInput::State& state) {
-        lock_guard<mutex> lock(_joystickMutex);
+        std::lock_guard<std::mutex> lock(_joystickMutex);
         _joyButtons.clear();
         for (auto& b : state.value)
             _joyButtons.push_back(b.as<int>());
     });
 
     UserInput::setCallback(UserInput::State("joystick_0_axes"), [&](const UserInput::State& state) {
-        lock_guard<mutex> lock(_joystickMutex);
+        std::lock_guard<std::mutex> lock(_joystickMutex);
         _joyAxes.resize(state.value.size(), 0.f);
         for (uint32_t i = 0; i < _joyAxes.size(); ++i)
             _joyAxes[i] += state.value[i].as<float>();
@@ -93,7 +91,7 @@ void GuiCamera::render()
                 _previousCameraParameters.clear();
 
                 // List the number of visible cameras
-                vector<string> visibleCameras{};
+                std::vector<std::string> visibleCameras{};
                 for (const auto& cam : cameras)
                 {
                     auto visibility = getObjectAttribute(cam->getName(), "hide");
@@ -262,7 +260,7 @@ int GuiCamera::updateWindowFlags()
 }
 
 /*************/
-void GuiCamera::setCamera(const shared_ptr<Camera>& cam)
+void GuiCamera::setCamera(const std::shared_ptr<Camera>& cam)
 {
     if (cam != nullptr)
     {
@@ -273,19 +271,19 @@ void GuiCamera::setCamera(const shared_ptr<Camera>& cam)
 }
 
 /*************/
-void GuiCamera::setJoystick(const vector<float>& axes, const vector<uint8_t>& buttons)
+void GuiCamera::setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons)
 {
     _joyAxes = axes;
     _joyButtons = buttons;
 }
 
 /*************/
-vector<glm::dmat4> GuiCamera::getCamerasRTMatrices()
+std::vector<glm::dmat4> GuiCamera::getCamerasRTMatrices()
 {
-    auto rtMatrices = vector<glm::dmat4>();
+    auto rtMatrices = std::vector<glm::dmat4>();
     auto cameras = getObjectsPtr(getObjectsOfType("camera"));
     for (auto& camera : cameras)
-        rtMatrices.push_back(dynamic_pointer_cast<Camera>(camera)->computeViewMatrix());
+        rtMatrices.push_back(std::dynamic_pointer_cast<Camera>(camera)->computeViewMatrix());
 
     return rtMatrices;
 }
@@ -293,7 +291,7 @@ vector<glm::dmat4> GuiCamera::getCamerasRTMatrices()
 /*************/
 void GuiCamera::nextCamera()
 {
-    vector<shared_ptr<Camera>> cameras;
+    std::vector<std::shared_ptr<Camera>> cameras;
 
     // Empty previous camera parameters
     _previousCameraParameters.clear();
@@ -424,7 +422,7 @@ void GuiCamera::hideOtherCameras(bool hide)
 /*************/
 void GuiCamera::processJoystickState()
 {
-    lock_guard<mutex> lock(_joystickMutex);
+    std::lock_guard<std::mutex> lock(_joystickMutex);
     float speed = 1.f;
 
     // Buttons
@@ -687,9 +685,9 @@ void GuiCamera::processMouseEvents()
 }
 
 /*************/
-vector<shared_ptr<Camera>> GuiCamera::getCameras()
+std::vector<std::shared_ptr<Camera>> GuiCamera::getCameras()
 {
-    auto cameras = vector<shared_ptr<Camera>>();
+    auto cameras = std::vector<std::shared_ptr<Camera>>();
 
     _guiCamera->setAttribute("size", {static_cast<int>(ImGui::GetWindowWidth()), static_cast<int>(ImGui::GetWindowWidth() * 3.f / 4.f)});
 
@@ -700,7 +698,7 @@ vector<shared_ptr<Camera>> GuiCamera::getCameras()
 
     auto listOfCameras = getObjectsPtr(getObjectsOfType("camera"));
     for (auto& camera : listOfCameras)
-        cameras.push_back(dynamic_pointer_cast<Camera>(camera));
+        cameras.push_back(std::dynamic_pointer_cast<Camera>(camera));
 
     return cameras;
 }
@@ -708,10 +706,10 @@ vector<shared_ptr<Camera>> GuiCamera::getCameras()
 /*************/
 void GuiCamera::drawVirtualProbes()
 {
-    auto rtMatrices = vector<glm::dmat4>();
+    auto rtMatrices = std::vector<glm::dmat4>();
     auto probes = getObjectsPtr(getObjectsOfType("virtual_probe"));
     for (auto& probe : probes)
-        _guiCamera->drawModelOnce("probe", dynamic_pointer_cast<VirtualProbe>(probe)->computeViewMatrix());
+        _guiCamera->drawModelOnce("probe", std::dynamic_pointer_cast<VirtualProbe>(probe)->computeViewMatrix());
 }
 
 #pragma clang diagnostic pop

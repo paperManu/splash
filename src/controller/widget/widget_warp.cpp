@@ -4,8 +4,6 @@
 
 #include "./core/scene.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -13,9 +11,9 @@ namespace Splash
 void GuiWarp::render()
 {
     auto objects = getObjectsPtr(getObjectsOfType("warp"));
-    auto warps = vector<shared_ptr<Warp>>();
+    auto warps = std::vector<std::shared_ptr<Warp>>();
 
-    std::transform(objects.cbegin(), objects.cend(), std::back_inserter(warps), [](const auto& warp) { return dynamic_pointer_cast<Warp>(warp); });
+    std::transform(objects.cbegin(), objects.cend(), std::back_inserter(warps), [](const auto& warp) { return std::dynamic_pointer_cast<Warp>(warp); });
     _currentWarpName = _currentWarp < warps.size() ? warps[_currentWarp]->getName() : "";
 
     ImVec2 availableSize = ImGui::GetContentRegionAvail();
@@ -37,7 +35,7 @@ void GuiWarp::render()
                 continue;
 
             if (linkedObject->getType() == "camera")
-                dynamic_pointer_cast<Camera>(linkedObject)->render();
+                std::dynamic_pointer_cast<Camera>(linkedObject)->render();
         }
 
         if (_currentWarp == i)
@@ -76,7 +74,7 @@ void GuiWarp::render()
             setObjectAttribute(warp->getName(), "patchResolution", {values[0].as<int>()});
 
         warp->getAttribute("patchSize", values);
-        vector<int> tmp;
+        std::vector<int> tmp;
         tmp.push_back(values[0].as<int>());
         tmp.push_back(values[1].as<int>());
 
@@ -145,7 +143,7 @@ int GuiWarp::updateWindowFlags()
 }
 
 /*************/
-void GuiWarp::processKeyEvents(const shared_ptr<Warp>& warp)
+void GuiWarp::processKeyEvents(const std::shared_ptr<Warp>& warp)
 {
     ImGuiIO& io = ImGui::GetIO();
     // Tabulation key
@@ -216,7 +214,7 @@ void GuiWarp::processKeyEvents(const shared_ptr<Warp>& warp)
 }
 
 /*************/
-void GuiWarp::processMouseEvents(const shared_ptr<Warp>& warp, int warpWidth, int warpHeight)
+void GuiWarp::processMouseEvents(const std::shared_ptr<Warp>& warp, int warpWidth, int warpHeight)
 {
     ImGuiIO& io = ImGui::GetIO();
 

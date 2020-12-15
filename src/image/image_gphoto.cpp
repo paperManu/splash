@@ -8,7 +8,7 @@
 #include "./utils/scope_guard.h"
 #include "./utils/timer.h"
 
-using namespace std;
+namespace chrono = std::chrono;
 
 namespace Splash
 {
@@ -24,7 +24,7 @@ Image_GPhoto::Image_GPhoto(RootObject* root, const std::string& cameraName)
 /*************/
 Image_GPhoto::~Image_GPhoto()
 {
-    lock_guard<recursive_mutex> lock(_gpMutex);
+    std::lock_guard<std::recursive_mutex> lock(_gpMutex);
 
     for (auto& camera : _cameras)
         releaseCamera(camera);
@@ -39,10 +39,10 @@ Image_GPhoto::~Image_GPhoto()
 }
 
 /*************/
-bool Image_GPhoto::read(const string& cameraName)
+bool Image_GPhoto::read(const std::string& cameraName)
 {
     // If filename is empty, we connect to the first available camera
-    lock_guard<recursive_mutex> lock(_gpMutex);
+    std::lock_guard<std::recursive_mutex> lock(_gpMutex);
 
     if (_cameras.size() == 0)
     {
@@ -78,7 +78,7 @@ bool Image_GPhoto::read(const string& cameraName)
 /*************/
 void Image_GPhoto::detectCameras()
 {
-    lock_guard<recursive_mutex> lock(_gpMutex);
+    std::lock_guard<std::recursive_mutex> lock(_gpMutex);
 
     if (_gpPorts != nullptr)
         gp_port_info_list_free(_gpPorts);
@@ -98,9 +98,9 @@ void Image_GPhoto::detectCameras()
         GPhotoCamera camera;
         const char* s;
         gp_list_get_name(availableCameras, i, &s);
-        camera.model = string(s);
+        camera.model = std::string(s);
         gp_list_get_value(availableCameras, i, &s);
-        camera.port = string(s);
+        camera.port = std::string(s);
 
         if (!initCamera(camera))
         {
@@ -125,7 +125,7 @@ void Image_GPhoto::detectCameras()
 /*************/
 bool Image_GPhoto::capture()
 {
-    lock_guard<recursive_mutex> lock(_gpMutex);
+    std::lock_guard<std::recursive_mutex> lock(_gpMutex);
 
     if (_selectedCameraIndex == -1)
     {
@@ -139,22 +139,22 @@ bool Image_GPhoto::capture()
     int res;
     if ((res = gp_camera_capture(camera.cam, GP_CAPTURE_IMAGE, &filePath, _gpContext)) == GP_OK)
     {
-        if (string(filePath.name).find(".jpg") != string::npos || string(filePath.name).find(".JPG") != string::npos)
+        if (std::string(filePath.name).find(".jpg") != std::string::npos || std::string(filePath.name).find(".JPG") != std::string::npos)
         {
             CameraFile* destination;
-            int handle = open((string("/tmp/") + string(filePath.name)).c_str(), O_CREAT | O_WRONLY, 0666);
+            int handle = open((std::string("/tmp/") + std::string(filePath.name)).c_str(), O_CREAT | O_WRONLY, 0666);
             if (handle != -1)
             {
                 gp_file_new_from_fd(&destination, handle);
                 if (gp_camera_file_get(camera.cam, filePath.folder, filePath.name, GP_FILE_TYPE_NORMAL, destination, _gpContext) != GP_OK)
                 {
-                    Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Unable to download file " << string(filePath.folder) << "/" << string(filePath.name)
+                    Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Unable to download file " << std::string(filePath.folder) << "/" << std::string(filePath.name)
                                << Log::endl;
                 }
 #ifdef DEBUG
                 else
                 {
-                    Log::get() << Log::DEBUGGING << "Image_GPhoto::" << __FUNCTION__ << " - Sucessfully downloaded file " << string(filePath.folder) << "/" << string(filePath.name)
+                    Log::get() << Log::DEBUGGING << "Image_GPhoto::" << __FUNCTION__ << " - Sucessfully downloaded file " << std::string(filePath.folder) << "/" << std::string(filePath.name)
                                << Log::endl;
                 }
 #endif
@@ -162,7 +162,7 @@ bool Image_GPhoto::capture()
             }
 
             // Read the downloaded file
-            readFile(string("/tmp/") + string(filePath.name));
+            readFile(std::string("/tmp/") + std::string(filePath.name));
         }
         else
         {
@@ -173,11 +173,11 @@ bool Image_GPhoto::capture()
         gp_camera_file_delete(camera.cam, filePath.folder, filePath.name, _gpContext);
 
         // Delete the file
-        if (remove((string("/tmp/") + string(filePath.name)).c_str()) == -1)
+        if (remove((std::string("/tmp/") + std::string(filePath.name)).c_str()) == -1)
             Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Unable to delete file /tmp/" << filePath.name << Log::endl;
     }
 
-    this_thread::sleep_for(chrono::milliseconds(1000));
+    std::this_thread::sleep_for(chrono::milliseconds(1000));
 
     if (res != GP_OK)
         return false;
@@ -186,9 +186,9 @@ bool Image_GPhoto::capture()
 }
 
 /*************/
-bool Image_GPhoto::doSetProperty(const string& name, const string& value)
+bool Image_GPhoto::doSetProperty(const std::string& name, const std::string& value)
 {
-    lock_guard<recursive_mutex> lock(_gpMutex);
+    std::lock_guard<std::recursive_mutex> lock(_gpMutex);
 
     if (_selectedCameraIndex == -1)
     {
@@ -228,9 +228,9 @@ bool Image_GPhoto::doSetProperty(const string& name, const string& value)
 }
 
 /*************/
-bool Image_GPhoto::doGetProperty(const string& name, string& value)
+bool Image_GPhoto::doGetProperty(const std::string& name, std::string& value)
 {
-    lock_guard<recursive_mutex> lock(_gpMutex);
+    std::lock_guard<std::recursive_mutex> lock(_gpMutex);
 
     if (_selectedCameraIndex == -1)
     {
@@ -248,7 +248,7 @@ bool Image_GPhoto::doGetProperty(const string& name, string& value)
     {
         const char* cvalue = nullptr;
         gp_widget_get_value(widget, &cvalue);
-        value = string(cvalue);
+        value = std::string(cvalue);
         return true;
     }
 
@@ -256,11 +256,11 @@ bool Image_GPhoto::doGetProperty(const string& name, string& value)
 }
 
 /*************/
-float Image_GPhoto::getFloatFromShutterspeedString(const string& speed)
+float Image_GPhoto::getFloatFromShutterspeedString(const std::string& speed)
 {
     float num = 1.f;
     float denom = 1.f;
-    if (speed.find("1/") != string::npos)
+    if (speed.find("1/") != std::string::npos)
         denom = stof(speed.substr(2));
     else
     {
@@ -277,10 +277,10 @@ float Image_GPhoto::getFloatFromShutterspeedString(const string& speed)
 }
 
 /*************/
-string Image_GPhoto::getShutterspeedStringFromFloat(float duration)
+std::string Image_GPhoto::getShutterspeedStringFromFloat(float duration)
 {
-    float diff = numeric_limits<float>::max();
-    string selectedSpeed = "1/20"; // If not correct value has been found, return this arbitrary value
+    float diff = std::numeric_limits<float>::max();
+    std::string selectedSpeed = "1/20"; // If not correct value has been found, return this arbitrary value
 
     for (auto& speed : _cameras[_selectedCameraIndex].shutterspeeds)
     {
@@ -307,7 +307,7 @@ void Image_GPhoto::init()
     if (!_root)
         return;
 
-    lock_guard<recursive_mutex> lock(_gpMutex);
+    std::lock_guard<std::recursive_mutex> lock(_gpMutex);
 
     _gpContext = gp_context_new();
     gp_abilities_list_new(&_gpCams);
@@ -321,7 +321,7 @@ void Image_GPhoto::init()
 /*************/
 bool Image_GPhoto::initCamera(GPhotoCamera& camera)
 {
-    lock_guard<recursive_mutex> lock(_gpMutex);
+    std::lock_guard<std::recursive_mutex> lock(_gpMutex);
 
     if (camera.cam == nullptr)
     {
@@ -364,7 +364,7 @@ bool Image_GPhoto::initCamera(GPhotoCamera& camera)
 }
 
 /*************/
-void Image_GPhoto::initCameraProperty(GPhotoCamera& camera, const string& property, vector<string>& values)
+void Image_GPhoto::initCameraProperty(GPhotoCamera& camera, const std::string& property, std::vector<std::string>& values)
 {
     values.clear();
     CameraWidget* cameraConfig;
@@ -392,7 +392,7 @@ void Image_GPhoto::initCameraProperty(GPhotoCamera& camera, const string& proper
 /*************/
 void Image_GPhoto::releaseCamera(GPhotoCamera& camera)
 {
-    lock_guard<recursive_mutex> lock(_gpMutex);
+    std::lock_guard<std::recursive_mutex> lock(_gpMutex);
 
     gp_camera_exit(camera.cam, _gpContext);
     if (camera.cam != nullptr)
@@ -407,9 +407,9 @@ void Image_GPhoto::registerAttributes()
     Image::registerAttributes();
 
     addAttribute("aperture",
-        [&](const Values& args) { return doSetProperty("aperture", args[0].as<string>()); },
+        [&](const Values& args) { return doSetProperty("aperture", args[0].as<std::string>()); },
         [&]() -> Values {
-            string value;
+            std::string value;
             if (doGetProperty("aperture", value))
                 return {value};
             else
@@ -419,9 +419,9 @@ void Image_GPhoto::registerAttributes()
     setAttributeDescription("aperture", "Set the aperture of the lens");
 
     addAttribute("isospeed",
-        [&](const Values& args) { return doSetProperty("iso", args[0].as<string>()); },
+        [&](const Values& args) { return doSetProperty("iso", args[0].as<std::string>()); },
         [&]() -> Values {
-            string value;
+            std::string value;
             if (doGetProperty("iso", value))
                 return {value};
             else
@@ -436,7 +436,7 @@ void Image_GPhoto::registerAttributes()
             return true;
         },
         [&]() -> Values {
-            string value;
+            std::string value;
             doGetProperty("shutterspeed", value);
             float duration = getFloatFromShutterspeedString(value);
             return {duration};
@@ -454,7 +454,7 @@ void Image_GPhoto::registerAttributes()
     addAttribute("ready",
         [&](const Values&) { return false; },
         [&]() -> Values {
-            lock_guard<recursive_mutex> lock(_gpMutex);
+            std::lock_guard<std::recursive_mutex> lock(_gpMutex);
             if (_selectedCameraIndex == -1)
                 return {false};
             else

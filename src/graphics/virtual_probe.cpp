@@ -2,7 +2,6 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-using namespace std;
 using namespace glm;
 
 namespace Splash
@@ -46,20 +45,20 @@ void VirtualProbe::unbind()
 }
 
 /*************/
-unordered_map<string, Values> VirtualProbe::getShaderUniforms() const
+std::unordered_map<std::string, Values> VirtualProbe::getShaderUniforms() const
 {
     auto spec = _outFbo->getColorTexture()->getSpec();
-    unordered_map<string, Values> uniforms;
+    std::unordered_map<std::string, Values> uniforms;
     uniforms["size"] = {static_cast<float>(_spec.width), static_cast<float>(spec.height)};
     return uniforms;
 }
 
 /*************/
-bool VirtualProbe::linkIt(const shared_ptr<GraphObject>& obj)
+bool VirtualProbe::linkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (dynamic_pointer_cast<Object>(obj))
+    if (std::dynamic_pointer_cast<Object>(obj))
     {
-        auto obj3D = dynamic_pointer_cast<Object>(obj);
+        auto obj3D = std::dynamic_pointer_cast<Object>(obj);
         _objects.push_back(obj3D);
         return true;
     }
@@ -117,7 +116,7 @@ void VirtualProbe::render()
 
         Values previousFill;
         obj->getAttribute("fill", previousFill);
-        if (!previousFill.empty() && previousFill[0].as<string>() != "object_cubemap")
+        if (!previousFill.empty() && previousFill[0].as<std::string>() != "object_cubemap")
             obj->setAttribute("fill", {"object_cubemap"});
         else
             previousFill.clear();
@@ -165,18 +164,18 @@ glm::dmat4 VirtualProbe::computeViewMatrix() const
 /*************/
 void VirtualProbe::setupFBO()
 {
-    _fbo = make_unique<Framebuffer>(_root);
+    _fbo = std::make_unique<Framebuffer>(_root);
     _fbo->setSize(_width, _height);
     _fbo->setCubemap(true);
     _fbo->getColorTexture()->setAttribute("clampToEdge", {true});
     _fbo->getColorTexture()->setAttribute("filtering", {false});
 
-    _outFbo = make_unique<Framebuffer>(_root);
+    _outFbo = std::make_unique<Framebuffer>(_root);
     _outFbo->setSize(_width, _height);
 
-    _screen = make_unique<Object>(_root);
+    _screen = std::make_unique<Object>(_root);
     _screen->setAttribute("fill", {"cubemap_projection"});
-    auto virtualScreen = make_shared<Geometry>(_root);
+    auto virtualScreen = std::make_shared<Geometry>(_root);
     _screen->addGeometry(virtualScreen);
     _screen->addTexture(_fbo->getColorTexture());
 }
@@ -225,7 +224,7 @@ void VirtualProbe::registerAttributes()
 
     addAttribute("projection",
         [&](const Values& args) {
-            auto type = args[0].as<string>();
+            auto type = args[0].as<std::string>();
             if (type == "equirectangular")
                 _projectionType = Equirectangular;
             else if (type == "spherical")

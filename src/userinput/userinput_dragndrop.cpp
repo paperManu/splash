@@ -2,8 +2,6 @@
 
 #include "./core/scene.h"
 
-using namespace std;
-
 namespace Splash
 {
 /*************/

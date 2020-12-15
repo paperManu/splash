@@ -42,11 +42,6 @@ class Blender : public ControllerObject
     Blender(RootObject* root);
 
     /**
-     * \brief Destructor
-     */
-    ~Blender() final;
-
-    /**
      * \brief Update the blending
      */
     void update() final;
@@ -58,6 +53,7 @@ class Blender : public ControllerObject
 
   private:
     std::string _blendingMode{"none"}; //!< Can be "none", "once" or "continuous"
+    bool _depthAwareBlending{false};   //!< If true, adapts luminance based on distance
     bool _computeBlending{false};      //!< If true, compute blending in the next render
     bool _continuousBlending{false};   //!< If true, render does not reset _computeBlending
     bool _blendingComputed{false};     //!< True if the blending has been computed

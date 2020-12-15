@@ -2,8 +2,6 @@
 
 #include <regex>
 
-using namespace std;
-
 namespace Splash
 {
 /*************/
@@ -39,7 +37,7 @@ void Joystick::updateMethod()
         auto& joystick = _joysticks[i];
         int count;
         auto bufferAxes = glfwGetJoystickAxes(GLFW_JOYSTICK_1 + i, &count);
-        auto axes = vector<float>(bufferAxes, bufferAxes + count);
+        auto axes = std::vector<float>(bufferAxes, bufferAxes + count);
 
         // TODO: axes configuration, in this case for the dead zone
         for (auto& a : axes)
@@ -55,7 +53,7 @@ void Joystick::updateMethod()
             joystick.axes[a] += axes[a];
 
         auto bufferButtons = glfwGetJoystickButtons(GLFW_JOYSTICK_1 + i, &count);
-        joystick.buttons = vector<uint8_t>(bufferButtons, bufferButtons + count);
+        joystick.buttons = std::vector<uint8_t>(bufferButtons, bufferButtons + count);
     }
 }
 
@@ -68,15 +66,15 @@ void Joystick::updateCallbacks()
         const auto& callback = callbackIt.second;
 
         int joystickIndex = -1;
-        string joystickAction = "";
+        std::string joystickAction = "";
 
-        static regex regexAction("joystick_([0-9]+)_(.+)");
-        smatch match;
+        static std::regex regexAction("joystick_([0-9]+)_(.+)");
+        std::smatch match;
         try
         {
-            if (regex_match(targetState.action, match, regexAction) && match.size() == 3)
+            if (std::regex_match(targetState.action, match, regexAction) && match.size() == 3)
             {
-                joystickIndex = stoi(match[1].str());
+                joystickIndex = std::stoi(match[1].str());
                 joystickAction = match[2].str();
             }
         }
@@ -119,7 +117,7 @@ void Joystick::readState()
     for (auto& joystick : _joysticks)
     {
         State joystate;
-        joystate.action = "joystick_" + to_string(index) + "_axes";
+        joystate.action = "joystick_" + std::to_string(index) + "_axes";
         for (auto& a : joystick.axes)
         {
             joystate.value.push_back(a);
@@ -127,7 +125,7 @@ void Joystick::readState()
         }
         _state.push_back(joystate);
 
-        joystate.action = "joystick_" + to_string(index) + "_buttons";
+        joystate.action = "joystick_" + std::to_string(index) + "_buttons";
         joystate.value.clear();
         for (auto& b : joystick.buttons)
             joystate.value.push_back(b);

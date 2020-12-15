@@ -5,8 +5,6 @@
 
 #include "./utils/timer.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -25,7 +23,7 @@ Sink_Shmdata_Encoded::~Sink_Shmdata_Encoded()
 }
 
 /*************/
-AVCodec* Sink_Shmdata_Encoded::findEncoderByName(const string& codecName)
+AVCodec* Sink_Shmdata_Encoded::findEncoderByName(const std::string& codecName)
 {
     AVCodec* codec{nullptr};
 
@@ -54,13 +52,13 @@ AVCodec* Sink_Shmdata_Encoded::findEncoderByName(const string& codecName)
 }
 
 /*************/
-unordered_map<string, string> Sink_Shmdata_Encoded::parseOptions(const string& options)
+std::unordered_map<std::string, std::string> Sink_Shmdata_Encoded::parseOptions(const std::string& options)
 {
-    regex re("(([^=]+)=([^ ,]+))+");
-    auto sre_begin = sregex_iterator(options.begin(), options.end(), re);
-    auto sre_end = sregex_iterator();
+    std::regex re("(([^=]+)=([^ ,]+))+");
+    auto sre_begin = std::sregex_iterator(options.begin(), options.end(), re);
+    auto sre_end = std::sregex_iterator();
 
-    unordered_map<string, string> result;
+    std::unordered_map<std::string, std::string> result;
     for (auto i = sre_begin; i != sre_end; ++i)
     {
         std::smatch match = *i;
@@ -158,16 +156,16 @@ void Sink_Shmdata_Encoded::freeFFmpegObjects()
 }
 
 /*************/
-string Sink_Shmdata_Encoded::generateCaps(const ImageBufferSpec& spec, uint32_t framerate, const string& optionString, const string& codecName, AVCodecContext* ctx)
+std::string Sink_Shmdata_Encoded::generateCaps(const ImageBufferSpec& spec, uint32_t framerate, const std::string& optionString, const std::string& codecName, AVCodecContext* ctx)
 {
     if (!ctx)
         return "video/x-raw";
 
-    auto codec = string(reinterpret_cast<char*>(&ctx->codec_tag), 4);
+    auto codec = std::string(reinterpret_cast<char*>(&ctx->codec_tag), 4);
     if (ctx->codec_tag == 0)
         codec = "x-" + codecName;
 
-    auto profile = string("baseline");
+    auto profile = std::string("baseline");
 
     auto options = parseOptions(optionString);
     auto optionIt = options.find("profile");
@@ -179,11 +177,11 @@ string Sink_Shmdata_Encoded::generateCaps(const ImageBufferSpec& spec, uint32_t 
     {
         uint8_t* profileStr{nullptr};
         if (av_opt_get(ctx, "profile", 0, &profileStr))
-            profile = string(reinterpret_cast<char*>(profileStr));
+            profile = std::string(reinterpret_cast<char*>(profileStr));
     }
 
-    auto caps = "video/" + codec + ",stream-format=(string)byte_stream,alignment=(string)au,profile=(string)" + profile + ",width=(int)" + to_string(spec.width) + ",height=(int)" +
-                to_string(spec.height) + ",pixel-aspect-ratio=(fraction)1/1,framerate=(fraction)" + to_string(framerate) + "/1";
+    auto caps = "video/" + codec + ",stream-format=(string)byte_stream,alignment=(string)au,profile=(string)" + profile + ",width=(int)" + std::to_string(spec.width) + ",height=(int)" +
+                std::to_string(spec.height) + ",pixel-aspect-ratio=(fraction)1/1,framerate=(fraction)" + std::to_string(framerate) + "/1";
 
     return caps;
 }
@@ -266,7 +264,7 @@ void Sink_Shmdata_Encoded::registerAttributes()
 
     addAttribute("codec",
         [&](const Values& args) {
-            _codecName = args[0].as<string>();
+            _codecName = args[0].as<std::string>();
             transform(_codecName.begin(), _codecName.end(), _codecName.begin(), ::tolower);
             _resetEncoding = true;
             return true;
@@ -277,7 +275,7 @@ void Sink_Shmdata_Encoded::registerAttributes()
 
     addAttribute("codecOptions",
         [&](const Values& args) {
-            _options = args[0].as<string>();
+            _options = args[0].as<std::string>();
             _resetEncoding = true;
             return true;
         },
@@ -290,7 +288,7 @@ void Sink_Shmdata_Encoded::registerAttributes()
 
     addAttribute("socket",
         [&](const Values& args) {
-            _path = args[0].as<string>();
+            _path = args[0].as<std::string>();
             _previousSpec = ImageBufferSpec();
             return true;
         },

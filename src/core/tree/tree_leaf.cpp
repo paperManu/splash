@@ -3,7 +3,7 @@
 #include "./core/tree/tree_branch.h"
 #include "./utils/log.h"
 
-using namespace std;
+namespace chrono = std::chrono;
 
 namespace Splash
 {
@@ -12,7 +12,7 @@ namespace Tree
 {
 
 /*************/
-Leaf::Leaf(const string& name, Value value, Branch* branch)
+Leaf::Leaf(const std::string& name, Value value, Branch* branch)
     : _name(name)
     , _value(value)
     , _parentBranch(branch)
@@ -28,7 +28,7 @@ bool Leaf::operator==(const Leaf& rhs) const
 /*************/
 Leaf::UpdateCallbackID Leaf::addCallback(const UpdateCallback& callback)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    std::lock_guard<std::mutex> lock(_callbackMutex);
     auto id = ++_currentCallbackID;
     _callbacks[id] = callback;
     return id;
@@ -37,7 +37,7 @@ Leaf::UpdateCallbackID Leaf::addCallback(const UpdateCallback& callback)
 /*************/
 bool Leaf::removeCallback(int id)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    std::lock_guard<std::mutex> lock(_callbackMutex);
     auto callbackIt = _callbacks.find(id);
     if (callbackIt == _callbacks.end())
         return false;
@@ -46,9 +46,9 @@ bool Leaf::removeCallback(int id)
 }
 
 /*************/
-string Leaf::getPath() const
+std::string Leaf::getPath() const
 {
-    string path{};
+    std::string path{};
     if (_parentBranch)
         path = _parentBranch->getPath() + _name + "/";
     else
@@ -58,9 +58,9 @@ string Leaf::getPath() const
 }
 
 /*************/
-string Leaf::print(int indent) const
+std::string Leaf::print(int indent) const
 {
-    string description;
+    std::string description;
     for (int i = 0; i < indent / 2; ++i)
         description += "| ";
     description += "|-- " + _name + "\n";
@@ -71,14 +71,14 @@ string Leaf::print(int indent) const
         {
             for (int i = 0; i < (indent + 2) / 2; ++i)
                 description += "| ";
-            description += "|-- " + v.as<string>() + "\n";
+            description += "|-- " + v.as<std::string>() + "\n";
         }
     }
     else
     {
         for (int i = 0; i < (indent + 2) / 2; ++i)
             description += "| ";
-        description += "|-- " + _value.as<string>() + "\n";
+        description += "|-- " + _value.as<std::string>() + "\n";
     }
 
     return description;
@@ -93,7 +93,7 @@ bool Leaf::set(Value value, chrono::system_clock::time_point timestamp)
     _timestamp = timestamp;
     _value = value;
 
-    lock_guard<mutex> lock(_callbackMutex);
+    std::lock_guard<std::mutex> lock(_callbackMutex);
     for (const auto& callback : _callbacks)
         callback.second(value, _timestamp);
 

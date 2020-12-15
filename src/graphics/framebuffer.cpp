@@ -3,8 +3,6 @@
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
-using namespace std;
-
 namespace Splash
 {
 /*************/
@@ -15,13 +13,13 @@ Framebuffer::Framebuffer(RootObject* root)
 
     if (!_depthTexture)
     {
-        _depthTexture = make_shared<Texture_Image>(_root, _width, _height, "D", nullptr, _multisample);
+        _depthTexture = std::make_shared<Texture_Image>(_root, _width, _height, "D", nullptr, _multisample);
         glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
     }
 
     if (!_colorTexture)
     {
-        _colorTexture = make_shared<Texture_Image>(_root);
+        _colorTexture = std::make_shared<Texture_Image>(_root);
         _colorTexture->setAttribute("clampToEdge", {true});
         _colorTexture->setAttribute("filtering", {false});
         _colorTexture->reset(_width, _height, _16bits ? "RGBA16" : "RGBA", nullptr, _multisample);

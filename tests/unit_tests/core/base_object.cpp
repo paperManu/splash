@@ -7,7 +7,7 @@
 
 #include "./core/base_object.h"
 
-using namespace std;
+using namespace std::chrono;
 using namespace Splash;
 
 /*************/
@@ -20,7 +20,7 @@ class BaseObjectMock : public BaseObject
         registerAttributes();
     }
 
-    void removeAttributeProxy(const string& name) { removeAttribute(name); }
+    void removeAttributeProxy(const std::string& name) { removeAttribute(name); }
 
     void setupTasks()
     {
@@ -50,7 +50,7 @@ class BaseObjectMock : public BaseObject
   private:
     int _integer{0};
     float _float{0.f};
-    string _string{""};
+    std::string _string{""};
 
     void registerAttributes()
     {
@@ -78,7 +78,7 @@ class BaseObjectMock : public BaseObject
         addAttribute(
             "string",
             [&](const Values& args) {
-                _string = args[0].as<string>();
+                _string = args[0].as<std::string>();
                 return true;
             },
             [&]() -> Values { return {_string}; },
@@ -98,13 +98,13 @@ class BaseObjectMock : public BaseObject
 /*************/
 TEST_CASE("Testing BaseObject class")
 {
-    auto object = make_unique<BaseObjectMock>();
+    auto object = std::make_unique<BaseObjectMock>();
     object->setName("Classe");
     CHECK_EQ(object->getName(), "Classe");
 
     int integer_value = 42;
     float float_value = 3.1415;
-    string string_value = "T'es sûr qu'on dit pas ouiche ?";
+    std::string string_value = "T'es sûr qu'on dit pas ouiche ?";
     Values array_value{1, 4.2, "sheraf"};
 
     object->setAttribute("integer", {integer_value});
@@ -125,8 +125,8 @@ TEST_CASE("Testing BaseObject class")
 
     CHECK(object->getAttribute("string", value));
     CHECK(!value.empty());
-    CHECK_EQ(value[0].as<string>(), string_value);
-    CHECK_EQ(object->getAttribute("string").value()[0].as<string>(), string_value);
+    CHECK_EQ(value[0].as<std::string>(), string_value);
+    CHECK_EQ(object->getAttribute("string").value()[0].as<std::string>(), string_value);
 
     CHECK(object->getAttribute("newAttribute", value) == true);
     CHECK(!value.empty());
@@ -149,8 +149,8 @@ TEST_CASE("Testing BaseObject class")
     for (const auto& entry : descriptions)
     {
         CHECK_EQ(entry.as<Values>().size(), 3);
-        auto name = entry.as<Values>()[0].as<string>();
-        auto description = entry.as<Values>()[1].as<string>();
+        auto name = entry.as<Values>()[0].as<std::string>();
+        auto description = entry.as<Values>()[1].as<std::string>();
         CHECK(object->hasAttribute(name));
         CHECK_EQ(description, object->getAttributeDescription(name));
     }
@@ -162,12 +162,12 @@ TEST_CASE("Testing BaseObject class")
 /*************/
 TEST_CASE("Testing BaseObject attribute registering")
 {
-    auto object = make_shared<BaseObjectMock>();
-    auto someString = string("What are you waiting for? Christmas?");
-    auto otherString = string("Show me the money!");
+    auto object = std::make_shared<BaseObjectMock>();
+    auto someString = std::string("What are you waiting for? Christmas?");
+    auto otherString = std::string("Show me the money!");
 
     CHECK(object->setAttribute("someAttribute", {42}));
-    auto handle = object->registerCallback("someAttribute", [&](const string& obj, const string& attr) { someString = otherString; });
+    auto handle = object->registerCallback("someAttribute", [&](const std::string& obj, const std::string& attr) { someString = otherString; });
     CHECK(static_cast<bool>(handle));
     object->setAttribute("someAttribute", {1337});
     CHECK(someString == otherString);
@@ -177,7 +177,7 @@ TEST_CASE("Testing BaseObject attribute registering")
     object->setAttribute("someAttribute", {42});
     CHECK(someString != otherString);
 
-    object->registerCallback("someAttribute", [&](const string& obj, const string& attr) { someString = otherString; });
+    object->registerCallback("someAttribute", [&](const std::string& obj, const std::string& attr) { someString = otherString; });
     object->setAttribute("someAttribute", {1337});
     CHECK(someString != otherString);
 }
@@ -185,7 +185,7 @@ TEST_CASE("Testing BaseObject attribute registering")
 /*************/
 TEST_CASE("Testing BaseObject task and periodic task")
 {
-    auto object = make_shared<BaseObjectMock>();
+    auto object = std::make_shared<BaseObjectMock>();
     object->setupTasks();
     object->setAttribute("integer", {0});
 
@@ -204,10 +204,10 @@ TEST_CASE("Testing BaseObject task and periodic task")
     object->setupImbricatedPeriodicTasks();
     object->runTasks();
     object->runTasks();
-    CHECK_NE(object->getAttribute("string").value()[0].as<string>(), "Yo dawg!");
+    CHECK_NE(object->getAttribute("string").value()[0].as<std::string>(), "Yo dawg!");
 
     object->setupAsyncTasks();
-    this_thread::sleep_for(100ms);
+    std::this_thread::sleep_for(100ms);
     object->runTasks();
-    CHECK_EQ(object->getAttribute("string").value()[0].as<string>(), "Async task finished!");
+    CHECK_EQ(object->getAttribute("string").value()[0].as<std::string>(), "Async task finished!");
 }

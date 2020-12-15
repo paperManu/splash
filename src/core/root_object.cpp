@@ -7,7 +7,7 @@
 #include "./core/serialize/serialize_value.h"
 #include "./core/serializer.h"
 
-using namespace std;
+namespace chrono = std::chrono;
 
 namespace Splash
 {
@@ -15,7 +15,7 @@ namespace Splash
 /**************/
 RootObject::RootObject()
     : _context(Context())
-    , _factory(unique_ptr<Factory>(new Factory(this)))
+    , _factory(std::unique_ptr<Factory>(new Factory(this)))
 {
     registerAttributes();
     initializeTree();
@@ -24,25 +24,25 @@ RootObject::RootObject()
 /**************/
 RootObject::RootObject(Context context)
     : _context(context)
-    , _factory(unique_ptr<Factory>(new Factory(this)))
+    , _factory(std::unique_ptr<Factory>(new Factory(this)))
 {
     registerAttributes();
     initializeTree();
 }
 
 /*************/
-bool RootObject::addTreeCommand(const string& root, Command cmd, const Values& args)
+bool RootObject::addTreeCommand(const std::string& root, Command cmd, const Values& args)
 {
     if (!_tree.hasBranchAt("/" + root))
         return false;
     assert(_tree.hasBranchAt("/" + root + "/commands"));
 
-    auto timestampAsStr = to_string(Timer::get().getTime());
+    auto timestampAsStr = std::to_string(Timer::get().getTime());
     auto path = "/" + root + "/commands/" + timestampAsStr + "_";
     uint32_t cmdIndex = 0;
-    while (_tree.hasLeafAt(path + to_string(cmdIndex)))
+    while (_tree.hasLeafAt(path + std::to_string(cmdIndex)))
         cmdIndex++;
-    path += "_" + to_string(cmdIndex);
+    path += "_" + std::to_string(cmdIndex);
     _tree.createLeafAt(path);
     _tree.setValueForLeafAt(path, {static_cast<int>(cmd), args});
 
@@ -50,9 +50,9 @@ bool RootObject::addTreeCommand(const string& root, Command cmd, const Values& a
 }
 
 /*************/
-weak_ptr<GraphObject> RootObject::createObject(const string& type, const string& name)
+std::weak_ptr<GraphObject> RootObject::createObject(const std::string& type, const std::string& name)
 {
-    lock_guard<recursive_mutex> registerLock(_objectsMutex);
+    std::lock_guard<std::recursive_mutex> registerLock(_objectsMutex);
 
     auto object = getObject(name);
     if (object)
@@ -81,10 +81,10 @@ weak_ptr<GraphObject> RootObject::createObject(const string& type, const string&
 }
 
 /*************/
-void RootObject::disposeObject(const string& name)
+void RootObject::disposeObject(const std::string& name)
 {
     addTask([=]() {
-        lock_guard<recursive_mutex> registerLock(_objectsMutex);
+        std::lock_guard<std::recursive_mutex> registerLock(_objectsMutex);
         auto objectIt = _objects.find(name);
         if (objectIt != _objects.end() && objectIt->second.use_count() == 1)
             _objects.erase(objectIt);
@@ -117,8 +117,8 @@ void RootObject::executeTreeCommands()
         case Command::callObject:
         {
             assert(args.size() == 3);
-            auto objectName = args[0].as<string>();
-            auto attrName = args[1].as<string>();
+            auto objectName = args[0].as<std::string>();
+            auto attrName = args[1].as<std::string>();
             auto params = args[2].as<Values>();
 
             auto objectIt = _objects.find(objectName);
@@ -129,7 +129,7 @@ void RootObject::executeTreeCommands()
         case Command::callRoot:
         {
             assert(args.size() == 2);
-            auto attrName = args[0].as<string>();
+            auto attrName = args[0].as<std::string>();
             auto params = args[1].as<Values>();
             setAttribute(attrName, params);
             break;
@@ -142,9 +142,9 @@ void RootObject::executeTreeCommands()
 }
 
 /*************/
-shared_ptr<GraphObject> RootObject::getObject(const string& name)
+std::shared_ptr<GraphObject> RootObject::getObject(const std::string& name)
 {
-    lock_guard<recursive_mutex> registerLock(_objectsMutex);
+    std::lock_guard<std::recursive_mutex> registerLock(_objectsMutex);
 
     auto objectIt = _objects.find(name);
     if (objectIt != _objects.end())
@@ -154,7 +154,7 @@ shared_ptr<GraphObject> RootObject::getObject(const string& name)
 }
 
 /*************/
-bool RootObject::set(const string& name, const string& attrib, const Values& args, bool async)
+bool RootObject::set(const std::string& name, const std::string& attrib, const Values& args, bool async)
 {
     if (name == _name || name == SPLASH_ALL_PEERS)
         return setAttribute(attrib, args);
@@ -183,12 +183,12 @@ bool RootObject::set(const string& name, const string& attrib, const Values& arg
 }
 
 /*************/
-bool RootObject::setFromSerializedObject(const string& name, const shared_ptr<SerializedObject>& obj)
+bool RootObject::setFromSerializedObject(const std::string& name, const std::shared_ptr<SerializedObject>& obj)
 {
     auto object = getObject(name);
     if (object)
     {
-        auto objectAsBuffer = dynamic_pointer_cast<BufferObject>(object);
+        auto objectAsBuffer = std::dynamic_pointer_cast<BufferObject>(object);
         if (objectAsBuffer)
         {
             objectAsBuffer->setSerializedObject(obj);
@@ -206,7 +206,7 @@ bool RootObject::setFromSerializedObject(const string& name, const shared_ptr<Se
 /*************/
 void RootObject::signalBufferObjectUpdated()
 {
-    unique_lock<mutex> lockCondition(_bufferObjectUpdatedMutex);
+    std::unique_lock<std::mutex> lockCondition(_bufferObjectUpdatedMutex);
 
     _bufferObjectUpdated = true;
     // Only a single buffer has to wave for update at a time
@@ -220,7 +220,7 @@ void RootObject::signalBufferObjectUpdated()
 /*************/
 bool RootObject::waitSignalBufferObjectUpdated(uint64_t timeout)
 {
-    unique_lock<mutex> lockCondition(_bufferObjectUpdatedMutex);
+    std::unique_lock<std::mutex> lockCondition(_bufferObjectUpdatedMutex);
 
     auto bufferWasUpdated = _bufferObjectUpdated;
 
@@ -233,7 +233,7 @@ bool RootObject::waitSignalBufferObjectUpdated(uint64_t timeout)
     {
         auto status = _bufferObjectUpdatedCondition.wait_for(lockCondition, chrono::microseconds(timeout));
         _bufferObjectUpdated = false;
-        return (status == cv_status::no_timeout);
+        return (status == std::cv_status::no_timeout);
     }
     else
     {
@@ -243,13 +243,13 @@ bool RootObject::waitSignalBufferObjectUpdated(uint64_t timeout)
 }
 
 /*************/
-bool RootObject::handleSerializedObject(const string& name, const shared_ptr<SerializedObject>& obj)
+bool RootObject::handleSerializedObject(const std::string& name, const std::shared_ptr<SerializedObject>& obj)
 {
     if (name == "_tree")
     {
         auto dataPtr = reinterpret_cast<uint8_t*>(obj->data());
-        auto serializedSeeds = vector<uint8_t>(dataPtr, dataPtr + obj->size());
-        auto seeds = Serial::deserialize<list<Tree::Seed>>(serializedSeeds);
+        auto serializedSeeds = std::vector<uint8_t>(dataPtr, dataPtr + obj->size());
+        auto seeds = Serial::deserialize<std::list<Tree::Seed>>(serializedSeeds);
         _tree.addSeedsToQueue(seeds);
 
         return true;
@@ -265,12 +265,12 @@ void RootObject::updateTreeFromObjects()
     auto logs = Log::get().getNewLogs();
     for (auto& log : logs)
     {
-        auto timestampAsStr = to_string(std::get<0>(log));
-        auto path = "/" + _name + "/logs/" + to_string(std::get<0>(log)) + "_";
+        auto timestampAsStr = std::to_string(std::get<0>(log));
+        auto path = "/" + _name + "/logs/" + std::to_string(std::get<0>(log)) + "_";
         uint32_t logIndex = 0;
-        while (_tree.hasLeafAt(path + "_" + to_string(logIndex)))
+        while (_tree.hasLeafAt(path + "_" + std::to_string(logIndex)))
             logIndex++;
-        path = path + "_" + to_string(logIndex);
+        path = path + "_" + std::to_string(logIndex);
         _tree.createLeafAt(path);
         _tree.setValueForLeafAt(path, Values({std::get<1>(log), static_cast<int>(std::get<2>(log))}));
     }
@@ -279,7 +279,7 @@ void RootObject::updateTreeFromObjects()
     auto& durationMap = Timer::get().getDurationMap();
     for (auto& d : durationMap)
     {
-        string path = "/" + _name + "/durations/" + d.first;
+        std::string path = "/" + _name + "/durations/" + d.first;
         if (!_tree.hasLeafAt(path))
             if (!_tree.createLeafAt(path))
                 continue;
@@ -287,10 +287,10 @@ void RootObject::updateTreeFromObjects()
     }
 
     // Update the Root object attributes
-    auto attributePath = string("/" + _name + "/attributes");
+    auto attributePath = std::string("/" + _name + "/attributes");
     assert(_tree.hasBranchAt(attributePath));
 
-    unique_lock<recursive_mutex> lock(_attribMutex);
+    std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     for (const auto& leafName : _tree.getLeafListAt(attributePath))
     {
         auto attribIt = _attribFunctions.find(leafName);
@@ -301,7 +301,7 @@ void RootObject::updateTreeFromObjects()
     }
 
     // Update the GraphObjects attributes
-    auto objectsPath = string("/" + _name + "/objects");
+    auto objectsPath = std::string("/" + _name + "/objects");
     assert(_tree.hasBranchAt(objectsPath));
 
     for (const auto& objectName : _tree.getBranchListAt(objectsPath))
@@ -311,7 +311,7 @@ void RootObject::updateTreeFromObjects()
             continue;
         auto object = objectIt->second;
 
-        attributePath = string("/" + _name + "/objects/" + objectName + "/attributes");
+        attributePath = std::string("/" + _name + "/objects/" + objectName + "/attributes");
         assert(_tree.hasBranchAt(attributePath));
         for (const auto& leafName : _tree.getLeafListAt(attributePath))
         {
@@ -322,7 +322,7 @@ void RootObject::updateTreeFromObjects()
                 _tree.removeLeafAt(attributePath + "/" + leafName);
         }
 
-        auto docPath = string("/" + _name + "/objects/" + objectName + "/documentation");
+        auto docPath = std::string("/" + _name + "/objects/" + objectName + "/documentation");
         assert(_tree.hasBranchAt(docPath));
         for (const auto& docBranchName : _tree.getBranchListAt(docPath))
         {
@@ -340,14 +340,14 @@ void RootObject::propagateTree()
     auto treeSeeds = _tree.getUpdateSeedList();
     if (treeSeeds.empty())
         return;
-    vector<uint8_t> serializedSeeds;
+    std::vector<uint8_t> serializedSeeds;
     Serial::serialize(treeSeeds, serializedSeeds);
     auto dataPtr = reinterpret_cast<uint8_t*>(serializedSeeds.data());
-    _link->sendBuffer("_tree", make_shared<SerializedObject>(dataPtr, dataPtr + serializedSeeds.size()));
+    _link->sendBuffer("_tree", std::make_shared<SerializedObject>(dataPtr, dataPtr + serializedSeeds.size()));
 }
 
 /*************/
-void RootObject::propagatePath(const string& path)
+void RootObject::propagatePath(const std::string& path)
 {
     assert(_link);
 
@@ -355,19 +355,19 @@ void RootObject::propagatePath(const string& path)
     if (seeds.empty())
         return;
 
-    vector<uint8_t> serializedSeeds;
+    std::vector<uint8_t> serializedSeeds;
     Serial::serialize(seeds, serializedSeeds);
     auto dataPtr = reinterpret_cast<uint8_t*>(serializedSeeds.data());
-    _link->sendBuffer("_tree", make_shared<SerializedObject>(dataPtr, dataPtr + serializedSeeds.size()));
+    _link->sendBuffer("_tree", std::make_shared<SerializedObject>(dataPtr, dataPtr + serializedSeeds.size()));
 }
 
 /*************/
 void RootObject::registerAttributes()
 {
     addAttribute("answerMessage", [&](const Values& args) {
-        if (args.size() == 0 || args[0].as<string>() != _answerExpected)
+        if (args.size() == 0 || args[0].as<std::string>() != _answerExpected)
             return false;
-        unique_lock<mutex> conditionLock(_conditionMutex);
+        std::unique_lock<std::mutex> conditionLock(_conditionMutex);
         _lastAnswerReceived = args;
         _answerCondition.notify_one();
         return true;
@@ -391,7 +391,7 @@ void RootObject::initializeTree()
     // This is done in the main loop to grab all created attributes
     addTask([this]() {
         auto path = "/" + _name + "/attributes/";
-        unique_lock<recursive_mutex> lock(_attribMutex);
+        std::unique_lock<std::recursive_mutex> lock(_attribMutex);
         for (const auto& attribute : _attribFunctions)
         {
             if (!attribute.second.hasGetter())
@@ -401,7 +401,7 @@ void RootObject::initializeTree()
             if (_tree.hasLeafAt(leafPath))
                 continue;
             if (!_tree.createLeafAt(leafPath))
-                throw runtime_error("Error while adding a leaf at path " + leafPath);
+                throw std::runtime_error("Error while adding a leaf at path " + leafPath);
 
             _treeCallbackIds[attributeName] = _tree.addCallbackToLeafAt(leafPath, [=](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
                 auto attribIt = _attribFunctions.find(attributeName);
@@ -437,7 +437,7 @@ Json::Value RootObject::getValuesAsJson(const Values& values, bool asObject) con
                 jsValue[v.getName()] = v.as<float>();
                 break;
             case Value::string:
-                jsValue[v.getName()] = v.as<string>();
+                jsValue[v.getName()] = v.as<std::string>();
                 break;
             case Value::values:
             {
@@ -470,7 +470,7 @@ Json::Value RootObject::getValuesAsJson(const Values& values, bool asObject) con
                 jsValue.append(v.as<float>());
                 break;
             case Value::string:
-                jsValue.append(v.as<string>());
+                jsValue.append(v.as<std::string>());
                 break;
             case Value::values:
             {
@@ -489,11 +489,11 @@ Json::Value RootObject::getValuesAsJson(const Values& values, bool asObject) con
 }
 
 /*************/
-Json::Value RootObject::getObjectConfigurationAsJson(const string& object, const string& rootObject)
+Json::Value RootObject::getObjectConfigurationAsJson(const std::string& object, const std::string& rootObject)
 {
     assert(!object.empty());
 
-    list<string> rootList = {"world"};
+    std::list<std::string> rootList = {"world"};
     if (!rootObject.empty() && rootObject != "world")
         rootList.push_front(rootObject);
     else if (rootObject.empty() && _name != "world")
@@ -529,7 +529,7 @@ Json::Value RootObject::getObjectConfigurationAsJson(const string& object, const
         {
             Value typeValue;
             if (_tree.getValueForLeafAt(typePath, typeValue))
-                root["type"] = typeValue.as<string>();
+                root["type"] = typeValue.as<std::string>();
         }
     }
 
@@ -537,7 +537,7 @@ Json::Value RootObject::getObjectConfigurationAsJson(const string& object, const
 }
 
 /*************/
-Json::Value RootObject::getRootConfigurationAsJson(const string& rootName)
+Json::Value RootObject::getRootConfigurationAsJson(const std::string& rootName)
 {
     if (!_tree.hasBranchAt("/" + rootName))
         return {};
@@ -588,7 +588,7 @@ Json::Value RootObject::getRootConfigurationAsJson(const string& rootName)
         _tree.getValueForLeafAt(objectsPath + "/" + objectName + "/links/children", value);
         for (const auto& parent : value.as<Values>())
         {
-            auto linkName = parent.as<string>();
+            auto linkName = parent.as<std::string>();
             if (_tree.getValueForLeafAt(objectsPath + "/" + linkName + "/attributes/savable", confValue) && confValue[0].as<bool>() == false)
                 continue;
             if (_tree.getValueForLeafAt(objectsPath + "/" + linkName + "/ghost", confValue) && confValue.as<bool>() == true)
@@ -601,17 +601,17 @@ Json::Value RootObject::getRootConfigurationAsJson(const string& rootName)
 }
 
 /*************/
-Values RootObject::sendMessageWithAnswer(const string& name, const string& attribute, const Values& message, const unsigned long long timeout)
+Values RootObject::sendMessageWithAnswer(const std::string& name, const std::string& attribute, const Values& message, const unsigned long long timeout)
 {
     assert(_link);
 
-    lock_guard<mutex> lock(_answerMutex);
+    std::lock_guard<std::mutex> lock(_answerMutex);
     _answerExpected = attribute;
 
-    unique_lock<mutex> conditionLock(_conditionMutex);
+    std::unique_lock<std::mutex> conditionLock(_conditionMutex);
     _link->sendMessage(name, attribute, message);
 
-    auto cvStatus = cv_status::no_timeout;
+    auto cvStatus = std::cv_status::no_timeout;
     if (timeout == 0ull)
         _answerCondition.wait(conditionLock);
     else
@@ -619,7 +619,7 @@ Values RootObject::sendMessageWithAnswer(const string& name, const string& attri
 
     _answerExpected = "";
 
-    if (cv_status::no_timeout == cvStatus)
+    if (std::cv_status::no_timeout == cvStatus)
         return _lastAnswerReceived;
     else
         return {};

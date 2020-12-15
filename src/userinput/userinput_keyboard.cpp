@@ -1,7 +1,5 @@
 #include "./userinput/userinput_keyboard.h"
 
-using namespace std;
-
 namespace Splash
 {
 /*************/

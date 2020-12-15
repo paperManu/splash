@@ -8,7 +8,7 @@
 #include "./core/serializer.h"
 #include "./utils/log.h"
 
-using namespace std;
+namespace chrono = std::chrono;
 using namespace Splash;
 
 /*************/
@@ -18,10 +18,10 @@ TEST_CASE("Testing serialized size computation")
     CHECK(Serial::getSize((float)18.f) == sizeof(float));
     CHECK(Serial::getSize((double)18.0) == sizeof(double));
 
-    vector<int> vectorOfInts{1, 2, 3, 4};
+    std::vector<int> vectorOfInts{1, 2, 3, 4};
     CHECK(Serial::getSize(vectorOfInts) == vectorOfInts.size() * sizeof(int) + sizeof(uint32_t));
 
-    deque<float> dequeOfFloat{3.14159f, 42.f, 2.71828f};
+    std::deque<float> dequeOfFloat{3.14159f, 42.f, 2.71828f};
     CHECK(Serial::getSize(dequeOfFloat) == dequeOfFloat.size() * sizeof(float) + sizeof(uint32_t));
 
     std::string someText{"So long, and thanks for the fish!"};
@@ -34,17 +34,17 @@ TEST_CASE("Testing serialized size computation")
 TEST_CASE("Testing serialized size computation for containers of containers")
 {
     {
-        vector<vector<int>> data;
+        std::vector<std::vector<int>> data;
         for (uint32_t i = 0; i < 4; ++i)
-            data.push_back(vector<int>({2, 4, 8, 16}));
+            data.push_back(std::vector<int>({2, 4, 8, 16}));
 
         CHECK(Serial::getSize(data) == sizeof(uint32_t) + data.size() * (sizeof(uint32_t) + data[0].size() * sizeof(int)));
     }
 
     {
-        deque<deque<int>> data;
+        std::deque<std::deque<int>> data;
         for (uint32_t i = 0; i < 4; ++i)
-            data.push_back(deque<int>({2, 4, 8, 16}));
+            data.push_back(std::deque<int>({2, 4, 8, 16}));
 
         CHECK(Serial::getSize(data) == sizeof(uint32_t) + data.size() * (sizeof(uint32_t) + data[0].size() * sizeof(int)));
     }
@@ -53,7 +53,7 @@ TEST_CASE("Testing serialized size computation for containers of containers")
 /*************/
 TEST_CASE("Testing serialized size computation for tuples")
 {
-    auto testString = string("Show me the money");
+    auto testString = std::string("Show me the money");
     auto data = make_tuple(3.1415f, 42, testString);
     CHECK(Serial::getSize(data) == sizeof(float) + sizeof(int) + sizeof(uint32_t) + testString.size());
 }
@@ -61,8 +61,8 @@ TEST_CASE("Testing serialized size computation for tuples")
 /*************/
 TEST_CASE("Testing elementary serialization")
 {
-    string testString("Fresh meat");
-    vector<uint8_t> buffer;
+    std::string testString("Fresh meat");
+    std::vector<uint8_t> buffer;
     Serial::serialize((int)7243, buffer);
     Serial::serialize((float)3.14159f, buffer);
     Serial::serialize((double)2.71828, buffer);
@@ -79,7 +79,7 @@ TEST_CASE("Testing elementary serialization")
     auto stringLength = *reinterpret_cast<uint32_t*>(bufferPtr);
     CHECK(stringLength == testString.size());
     bufferPtr += sizeof(uint32_t);
-    CHECK(string(reinterpret_cast<char*>(bufferPtr), stringLength) == testString);
+    CHECK(std::string(reinterpret_cast<char*>(bufferPtr), stringLength) == testString);
     bufferPtr += sizeof(char) * testString.size();
     CHECK(*reinterpret_cast<int64_t*>(bufferPtr) == 123456);
 }
@@ -88,8 +88,8 @@ TEST_CASE("Testing elementary serialization")
 TEST_CASE("Testing serialization of iterable containers")
 {
     {
-        vector<uint8_t> buffer;
-        vector<int> data{1, 1, 2, 3, 5, 8};
+        std::vector<uint8_t> buffer;
+        std::vector<int> data{1, 1, 2, 3, 5, 8};
         Serial::serialize(data, buffer);
 
         auto bufferPtr = reinterpret_cast<int*>(buffer.data() + sizeof(uint32_t));
@@ -99,8 +99,8 @@ TEST_CASE("Testing serialization of iterable containers")
     }
 
     {
-        vector<uint8_t> buffer;
-        deque<float> data{3.14159f, 2.71828f};
+        std::vector<uint8_t> buffer;
+        std::deque<float> data{3.14159f, 2.71828f};
         Serial::serialize(data, buffer);
         auto bufferPtr = reinterpret_cast<float*>(buffer.data() + sizeof(uint32_t));
         CHECK(buffer.size() == Serial::getSize(data));
@@ -112,8 +112,8 @@ TEST_CASE("Testing serialization of iterable containers")
 /*************/
 TEST_CASE("Testing serialization of tuples")
 {
-    auto testString = string("Show me the money");
-    vector<uint8_t> buffer;
+    auto testString = std::string("Show me the money");
+    std::vector<uint8_t> buffer;
     auto data = make_tuple(3.14159f, 42, testString);
     Serial::serialize(data, buffer);
 
@@ -125,46 +125,46 @@ TEST_CASE("Testing serialization of tuples")
     auto stringLength = *reinterpret_cast<uint32_t*>(bufferPtr);
     CHECK(stringLength == testString.size());
     bufferPtr += sizeof(uint32_t);
-    CHECK(string(reinterpret_cast<char*>(bufferPtr), stringLength) == testString);
+    CHECK(std::string(reinterpret_cast<char*>(bufferPtr), stringLength) == testString);
 }
 
 /*************/
 TEST_CASE("Testing deserialization")
 {
     {
-        vector<uint8_t> buffer;
+        std::vector<uint8_t> buffer;
         Serial::serialize((int)42, buffer);
         CHECK(Serial::deserialize<int>(buffer) == 42);
     }
 
     {
-        vector<uint8_t> buffer;
-        vector<float> data{3.14159f, 2.71828f};
+        std::vector<uint8_t> buffer;
+        std::vector<float> data{3.14159f, 2.71828f};
         Serial::serialize(data, buffer);
-        auto outData = Serial::deserialize<vector<float>>(buffer);
+        auto outData = Serial::deserialize<std::vector<float>>(buffer);
         for (uint32_t i = 0; i < data.size(); ++i)
             CHECK(data[i] == outData[i]);
     }
 
     {
-        vector<uint8_t> buffer;
-        deque<int> data{1, 1, 2, 3, 5, 8, 13};
+        std::vector<uint8_t> buffer;
+        std::deque<int> data{1, 1, 2, 3, 5, 8, 13};
         Serial::serialize(data, buffer);
-        auto outData = Serial::deserialize<deque<int>>(buffer);
+        auto outData = Serial::deserialize<std::deque<int>>(buffer);
         for (uint32_t i = 0; i < data.size(); ++i)
             CHECK(data[i] == outData[i]);
     }
 
     {
-        vector<uint8_t> buffer;
-        string data{"This is a good day to die"};
+        std::vector<uint8_t> buffer;
+        std::string data{"This is a good day to die"};
         Serial::serialize(data, buffer);
-        auto outData = Serial::deserialize<string>(buffer);
+        auto outData = Serial::deserialize<std::string>(buffer);
         CHECK(data == outData);
     }
 
     {
-        vector<uint8_t> buffer;
+        std::vector<uint8_t> buffer;
         auto data = chrono::system_clock::time_point(chrono::duration<int64_t, std::milli>(123456));
         Serial::serialize(data, buffer);
         auto outData = Serial::deserialize<chrono::system_clock::time_point>(buffer);
@@ -172,11 +172,11 @@ TEST_CASE("Testing deserialization")
     }
 
     {
-        auto testString = string("Show me the money");
-        vector<uint8_t> buffer;
+        auto testString = std::string("Show me the money");
+        std::vector<uint8_t> buffer;
         auto data = make_tuple(3.14159f, 42, testString);
         Serial::serialize(data, buffer);
-        auto outData = Serial::deserialize<tuple<float, int, string>>(buffer);
+        auto outData = Serial::deserialize<std::tuple<float, int, std::string>>(buffer);
         CHECK(std::get<0>(data) == std::get<0>(outData));
         CHECK(std::get<1>(data) == std::get<1>(outData));
         CHECK(std::get<2>(data) == std::get<2>(outData));

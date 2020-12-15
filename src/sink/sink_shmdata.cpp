@@ -1,7 +1,5 @@
 #include "./sink/sink_shmdata.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -40,7 +38,7 @@ void Sink_Shmdata::registerAttributes()
 
     addAttribute("socket",
         [&](const Values& args) {
-            _path = args[0].as<string>();
+            _path = args[0].as<std::string>();
             _previousSpec = ImageBufferSpec();
             return true;
         },

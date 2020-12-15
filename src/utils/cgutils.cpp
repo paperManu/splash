@@ -2,17 +2,15 @@
 
 #include <future>
 
-using namespace std;
-
 namespace Splash
 {
 
 /*************/
 void hapDecodeCallback(HapDecodeWorkFunction func, void* p, unsigned int count, void* /*info*/)
 {
-    vector<future<void>> threads;
+    std::vector<std::future<void>> threads;
     for (unsigned int i = 0; i < count; ++i)
-        threads.push_back(async(launch::async, [=]() { func(p, i); }));
+        threads.push_back(std::async(std::launch::async, [=]() { func(p, i); }));
 }
 
 /*************/

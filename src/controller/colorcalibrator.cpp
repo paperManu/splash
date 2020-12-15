@@ -19,15 +19,13 @@
 #include "./utils/scope_guard.h"
 #include "./utils/timer.h"
 
-using namespace std;
-
 namespace Splash
 {
 
 /*************/
 void gslErrorHandler(const char* reason, const char* /*file*/, int /*line*/, int /*gsl_errno*/)
 {
-    string errorString = string(reason);
+    std::string errorString = std::string(reason);
     Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - An error in a GSL function has be caught: " << errorString << Log::endl;
 }
 
@@ -54,9 +52,9 @@ void ColorCalibrator::update()
     if (_calibrationThread.valid())
         _calibrationThread.wait();
 
-    _calibrationThread = async(launch::async, [&]() {
+    _calibrationThread = std::async(std::launch::async, [&]() {
         // Initialize camera
-        _gcamera = make_shared<Image_GPhoto>(_root, "");
+        _gcamera = std::make_shared<Image_GPhoto>(_root, "");
         // Prepare for freeing the camera when leaving scope
         OnScopeExit
         {
@@ -144,9 +142,9 @@ void ColorCalibrator::update()
                 for (int x = 0; x < diffHdr.cols; ++x)
                 {
                     auto pixelValue = diffHdr.at<cv::Vec3f>(y, x) - othersHdr.at<cv::Vec3f>(y, x) * _displayDetectionThreshold;
-                    diffHdr.at<cv::Vec3f>(y, x)[0] = max(0.f, pixelValue[0]);
-                    diffHdr.at<cv::Vec3f>(y, x)[1] = max(0.f, pixelValue[1]);
-                    diffHdr.at<cv::Vec3f>(y, x)[2] = max(0.f, pixelValue[2]);
+                    diffHdr.at<cv::Vec3f>(y, x)[0] = std::max(0.f, pixelValue[0]);
+                    diffHdr.at<cv::Vec3f>(y, x)[1] = std::max(0.f, pixelValue[1]);
+                    diffHdr.at<cv::Vec3f>(y, x)[2] = std::max(0.f, pixelValue[2]);
                 }
 
             params.maskROI = getMaskROI(diffHdr);
@@ -162,7 +160,7 @@ void ColorCalibrator::update()
         //
         for (auto& params : _calibrationParams)
         {
-            string camName = params.camName;
+            std::string camName = params.camName;
 
             RgbValue minValues;
             RgbValue maxValues;
@@ -185,7 +183,7 @@ void ColorCalibrator::update()
                     hdr = captureHDR(_imagePerHDR, _hdrStep);
                     if (hdr.total() == 0)
                         return;
-                    vector<float> values = getMeanValue(hdr, params.maskROI);
+                    std::vector<float> values = getMeanValue(hdr, params.maskROI);
                     params.curves[c].push_back(Point(x, values));
 
                     setObjectAttribute(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
@@ -209,10 +207,10 @@ void ColorCalibrator::update()
         //
         for (auto& params : _calibrationParams)
         {
-            string camName = params.camName;
+            std::string camName = params.camName;
 
-            vector<RgbValue> lowValues(3);
-            vector<RgbValue> highValues(3);
+            std::vector<RgbValue> lowValues(3);
+            std::vector<RgbValue> highValues(3);
             glm::mat3 mixRGB;
 
             // Get the middle and max values from the previous captures
@@ -256,8 +254,8 @@ void ColorCalibrator::update()
         // Get the overall maximum value for rgb(0,0,0), and minimum for rgb(1,1,1)
         //
         // Fourth values contain luminance (calculated using other values)
-        vector<float> minValues(4, 0.f);
-        vector<float> maxValues(4, numeric_limits<float>::max());
+        std::vector<float> minValues(4, 0.f);
+        std::vector<float> maxValues(4, std::numeric_limits<float>::max());
         for (auto& params : _calibrationParams)
         {
             for (unsigned int c = 0; c < 3; ++c)
@@ -289,7 +287,7 @@ void ColorCalibrator::update()
         //
         for (auto& params : _calibrationParams)
         {
-            string camName = params.camName;
+            std::string camName = params.camName;
             Values lut;
             for (unsigned int v = 0; v < 256; ++v)
                 for (unsigned int c = 0; c < 3; ++c)
@@ -340,9 +338,9 @@ void ColorCalibrator::updateCRF()
     if (_calibrationThread.valid())
         _calibrationThread.wait();
 
-    _calibrationThread = async(launch::async, [&]() {
+    _calibrationThread = std::async(std::launch::async, [&]() {
         // Initialize camera
-        _gcamera = make_shared<Image_GPhoto>(_root, "");
+        _gcamera = std::make_shared<Image_GPhoto>(_root, "");
         OnScopeExit
         {
             _calibrationMutex.unlock();
@@ -379,8 +377,8 @@ cv::Mat3f ColorCalibrator::captureHDR(unsigned int nbrLDR, double step, bool com
     for (int steps = nbrLDR / 2; steps > 0; --steps)
         nextSpeed /= pow(2.0, step);
 
-    vector<cv::Mat> ldr(nbrLDR);
-    vector<float> expositionDurations(nbrLDR);
+    std::vector<cv::Mat> ldr(nbrLDR);
+    std::vector<float> expositionDurations(nbrLDR);
     for (unsigned int i = 0; i < nbrLDR; ++i)
     {
         _gcamera->setAttribute("shutterspeed", {nextSpeed});
@@ -394,7 +392,7 @@ cv::Mat3f ColorCalibrator::captureHDR(unsigned int nbrLDR, double step, bool com
         // Update exposure for next step
         nextSpeed *= pow(2.0, step);
 
-        string filename = "/tmp/splash_ldr_sample_" + to_string(i) + ".bmp";
+        std::string filename = "/tmp/splash_ldr_sample_" + std::to_string(i) + ".bmp";
         _gcamera->update();
         _gcamera->write(filename);
 
@@ -428,9 +426,9 @@ cv::Mat3f ColorCalibrator::captureHDR(unsigned int nbrLDR, double step, bool com
         for (int x = 0; x < hdr.cols; ++x)
         {
             auto pixelValue = hdr.at<cv::Vec3f>(y, x);
-            pixelValue[0] = max(0.f, pixelValue[0]);
-            pixelValue[1] = max(0.f, pixelValue[1]);
-            pixelValue[2] = max(0.f, pixelValue[2]);
+            pixelValue[0] = std::max(0.f, pixelValue[0]);
+            pixelValue[1] = std::max(0.f, pixelValue[1]);
+            pixelValue[2] = std::max(0.f, pixelValue[2]);
         }
 
     cv::imwrite("/tmp/splash_hdr.hdr", hdr);
@@ -440,11 +438,11 @@ cv::Mat3f ColorCalibrator::captureHDR(unsigned int nbrLDR, double step, bool com
 }
 
 /*************/
-vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(vector<Curve> rgbCurves)
+std::vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(std::vector<Curve> rgbCurves)
 {
     gsl_set_error_handler(gslErrorHandler);
 
-    vector<Curve> projInvCurves;
+    std::vector<Curve> projInvCurves;
 
     // Work on each curve independently
     unsigned int c = 0; // index of the current channel
@@ -462,8 +460,8 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
             continue;
         }
 
-        vector<double> rawX;
-        vector<double> rawY;
+        std::vector<double> rawX;
+        std::vector<double> rawY;
 
         double epsilon = 0.001;
         double previousAbscissa = -1.0;
@@ -588,15 +586,15 @@ double computeMoment(const cv::Mat3f& image, int i, int j, double minTargetLum =
 }
 
 /*************/
-vector<int> ColorCalibrator::getMaxRegionROI(const cv::Mat3f& image)
+std::vector<int> ColorCalibrator::getMaxRegionROI(const cv::Mat3f& image)
 {
     if (image.total() == 0)
-        return vector<int>();
+        return std::vector<int>();
 
-    vector<int> coords;
+    std::vector<int> coords;
 
     // Find the maximum value
-    float maxLinearLuminance = numeric_limits<float>::min();
+    float maxLinearLuminance = std::numeric_limits<float>::min();
     for (int y = 0; y < image.rows; ++y)
         for (int x = 0; x < image.cols; ++x)
         {
@@ -607,7 +605,7 @@ vector<int> ColorCalibrator::getMaxRegionROI(const cv::Mat3f& image)
         }
 
     // Compute the binary moments of all pixels brighter than maxLinearLuminance
-    vector<double> moments(3, 0.0);
+    std::vector<double> moments(3, 0.0);
     double iteration = 0.0;
     while (moments[0] < _minimumROIArea * image.total())
     {
@@ -619,7 +617,7 @@ vector<int> ColorCalibrator::getMaxRegionROI(const cv::Mat3f& image)
         iteration += 0.5;
     }
 
-    coords = vector<int>({(int)(moments[1] / moments[0]), (int)(moments[2] / moments[0]), (int)(sqrt(moments[0]) / 2.0)});
+    coords = std::vector<int>({(int)(moments[1] / moments[0]), (int)(moments[2] / moments[0]), (int)(sqrt(moments[0]) / 2.0)});
 
     Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum found around point (" << coords[0] << ", " << coords[1]
                << ") - Estimated side size: " << coords[2] << Log::endl;
@@ -628,13 +626,13 @@ vector<int> ColorCalibrator::getMaxRegionROI(const cv::Mat3f& image)
 }
 
 /*************/
-vector<bool> ColorCalibrator::getMaskROI(const cv::Mat3f& image)
+std::vector<bool> ColorCalibrator::getMaskROI(const cv::Mat3f& image)
 {
     if (image.total() == 0)
-        return vector<bool>();
+        return std::vector<bool>();
 
     // Find the maximum value
-    float maxLinearLuminance = numeric_limits<float>::min();
+    float maxLinearLuminance = std::numeric_limits<float>::min();
     for (int y = 0; y < image.rows; ++y)
         for (int x = 0; x < image.cols; ++x)
         {
@@ -645,7 +643,7 @@ vector<bool> ColorCalibrator::getMaskROI(const cv::Mat3f& image)
         }
 
     // Compute the binary moments of all pixels brighter than maxLinearLuminance
-    vector<bool> mask;
+    std::vector<bool> mask;
     unsigned long meanX, meanY;
     double totalPixelMask = 0;
     double iteration = 0.0;
@@ -654,10 +652,9 @@ vector<bool> ColorCalibrator::getMaskROI(const cv::Mat3f& image)
         totalPixelMask = 0;
         meanX = 0;
         meanY = 0;
-        mask = vector<bool>(image.total(), false);
+        mask = std::vector<bool>(image.total(), false);
 
         double minTargetLuminance = maxLinearLuminance / pow(2.0, iteration + 4);
-        // double maxTargetLuminance = maxLinearLuminance / pow(2.0, iteration);
 
         for (int y = 0; y < image.rows; ++y)
             for (int x = 0; x < image.cols; ++x)
@@ -686,7 +683,7 @@ vector<bool> ColorCalibrator::getMaskROI(const cv::Mat3f& image)
 }
 
 /*************/
-vector<float> ColorCalibrator::getMeanValue(const cv::Mat3f& image, vector<int> coords, int boxSize)
+std::vector<float> ColorCalibrator::getMeanValue(const cv::Mat3f& image, std::vector<int> coords, int boxSize)
 {
     cv::Scalar meanMaxValue;
 
@@ -708,13 +705,13 @@ vector<float> ColorCalibrator::getMeanValue(const cv::Mat3f& image, vector<int> 
 }
 
 /*************/
-vector<float> ColorCalibrator::getMeanValue(const cv::Mat3f& image, vector<bool> mask)
+std::vector<float> ColorCalibrator::getMeanValue(const cv::Mat3f& image, std::vector<bool> mask)
 {
-    vector<float> meanValue(3, 0.f);
+    std::vector<float> meanValue(3, 0.f);
     unsigned int nbrPixels = 0;
 
     if (mask.size() != image.total())
-        return vector<float>(3, 0.f);
+        return std::vector<float>(3, 0.f);
 
     for (int y = 0; y < image.rows; ++y)
         for (int x = 0; x < image.cols; ++x)
@@ -729,7 +726,7 @@ vector<float> ColorCalibrator::getMeanValue(const cv::Mat3f& image, vector<bool>
         }
 
     if (nbrPixels == 0)
-        return vector<float>(3, 0.f);
+        return std::vector<float>(3, 0.f);
 
     meanValue[0] /= (float)nbrPixels;
     meanValue[1] /= (float)nbrPixels;
@@ -764,7 +761,7 @@ RgbValue ColorCalibrator::equalizeWhiteBalancesOnly()
 RgbValue ColorCalibrator::equalizeWhiteBalancesFromWeakestLum()
 {
     RgbValue minWhiteBalance;
-    float minLuminance = numeric_limits<float>::max();
+    float minLuminance = std::numeric_limits<float>::max();
     for (auto& params : _calibrationParams)
     {
         params.whiteBalance = params.whitePoint / params.whitePoint[1];
@@ -788,8 +785,8 @@ RgbValue ColorCalibrator::equalizeWhiteBalancesFromWeakestLum()
 RgbValue ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum()
 {
     RgbValue whiteBalance(1.f, 1.f, 1.f);
-    float delta = numeric_limits<float>::max();
-    float targetDelta = numeric_limits<float>::max();
+    float delta = std::numeric_limits<float>::max();
+    float targetDelta = std::numeric_limits<float>::max();
 
     // Target delta is set to 1% of the minimum luminance
     for (auto& params : _calibrationParams)
@@ -803,7 +800,7 @@ RgbValue ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum()
     while (delta > targetDelta)
     {
         // Get the current minimum luminance
-        float previousMinLum = numeric_limits<float>::max();
+        float previousMinLum = std::numeric_limits<float>::max();
         int minIndex = 0;
         for (uint32_t i = 0; i < _calibrationParams.size(); ++i)
         {
@@ -819,7 +816,7 @@ RgbValue ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum()
         whiteBalance = whiteBalance * 0.5 + _calibrationParams[minIndex].whiteBalance * 0.5;
 
         // Get the new minimum luminance
-        float newMinLum = numeric_limits<float>::max();
+        float newMinLum = std::numeric_limits<float>::max();
         for (auto& params : _calibrationParams)
         {
             RgbValue whiteBalanced = params.whitePoint * (params.whiteBalance / whiteBalance).normalize();

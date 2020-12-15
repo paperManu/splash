@@ -3,13 +3,11 @@
 #include "./core/factory.h"
 #include "./core/scene.h"
 
-using namespace std;
-
 namespace Splash
 {
 
 /*************/
-GuiNodeView::GuiNodeView(Scene* scene, const string& name)
+GuiNodeView::GuiNodeView(Scene* scene, const std::string& name)
     : GuiWidget(scene, name)
 {
     auto factory = Factory();
@@ -17,7 +15,7 @@ GuiNodeView::GuiNodeView(Scene* scene, const string& name)
 }
 
 /*************/
-void GuiNodeView::initializeNodePositions(const vector<string>& objectNames)
+void GuiNodeView::initializeNodePositions(const std::vector<std::string>& objectNames)
 {
     // Get the link level for each object, corresponding to the level of descendants
     std::map<std::string, uint32_t> descendants;
@@ -120,7 +118,7 @@ void GuiNodeView::render()
 
     // Combo box for adding objects
     {
-        vector<const char*> items;
+        std::vector<const char*> items;
         std::transform(_objectTypes.cbegin(), _objectTypes.cend(), std::back_inserter(items), [&](auto& type) -> const char* { return type.c_str(); });
         static int itemIndex = 0;
         ImGui::Text("Add an object:");
@@ -229,7 +227,7 @@ void GuiNodeView::render()
     }
 
     // Select an object by its name
-    vector<const char*> items;
+    std::vector<const char*> items;
     std::transform(objectNames.begin(), objectNames.end(), std::back_inserter(items), [&](auto& name) -> const char* { return objectAliases[name].c_str(); });
 
     ImGui::Text("Object list:");
@@ -258,7 +256,7 @@ void GuiNodeView::render()
 }
 
 /*************/
-void GuiNodeView::renderNode(const string& name)
+void GuiNodeView::renderNode(const std::string& name)
 {
     auto& io = ImGui::GetIO();
 
@@ -278,7 +276,7 @@ void GuiNodeView::renderNode(const string& name)
         coloredSelectedNode = true;
     }
 
-    ImGui::BeginChild(string("node_" + name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1]), false);
+    ImGui::BeginChild(std::string("node_" + name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1]), false);
     if (ImGui::Button(getObjectAlias(name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1])))
     {
         _clickedNode = name;

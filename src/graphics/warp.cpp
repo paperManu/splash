@@ -15,8 +15,6 @@
         1.0, 0.5, 0.0, 1.0                                                                                                                                                         \
     }
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -62,10 +60,10 @@ void Warp::bind()
 }
 
 /*************/
-unordered_map<string, Values> Warp::getShaderUniforms() const
+std::unordered_map<std::string, Values> Warp::getShaderUniforms() const
 {
     auto spec = _fbo->getColorTexture()->getSpec();
-    unordered_map<string, Values> uniforms;
+    std::unordered_map<std::string, Values> uniforms;
     uniforms["size"] = {static_cast<float>(_spec.width), static_cast<float>(spec.height)};
     return uniforms;
 }
@@ -76,14 +74,14 @@ bool Warp::linkIt(const std::shared_ptr<GraphObject>& obj)
     if (!_inTexture.expired() && !_inCamera.expired())
         return false;
 
-    if (auto camera = dynamic_pointer_cast<Camera>(obj); camera != nullptr)
+    if (auto camera = std::dynamic_pointer_cast<Camera>(obj); camera != nullptr)
     {
         _screen->addTexture(camera->getTexture());
         _inCamera = camera;
 
         return true;
     }
-    else if (auto texture = dynamic_pointer_cast<Texture>(obj); texture != nullptr)
+    else if (auto texture = std::dynamic_pointer_cast<Texture>(obj); texture != nullptr)
     {
         _screen->addTexture(texture);
         _inTexture = texture;
@@ -103,7 +101,7 @@ void Warp::unbind()
 /*************/
 void Warp::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    if (auto camera = dynamic_pointer_cast<Camera>(obj); camera != nullptr)
+    if (auto camera = std::dynamic_pointer_cast<Camera>(obj); camera != nullptr)
     {
         auto inCamera = _inCamera.lock();
         if (inCamera == camera)
@@ -112,7 +110,7 @@ void Warp::unlinkIt(const std::shared_ptr<GraphObject>& obj)
             _inCamera.reset();
         }
     }
-    else if (auto texture = dynamic_pointer_cast<Texture>(obj); texture != nullptr)
+    else if (auto texture = std::dynamic_pointer_cast<Texture>(obj); texture != nullptr)
     {
         auto inTexture = _inTexture.lock();
         if (inTexture == texture)
@@ -126,7 +124,7 @@ void Warp::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 /*************/
 void Warp::render()
 {
-    shared_ptr<Texture> input(nullptr);
+    std::shared_ptr<Texture> input(nullptr);
 
     if (!_inCamera.expired())
     {
@@ -211,7 +209,7 @@ void Warp::render()
 /*************/
 int Warp::pickControlPoint(glm::vec2 p, glm::vec2& v)
 {
-    float distance = numeric_limits<float>::max();
+    float distance = std::numeric_limits<float>::max();
 
     _screenMesh->switchMeshes(true);
     _screenMesh->update();
@@ -237,7 +235,7 @@ int Warp::pickControlPoint(glm::vec2 p, glm::vec2& v)
 /*************/
 void Warp::loadDefaultModels()
 {
-    map<string, string> files{{"3d_marker", "3d_marker.obj"}};
+    std::map<std::string, std::string> files{{"3d_marker", "3d_marker.obj"}};
 
     auto scene = dynamic_cast<Scene*>(_root);
     assert(scene != nullptr);
@@ -257,14 +255,14 @@ void Warp::loadDefaultModels()
 /*************/
 void Warp::setupFBO()
 {
-    _fbo = make_unique<Framebuffer>(_root);
+    _fbo = std::make_unique<Framebuffer>(_root);
     _fbo->setsRGB(true);
 
     // Setup the virtual screen
-    _screen = make_shared<Object>(_root);
+    _screen = std::make_shared<Object>(_root);
     _screen->setAttribute("fill", {"warp"});
-    auto virtualScreen = make_shared<Geometry>(_root);
-    _screenMesh = make_shared<Mesh_BezierPatch>(_root);
+    auto virtualScreen = std::make_shared<Geometry>(_root);
+    _screenMesh = std::make_shared<Mesh_BezierPatch>(_root);
     virtualScreen->linkTo(_screenMesh);
     _screen->addGeometry(virtualScreen);
 }
@@ -314,7 +312,7 @@ void Warp::registerAttributes()
         [&](const Values& args) {
             if (!_screenMesh)
                 return false;
-            Values size = {min(8, args[0].as<int>()), min(8, args[1].as<int>())};
+            Values size = {std::min(8, args[0].as<int>()), std::min(8, args[1].as<int>())};
             return _screenMesh->setAttribute("patchSize", size);
         },
         [&]() -> Values {

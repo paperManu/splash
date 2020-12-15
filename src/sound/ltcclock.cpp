@@ -6,18 +6,18 @@
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
-using namespace std;
+namespace chrono = std::chrono;
 
 namespace Splash
 {
 
 /*************/
-LtcClock::LtcClock(bool masterClock, const string& deviceName)
+LtcClock::LtcClock(bool masterClock, const std::string& deviceName)
     : GraphObject(nullptr)
 {
     registerAttributes();
 
-    _listener = unique_ptr<Listener>(new Listener());
+    _listener = std::make_unique<Listener>();
     _listener->setParameters(1, 0, Sound_Engine::SAMPLE_FMT_U8, deviceName);
     if (!_listener)
     {
@@ -30,18 +30,18 @@ LtcClock::LtcClock(bool masterClock, const string& deviceName)
 
     Log::get() << Log::MESSAGE << "LtcClock::" << __FUNCTION__ << " - Input clock enabled" << Log::endl;
 
-    _ltcThread = thread([&]() {
+    _ltcThread = std::thread([&]() {
         LTCDecoder* ltcDecoder = ltc_decoder_create(1920, 32);
         LTCFrameExt ltcFrame;
 
-        vector<uint8_t> inputBuffer(256);
+        std::vector<uint8_t> inputBuffer(256);
         long int total = 0;
 
         while (_continue)
         {
             if (!_listener->readFromQueue(inputBuffer))
             {
-                this_thread::sleep_for(chrono::milliseconds(5));
+                std::this_thread::sleep_for(chrono::milliseconds(5));
                 continue;
             }
 

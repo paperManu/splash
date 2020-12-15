@@ -6,17 +6,15 @@
 
 #include "./utils/log.h"
 
-using namespace std;
-
 namespace Splash
 {
 
-mutex Sound_Engine::_engineMutex;
+std::mutex Sound_Engine::_engineMutex;
 
 /*************/
 Sound_Engine::Sound_Engine()
 {
-    lock_guard<mutex> lock(_engineMutex);
+    std::lock_guard<std::mutex> lock(_engineMutex);
 #if HAVE_JACK
     PaJack_SetClientName("splash");
 #endif
@@ -33,7 +31,7 @@ Sound_Engine::Sound_Engine()
 /*************/
 Sound_Engine::~Sound_Engine()
 {
-    lock_guard<mutex> lock(_engineMutex);
+    std::lock_guard<std::mutex> lock(_engineMutex);
 
     if (_portAudioStream)
     {
@@ -47,9 +45,9 @@ Sound_Engine::~Sound_Engine()
 }
 
 /*************/
-bool Sound_Engine::getDevice(bool inputDevice, const string& name)
+bool Sound_Engine::getDevice(bool inputDevice, const std::string& name)
 {
-    lock_guard<mutex> lock(_engineMutex);
+    std::lock_guard<std::mutex> lock(_engineMutex);
 
     _inputDevice = inputDevice;
     _streamParameters = PaStreamParameters();
@@ -96,7 +94,7 @@ bool Sound_Engine::setParameters(double sampleRate, SampleFormat sampleFormat, i
     if (!_connected)
         return false;
 
-    lock_guard<mutex> lock(_engineMutex);
+    std::lock_guard<std::mutex> lock(_engineMutex);
 
     auto deviceInfo = Pa_GetDeviceInfo(_streamParameters.device);
     if (sampleRate == 0.0)
@@ -165,7 +163,7 @@ bool Sound_Engine::setParameters(double sampleRate, SampleFormat sampleFormat, i
 /*************/
 bool Sound_Engine::startStream(PaStreamCallback* callback, void* userData)
 {
-    lock_guard<mutex> lock(_engineMutex);
+    std::lock_guard<std::mutex> lock(_engineMutex);
 
     int error;
     if (_inputDevice)

@@ -6,7 +6,6 @@
 #include "./utils/jsonutils.h"
 #include "./utils/osutils.h"
 
-using namespace std;
 using namespace Splash;
 
 /*************/

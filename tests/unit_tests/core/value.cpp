@@ -7,7 +7,6 @@
 #include "./core/serializer.h"
 #include "./core/value.h"
 
-using namespace std;
 using namespace Splash;
 
 /*************/
@@ -17,7 +16,7 @@ TEST_CASE("Testing type change")
     {
         auto value = Value(true);
         CHECK(value.as<bool>() == true);
-        CHECK(value.as<string>() == "true");
+        CHECK(value.as<std::string>() == "true");
     }
 
     SUBCASE("Converting from a float")
@@ -26,7 +25,7 @@ TEST_CASE("Testing type change")
         CHECK(value.as<int>() == 5);
         CHECK(value.as<long>() == 5);
         CHECK(value.as<float>() == 5.f);
-        CHECK(value.as<string>().find("5.0") == 0);
+        CHECK(value.as<std::string>().find("5.0") == 0);
     }
 
     SUBCASE("Converting from a integer")
@@ -35,7 +34,7 @@ TEST_CASE("Testing type change")
         CHECK(value.as<int>() == 5);
         CHECK(value.as<long>() == 5);
         CHECK(value.as<float>() == 5.f);
-        CHECK(value.as<string>().find("5") == 0);
+        CHECK(value.as<std::string>().find("5") == 0);
     }
 
     SUBCASE("Converting from a string")
@@ -44,12 +43,12 @@ TEST_CASE("Testing type change")
         CHECK(value.as<int>() == 15);
         CHECK(value.as<long>() == 15);
         CHECK(value.as<float>() == 15.f);
-        CHECK(value.as<string>() == "15");
+        CHECK(value.as<std::string>() == "15");
     }
 }
 
 /*************/
-bool compareIntToValues(const vector<int>& a, const Values& b)
+bool compareIntToValues(const std::vector<int>& a, const Values& b)
 {
     if (a.size() != b.size())
         return false;
@@ -67,10 +66,10 @@ bool compareIntToValues(const vector<int>& a, const Values& b)
 
 TEST_CASE("Testing initialization from iterators")
 {
-    auto buffer = vector<int>((size_t)128);
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_int_distribution<int> dist(0, 512);
+    auto buffer = std::vector<int>((size_t)128);
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(0, 512);
     for (auto& b : buffer)
         b = dist(gen);
 
@@ -102,9 +101,9 @@ TEST_CASE("Testing Values comparison")
 TEST_CASE("Testing buffer in Value")
 {
     Value::Buffer buffer(256);
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_int_distribution<uint8_t> dist(0, 255);
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<uint8_t> dist(0, 255);
     for (uint32_t i = 0; i < buffer.size(); ++i)
         buffer[i] = dist(gen);
 
@@ -127,7 +126,7 @@ TEST_CASE("Testing buffer in Value")
 /*************/
 TEST_CASE("Testing Value serialization")
 {
-    string testString("One to rule them all");
+    std::string testString("One to rule them all");
 
     CHECK(Serial::getSize(Value(true)) == sizeof(Value::Type) + sizeof(bool));
     CHECK(Serial::getSize(Value(42)) == sizeof(Value::Type) + sizeof(int64_t));
@@ -137,7 +136,7 @@ TEST_CASE("Testing Value serialization")
           sizeof(Value::Type) + sizeof(uint32_t) + sizeof(Value::Type) * 3 + sizeof(double) + sizeof(int64_t) + sizeof(uint32_t) + sizeof(char) * testString.size());
 
     {
-        vector<uint8_t> buffer;
+        std::vector<uint8_t> buffer;
         Serial::serialize(Value(42), buffer);
         auto bufferPtr = buffer.data();
         CHECK(*reinterpret_cast<Value::Type*>(bufferPtr) == Value::Type::integer);
@@ -146,7 +145,7 @@ TEST_CASE("Testing Value serialization")
     }
 
     {
-        vector<uint8_t> buffer;
+        std::vector<uint8_t> buffer;
         Serial::serialize(Value(3.14159), buffer);
         auto bufferPtr = buffer.data();
         CHECK(*reinterpret_cast<Value::Type*>(bufferPtr) == Value::Type::real);
@@ -155,7 +154,7 @@ TEST_CASE("Testing Value serialization")
     }
 
     {
-        vector<uint8_t> buffer;
+        std::vector<uint8_t> buffer;
         Serial::serialize(Value(testString), buffer);
         auto bufferPtr = buffer.data();
         CHECK(*reinterpret_cast<Value::Type*>(bufferPtr) == Value::Type::string);
@@ -163,11 +162,11 @@ TEST_CASE("Testing Value serialization")
         auto stringLength = *reinterpret_cast<uint32_t*>(bufferPtr);
         CHECK(stringLength == testString.size());
         bufferPtr += sizeof(uint32_t);
-        CHECK(string(reinterpret_cast<char*>(bufferPtr), stringLength) == testString);
+        CHECK(std::string(reinterpret_cast<char*>(bufferPtr), stringLength) == testString);
     }
 
     {
-        vector<uint8_t> buffer;
+        std::vector<uint8_t> buffer;
         auto data = Value(Values({42, 3.14159}));
         Serial::serialize(data, buffer);
         auto bufferPtr = buffer.data();
@@ -185,7 +184,7 @@ TEST_CASE("Testing Value serialization")
     }
 
     {
-        vector<uint8_t> buffer;
+        std::vector<uint8_t> buffer;
         auto data = Value(false);
         Serial::serialize(data, buffer);
         auto outData = Serial::deserialize<Value>(buffer);
@@ -193,7 +192,7 @@ TEST_CASE("Testing Value serialization")
     }
 
     {
-        vector<uint8_t> buffer;
+        std::vector<uint8_t> buffer;
         auto data = Value(42);
         Serial::serialize(data, buffer);
         auto outData = Serial::deserialize<Value>(buffer);
@@ -201,7 +200,7 @@ TEST_CASE("Testing Value serialization")
     }
 
     {
-        vector<uint8_t> buffer;
+        std::vector<uint8_t> buffer;
         auto data = Value(3.14159);
         Serial::serialize(data, buffer);
         auto outData = Serial::deserialize<Value>(buffer);
@@ -209,7 +208,7 @@ TEST_CASE("Testing Value serialization")
     }
 
     {
-        vector<uint8_t> buffer;
+        std::vector<uint8_t> buffer;
         auto data = Value(testString);
         Serial::serialize(data, buffer);
         auto outData = Serial::deserialize<Value>(buffer);
@@ -217,7 +216,7 @@ TEST_CASE("Testing Value serialization")
     }
 
     {
-        vector<uint8_t> buffer;
+        std::vector<uint8_t> buffer;
         auto data = Value(Values({42, 2.71828, testString}));
         Serial::serialize(data, buffer);
         auto outData = Serial::deserialize<Value>(buffer);
@@ -226,13 +225,13 @@ TEST_CASE("Testing Value serialization")
 
     {
         Value::Buffer inputBuffer(256);
-        random_device rd;
-        mt19937 gen(rd());
-        uniform_int_distribution<uint8_t> dist(0, 255);
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<uint8_t> dist(0, 255);
         for (uint32_t i = 0; i < inputBuffer.size(); ++i)
             inputBuffer[i] = dist(gen);
 
-        vector<uint8_t> buffer;
+        std::vector<uint8_t> buffer;
         auto data = Value(inputBuffer);
         Serial::serialize(data, buffer);
         auto outData = Serial::deserialize<Value>(buffer);

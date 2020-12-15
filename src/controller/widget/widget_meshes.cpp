@@ -6,13 +6,11 @@
 #include "./image/queue.h"
 #include "./utils/osutils.h"
 
-using namespace std;
-
 namespace Splash
 {
 
 /*************/
-GuiMeshes::GuiMeshes(Scene* scene, const string& name)
+GuiMeshes::GuiMeshes(Scene* scene, const std::string& name)
     : GuiWidget(scene, name)
 {
     auto types = getTypesFromCategory(GraphObject::Category::MESH);
@@ -58,7 +56,7 @@ void GuiMeshes::render()
     if (_meshTypeIndex.find(_selectedMeshName) == _meshTypeIndex.end())
         _meshTypeIndex[_selectedMeshName] = 0;
 
-    vector<const char*> meshTypes;
+    std::vector<const char*> meshTypes;
     for (auto& type : _meshType)
         meshTypes.push_back(type.first.c_str());
 
@@ -75,10 +73,10 @@ void GuiMeshes::render()
 }
 
 /*************/
-void GuiMeshes::replaceMesh(const string& previousMedia, const string& alias, const string& type)
+void GuiMeshes::replaceMesh(const std::string& previousMedia, const std::string& alias, const std::string& type)
 {
     // We get the list of all objects linked to previousMedia
-    auto targetObjects = list<weak_ptr<GraphObject>>();
+    auto targetObjects = std::list<std::weak_ptr<GraphObject>>();
     auto objects = getObjectsPtr(getObjectList());
     for (auto& object : objects)
     {
@@ -117,10 +115,10 @@ int GuiMeshes::updateWindowFlags()
 }
 
 /*************/
-list<shared_ptr<GraphObject>> GuiMeshes::getSceneMeshes()
+std::list<std::shared_ptr<GraphObject>> GuiMeshes::getSceneMeshes()
 {
-    auto meshList = list<shared_ptr<GraphObject>>();
-    auto meshTypes = list<string>({"mesh"});
+    auto meshList = std::list<std::shared_ptr<GraphObject>>();
+    auto meshTypes = std::list<std::string>({"mesh"});
 
     for (auto& type : meshTypes)
     {

@@ -89,6 +89,12 @@ target_sources(unitTests PRIVATE
     unit_tests/utils/file_access.cpp
 )
 
+if (HAVE_CALIMIRO)
+target_sources(unitTests PRIVATE
+    unit_tests/controller/geometriccalibrator.cpp
+)
+endif()
+
 if (NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
     add_custom_command(OUTPUT update_assets
         COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/data

@@ -35,8 +35,6 @@
 #include "./graphics/window.h"
 #include "./utils/timer.h"
 
-using namespace std;
-
 namespace Splash
 {
 

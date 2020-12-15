@@ -5,13 +5,11 @@
 #include "./core/factory.h"
 #include "./core/scene.h"
 
-using namespace std;
-
 namespace Splash
 {
 
 /*************/
-shared_ptr<GraphObject> ControllerObject::getObjectPtr(const string& name) const
+std::shared_ptr<GraphObject> ControllerObject::getObjectPtr(const std::string& name) const
 {
     auto scene = dynamic_cast<Scene*>(_root);
     if (!scene)
@@ -30,13 +28,13 @@ bool ControllerObject::checkObjectExists(const std::string& name) const
 }
 
 /*************/
-vector<shared_ptr<GraphObject>> ControllerObject::getObjectsPtr(const vector<string>& names) const
+std::vector<std::shared_ptr<GraphObject>> ControllerObject::getObjectsPtr(const std::vector<std::string>& names) const
 {
     auto scene = dynamic_cast<Scene*>(_root);
     if (!scene)
         return {};
 
-    vector<shared_ptr<GraphObject>> objectList;
+    std::vector<std::shared_ptr<GraphObject>> objectList;
     for (const auto& name : names)
     {
         auto object = scene->getObject(name);
@@ -48,7 +46,7 @@ vector<shared_ptr<GraphObject>> ControllerObject::getObjectsPtr(const vector<str
 }
 
 /*************/
-string ControllerObject::getObjectAlias(const std::string& name) const
+std::string ControllerObject::getObjectAlias(const std::string& name) const
 {
     auto tree = _root->getTree();
 
@@ -59,16 +57,16 @@ string ControllerObject::getObjectAlias(const std::string& name) const
             continue;
         Value value;
         tree->getValueForLeafAt(path, value);
-        return value.size() == 0 ? name : value[0].as<string>();
+        return value.size() == 0 ? name : value[0].as<std::string>();
     }
 
     return {};
 }
 
 /*************/
-unordered_map<string, string> ControllerObject::getObjectAliases() const
+std::unordered_map<std::string, std::string> ControllerObject::getObjectAliases() const
 {
-    auto aliases = unordered_map<string, string>();
+    auto aliases = std::unordered_map<std::string, std::string>();
     auto tree = _root->getTree();
 
     for (const auto& rootName : tree->getBranchList())
@@ -82,7 +80,7 @@ unordered_map<string, string> ControllerObject::getObjectAliases() const
             {
                 Value value;
                 tree->getValueForLeafAt(objectPath + "/" + objectName + "/attributes/alias", value);
-                aliases[objectName] = value.size() == 0 ? objectName : value[0].as<string>();
+                aliases[objectName] = value.size() == 0 ? objectName : value[0].as<std::string>();
             }
         }
     }
@@ -91,9 +89,9 @@ unordered_map<string, string> ControllerObject::getObjectAliases() const
 }
 
 /*************/
-vector<string> ControllerObject::getObjectList() const
+std::vector<std::string> ControllerObject::getObjectList() const
 {
-    auto names = vector<string>();
+    auto names = std::vector<std::string>();
     auto tree = _root->getTree();
 
     for (const auto& rootName : tree->getBranchList())
@@ -110,7 +108,7 @@ vector<string> ControllerObject::getObjectList() const
 }
 
 /*************/
-Values ControllerObject::getObjectAttributeDescription(const string& name, const string& attr) const
+Values ControllerObject::getObjectAttributeDescription(const std::string& name, const std::string& attr) const
 {
     auto tree = _root->getTree();
     for (const auto& rootName : tree->getBranchList())
@@ -130,7 +128,7 @@ Values ControllerObject::getObjectAttributeDescription(const string& name, const
 }
 
 /*************/
-Values ControllerObject::getObjectAttribute(const string& name, const string& attr) const
+Values ControllerObject::getObjectAttribute(const std::string& name, const std::string& attr) const
 {
     auto tree = _root->getTree();
 
@@ -148,9 +146,9 @@ Values ControllerObject::getObjectAttribute(const string& name, const string& at
 }
 
 /*************/
-unordered_map<string, Values> ControllerObject::getObjectAttributes(const string& name) const
+std::unordered_map<std::string, Values> ControllerObject::getObjectAttributes(const std::string& name) const
 {
-    auto attributes = unordered_map<string, Values>();
+    auto attributes = std::unordered_map<std::string, Values>();
     auto tree = _root->getTree();
 
     for (const auto& rootName : tree->getBranchList())
@@ -172,9 +170,9 @@ unordered_map<string, Values> ControllerObject::getObjectAttributes(const string
 }
 
 /*************/
-unordered_map<string, vector<string>> ControllerObject::getObjectLinks() const
+std::unordered_map<std::string, std::vector<std::string>> ControllerObject::getObjectLinks() const
 {
-    auto links = unordered_map<string, vector<string>>();
+    auto links = std::unordered_map<std::string, std::vector<std::string>>();
     auto tree = _root->getTree();
 
     for (const auto& rootName : tree->getBranchList())
@@ -186,7 +184,7 @@ unordered_map<string, vector<string>> ControllerObject::getObjectLinks() const
         {
             auto linksIt = links.find(objectName);
             if (linksIt == links.end())
-                links.emplace(make_pair(objectName, vector<string>()));
+                links.emplace(make_pair(objectName, std::vector<std::string>()));
 
             auto childrenPath = objectPath + "/" + objectName + "/links/children";
 
@@ -196,7 +194,7 @@ unordered_map<string, vector<string>> ControllerObject::getObjectLinks() const
             for (const auto& child : children)
             {
                 auto& childList = links[objectName];
-                auto childName = child.as<string>();
+                auto childName = child.as<std::string>();
                 if (std::find(childList.begin(), childList.end(), childName) == childList.end())
                     childList.push_back(childName);
             }
@@ -207,9 +205,9 @@ unordered_map<string, vector<string>> ControllerObject::getObjectLinks() const
 }
 
 /*************/
-unordered_map<string, vector<string>> ControllerObject::getObjectReversedLinks() const
+std::unordered_map<std::string, std::vector<std::string>> ControllerObject::getObjectReversedLinks() const
 {
-    auto links = unordered_map<string, vector<string>>();
+    auto links = std::unordered_map<std::string, std::vector<std::string>>();
     auto tree = _root->getTree();
 
     for (const auto& rootName : tree->getBranchList())
@@ -221,7 +219,7 @@ unordered_map<string, vector<string>> ControllerObject::getObjectReversedLinks()
         {
             auto linksIt = links.find(objectName);
             if (linksIt == links.end())
-                links.emplace(make_pair(objectName, vector<string>()));
+                links.emplace(make_pair(objectName, std::vector<std::string>()));
 
             auto parentsPath = objectPath + "/" + objectName + "/links/parents";
 
@@ -231,7 +229,7 @@ unordered_map<string, vector<string>> ControllerObject::getObjectReversedLinks()
             for (const auto& parent : parents)
             {
                 auto& parentList = links[objectName];
-                auto parentName = parent.as<string>();
+                auto parentName = parent.as<std::string>();
                 if (std::find(parentList.begin(), parentList.end(), parentName) == parentList.end())
                     parentList.push_back(parentName);
             }
@@ -242,33 +240,33 @@ unordered_map<string, vector<string>> ControllerObject::getObjectReversedLinks()
 }
 
 /*************/
-string ControllerObject::getShortDescription(const string& type) const
+std::string ControllerObject::getShortDescription(const std::string& type) const
 {
     Factory factory;
     return factory.getShortDescription(type);
 }
 
 /*************/
-string ControllerObject::getDescription(const string& type) const
+std::string ControllerObject::getDescription(const std::string& type) const
 {
     Factory factory;
     return factory.getDescription(type);
 }
 
 /*************/
-vector<string> ControllerObject::getTypesFromCategory(const GraphObject::Category& category) const
+std::vector<std::string> ControllerObject::getTypesFromCategory(const GraphObject::Category& category) const
 {
     Factory factory;
     return factory.getObjectsOfCategory(category);
 }
 
 /*************/
-map<string, string> ControllerObject::getObjectTypes() const
+std::map<std::string, std::string> ControllerObject::getObjectTypes() const
 {
-    auto types = map<string, string>();
+    auto types = std::map<std::string, std::string>();
     auto tree = _root->getTree();
 
-    auto feedListFunc = [&](const string& branch) {
+    auto feedListFunc = [&](const std::string& branch) {
         auto objectPath = "/" + branch + "/objects";
         auto objectList = tree->getBranchListAt(objectPath);
         for (const auto& objectName : objectList)
@@ -278,7 +276,7 @@ map<string, string> ControllerObject::getObjectTypes() const
             Value value;
             tree->getValueForLeafAt(typePath, value);
             assert(value.getType() == Value::string);
-            auto type = value[0].as<string>();
+            auto type = value[0].as<std::string>();
             types[objectName] = type;
         }
     };
@@ -298,9 +296,9 @@ map<string, string> ControllerObject::getObjectTypes() const
 }
 
 /*************/
-vector<string> ControllerObject::getObjectsOfType(const string& type) const
+std::vector<std::string> ControllerObject::getObjectsOfType(const std::string& type) const
 {
-    vector<string> objectList;
+    std::vector<std::string> objectList;
 
     auto tree = _root->getTree();
     for (const auto& rootName : tree->getBranchList())
@@ -315,7 +313,7 @@ vector<string> ControllerObject::getObjectsOfType(const string& type) const
             assert(tree->hasLeafAt(typePath));
             Value typeValue;
             tree->getValueForLeafAt(typePath, typeValue);
-            if (typeValue[0].as<string>() == type)
+            if (typeValue[0].as<std::string>() == type)
                 objectList.push_back(objectName);
         }
     }
@@ -334,7 +332,7 @@ void ControllerObject::sendBuffer(const std::string& name, const std::shared_ptr
 }
 
 /*************/
-void ControllerObject::setWorldAttribute(const string& name, const Values& values) const
+void ControllerObject::setWorldAttribute(const std::string& name, const Values& values) const
 {
     auto tree = _root->getTree();
     auto attrPath = "/world/attributes/" + name;
@@ -345,7 +343,7 @@ void ControllerObject::setWorldAttribute(const string& name, const Values& value
 }
 
 /*************/
-void ControllerObject::setInScene(const string& name, const Values& values) const
+void ControllerObject::setInScene(const std::string& name, const Values& values) const
 {
     auto tree = _root->getTree();
     auto attrPath = "/" + _root->getName() + "/attributes/" + name;
@@ -356,7 +354,7 @@ void ControllerObject::setInScene(const string& name, const Values& values) cons
 }
 
 /*************/
-Values ControllerObject::getWorldAttribute(const string& attr) const
+Values ControllerObject::getWorldAttribute(const std::string& attr) const
 {
     auto tree = _root->getTree();
     auto attrPath = "/world/attributes/" + attr;
@@ -368,7 +366,7 @@ Values ControllerObject::getWorldAttribute(const string& attr) const
 }
 
 /*************/
-void ControllerObject::setObjectAttribute(const string& name, const string& attr, const Values& values) const
+void ControllerObject::setObjectAttribute(const std::string& name, const std::string& attr, const Values& values) const
 {
     if (name.empty())
         return;
@@ -386,7 +384,7 @@ void ControllerObject::setObjectAttribute(const string& name, const string& attr
 }
 
 /*************/
-void ControllerObject::setObjectsOfType(const string& type, const string& attr, const Values& values) const
+void ControllerObject::setObjectsOfType(const std::string& type, const std::string& attr, const Values& values) const
 {
     auto tree = _root->getTree();
     auto branchList = tree->getBranchList();
@@ -401,7 +399,7 @@ void ControllerObject::setObjectsOfType(const string& type, const string& attr, 
             Value objectType;
             if (!tree->getValueForLeafAt(typePath, objectType))
                 continue;
-            if (objectType[0].as<string>() == type)
+            if (objectType[0].as<std::string>() == type)
             {
                 auto attrPath = path + "/" + objectName + "/attributes/" + attr;
                 if (tree->hasLeafAt(attrPath))

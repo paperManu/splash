@@ -20,8 +20,6 @@
 
 #define SPLASH_SHMDATA_THREADS 2
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -42,16 +40,16 @@ Image_Shmdata::~Image_Shmdata()
 }
 
 /*************/
-bool Image_Shmdata::read(const string& filename)
+bool Image_Shmdata::read(const std::string& filename)
 {
-    _reader = make_unique<shmdata::Follower>(filename, [&](void* data, size_t size) { onData(data, size); }, [&](const string& caps) { onCaps(caps); }, [&]() {}, &_logger);
+    _reader = std::make_unique<shmdata::Follower>(filename, [&](void* data, size_t size) { onData(data, size); }, [&](const std::string& caps) { onCaps(caps); }, [&]() {}, &_logger);
 
     return true;
 }
 
 /*************/
 // Small function to work around a bug in GCC's libstdc++
-void removeExtraParenthesis(string& str)
+void removeExtraParenthesis(std::string& str)
 {
     if (str.find(")") == 0)
         str = str.substr(1);
@@ -69,7 +67,7 @@ void Image_Shmdata::init()
 }
 
 /*************/
-void Image_Shmdata::onCaps(const string& dataType)
+void Image_Shmdata::onCaps(const std::string& dataType)
 {
     Log::get() << Log::MESSAGE << "Image_Shmdata::" << __FUNCTION__ << " - Trying to connect with the following caps: " << dataType << Log::endl;
 
@@ -89,32 +87,32 @@ void Image_Shmdata::onCaps(const string& dataType)
         _is420 = false;
         _is422 = false;
 
-        regex regHap, regWidth, regHeight;
-        regex regVideo, regFormat;
+        std::regex regHap, regWidth, regHeight;
+        std::regex regVideo, regFormat;
         try
         {
-            regVideo = regex("(.*video/x-raw)(.*)", regex_constants::extended);
-            regHap = regex("(.*video/x-gst-fourcc-HapY)(.*)", regex_constants::extended);
-            regFormat = regex("(.*format=\\(string\\))(.*)", regex_constants::extended);
-            regWidth = regex("(.*width=\\(int\\))(.*)", regex_constants::extended);
-            regHeight = regex("(.*height=\\(int\\))(.*)", regex_constants::extended);
+            regVideo = std::regex("(.*video/x-raw)(.*)", std::regex_constants::extended);
+            regHap = std::regex("(.*video/x-gst-fourcc-HapY)(.*)", std::regex_constants::extended);
+            regFormat = std::regex("(.*format=\\(string\\))(.*)", std::regex_constants::extended);
+            regWidth = std::regex("(.*width=\\(int\\))(.*)", std::regex_constants::extended);
+            regHeight = std::regex("(.*height=\\(int\\))(.*)", std::regex_constants::extended);
         }
-        catch (const regex_error& e)
+        catch (const std::regex_error& e)
         {
             auto errorString = e.what(); // string();
             Log::get() << Log::WARNING << "Image_Shmdata::" << __FUNCTION__ << " - Regex error: " << errorString << Log::endl;
             return;
         }
 
-        smatch match;
-        string substr, format;
+        std::smatch match;
+        std::string substr, format;
 
-        if (regex_match(dataType, regVideo))
+        if (std::regex_match(dataType, regVideo))
         {
 
-            if (regex_match(dataType, match, regFormat))
+            if (std::regex_match(dataType, match, regFormat))
             {
-                ssub_match subMatch = match[2];
+                std::ssub_match subMatch = match[2];
                 substr = subMatch.str();
                 removeExtraParenthesis(substr);
                 substr = substr.substr(0, substr.find(","));
@@ -167,23 +165,23 @@ void Image_Shmdata::onCaps(const string& dataType)
                 }
             }
         }
-        else if (regex_match(dataType, regHap))
+        else if (std::regex_match(dataType, regHap))
         {
             _isHap = true;
         }
 
-        if (regex_match(dataType, match, regWidth))
+        if (std::regex_match(dataType, match, regWidth))
         {
-            ssub_match subMatch = match[2];
+            std::ssub_match subMatch = match[2];
             substr = subMatch.str();
             removeExtraParenthesis(substr);
             substr = substr.substr(0, substr.find(","));
             _width = stoi(substr);
         }
 
-        if (regex_match(dataType, match, regHeight))
+        if (std::regex_match(dataType, match, regHeight))
         {
-            ssub_match subMatch = match[2];
+            std::ssub_match subMatch = match[2];
             substr = subMatch.str();
             removeExtraParenthesis(substr);
             substr = substr.substr(0, substr.find(","));
@@ -222,7 +220,7 @@ void Image_Shmdata::readHapFrame(void* data, int data_size)
 {
     // We are using kind of a hack to store a DXT compressed image in an ImageBuffer
     // First, we check the texture format type
-    auto textureFormat = string("");
+    auto textureFormat = std::string("");
     if (!hapDecodeFrame(data, data_size, nullptr, 0, textureFormat))
         return;
 
@@ -252,9 +250,9 @@ void Image_Shmdata::readHapFrame(void* data, int data_size)
         return;
 
     {
-        lock_guard<shared_mutex> lock(_writeMutex);
+        std::lock_guard<std::shared_mutex> lock(_writeMutex);
         if (!_bufferImage)
-            _bufferImage = make_unique<ImageBuffer>();
+            _bufferImage = std::make_unique<ImageBuffer>();
         std::swap(*(_bufferImage), _readerBuffer);
         _imageUpdated = true;
     }
@@ -290,11 +288,11 @@ void Image_Shmdata::readUncompressedFrame(void* data, int /*data_size*/)
     if (!_isYUV && (_channels == 3 || _channels == 4))
     {
         char* pixels = (char*)(_readerBuffer).data();
-        vector<future<void>> threads;
+        std::vector<std::future<void>> threads;
         for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
         {
             int size = _width * _height * _channels * sizeof(char);
-            threads.push_back(async(launch::async, [=]() {
+            threads.push_back(std::async(std::launch::async, [=]() {
                 int sizeOfBlock; // We compute the size of the block, to handle image size non divisible by SPLASH_SHMDATA_THREADS
                 if (size - size / SPLASH_SHMDATA_THREADS * block < 2 * size / SPLASH_SHMDATA_THREADS)
                     sizeOfBlock = size - size / SPLASH_SHMDATA_THREADS * block;
@@ -327,15 +325,15 @@ void Image_Shmdata::readUncompressedFrame(void* data, int /*data_size*/)
     {
         const unsigned char* YUV = static_cast<const unsigned char*>(data);
         char* pixels = (char*)(_readerBuffer).data();
-        copy(YUV, YUV + _width * _height * 2, pixels);
+        std::copy(YUV, YUV + _width * _height * 2, pixels);
     }
     else
         return;
 
     {
-        lock_guard<shared_mutex> lock(_writeMutex);
+        std::lock_guard<std::shared_mutex> lock(_writeMutex);
         if (!_bufferImage)
-            _bufferImage = make_unique<ImageBuffer>();
+            _bufferImage = std::make_unique<ImageBuffer>();
         std::swap(*(_bufferImage), _readerBuffer);
         _imageUpdated = true;
     }

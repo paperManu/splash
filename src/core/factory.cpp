@@ -48,8 +48,6 @@
 #include "./image/image_opencv.h"
 #endif
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -78,7 +76,7 @@ void Factory::loadDefaults()
     if (!defaultEnv)
         return;
 
-    auto filename = string(defaultEnv);
+    auto filename = std::string(defaultEnv);
     Json::Value config;
     if (!Utils::loadJsonFile(filename, config))
         return;
@@ -86,7 +84,7 @@ void Factory::loadDefaults()
     auto objNames = config.getMemberNames();
     for (auto& name : objNames)
     {
-        unordered_map<string, Values> defaults;
+        std::unordered_map<std::string, Values> defaults;
         auto attrNames = config[name].getMemberNames();
         for (const auto& attrName : attrNames)
         {
@@ -98,7 +96,7 @@ void Factory::loadDefaults()
 }
 
 /*************/
-shared_ptr<GraphObject> Factory::create(const string& type)
+std::shared_ptr<GraphObject> Factory::create(const std::string& type)
 {
     // Not all object types are listed here, only those available to the user
     auto page = _objectBook.find(type);
@@ -118,23 +116,23 @@ shared_ptr<GraphObject> Factory::create(const string& type)
     else
     {
         Log::get() << Log::WARNING << "Factory::" << __FUNCTION__ << " - Object type " << type << " does not exist" << Log::endl;
-        return shared_ptr<GraphObject>(nullptr);
+        return std::shared_ptr<GraphObject>(nullptr);
     }
 }
 
 /*************/
-vector<string> Factory::getObjectTypes()
+std::vector<std::string> Factory::getObjectTypes()
 {
-    vector<string> types;
+    std::vector<std::string> types;
     for (auto& page : _objectBook)
         types.push_back(page.first);
     return types;
 }
 
 /*************/
-vector<string> Factory::getObjectsOfCategory(GraphObject::Category c)
+std::vector<std::string> Factory::getObjectsOfCategory(GraphObject::Category c)
 {
-    vector<string> types;
+    std::vector<std::string> types;
     for (auto& page : _objectBook)
         if (page.second.objectCategory == c)
             types.push_back(page.first);
@@ -143,7 +141,7 @@ vector<string> Factory::getObjectsOfCategory(GraphObject::Category c)
 }
 
 /*************/
-string Factory::getShortDescription(const string& type)
+std::string Factory::getShortDescription(const std::string& type)
 {
     if (!isCreatable(type))
         return "";
@@ -152,7 +150,7 @@ string Factory::getShortDescription(const string& type)
 }
 
 /*************/
-string Factory::getDescription(const string& type)
+std::string Factory::getDescription(const std::string& type)
 {
     if (!isCreatable(type))
         return "";
@@ -161,7 +159,7 @@ string Factory::getDescription(const string& type)
 }
 
 /*************/
-bool Factory::isCreatable(const string& type)
+bool Factory::isCreatable(const std::string& type)
 {
     auto it = _objectBook.find(type);
     if (it == _objectBook.end())
@@ -174,7 +172,7 @@ bool Factory::isCreatable(const string& type)
 }
 
 /*************/
-bool Factory::isProjectSavable(const string& type)
+bool Factory::isProjectSavable(const std::string& type)
 {
     auto it = _objectBook.find(type);
     if (it == _objectBook.end())
@@ -191,46 +189,46 @@ bool Factory::isProjectSavable(const string& type)
 /*************/
 void Factory::registerObjects()
 {
-    _objectBook["blender"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<Blender>(root)); },
+    _objectBook["blender"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Blender>(root)); },
         GraphObject::Category::MISC,
         "blender",
         "Controls the blending of all the cameras.");
 
-    _objectBook["camera"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<Camera>(root)); },
+    _objectBook["camera"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Camera>(root)); },
         GraphObject::Category::MISC,
         "camera",
         "Virtual camera which corresponds to a given videoprojector.");
 
-    _objectBook["filter"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<Filter>(root)); },
+    _objectBook["filter"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Filter>(root)); },
         GraphObject::Category::FILTER,
         "filter",
         "Filter applied to textures. The default filter allows for standard image manipulation, the user can set his own GLSL shader.",
         true);
 
-    _objectBook["filter_black_level"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<FilterBlackLevel>(root)); },
+    _objectBook["filter_black_level"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<FilterBlackLevel>(root)); },
         GraphObject::Category::FILTER,
         "black level filter",
         "Black level filter, which sets the black for an input source higher than 0 to allow for blending in dark areas.",
         true);
 
-    _objectBook["filter_color_curves"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<FilterColorCurves>(root)); },
+    _objectBook["filter_color_curves"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<FilterColorCurves>(root)); },
         GraphObject::Category::FILTER,
         "color curves filter",
         "Color curves filter, which applies color transformation based on user-defined RGB curves.",
         true);
 
-    _objectBook["filter_custom"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<FilterCustom>(root)); },
+    _objectBook["filter_custom"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<FilterCustom>(root)); },
         GraphObject::Category::FILTER,
         "custom filter",
         "Custom filter, which can take a GLSL fragment shader source to process the input texture(s).",
         true);
 
-    _objectBook["geometry"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<Geometry>(root)); },
+    _objectBook["geometry"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Geometry>(root)); },
         GraphObject::Category::MISC,
         "Geometry",
         "Intermediary object holding vertices, UV and normal coordinates of a projection surface.");
 
-    _objectBook["image"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<Image>(root)); },
+    _objectBook["image"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image>(root)); },
         GraphObject::Category::IMAGE,
         "image",
         "Static image read from a file.",
@@ -238,11 +236,11 @@ void Factory::registerObjects()
 
     _objectBook["image_list"] = Page(
         [&](RootObject* root) {
-            shared_ptr<GraphObject> object;
+            std::shared_ptr<GraphObject> object;
             if (!_scene)
-                object = dynamic_pointer_cast<GraphObject>(make_shared<Image_List>(root));
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image_List>(root));
             else
-                object = dynamic_pointer_cast<GraphObject>(make_shared<Image>(root));
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image>(root));
             return object;
         },
         GraphObject::Category::IMAGE,
@@ -253,11 +251,11 @@ void Factory::registerObjects()
 #if HAVE_LINUX
     _objectBook["image_v4l2"] = Page(
         [&](RootObject* root) {
-            shared_ptr<GraphObject> object;
+            std::shared_ptr<GraphObject> object;
             if (!_scene)
-                object = dynamic_pointer_cast<GraphObject>(make_shared<Image_V4L2>(root));
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image_V4L2>(root));
             else
-                object = dynamic_pointer_cast<GraphObject>(make_shared<Image>(root));
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image>(root));
             return object;
         },
         GraphObject::Category::IMAGE,
@@ -268,11 +266,11 @@ void Factory::registerObjects()
 
     _objectBook["image_ffmpeg"] = Page(
         [&](RootObject* root) {
-            shared_ptr<GraphObject> object;
+            std::shared_ptr<GraphObject> object;
             if (!_scene)
-                object = dynamic_pointer_cast<GraphObject>(make_shared<Image_FFmpeg>(root));
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image_FFmpeg>(root));
             else
-                object = dynamic_pointer_cast<GraphObject>(make_shared<Image>(root));
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image>(root));
             return object;
         },
         GraphObject::Category::IMAGE,
@@ -283,11 +281,11 @@ void Factory::registerObjects()
 #if HAVE_GPHOTO and HAVE_OPENCV
     _objectBook["image_gphoto"] = Page(
         [&](RootObject* root) {
-            shared_ptr<GraphObject> object;
+            std::shared_ptr<GraphObject> object;
             if (!_scene)
-                object = dynamic_pointer_cast<GraphObject>(make_shared<Image_GPhoto>(root));
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image_GPhoto>(root));
             else
-                object = dynamic_pointer_cast<GraphObject>(make_shared<Image>(root));
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image>(root));
             return object;
         },
         GraphObject::Category::IMAGE,
@@ -299,11 +297,11 @@ void Factory::registerObjects()
 #if HAVE_SHMDATA
     _objectBook["image_shmdata"] = Page(
         [&](RootObject* root) {
-            shared_ptr<GraphObject> object;
+            std::shared_ptr<GraphObject> object;
             if (!_scene)
-                object = dynamic_pointer_cast<GraphObject>(make_shared<Image_Shmdata>(root));
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image_Shmdata>(root));
             else
-                object = dynamic_pointer_cast<GraphObject>(make_shared<Image>(root));
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image>(root));
             return object;
         },
         GraphObject::Category::IMAGE,
@@ -315,11 +313,11 @@ void Factory::registerObjects()
 #if HAVE_OPENCV
     _objectBook["image_opencv"] = Page(
         [&](RootObject* root) {
-            shared_ptr<GraphObject> object;
+            std::shared_ptr<GraphObject> object;
             if (!_scene)
-                object = dynamic_pointer_cast<GraphObject>(make_shared<Image_OpenCV>(root));
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image_OpenCV>(root));
             else
-                object = dynamic_pointer_cast<GraphObject>(make_shared<Image>(root));
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image>(root));
             return object;
         },
         GraphObject::Category::IMAGE,
@@ -328,7 +326,7 @@ void Factory::registerObjects()
         true);
 #endif
 
-    _objectBook["mesh"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<Mesh>(root)); },
+    _objectBook["mesh"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Mesh>(root)); },
         GraphObject::Category::MESH,
         "mesh from obj file",
         "Mesh (vertices and UVs) describing a projection surface, read from a .obj file.",
@@ -337,37 +335,37 @@ void Factory::registerObjects()
 #if HAVE_SHMDATA
     _objectBook["mesh_shmdata"] = Page(
         [&](RootObject* root) {
-            shared_ptr<GraphObject> object;
+            std::shared_ptr<GraphObject> object;
             if (!_scene)
-                object = dynamic_pointer_cast<GraphObject>(make_shared<Mesh_Shmdata>(root));
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Mesh_Shmdata>(root));
             else
-                object = dynamic_pointer_cast<GraphObject>(make_shared<Mesh>(root));
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Mesh>(root));
             return object;
         },
         GraphObject::Category::MESH,
-        "mesh through shared memory",
+        "mesh through shared memory with shmdata",
         "Mesh object reading data from a Shmdata shared memory.",
         true);
 #endif
 
-    _objectBook["sink"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<Sink>(root)); },
+    _objectBook["sink"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Sink>(root)); },
         GraphObject::Category::MISC,
         "sink a texture to a host buffer",
         "Get the texture content to a host buffer. Only used internally.");
 
 #if HAVE_SHMDATA
-    _objectBook["sink_shmdata"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<Sink_Shmdata>(root)); },
+    _objectBook["sink_shmdata"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Sink_Shmdata>(root)); },
         GraphObject::Category::MISC,
         "sink a texture to shmdata file",
         "Outputs connected texture to a Shmdata shared memory.");
 
-    _objectBook["sink_shmdata_encoded"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<Sink_Shmdata_Encoded>(root)); },
+    _objectBook["sink_shmdata_encoded"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Sink_Shmdata_Encoded>(root)); },
         GraphObject::Category::MISC,
         "sink a texture as an encoded video to shmdata file",
         "Outputs texture as a compressed frame to a Shmdata shared memory.");
 #endif
 
-    _objectBook["object"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<Object>(root)); },
+    _objectBook["object"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Object>(root)); },
         GraphObject::Category::MISC,
         "object",
         "Utility class used for specify which image is mapped onto which mesh.",
@@ -377,8 +375,8 @@ void Factory::registerObjects()
     _objectBook["python"] = Page(
         [&](RootObject* root) {
             if (!root || (_scene && !_scene->isMaster()))
-                return shared_ptr<GraphObject>(nullptr);
-            return dynamic_pointer_cast<GraphObject>(make_shared<PythonEmbedded>(root));
+                return std::shared_ptr<GraphObject>(nullptr);
+            return std::dynamic_pointer_cast<GraphObject>(std::make_shared<PythonEmbedded>(root));
         },
         GraphObject::Category::MISC,
         "python",
@@ -387,11 +385,11 @@ void Factory::registerObjects()
 
     _objectBook["queue"] = Page(
         [&](RootObject* root) {
-            shared_ptr<GraphObject> object;
+            std::shared_ptr<GraphObject> object;
             if (!_scene)
-                object = dynamic_pointer_cast<GraphObject>(make_shared<Queue>(root));
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Queue>(root));
             else
-                object = dynamic_pointer_cast<GraphObject>(make_shared<QueueSurrogate>(root));
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<QueueSurrogate>(root));
             return object;
         },
         GraphObject::Category::IMAGE,
@@ -399,7 +397,7 @@ void Factory::registerObjects()
         "Allows for creating a timed playlist of image sources.",
         true);
 
-    _objectBook["texture_image"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<Texture_Image>(root)); },
+    _objectBook["texture_image"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Texture_Image>(root)); },
         GraphObject::Category::TEXTURE,
         "texture image",
         "Texture object created from an Image object.",
@@ -408,21 +406,21 @@ void Factory::registerObjects()
     _objectBook["virtual_probe"] = Page(
         [&](RootObject* root) {
             if (!_scene)
-                return dynamic_pointer_cast<GraphObject>(make_shared<VirtualProbe>(nullptr));
+                return std::dynamic_pointer_cast<GraphObject>(std::make_shared<VirtualProbe>(nullptr));
             else
-                return dynamic_pointer_cast<GraphObject>(make_shared<VirtualProbe>(root));
+                return std::dynamic_pointer_cast<GraphObject>(std::make_shared<VirtualProbe>(root));
         },
         GraphObject::Category::MISC,
         "virtual probe to simulate a virtual projection surface",
         "Virtual screen used to simulate a virtual projection surface.",
         true);
 
-    _objectBook["warp"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<Warp>(root)); },
+    _objectBook["warp"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Warp>(root)); },
         GraphObject::Category::MISC,
         "warp",
         "Warping object, allows for deforming the output of a Camera.");
 
-    _objectBook["window"] = Page([&](RootObject* root) { return dynamic_pointer_cast<GraphObject>(make_shared<Window>(root)); },
+    _objectBook["window"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Window>(root)); },
         GraphObject::Category::MISC,
         "window",
         "Window object, set to be shown on one or multiple physical outputs.");

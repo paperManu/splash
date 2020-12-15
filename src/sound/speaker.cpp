@@ -3,8 +3,6 @@
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -31,7 +29,7 @@ void Speaker::clearQueue()
 }
 
 /*************/
-void Speaker::setParameters(uint32_t channels, uint32_t sampleRate, Sound_Engine::SampleFormat format, const string& deviceName)
+void Speaker::setParameters(uint32_t channels, uint32_t sampleRate, Sound_Engine::SampleFormat format, const std::string& deviceName)
 {
     _channels = std::max((uint32_t)1, channels);
     _sampleRate = std::max((uint32_t)1, sampleRate);
@@ -108,13 +106,13 @@ int Speaker::portAudioCallback(
 
         if (step <= ringBufferEndLength)
         {
-            copy(&that->_ringBuffer[readPosition], &that->_ringBuffer[readPosition + step], output);
+            std::copy(&that->_ringBuffer[readPosition], &that->_ringBuffer[readPosition + step], output);
         }
         else
         {
-            copy(&that->_ringBuffer[readPosition], &that->_ringBuffer[effectiveSpace], output);
+            std::copy(&that->_ringBuffer[readPosition], &that->_ringBuffer[effectiveSpace], output);
             output += ringBufferEndLength;
-            copy(&that->_ringBuffer[0], &that->_ringBuffer[step - ringBufferEndLength], output);
+            std::copy(&that->_ringBuffer[0], &that->_ringBuffer[step - ringBufferEndLength], output);
         }
 
         readPosition = (readPosition + step) % effectiveSpace;

@@ -2,7 +2,6 @@
 
 #include "./core/attribute.h"
 
-using namespace std;
 using namespace Splash;
 
 /*************/
@@ -74,5 +73,5 @@ TEST_CASE("Testing Attribute constructors")
     CHECK_FALSE(attr.hasGetter());
     CHECK(attr.isDefault());
     attr({"Flying machine"});
-    CHECK_EQ(attr()[0].as<string>(), "Flying machine");
+    CHECK_EQ(attr()[0].as<std::string>(), "Flying machine");
 }

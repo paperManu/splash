@@ -6,7 +6,7 @@
 #include "./core/tree.h"
 #include "./utils/log.h"
 
-using namespace std;
+namespace chrono = std::chrono;
 using namespace Splash;
 
 /*************/
@@ -130,7 +130,7 @@ TEST_CASE("Testing the Seed queue")
 /*************/
 TEST_CASE("Testing the synchronization between trees")
 {
-    string error{};
+    std::string error{};
     Tree::Root maple, oak;
     auto value = Values({1.0, "I've got a flying machine", false});
 
@@ -224,11 +224,11 @@ TEST_CASE("Testing the chronology handling of updates")
 TEST_CASE("Testing the Branch's callbacks")
 {
     Tree::Root maple;
-    string lastName = "";
-    maple.addCallbackToBranchAt("/", Tree::Branch::Task::AddBranch, [&lastName](Tree::Branch& branch, string name) { lastName = name; });
-    maple.addCallbackToBranchAt("/", Tree::Branch::Task::RemoveBranch, [&lastName](Tree::Branch& branch, string name) { lastName = name; });
-    maple.addCallbackToBranchAt("/", Tree::Branch::Task::AddLeaf, [&lastName](Tree::Branch& branch, string name) { lastName = name; });
-    maple.addCallbackToBranchAt("/", Tree::Branch::Task::RemoveLeaf, [&lastName](Tree::Branch& branch, string name) { lastName = name; });
+    std::string lastName = "";
+    maple.addCallbackToBranchAt("/", Tree::Branch::Task::AddBranch, [&lastName](Tree::Branch& branch, std::string name) { lastName = name; });
+    maple.addCallbackToBranchAt("/", Tree::Branch::Task::RemoveBranch, [&lastName](Tree::Branch& branch, std::string name) { lastName = name; });
+    maple.addCallbackToBranchAt("/", Tree::Branch::Task::AddLeaf, [&lastName](Tree::Branch& branch, std::string name) { lastName = name; });
+    maple.addCallbackToBranchAt("/", Tree::Branch::Task::RemoveLeaf, [&lastName](Tree::Branch& branch, std::string name) { lastName = name; });
 
     maple.createBranchAt("/some_branch");
     CHECK(lastName == "some_branch");

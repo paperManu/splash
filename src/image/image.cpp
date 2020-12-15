@@ -16,8 +16,6 @@
 #define SPLASH_IMAGE_COPY_THREADS 2
 #define SPLASH_IMAGE_SERIALIZED_HEADER_SIZE 4096
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -53,8 +51,8 @@ void Image::init()
 /*************/
 Image::~Image()
 {
-    lock_guard<shared_mutex> writeLock(_writeMutex);
-    lock_guard<Spinlock> readlock(_readMutex);
+    std::lock_guard<std::shared_mutex> writeLock(_writeMutex);
+    std::lock_guard<Spinlock> readlock(_readMutex);
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Image::~Image - Destructor" << Log::endl;
 #endif
@@ -73,7 +71,7 @@ const void* Image::data() const
 ImageBuffer Image::get() const
 {
     ImageBuffer img;
-    lock_guard<Spinlock> lock(_readMutex);
+    std::lock_guard<Spinlock> lock(_readMutex);
     if (_image)
         img = *_image;
     return img;
@@ -82,7 +80,7 @@ ImageBuffer Image::get() const
 /*************/
 ImageBufferSpec Image::getSpec() const
 {
-    lock_guard<Spinlock> lock(_readMutex);
+    std::lock_guard<Spinlock> lock(_readMutex);
     if (_image)
         return _image->getSpec();
     else
@@ -92,9 +90,9 @@ ImageBufferSpec Image::getSpec() const
 /*************/
 void Image::set(const ImageBuffer& img)
 {
-    lock_guard<shared_mutex> lockRead(_writeMutex);
+    std::lock_guard<std::shared_mutex> lockRead(_writeMutex);
     if (!_bufferImage)
-        _bufferImage = make_unique<ImageBuffer>();
+        _bufferImage = std::make_unique<ImageBuffer>();
     *_bufferImage = img;
     _imageUpdated = true;
     updateTimestamp();
@@ -106,18 +104,18 @@ void Image::set(unsigned int w, unsigned int h, unsigned int channels, ImageBuff
     ImageBufferSpec spec(w, h, channels, 8 * sizeof(channels) * (int)type, type);
     ImageBuffer img(spec);
 
-    lock_guard<shared_mutex> lock(_writeMutex);
+    std::lock_guard<std::shared_mutex> lock(_writeMutex);
     if (!_bufferImage)
-        _bufferImage = make_unique<ImageBuffer>();
+        _bufferImage = std::make_unique<ImageBuffer>();
     std::swap(*_bufferImage, img);
     _imageUpdated = true;
     updateTimestamp();
 }
 
 /*************/
-shared_ptr<SerializedObject> Image::serialize() const
+std::shared_ptr<SerializedObject> Image::serialize() const
 {
-    lock_guard<Spinlock> lock(_readMutex);
+    std::lock_guard<Spinlock> lock(_readMutex);
 
     if (Timer::get().isDebug())
         Timer::get() << "serialize " + _name;
@@ -125,20 +123,20 @@ shared_ptr<SerializedObject> Image::serialize() const
     // We first get the xml version of the specs, and pack them into the obj
     if (!_image)
         return {};
-    string xmlSpec = _image->getSpec().to_string();
+    std::string xmlSpec = _image->getSpec().to_string();
     int nbrChar = xmlSpec.size();
     int imgSize = _image->getSpec().rawSize();
     int totalSize = SPLASH_IMAGE_SERIALIZED_HEADER_SIZE + imgSize;
 
-    auto obj = make_shared<SerializedObject>(totalSize);
+    auto obj = std::make_shared<SerializedObject>(totalSize);
 
     auto currentObjPtr = obj->data();
     const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&nbrChar);
-    copy(ptr, ptr + sizeof(nbrChar), currentObjPtr);
+    std::copy(ptr, ptr + sizeof(nbrChar), currentObjPtr);
     currentObjPtr += sizeof(nbrChar);
 
     const char* charPtr = reinterpret_cast<const char*>(xmlSpec.c_str());
-    copy(charPtr, charPtr + nbrChar, currentObjPtr);
+    std::copy(charPtr, charPtr + nbrChar, currentObjPtr);
     currentObjPtr = obj->data() + SPLASH_IMAGE_SERIALIZED_HEADER_SIZE;
 
     // And then, the image
@@ -147,11 +145,11 @@ shared_ptr<SerializedObject> Image::serialize() const
         return {};
 
     {
-        vector<future<void>> threads;
+        std::vector<std::future<void>> threads;
         int stride = SPLASH_IMAGE_COPY_THREADS;
         for (int i = 0; i < stride - 1; ++i)
-            threads.push_back(async(launch::async, ([=]() { copy(imgPtr + imgSize / stride * i, imgPtr + imgSize / stride * (i + 1), currentObjPtr + imgSize / stride * i); })));
-        copy(imgPtr + imgSize / stride * (stride - 1), imgPtr + imgSize, currentObjPtr + imgSize / stride * (stride - 1));
+            threads.push_back(std::async(std::launch::async, ([=]() { std::copy(imgPtr + imgSize / stride * i, imgPtr + imgSize / stride * (i + 1), currentObjPtr + imgSize / stride * i); })));
+        std::copy(imgPtr + imgSize / stride * (stride - 1), imgPtr + imgSize, currentObjPtr + imgSize / stride * (stride - 1));
     }
 
     if (Timer::get().isDebug())
@@ -161,7 +159,7 @@ shared_ptr<SerializedObject> Image::serialize() const
 }
 
 /*************/
-bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
+bool Image::deserialize(const std::shared_ptr<SerializedObject>& obj)
 {
     if (obj.get() == nullptr || obj->size() == 0)
         return false;
@@ -174,15 +172,15 @@ bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
     char* ptr = reinterpret_cast<char*>(&nbrChar);
 
     auto currentObjPtr = obj->data();
-    copy(currentObjPtr, currentObjPtr + sizeof(nbrChar), ptr);
+    std::copy(currentObjPtr, currentObjPtr + sizeof(nbrChar), ptr);
     currentObjPtr += sizeof(nbrChar);
 
     try
     {
         char xmlSpecChar[nbrChar];
         ptr = reinterpret_cast<char*>(xmlSpecChar);
-        copy(currentObjPtr, currentObjPtr + nbrChar, ptr);
-        string xmlSpec(xmlSpecChar, nbrChar);
+        std::copy(currentObjPtr, currentObjPtr + nbrChar, ptr);
+        std::string xmlSpec(xmlSpecChar, nbrChar);
 
         ImageBufferSpec spec;
         spec.from_string(xmlSpec.c_str());
@@ -197,7 +195,7 @@ bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
         _bufferDeserialize.setRawBuffer(std::move(rawBuffer));
 
         if (!_bufferImage)
-            _bufferImage = make_unique<ImageBuffer>();
+            _bufferImage = std::make_unique<ImageBuffer>();
         std::swap(*_bufferImage, _bufferDeserialize);
         _imageUpdated = true;
 
@@ -216,7 +214,7 @@ bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
 }
 
 /*************/
-bool Image::read(const string& filename)
+bool Image::read(const std::string& filename)
 {
     const auto filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
     if (!_isConnectedToRemote)
@@ -226,9 +224,9 @@ bool Image::read(const string& filename)
 }
 
 /*************/
-bool Image::readFile(const string& filename)
+bool Image::readFile(const std::string& filename)
 {
-    if (!ifstream(filename).is_open())
+    if (!std::ifstream(filename).is_open())
     {
         Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
         return false;
@@ -252,9 +250,9 @@ bool Image::readFile(const string& filename)
     stbi_image_free(rawImage);
 
     {
-        lock_guard<Spinlock> lock(_readMutex);
+        std::lock_guard<Spinlock> lock(_readMutex);
         if (!_bufferImage)
-            _bufferImage = make_unique<ImageBuffer>();
+            _bufferImage = std::make_unique<ImageBuffer>();
         std::swap(*_bufferImage, img);
         _imageUpdated = true;
     }
@@ -269,7 +267,7 @@ bool Image::readFile(const string& filename)
 /*************/
 void Image::zero()
 {
-    lock_guard<Spinlock> lock(_readMutex);
+    std::lock_guard<Spinlock> lock(_readMutex);
     if (!_image)
         return;
 
@@ -281,8 +279,8 @@ void Image::update()
 {
     if (_imageUpdated)
     {
-        lock_guard<Spinlock> lockRead(_readMutex);
-        shared_lock<shared_mutex> lockWrite(_writeMutex);
+        std::lock_guard<Spinlock> lockRead(_readMutex);
+        std::shared_lock<std::shared_mutex> lockWrite(_writeMutex);
         _image.swap(_bufferImage);
         _imageUpdated = false;
 
@@ -316,7 +314,7 @@ void Image::updateMediaInfo()
     mediaInfo.push_back(Value(_srgb, "srgb"));
     updateMoreMediaInfo(mediaInfo);
 
-    lock_guard<mutex> lock(_mediaInfoMutex);
+    std::lock_guard<std::mutex> lock(_mediaInfoMutex);
     std::swap(_mediaInfo, mediaInfo);
 }
 
@@ -332,7 +330,7 @@ bool Image::write(const std::string& filename)
 
     auto spec = _image->getSpec();
 
-    lock_guard<Spinlock> lock(_readMutex);
+    std::lock_guard<Spinlock> lock(_readMutex);
     if (filename.substr(strSize - 3, strSize) == "png")
     {
         auto result = stbi_write_png(filename.c_str(), spec.width, spec.height, spec.channels, _image->data(), spec.width * spec.channels);
@@ -359,9 +357,9 @@ void Image::createDefaultImage()
     ImageBuffer img(spec);
     img.zero();
 
-    lock_guard<Spinlock> lock(_readMutex);
+    std::lock_guard<Spinlock> lock(_readMutex);
     if (!_image)
-        _image = make_unique<ImageBuffer>();
+        _image = std::make_unique<ImageBuffer>();
     std::swap(*_image, img);
     updateTimestamp();
 }
@@ -385,9 +383,9 @@ void Image::createPattern()
                     p[(x + y * 512) * 4 + c] = 0;
         }
 
-    lock_guard<Spinlock> lock(_readMutex);
+    std::lock_guard<Spinlock> lock(_readMutex);
     if (!_image)
-        _image = make_unique<ImageBuffer>();
+        _image = std::make_unique<ImageBuffer>();
     std::swap(*_image, img);
     updateTimestamp();
 }
@@ -417,7 +415,7 @@ void Image::registerAttributes()
 
     addAttribute("file",
         [&](const Values& args) {
-            _filepath = args[0].as<string>();
+            _filepath = args[0].as<std::string>();
             if (_filepath.empty())
                 return true;
             return read(_filepath);
@@ -455,12 +453,12 @@ void Image::registerAttributes()
 
     addAttribute("mediaInfo",
         [&](const Values& args) {
-            lock_guard<mutex> lock(_mediaInfoMutex);
+            std::lock_guard<std::mutex> lock(_mediaInfoMutex);
             _mediaInfo = args;
             return true;
         },
         [&]() -> Values {
-            lock_guard<mutex> lock(_mediaInfoMutex);
+            std::lock_guard<std::mutex> lock(_mediaInfoMutex);
             return _mediaInfo;
         },
         {});

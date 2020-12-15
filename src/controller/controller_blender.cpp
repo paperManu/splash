@@ -5,7 +5,7 @@
 #include "./graphics/geometry.h"
 #include "./graphics/object.h"
 
-using namespace std;
+namespace chrono = std::chrono;
 
 namespace Splash
 {
@@ -20,11 +20,6 @@ Blender::Blender(RootObject* root)
 }
 
 /*************/
-Blender::~Blender()
-{
-}
-
-/*************/
 void Blender::update()
 {
     auto scene = dynamic_cast<Scene*>(_root);
@@ -33,17 +28,17 @@ void Blender::update()
 
     auto isMaster = scene->isMaster();
 
-    auto getObjLinkedToCameras = [&]() -> vector<shared_ptr<GraphObject>> {
-        vector<shared_ptr<GraphObject>> objLinkedToCameras{};
+    auto getObjLinkedToCameras = [&]() -> std::vector<std::shared_ptr<GraphObject>> {
+        std::vector<std::shared_ptr<GraphObject>> objLinkedToCameras{};
 
-        auto cameras = getObjectsPtr(getObjectsOfType("camera"));
-        auto links = getObjectLinks();
+        const auto cameras = getObjectsPtr(getObjectsOfType("camera"));
+        const auto links = getObjectLinks();
         for (auto& camera : cameras)
         {
-            auto cameraLinks = links[camera->getName()];
+            const auto cameraLinks = links.at(camera->getName());
             for (auto& linked : cameraLinks)
             {
-                auto object = dynamic_pointer_cast<Object>(getObjectPtr(linked));
+                const auto object = std::dynamic_pointer_cast<Object>(getObjectPtr(linked));
                 if (object)
                     objLinkedToCameras.push_back(getObjectPtr(linked));
             }
@@ -59,32 +54,56 @@ void Blender::update()
         // Only the master scene computes the blending
         if (isMaster)
         {
-            auto cameras = getObjectsPtr(getObjectsOfType("camera"));
-            auto objects = getObjLinkedToCameras();
+            std::vector<std::shared_ptr<Camera>> cameras;
+            std::vector<std::shared_ptr<Object>> objects;
 
-            if (cameras.size() != 0)
+            auto objectList = getObjectsPtr(getObjectsOfType("camera"));
+            std::transform(objectList.cbegin(), objectList.cend(), std::back_inserter(cameras), [](auto cameraPtr) {
+                auto camera = std::dynamic_pointer_cast<Camera>(cameraPtr);
+                assert(camera != nullptr);
+                return camera;
+            });
+
+            objectList = getObjLinkedToCameras();
+            std::transform(objectList.cbegin(), objectList.cend(), std::back_inserter(objects), [](auto objectPtr) {
+                auto object = std::dynamic_pointer_cast<Object>(objectPtr);
+                assert(object != nullptr);
+                return object;
+            });
+
+            // If depth-aware depth computation is deactivated, also
+            // deactivate vertex depth computation to prevent wasting
+            // processing power
+            setObjectsOfType("object", "computeFarthestVisibleVertexDistance", {_depthAwareBlending});
+
+            if (!cameras.empty())
             {
-                for (auto& it : objects)
-                    dynamic_pointer_cast<Object>(it)->resetTessellation();
+                for (auto& object : objects)
+                    object->resetTessellation();
 
                 // Tessellate
-                for (auto& it : cameras)
+                for (auto& camera : cameras)
                 {
-                    auto camera = dynamic_pointer_cast<Camera>(it);
                     camera->computeVertexVisibility();
                     camera->blendingTessellateForCurrentCamera();
                 }
 
-                for (auto& it : objects)
-                    dynamic_pointer_cast<Object>(it)->resetBlendingAttribute();
+                for (auto& object : objects)
+                    object->resetBlendingAttribute();
 
                 // Compute each camera contribution
-                for (auto& it : cameras)
+                float maxVertexDistance = 0.f;
+                for (auto& camera : cameras)
                 {
-                    auto camera = dynamic_pointer_cast<Camera>(it);
                     camera->computeVertexVisibility();
                     camera->computeBlendingContribution();
+                    maxVertexDistance = std::max(maxVertexDistance, camera->getFarthestVisibleVertexDistance());
                 }
+
+                // Set the farthest visible vertex distance into all objects,
+                // so it can be used when rendering the blending
+                for (auto& object : objects)
+                    object->setAttribute("farthestVisibleVertexDistance", {maxVertexDistance});
             }
             else
             {
@@ -98,7 +117,7 @@ void Blender::update()
             auto geometries = getObjectsPtr(getObjectsOfType("geometry"));
             for (auto& geometry : geometries)
             {
-                auto serializedGeometry = dynamic_pointer_cast<Geometry>(geometry)->serialize();
+                auto serializedGeometry = std::dynamic_pointer_cast<Geometry>(geometry)->serialize();
                 sendBuffer(geometry->getName(), serializedGeometry);
             }
 
@@ -109,7 +128,7 @@ void Blender::update()
         {
             // Wait for the master scene to notify us that the blending was updated
             // Note that we do not wait more that 2 seconds
-            unique_lock<mutex> updateBlendingLock(_vertexBlendingMutex);
+            std::unique_lock<std::mutex> updateBlendingLock(_vertexBlendingMutex);
             int maxSecElapsed = 2;
             while (!_vertexBlendingReceptionStatus && maxSecElapsed)
             {
@@ -138,7 +157,7 @@ void Blender::update()
         {
             for (auto& it : objects)
             {
-                auto object = dynamic_pointer_cast<Object>(it);
+                auto object = std::dynamic_pointer_cast<Object>(it);
                 object->resetTessellation();
                 object->resetVisibility();
             }
@@ -154,9 +173,10 @@ void Blender::registerAttributes()
 {
     ControllerObject::registerAttributes();
 
-    addAttribute("mode",
+    addAttribute(
+        "mode",
         [&](const Values& args) {
-            auto mode = args[0].as<string>();
+            auto mode = args[0].as<std::string>();
             if (mode == "none")
             {
                 _computeBlending = false;
@@ -192,6 +212,19 @@ void Blender::registerAttributes()
     });
     setAttributeDescription("blendingUpdated", "Message sent by the master Scene to notify that a new blending has been computed");
     setAttributeSyncMethod("blendingUpdated", Attribute::Sync::force_sync);
+
+    addAttribute(
+        "depthAwareBlending",
+        [&](const Values& args) {
+            _depthAwareBlending = args[0].as<bool>();
+            return true;
+        },
+        [&]() -> Values { return {_depthAwareBlending}; },
+        {'b'});
+    setAttributeDescription("depthAwareBlending",
+        "When active, blending computation will adapt projections "
+        "intensity with respect towards the distance to the projectors,"
+        "to produce a uniform surface illumination");
 }
 
-} // end of namespace
+} // namespace Splash

@@ -5,8 +5,6 @@
 #include "./core/scene.h"
 #include "./widget_node_view.h"
 
-using namespace std;
-
 namespace Splash
 {
 
@@ -20,15 +18,15 @@ void GuiControl::render()
     if (!_nodeView)
     {
         auto scene = dynamic_cast<Scene*>(_root);
-        auto nodeView = make_shared<GuiNodeView>(scene, "Nodes");
-        _nodeView = dynamic_pointer_cast<GuiWidget>(nodeView);
+        auto nodeView = std::make_shared<GuiNodeView>(scene, "Nodes");
+        _nodeView = std::dynamic_pointer_cast<GuiWidget>(nodeView);
     }
     _nodeView->render();
 
     // Node configuration
     // Select the object the control
     int index = 0;
-    string clickedNode = dynamic_pointer_cast<GuiNodeView>(_nodeView)->getClickedNode(); // Used to set the object
+    std::string clickedNode = std::dynamic_pointer_cast<GuiNodeView>(_nodeView)->getClickedNode(); // Used to set the object
                                                                                          // selected for configuration
     auto objectNames = getObjectList();
     for (const auto& name : objectNames)

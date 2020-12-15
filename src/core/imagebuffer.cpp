@@ -3,15 +3,13 @@
 #include <assert.h>
 #include <vector>
 
-using namespace std;
-
 namespace Splash
 {
 
 /*************/
-string ImageBufferSpec::to_string() const
+std::string ImageBufferSpec::to_string() const
 {
-    string spec;
+    std::string spec;
     spec += std::to_string(width) + ";";
     spec += std::to_string(height) + ";";
     spec += std::to_string(channels) + ";";
@@ -40,7 +38,7 @@ string ImageBufferSpec::to_string() const
 }
 
 /*************/
-void ImageBufferSpec::from_string(const string& spec)
+void ImageBufferSpec::from_string(const std::string& spec)
 {
     std::vector<std::string> parts;
 
