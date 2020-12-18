@@ -99,6 +99,25 @@ struct ShaderSources
             }
         )"},
         //
+        // sRGB to RGB and RGB to sRGB
+        {"srgb", R"(
+            vec3 srgb2rgb(vec3 srgb)
+            {
+                vec3 linearPart = srgb / 12.92;
+                vec3 powPart = pow((srgb + vec3(0.055)) / 1.055, vec3(2.4));
+                vec3 part = vec3(lessThan(srgb, vec3(0.04045)));
+                return mix(powPart, linearPart, part);
+            }
+
+            vec3 rgb2srgb(vec3 rgb)
+            {
+                vec3 linearPart = rgb * 12.92;
+                vec3 powPart = pow(rgb, vec3(1.0 / 2.4)) * 1.055 - 0.055;
+                vec3 part = vec3(lessThan(rgb, vec3(0.0031308)));
+                return mix(powPart, linearPart, part);
+            }
+        )"},
+        //
         // RGB to HSV and HSV to RGB
         {"hsv", R"(
             vec3 rgb2hsv(vec3 c)
@@ -121,16 +140,22 @@ struct ShaderSources
         )"},
         //
         // YUV to RGB and RGB to YUV
+        // Formulas are taken from https://www.fourcc.org/fccyvrgb.php
+        // The resulting colors do not match exactly VLC or Gstreamer,
+        // Mostly, color and saturation are a bit higher.
         {"yuv", R"(
             vec3 yuv2rgb(vec3 c)
             {
                 // Input colors are stored with a gamma applied to them
-                vec3 yuv = pow(c, vec3(1.0/2.2));
-                vec3 rgb = vec3((yuv.r - 16.0/255.0) + 1.403*(yuv.b - 0.5),
-                                (yuv.r - 16.0/255.0) - 0.344*(yuv.g - 0.5) - 0.714*(yuv.b - 0.5),
-                                (yuv.r - 16.0/255.0) + 1.772*(yuv.g - 0.5));
+                vec3 yuv = rgb2srgb(c) - vec3(16.0 / 255.0, 0.5, 0.5);
+                vec3 rgb = vec3(1.164 * yuv.r + 2.018 * yuv.b,
+                                1.164 * yuv.r - 0.813 * yuv.g - 0.391 * yuv.b,
+                                1.164 * yuv.r + 1.596 * yuv.g);
+                // RGB values are scaled back to [0, 255], as this gives results
+                // closer to the references
+                rgb = rgb * 255.0 / (235.0 - 16.0);
                 rgb = clamp(rgb, vec3(0.0), vec3(1.0));
-                rgb = pow(rgb, vec3(2.2));
+                rgb = srgb2rgb(rgb);
                 return rgb;
             }
 
@@ -138,9 +163,9 @@ struct ShaderSources
             {
                 // Input colors are stored with a gamma applied to them
                 vec3 rgb = pow(c, vec3(1.0/2.2));
-                vec3 yuv = vec3(0.299*rgb.r + 0.587*rgb.g + 0.114*rgb.b + 16.0/255.0,
-                                -0.16874*rgb.r - 0.33126*rgb.g + 0.5*rgb.b + 0.5,
-                                0.5*rgb.r - 0.41869*rgb.g - 0.08131*rgb.b + 0.5);
+                vec3 yuv = vec3(0.257*rgb.r + 0.5004*rgb.g + 0.098*rgb.b + 16.0/255.0,
+                                0.439*rgb.r - 0.368*rgb.g + 0.071*rgb.b + 0.5,
+                                -0.1148*rgb.r - 0.291*rgb.g + 0.439*rgb.b + 0.5);
                 yuv = clamp(yuv, vec3(0.0), vec3(1.0));
                 yuv = pow(yuv, vec3(2.2));
                 return yuv;
@@ -905,6 +930,7 @@ struct ShaderSources
      * also able to convert from YUYV to RGB
      */
     const std::string FRAGMENT_SHADER_IMAGE_FILTER{R"(
+        #include srgb
         #include hsv
         #include correctColor
         #include yuv

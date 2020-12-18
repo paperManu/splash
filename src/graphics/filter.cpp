@@ -404,7 +404,7 @@ void Filter::registerDefaultShaderAttributes()
         [&]() -> Values {
             auto it = _filterUniforms.find("_colorTemperature");
             if (it == _filterUniforms.end())
-                _filterUniforms["_colorTemperature"] = {6500.f}; // Default value
+                _filterUniforms["_colorTemperature"] = {6600.f}; // Default value. 6600K corresponds exactly to no color adjustement.
             return _filterUniforms["_colorTemperature"];
         },
         {'r'});
