@@ -95,7 +95,7 @@ class BaseObjectMock : public BaseObject
             },
             {});
 
-        addAttribute("noSetterAttrib", [&]() -> Values { return {"No getter, no value"}; });
+        addAttribute("noSetterAttrib", [&]() -> Values { return {"A getter but no setter"}; });
     }
 };
 

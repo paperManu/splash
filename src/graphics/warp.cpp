@@ -331,7 +331,10 @@ void Warp::registerAttributes()
         "size",
         [&](const Values&) { return true; },
         [&]() -> Values {
-            return {_fbo->getWidth(), _fbo->getHeight()};
+            if (_fbo)
+                return {_fbo->getWidth(), _fbo->getHeight()};
+            else
+                return {0, 0};
         },
         {'i', 'i'});
     setAttributeDescription("size", "Size of the rendered output");

@@ -85,7 +85,7 @@ std::optional<Values> BaseObject::getAttribute(const std::string& attrib) const
 }
 
 /*************/
-std::vector<std::string> BaseObject::getAttributesList() const
+const std::vector<std::string> BaseObject::getAttributesList() const
 {
     std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     std::vector<std::string> attributeNames;
@@ -95,7 +95,7 @@ std::vector<std::string> BaseObject::getAttributesList() const
 }
 
 /*************/
-std::string BaseObject::getAttributeDescription(const std::string& name) const
+const std::string BaseObject::getAttributeDescription(const std::string& name) const
 {
     std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     auto attr = _attribFunctions.find(name);

@@ -437,9 +437,10 @@ void Image_GPhoto::registerAttributes()
         },
         [&]() -> Values {
             std::string value;
-            doGetProperty("shutterspeed", value);
-            float duration = getFloatFromShutterspeedString(value);
-            return {duration};
+            if (doGetProperty("shutterspeed", value))
+                return {getFloatFromShutterspeedString(value)};
+            else
+                return {};
         },
         {});
     setAttributeDescription("shutterspeed", "Set the camera shutter speed");

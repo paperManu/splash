@@ -105,14 +105,14 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      * Get a list of the object attributes
      * \return Returns a vector holding all the attributes
      */
-    std::vector<std::string> getAttributesList() const;
+    const std::vector<std::string> getAttributesList() const;
 
     /**
      * Get the description for the given attribute, if it exists
      * \param name Name of the attribute
      * \return Returns the description for the attribute
      */
-    std::string getAttributeDescription(const std::string& name) const;
+    const std::string getAttributeDescription(const std::string& name) const;
 
     /**
      * Get a Values holding the description of all of this object's attributes

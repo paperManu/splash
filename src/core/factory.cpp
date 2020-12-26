@@ -106,7 +106,7 @@ std::shared_ptr<GraphObject> Factory::create(const std::string& type)
 
         auto defaultIt = _defaults.find(type);
         if (defaultIt != _defaults.end())
-            for (auto& attr : defaultIt->second)
+            for (const auto& attr : defaultIt->second)
                 object->setAttribute(attr.first, attr.second);
 
         if (object)
@@ -121,10 +121,10 @@ std::shared_ptr<GraphObject> Factory::create(const std::string& type)
 }
 
 /*************/
-std::vector<std::string> Factory::getObjectTypes()
+const std::vector<std::string> Factory::getObjectTypes() const
 {
     std::vector<std::string> types;
-    for (auto& page : _objectBook)
+    for (const auto& page : _objectBook)
         types.push_back(page.first);
     return types;
 }
@@ -133,7 +133,7 @@ std::vector<std::string> Factory::getObjectTypes()
 std::vector<std::string> Factory::getObjectsOfCategory(GraphObject::Category c)
 {
     std::vector<std::string> types;
-    for (auto& page : _objectBook)
+    for (const auto& page : _objectBook)
         if (page.second.objectCategory == c)
             types.push_back(page.first);
 

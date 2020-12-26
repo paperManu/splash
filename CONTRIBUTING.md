@@ -42,7 +42,9 @@ If you find a bug in the source code, you can help us by [submitting an issue to
 Please include as much information as possible in your issue: branch name and version, OS version, expected and observed behavior, system information, log files, etc. Most importantly, provide a step-by-step procedure on how to reproduce your bug.
 
 
-## Adding tests
+## Tests
+
+### Adding tests
 
 You are welcome to add unit tests if you spot some code that isn't covered by the existing tests.
 
@@ -85,6 +87,17 @@ To run a single test:
 cd tests/integration_tests
 splash -P integration_tests.py -- --pattern 'test_sample.py'
 ```
+
+### Evaluating test coverage
+
+There is a specific build target meant to measure the test coverage:
+
+```bash
+cd build
+make check_coverage
+```
+
+A `coverage` subdirectory will be created, containing the results. You just have to open `coverage/index.html` in your favorite browser to navigate the analysis.
 
 
 ## Improving Documentation

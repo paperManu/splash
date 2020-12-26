@@ -630,6 +630,9 @@ bool Window::setProjectionSurface()
 /*************/
 void Window::setWindowDecoration(bool hasDecoration)
 {
+    if (glfwGetCurrentContext() == nullptr)
+        return;
+
     if (_screenId != -1)
         return;
 
@@ -674,6 +677,9 @@ void Window::updateSwapInterval(int swapInterval)
 /*************/
 void Window::updateWindowShape()
 {
+    if (glfwGetCurrentContext() == nullptr)
+        return;
+
     if (_screenId == -1)
     {
         glfwSetWindowPos(_window->get(), _windowRect[0], _windowRect[1]);

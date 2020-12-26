@@ -69,7 +69,7 @@ Scene::Scene(Context context)
     initializeTree();
 
     // We have to reset the factory to create a Scene factory
-    _factory.reset(new Factory(this));
+    _factory = std::make_unique<Factory>(this);
     _blender = std::make_shared<Blender>(this);
     if (_blender)
     {
