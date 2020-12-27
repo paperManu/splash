@@ -133,12 +133,6 @@ class Attribute
     Values operator()() const;
 
     /**
-     * Tells whether the setter and getters are the default ones or not.
-     * \return Returns true if the setter and getter are the default ones.
-     */
-    bool isDefault() const { return _defaultSetAndGet; }
-
-    /**
      * Get the types of the wanted arguments.
      * \return Returns the expected types in a Values.
      */
@@ -222,24 +216,19 @@ class Attribute
     void setSyncMethod(const Sync& method) { _syncMethod = method; }
 
   private:
-    mutable std::mutex _defaultFuncMutex{};
-    std::string _name{}; // Name of the attribute
-
-    std::function<bool(const Values&)> _setFunc{};
-    std::function<const Values()> _getFunc{};
-
-    bool _defaultSetAndGet{true};
-
-    std::string _objectName{};        // Name of the object holding this attribute
-    std::string _description{};       // Attribute description
-    Values _values{};                 // Holds the values for the default set and get functions
-    std::vector<char> _valuesTypes{}; // List of the types held in _values
-    Sync _syncMethod{Sync::auto_sync}; //!< Synchronization to consider while setting this attribute
-
     std::mutex _callbackMutex{};
-    std::map<uint32_t, Callback> _callbacks{};
 
-    bool _isLocked{false};
+    std::string _name{"noname"};        // Name of the attribute
+    std::string _objectName{"unknown"}; // Name of the object holding this attribute
+    std::string _description{};       // Attribute description
+    std::vector<char> _valuesTypes{}; // List of the types held in _values
+
+    std::function<bool(const Values&)> _setFunc{}; // Setter function
+    std::function<const Values()> _getFunc{};      // Getter function
+
+    Sync _syncMethod{Sync::auto_sync};         // Synchronization to consider while setting this attribute
+    std::map<uint32_t, Callback> _callbacks{}; // Callbacks invoked when attribute is modified
+    bool _isLocked{false};                     // If true, the setter can not be invoked
 };
 
 } // namespace Splash

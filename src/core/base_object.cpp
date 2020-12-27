@@ -42,23 +42,11 @@ BaseObject::SetAttrStatus BaseObject::setAttribute(const std::string& attrib, co
 {
     std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     auto attribFunction = _attribFunctions.find(attrib);
-    const bool attribNotPresent = (attribFunction == _attribFunctions.end());
+    _updatedParams = true;
 
-    if (attribNotPresent)
-    {
-        const auto result = _attribFunctions.emplace(attrib, Attribute(attrib));
-        assert(result.second);
-        attribFunction = result.first;
-    }
-
-    // If the attribute is not a default one, signify that the parameters
-    // have been updated
-    if (!attribFunction->second.isDefault())
-        _updatedParams = true;
-
-    // If the attribute is not a default one, but does not have a setter set,
+    // If no setter function has been set,
     // there is no need to try to set a new value
-    if (!attribFunction->second.isDefault() && !attribFunction->second.hasSetter())
+    if (!attribFunction->second.hasSetter())
         return SetAttrStatus::no_setter;
 
     // Otherwise try setting the value. If this fails, something is wrong

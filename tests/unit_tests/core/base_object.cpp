@@ -114,7 +114,6 @@ TEST_CASE("Testing BaseObject class")
     object->setAttribute("integer", {integer_value});
     object->setAttribute("float", {float_value});
     object->setAttribute("string", {string_value});
-    CHECK(object->setAttribute("newAttribute", array_value) != BaseObject::SetAttrStatus::failure);
 
     Values value;
     CHECK(object->getAttribute("integer", value));
@@ -131,11 +130,6 @@ TEST_CASE("Testing BaseObject class")
     CHECK(!value.empty());
     CHECK_EQ(value[0].as<std::string>(), string_value);
     CHECK_EQ(object->getAttribute("string").value()[0].as<std::string>(), string_value);
-
-    CHECK(object->getAttribute("newAttribute", value));
-    CHECK(!value.empty());
-    CHECK(value == array_value);
-    CHECK_EQ(object->getAttribute("newAttribute").value(), array_value);
 
     CHECK(object->getAttribute("inexistingAttribute", value) == false);
     CHECK(value.empty());
@@ -173,19 +167,19 @@ TEST_CASE("Testing BaseObject attribute registering")
     auto someString = std::string("What are you waiting for? Christmas?");
     auto otherString = std::string("Show me the money!");
 
-    CHECK(object->setAttribute("someAttribute", {42}) == BaseObject::SetAttrStatus::success);
-    auto handle = object->registerCallback("someAttribute", [&](const std::string& obj, const std::string& attr) { someString = otherString; });
+    CHECK(object->setAttribute("integer", {42}) == BaseObject::SetAttrStatus::success);
+    auto handle = object->registerCallback("integer", [&](const std::string& obj, const std::string& attr) { someString = otherString; });
     CHECK(static_cast<bool>(handle));
-    object->setAttribute("someAttribute", {1337});
+    object->setAttribute("integer", {1337});
     CHECK(someString == otherString);
 
     object->unregisterCallback(handle);
     otherString = "I've got a flying machine!";
-    object->setAttribute("someAttribute", {42});
+    object->setAttribute("integer", {42});
     CHECK(someString != otherString);
 
-    object->registerCallback("someAttribute", [&](const std::string& obj, const std::string& attr) { someString = otherString; });
-    object->setAttribute("someAttribute", {1337});
+    object->registerCallback("integer", [&](const std::string& obj, const std::string& attr) { someString = otherString; });
+    object->setAttribute("integer", {1337});
     CHECK(someString != otherString);
 }
 

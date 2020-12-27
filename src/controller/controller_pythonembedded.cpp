@@ -856,7 +856,7 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* /*self*/, PyObject*
     auto previousValue = that->getObjectAttribute(that->getName(), attributeName);
 
     // Add the attribute to the Python interpreter object
-    // This will replace any previous (or default) attribute (setter and getter included)
+    // This will replace any previous attribute (setter and getter included)
     that->addAttribute(
         attributeName,
         [=](const Values& args) {

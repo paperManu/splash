@@ -1,5 +1,5 @@
 {
     "image" : {
-        "flip" : 1
+        "flip" : true
     }
 }
