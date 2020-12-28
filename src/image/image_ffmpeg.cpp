@@ -801,13 +801,13 @@ void Image_FFmpeg::registerAttributes()
     setAttributeDescription("bufferSize", "Set the maximum buffer size for the video (in MB)");
 
     addAttribute("duration",
-        [&](const Values&) { return false; },
         [&]() -> Values {
             if (_avContext == nullptr)
                 return {0.f};
 
             return {getMediaDuration()};
         });
+    setAttributeDescription("duration", "Duration of the video file");
 
 #if HAVE_PORTAUDIO
     addAttribute("audioDeviceOutput",
@@ -821,18 +821,16 @@ void Image_FFmpeg::registerAttributes()
     setAttributeDescription("audioDeviceOutput", "Name of the audio device to send the audio to (i.e. Jack writable client)");
 #endif
 
-    addAttribute("loop",
+    addAttribute(
+        "loop",
         [&](const Values& args) {
             _loopOnVideo = args[0].as<bool>();
             return true;
         },
-        [&]() -> Values {
-            return {_loopOnVideo};
-        },
+        [&]() -> Values { return {static_cast<bool>(_loopOnVideo)}; },
         {'b'});
 
     addAttribute("elapsed",
-        [&](const Values&) { return false; },
         [&]() -> Values {
             if (_avContext == nullptr)
                 return {0.f};

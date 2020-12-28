@@ -86,12 +86,16 @@ class BaseObjectMock : public BaseObject
         setAttributeDescription("string", "A string attribute");
         setAttributeSyncMethod("string", Attribute::Sync::force_sync);
 
-        addAttribute("noGetterAttrib", [&](const Values& args) {
-            _integer = 0;
-            _float = 0.f;
-            _string = "zero";
-            return true;
-        });
+        addAttribute("noGetterAttrib",
+            [&](const Values& args) {
+                _integer = 0;
+                _float = 0.f;
+                _string = "zero";
+                return true;
+            },
+            {});
+
+        addAttribute("noSetterAttrib", [&]() -> Values { return {"No getter, no value"}; });
     }
 };
 
@@ -110,7 +114,7 @@ TEST_CASE("Testing BaseObject class")
     object->setAttribute("integer", {integer_value});
     object->setAttribute("float", {float_value});
     object->setAttribute("string", {string_value});
-    object->setAttribute("newAttribute", array_value);
+    CHECK(object->setAttribute("newAttribute", array_value) != BaseObject::SetAttrStatus::failure);
 
     Values value;
     CHECK(object->getAttribute("integer", value));
@@ -128,7 +132,7 @@ TEST_CASE("Testing BaseObject class")
     CHECK_EQ(value[0].as<std::string>(), string_value);
     CHECK_EQ(object->getAttribute("string").value()[0].as<std::string>(), string_value);
 
-    CHECK(object->getAttribute("newAttribute", value) == true);
+    CHECK(object->getAttribute("newAttribute", value));
     CHECK(!value.empty());
     CHECK(value == array_value);
     CHECK_EQ(object->getAttribute("newAttribute").value(), array_value);
@@ -157,6 +161,9 @@ TEST_CASE("Testing BaseObject class")
 
     object->removeAttributeProxy("float");
     CHECK_FALSE(object->hasAttribute("float"));
+
+    CHECK(object->setAttribute("noGetterAttrib", {}) == BaseObject::SetAttrStatus::success);
+    CHECK(object->setAttribute("noSetterAttrib", {'b'}) == BaseObject::SetAttrStatus::no_setter);
 }
 
 /*************/
@@ -166,7 +173,7 @@ TEST_CASE("Testing BaseObject attribute registering")
     auto someString = std::string("What are you waiting for? Christmas?");
     auto otherString = std::string("Show me the money!");
 
-    CHECK(object->setAttribute("someAttribute", {42}));
+    CHECK(object->setAttribute("someAttribute", {42}) == BaseObject::SetAttrStatus::success);
     auto handle = object->registerCallback("someAttribute", [&](const std::string& obj, const std::string& attr) { someString = otherString; });
     CHECK(static_cast<bool>(handle));
     object->setAttribute("someAttribute", {1337});

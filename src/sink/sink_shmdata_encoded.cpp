@@ -259,7 +259,7 @@ void Sink_Shmdata_Encoded::registerAttributes()
         {'i'});
     setAttributeDescription("bitrate", "Output encoded video target bitrate");
 
-    addAttribute("caps", [&](const Values&) { return true; }, [&]() -> Values { return {_caps}; });
+    addAttribute("caps", [&]() -> Values { return {_caps}; });
     setAttributeDescription("caps", "Generated caps");
 
     addAttribute("codec",

@@ -833,17 +833,21 @@ void Scene::registerAttributes()
         {'b'});
     setAttributeDescription("logToFile", "If true, the process holding the Scene will try to write log to file");
 
-    addAttribute("ping", [&](const Values&) {
-        signalBufferObjectUpdated();
-        sendMessageToWorld("pong", {_name});
-        return true;
-    });
+    addAttribute("ping",
+        [&](const Values&) {
+            signalBufferObjectUpdated();
+            sendMessageToWorld("pong", {_name});
+            return true;
+        },
+        {});
     setAttributeDescription("ping", "Ping the World");
 
-    addAttribute("sync", [&](const Values&) {
-        addTask([=]() { sendMessageToWorld("answerMessage", {"sync", _name}); });
-        return true;
-    });
+    addAttribute("sync",
+        [&](const Values&) {
+            addTask([=]() { sendMessageToWorld("answerMessage", {"sync", _name}); });
+            return true;
+        },
+        {});
     setAttributeDescription("sync", "Dummy message to make sure all previous messages have been processed by the Scene.");
 
     addAttribute("remove",
@@ -858,28 +862,34 @@ void Scene::registerAttributes()
         {'s'});
     setAttributeDescription("remove", "Remove the object of the given name");
 
-    addAttribute("setMaster", [&](const Values& args) {
-        addTask([=]() {
-            if (args.empty())
-                setAsMaster();
-            else
-                setAsMaster(args[0].as<std::string>());
-        });
-        return true;
-    });
+    addAttribute("setMaster",
+        [&](const Values& args) {
+            addTask([=]() {
+                if (args.empty())
+                    setAsMaster();
+                else
+                    setAsMaster(args[0].as<std::string>());
+            });
+            return true;
+        },
+        {});
     setAttributeDescription("setMaster", "Set this Scene as master, can give the configuration file path as a parameter");
 
-    addAttribute("start", [&](const Values&) {
-        _started = true;
-        sendMessageToWorld("answerMessage", {"start", _name});
-        return true;
-    });
+    addAttribute("start",
+        [&](const Values&) {
+            _started = true;
+            sendMessageToWorld("answerMessage", {"start", _name});
+            return true;
+        },
+        {});
     setAttributeDescription("start", "Start the Scene main loop");
 
-    addAttribute("stop", [&](const Values&) {
-        _started = false;
-        return true;
-    });
+    addAttribute("stop",
+        [&](const Values&) {
+            _started = false;
+            return true;
+        },
+        {});
     setAttributeDescription("stop", "Stop the Scene main loop");
 
     addAttribute("swapTest", [&](const Values& args) {
@@ -893,30 +903,36 @@ void Scene::registerAttributes()
     }, {'i'});
     setAttributeDescription("swapTest", "Activate video swap test if set to anything but 0");
 
-    addAttribute("swapTestColor", [&](const Values& args) {
-        addTask([=]() {
-            std::lock_guard<std::recursive_mutex> lock(_objectsMutex);
-            for (auto& obj : _objects)
-                if (obj.second->getType() == "window")
-                    std::dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTestColor", args);
-        });
-        return true;
-    });
+    addAttribute("swapTestColor",
+        [&](const Values& args) {
+            addTask([=]() {
+                std::lock_guard<std::recursive_mutex> lock(_objectsMutex);
+                for (auto& obj : _objects)
+                    if (obj.second->getType() == "window")
+                        std::dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTestColor", args);
+            });
+            return true;
+        },
+        {});
     setAttributeDescription("swapTestColor", "Set the swap test color");
 
-    addAttribute("uploadTextures", [&](const Values& /*args*/) {
-        _doUploadTextures = true;
-        return true;
-    });
+    addAttribute("uploadTextures",
+        [&](const Values& /*args*/) {
+            _doUploadTextures = true;
+            return true;
+        },
+        {});
     setAttributeDescription("uploadTextures", "Signal that textures should be uploaded right away");
 
-    addAttribute("quit", [&](const Values&) {
-        addTask([=]() {
-            _started = false;
-            _isRunning = false;
-        });
-        return true;
-    });
+    addAttribute("quit",
+        [&](const Values&) {
+            addTask([=]() {
+                _started = false;
+                _isRunning = false;
+            });
+            return true;
+        },
+        {});
     setAttributeDescription("quit", "Ask the Scene to quit");
 
     addAttribute("unlink",
@@ -947,30 +963,36 @@ void Scene::registerAttributes()
     setAttributeDescription("wireframe", "Show all meshes as wireframes if true");
 
 #if HAVE_GPHOTO and HAVE_OPENCV
-    addAttribute("calibrateColor", [&](const Values&) {
-        auto calibrator = std::dynamic_pointer_cast<ColorCalibrator>(_colorCalibrator);
-        if (calibrator)
-            calibrator->update();
-        return true;
-    });
+    addAttribute("calibrateColor",
+        [&](const Values&) {
+            auto calibrator = std::dynamic_pointer_cast<ColorCalibrator>(_colorCalibrator);
+            if (calibrator)
+                calibrator->update();
+            return true;
+        },
+        {});
     setAttributeDescription("calibrateColor", "Launch projectors color calibration");
 
-    addAttribute("calibrateColorResponseFunction", [&](const Values&) {
-        auto calibrator = std::dynamic_pointer_cast<ColorCalibrator>(_colorCalibrator);
-        if (calibrator)
-            calibrator->updateCRF();
-        return true;
-    });
+    addAttribute("calibrateColorResponseFunction",
+        [&](const Values&) {
+            auto calibrator = std::dynamic_pointer_cast<ColorCalibrator>(_colorCalibrator);
+            if (calibrator)
+                calibrator->updateCRF();
+            return true;
+        },
+        {});
     setAttributeDescription("calibrateColorResponseFunction", "Launch the camera color calibration");
 #endif
 
 #if HAVE_CALIMIRO
-    addAttribute("calibrateGeometry", [&](const Values&) {
-        auto calibrator = std::dynamic_pointer_cast<GeometricCalibrator>(_geometricCalibrator);
-        if (calibrator)
-            calibrator->calibrate();
-        return true;
-    });
+    addAttribute("calibrateGeometry",
+        [&](const Values&) {
+            auto calibrator = std::dynamic_pointer_cast<GeometricCalibrator>(_geometricCalibrator);
+            if (calibrator)
+                calibrator->calibrate();
+            return true;
+        },
+        {});
 #endif
 
     addAttribute("runInBackground",

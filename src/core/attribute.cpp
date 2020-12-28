@@ -27,7 +27,26 @@ Attribute::Attribute(const std::string& name, const std::function<bool(const Val
 }
 
 /*************/
-Attribute& Attribute::operator=(Attribute&& a)
+Attribute::Attribute(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::vector<char>& types)
+    : _name(name)
+    , _setFunc(setFunc)
+    , _getFunc(nullptr)
+    , _defaultSetAndGet(false)
+    , _valuesTypes(types)
+{
+}
+
+/*************/
+Attribute::Attribute(const std::string& name, const std::function<Values()>& getFunc)
+    : _name(name)
+    , _setFunc(nullptr)
+    , _getFunc(getFunc)
+    , _defaultSetAndGet(false)
+{
+}
+
+/*************/
+Attribute& Attribute::operator=(Attribute&& a) noexcept
 {
     if (this != &a)
     {

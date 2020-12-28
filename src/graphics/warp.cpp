@@ -277,7 +277,7 @@ void Warp::registerAttributes()
         [&](const Values& args) {
             if (!_screenMesh)
                 return false;
-            return _screenMesh->setAttribute("patchControl", args);
+            return _screenMesh->setAttribute("patchControl", args) != BaseObject::SetAttrStatus::failure;
         },
         [&]() -> Values {
             if (!_screenMesh)
@@ -286,7 +286,8 @@ void Warp::registerAttributes()
             Values v;
             _screenMesh->getAttribute("patchControl", v);
             return v;
-        });
+        },
+        {});
     setAttributeDescription("patchControl", "Set the control points positions");
 
     addAttribute(
@@ -294,7 +295,7 @@ void Warp::registerAttributes()
         [&](const Values& args) {
             if (!_screenMesh)
                 return false;
-            return _screenMesh->setAttribute("patchResolution", args);
+            return _screenMesh->setAttribute("patchResolution", args) != BaseObject::SetAttrStatus::failure;
         },
         [&]() -> Values {
             if (!_screenMesh)
@@ -313,7 +314,7 @@ void Warp::registerAttributes()
             if (!_screenMesh)
                 return false;
             Values size = {std::min(8, args[0].as<int>()), std::min(8, args[1].as<int>())};
-            return _screenMesh->setAttribute("patchSize", size);
+            return _screenMesh->setAttribute("patchSize", size) != BaseObject::SetAttrStatus::failure;
         },
         [&]() -> Values {
             if (!_screenMesh)

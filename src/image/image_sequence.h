@@ -73,10 +73,12 @@ class Image_Sequence : public Image
     {
         Image::registerAttributes();
 
-        addAttribute("capture", [&](const Values&) {
-            runAsyncTask([=]() { capture(); });
-            return true;
-        });
+        addAttribute("capture",
+            [&](const Values&) {
+                runAsyncTask([=]() { capture(); });
+                return true;
+            },
+            {});
         setAttributeDescription("capture", "Ask for the camera to obtain an image");
     }
 };

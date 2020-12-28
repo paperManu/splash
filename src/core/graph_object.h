@@ -93,21 +93,14 @@ class GraphObject : public BaseObject
      * Add a new attribute to this object
      * \param name Attribute name
      * \param set Set function
-     * \param types Vector of char holding the expected parameters for the set function
-     * \return Return a reference to the created attribute
-     */
-    Attribute& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types = {}) override;
-
-    /**
-     * Add a new attribute to this object
-     * \param name Attribute name
-     * \param set Set function
      * \param get Get function
      * \param types Vector of char holding the expected parameters for the set function
      * \return Return a reference to the created attribute
      */
     Attribute& addAttribute(
-        const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types = {}) override;
+        const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types) override;
+    Attribute& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types) override;
+    Attribute& addAttribute(const std::string& name, const std::function<const Values()>& get) override;
 
     /**
      * Set the description for the given attribute, if it exists

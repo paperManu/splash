@@ -205,11 +205,13 @@ void Blender::registerAttributes()
         {'s'});
     setAttributeDescription("mode", "Set the blending mode. Can be 'none', 'once' or 'continuous'");
 
-    addAttribute("blendingUpdated", [&](const Values&) {
-        _vertexBlendingReceptionStatus = true;
-        _vertexBlendingCondition.notify_one();
-        return true;
-    });
+    addAttribute("blendingUpdated",
+        [&](const Values&) {
+            _vertexBlendingReceptionStatus = true;
+            _vertexBlendingCondition.notify_one();
+            return true;
+        },
+        {});
     setAttributeDescription("blendingUpdated", "Message sent by the master Scene to notify that a new blending has been computed");
     setAttributeSyncMethod("blendingUpdated", Attribute::Sync::force_sync);
 

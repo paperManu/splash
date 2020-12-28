@@ -87,7 +87,7 @@ class Attribute
   public:
     using Callback = std::function<void(const std::string&, const std::string&)>;
 
-    enum class Sync
+    enum class Sync : uint8_t
     {
         auto_sync,
         force_sync,
@@ -108,12 +108,14 @@ class Attribute
      * \param getFunc Getter function. Can be nullptr
      * \param types Vector of char defining the parameters types the setter function expects.
      */
-    Attribute(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::function<Values()>& getFunc = nullptr, const std::vector<char>& types = {});
+    Attribute(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::function<Values()>& getFunc, const std::vector<char>& types);
+    Attribute(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::vector<char>& types);
+    Attribute(const std::string& name, const std::function<Values()>& getFunc);
 
     Attribute(const Attribute&) = delete;
     Attribute& operator=(const Attribute&) = delete;
-    Attribute(Attribute&& a) { operator=(std::move(a)); }
-    Attribute& operator=(Attribute&& a);
+    Attribute(Attribute&& a) noexcept { operator=(std::move(a)); }
+    Attribute& operator=(Attribute&& a) noexcept;
 
     /**
      * Parenthesis operator which calls the setter function if defined, otherwise calls a default setter function which only stores the arguments if the have the right type.
@@ -143,8 +145,14 @@ class Attribute
     Values getArgsTypes() const;
 
     /**
+     * Get whether a setter is defined
+     * \return Return true if the default setter is overridden
+     */
+    bool hasSetter() const { return _setFunc != nullptr; }
+
+    /**
      * Get whether a getter is defined
-     * \return Return true if the default getter is overriden
+     * \return Return true if the default getter is overridden
      */
     bool hasGetter() const { return _getFunc != nullptr; }
 

@@ -1436,10 +1436,12 @@ void PythonEmbedded::registerAttributes()
 {
     ControllerObject::registerAttributes();
 
-    addAttribute("args", [&](const Values& args) {
-        _pythonArgs = args;
-        return true;
-    });
+    addAttribute("args",
+        [&](const Values& args) {
+            _pythonArgs = args;
+            return true;
+        },
+        {});
 
     addAttribute(
         "file", [&](const Values& args) { return setScriptFile(args[0].as<std::string>()); }, [&]() -> Values { return {_filepath + _scriptName}; }, {'s'});

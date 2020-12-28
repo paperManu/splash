@@ -444,15 +444,16 @@ void Image_GPhoto::registerAttributes()
         {});
     setAttributeDescription("shutterspeed", "Set the camera shutter speed");
 
-    addAttribute("detect", [&](const Values&) {
-        runAsyncTask([=]() { detectCameras(); });
-        return true;
-    });
+    addAttribute("detect",
+        [&](const Values&) {
+            runAsyncTask([=]() { detectCameras(); });
+            return true;
+        },
+        {});
     setAttributeDescription("detect", "Ask for camera detection");
 
     // Status
     addAttribute("ready",
-        [&](const Values&) { return false; },
         [&]() -> Values {
             std::lock_guard<std::recursive_mutex> lock(_gpMutex);
             if (_selectedCameraIndex == -1)

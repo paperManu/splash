@@ -219,7 +219,7 @@ void Image_OpenCV::registerAttributes()
         {'r'});
     setAttributeDescription("exposure", "Camera exposure");
 
-    addAttribute("capturing", [](const Values&) { return true; }, [&]() -> Values { return {_capturing}; });
+    addAttribute("capturing", [&]() -> Values { return {_capturing}; });
     setAttributeDescription("capturing", "Ask whether the camera is grabbing images");
 
     addAttribute("cvOptions",
