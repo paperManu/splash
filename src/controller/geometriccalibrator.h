@@ -131,7 +131,7 @@ class GeometricCalibrator : public ControllerObject
     float _cameraFocal{5000.f};
     CameraModel _cameraModel{CameraModel::Pinhole};
     float _structuredLightScale{1.0 / 16.0};
-    std::chrono::milliseconds _captureDelay{250ms};
+    std::chrono::milliseconds _captureDelay{std::chrono::milliseconds(250)};
 
     std::shared_ptr<Image> _grabber{nullptr};
     std::future<bool> _calibrationFuture{};

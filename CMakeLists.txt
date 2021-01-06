@@ -89,7 +89,7 @@ pkg_search_module(GPHOTO libgphoto2)
 pkg_search_module(JACK jack)
 pkg_search_module(PORTAUDIO portaudio-2.0)
 pkg_search_module(SHMDATA shmdata-1.3)
-pkg_search_module(CALIMIRO calimiro-0.0)
+pkg_search_module(CALIMIRO calimiro-0.1)
 
 #
 # Configuration

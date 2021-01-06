@@ -22,6 +22,8 @@
 #include "./image/image_gphoto.h"
 #endif
 
+using namespace std::chrono;
+
 namespace Splash
 {
 
@@ -75,12 +77,12 @@ void GeometricCalibrator::calibrate()
 }
 
 /*************/
-bool GeometricCalibrator::linkIt(const shared_ptr<GraphObject>& obj)
+bool GeometricCalibrator::linkIt(const std::shared_ptr<GraphObject>& obj)
 {
     if (_grabber)
         return false;
 
-    auto image = dynamic_pointer_cast<Image>(obj);
+    auto image = std::dynamic_pointer_cast<Image>(obj);
     if (!image)
         return false;
 
@@ -91,7 +93,7 @@ bool GeometricCalibrator::linkIt(const shared_ptr<GraphObject>& obj)
 /*************/
 void GeometricCalibrator::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    auto image = dynamic_pointer_cast<Image>(obj);
+    auto image = std::dynamic_pointer_cast<Image>(obj);
     if (!image)
         return;
 
@@ -549,26 +551,26 @@ void GeometricCalibrator::registerAttributes()
     addAttribute("calibrate", [&](const Values&) {
         calibrate();
         return true;
-    });
+    }, {});
     setAttributeDescription("calibrate", "Run the geometric calibration");
 
     addAttribute("nextPosition", [&](const Values&) {
         _nextPosition = true;
         return true;
-    });
+    }, {});
     setAttributeDescription("nextPosition", "Signals the calibration algorithm to capture the next position");
 
     addAttribute("finalizeCalibration", [&](const Values&) {
         _finalizeCalibration = true;
         return true;
-    });
+    }, {});
     setAttributeDescription("finalizeCalibration", "Signals the calibration algorithm to finalize the calibration process");
 
     addAttribute("abortCalibration", [&](const Values&) {
         _abortCalibration = true;
         _finalizeCalibration = true;
         return true;
-    });
+    }, {});
     setAttributeDescription("abortCalibration", "Signals the calibration algorithm to abort");
 
     addAttribute("cameraFocal",
@@ -582,7 +584,7 @@ void GeometricCalibrator::registerAttributes()
 
     addAttribute("cameraModel",
         [&](const Values& args) {
-            auto model = args[0].as<string>();
+            auto model = args[0].as<std::string>();
             if (model.find("PINHOLE") == 0)
                 _cameraModel = CameraModel::Pinhole;
             else if (model.find("FISHEYE") == 0)
