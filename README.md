@@ -36,7 +36,7 @@ Splash can read videos from various sources amoung which video files (most commo
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
 
 ### Authors
-See [AUTHORS.md](AUTHORS.md)
+See [AUTHORS.md](docs/AUTHORS.md)
 
 ### Project URL
 This project can be found either on [its official website](https://sat-metalab.gitlab.io/splash), on the [SAT Metalab repository](https://gitlab.com/sat-metalab/splash) or on [Github](https://github.com/paperManu/splash).
@@ -186,7 +186,7 @@ And that's it, you can move on the the [Walkthrough](https://sat-metalab.gitlab.
 
 ## Code contribution
 
-Contributions are welcome ! See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for details.
+Contributions are welcome ! See [CONTRIBUTING.md](docs/CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](docs/CODE_OF_CONDUCT.md) for details.
 
 
 ## Going forward
