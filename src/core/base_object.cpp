@@ -38,31 +38,30 @@ void BaseObject::addPeriodicTask(const std::string& name, const std::function<vo
 }
 
 /*************/
-bool BaseObject::setAttribute(const std::string& attrib, const Values& args)
+BaseObject::SetAttrStatus BaseObject::setAttribute(const std::string& attrib, const Values& args)
 {
     std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     auto attribFunction = _attribFunctions.find(attrib);
-    bool attribNotPresent = (attribFunction == _attribFunctions.end());
+    _updatedParams = true;
 
-    if (attribNotPresent)
-    {
-        auto result = _attribFunctions.emplace(attrib, Attribute(attrib));
-        assert(result.second);
-        attribFunction = result.first;
-    }
+    // If no setter function has been set,
+    // there is no need to try to set a new value
+    if (!attribFunction->second.hasSetter())
+        return SetAttrStatus::no_setter;
 
-    if (!attribFunction->second.isDefault())
-        _updatedParams = true;
-    bool attribResult = attribFunction->second(args);
+    // Otherwise try setting the value. If this fails, something is wrong
+    // with the setter function
+    if (!attribFunction->second(args))
+        return SetAttrStatus::failure;
 
-    return attribResult && attribNotPresent;
+    return SetAttrStatus::success;
 }
 
 /*************/
 bool BaseObject::getAttribute(const std::string& attrib, Values& args) const
 {
     std::unique_lock<std::recursive_mutex> lock(_attribMutex);
-    auto attribFunction = _attribFunctions.find(attrib);
+    const auto attribFunction = _attribFunctions.find(attrib);
     if (attribFunction == _attribFunctions.end())
     {
         args.clear();
@@ -70,6 +69,8 @@ bool BaseObject::getAttribute(const std::string& attrib, Values& args) const
     }
 
     args = attribFunction->second();
+    if (args.empty())
+        return false;
 
     return true;
 }
@@ -84,7 +85,7 @@ std::optional<Values> BaseObject::getAttribute(const std::string& attrib) const
 }
 
 /*************/
-std::vector<std::string> BaseObject::getAttributesList() const
+const std::vector<std::string> BaseObject::getAttributesList() const
 {
     std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     std::vector<std::string> attributeNames;
@@ -94,7 +95,7 @@ std::vector<std::string> BaseObject::getAttributesList() const
 }
 
 /*************/
-std::string BaseObject::getAttributeDescription(const std::string& name) const
+const std::string BaseObject::getAttributeDescription(const std::string& name) const
 {
     std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     auto attr = _attribFunctions.find(name);
@@ -140,6 +141,16 @@ void BaseObject::runAsyncTask(const std::function<void(void)>& func)
 }
 
 /*************/
+Attribute& BaseObject::addAttribute(
+    const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types)
+{
+    std::unique_lock<std::recursive_mutex> lock(_attribMutex);
+    _attribFunctions[name] = Attribute(name, set, get, types);
+    _attribFunctions[name].setObjectName(_name);
+    return _attribFunctions[name];
+}
+
+/*************/
 Attribute& BaseObject::addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types)
 {
     std::unique_lock<std::recursive_mutex> lock(_attribMutex);
@@ -149,10 +160,10 @@ Attribute& BaseObject::addAttribute(const std::string& name, const std::function
 }
 
 /*************/
-Attribute& BaseObject::addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types)
+Attribute& BaseObject::addAttribute(const std::string& name, const std::function<const Values()>& get)
 {
     std::unique_lock<std::recursive_mutex> lock(_attribMutex);
-    _attribFunctions[name] = Attribute(name, set, get, types);
+    _attribFunctions[name] = Attribute(name, get);
     _attribFunctions[name].setObjectName(_name);
     return _attribFunctions[name];
 }

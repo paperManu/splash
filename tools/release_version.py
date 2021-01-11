@@ -160,9 +160,9 @@ def increase_version_number(version: List[int], version_increase: VersionIncreas
 
 def update_changelog(project: str, version: List[int]) -> None:
     print("Generating release notes")
-    orig_file_name = "NEWS.md"
-    new_file_name = "NEWS.md.new"
-    authors_file_name = "AUTHORS.md"
+    orig_file_name = "docs/News.md"
+    new_file_name = "docs/News.md.new"
+    authors_file_name = "docs/Authors.md"
 
     latest_tag = subprocess.check_output(f"git log --all --format=format:%H --grep=\"Merge branch\" | head -n 1 | tr -d '\n'", shell=True, encoding="utf-8")
     tag_date = subprocess.check_output(f"git log -1 --format=%ai {latest_tag} | tr -d '\n'", shell=True, encoding="utf-8")
@@ -260,7 +260,7 @@ if __name__ == "__main__":
     update_changelog(git_project, release_version)
     update_config_file(git_project, release_version, version_pattern)
     update_metainfo_file(git_project, release_version)
-    git_commit("Updated NEWS and version number")
+    git_commit("Updated News and version number")
 
     assert(git_checkout(bringup_branch) == 0), f"Could not checkout branch {bringup_branch}"
     assert(git_merge(new_branch, True) == 0), f"Merge from branch {new_branch} into {bringup_branch} did not work"

@@ -3,7 +3,7 @@ site_description: Video mapping tool
 repo_url: https://gitlab.com/sat-metalab/splash
 edit_uri: ""
 
-docs_dir: ./wiki
+docs_dir: ../docs
 site_dir: ../static
 
 theme: yeti

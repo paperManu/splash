@@ -726,34 +726,36 @@ void Shader::resetShader(ShaderType type)
 /*************/
 void Shader::registerAttributes()
 {
-    addAttribute("uniform", [&](const Values& args) {
-        if (args.size() < 2)
-            return false;
+    addAttribute("uniform",
+        [&](const Values& args) {
+            if (args.size() < 2)
+                return false;
 
-        std::string uniformName = args[0].as<std::string>();
-        Values uniformArgs;
-        if (args[1].getType() != Value::Type::values)
-        {
-            for (uint32_t i = 1; i < args.size(); ++i)
-                uniformArgs.push_back(args[i]);
-        }
-        else
-        {
-            uniformArgs = args[1].as<Values>();
-        }
+            std::string uniformName = args[0].as<std::string>();
+            Values uniformArgs;
+            if (args[1].getType() != Value::Type::values)
+            {
+                for (uint32_t i = 1; i < args.size(); ++i)
+                    uniformArgs.push_back(args[i]);
+            }
+            else
+            {
+                uniformArgs = args[1].as<Values>();
+            }
 
-        // Check if the values changed from previous use
-        auto uniformIt = _uniforms.find(uniformName);
-        if (uniformIt != _uniforms.end() && Value(uniformArgs) == Value(uniformIt->second.values))
+            // Check if the values changed from previous use
+            auto uniformIt = _uniforms.find(uniformName);
+            if (uniformIt != _uniforms.end() && Value(uniformArgs) == Value(uniformIt->second.values))
+                return true;
+            else if (uniformIt == _uniforms.end())
+                uniformIt = (_uniforms.emplace(make_pair(uniformName, Uniform()))).first;
+
+            uniformIt->second.values = uniformArgs;
+            _uniformsToUpdate.push_back(uniformName);
+
             return true;
-        else if (uniformIt == _uniforms.end())
-            uniformIt = (_uniforms.emplace(make_pair(uniformName, Uniform()))).first;
-
-        uniformIt->second.values = uniformArgs;
-        _uniformsToUpdate.push_back(uniformName);
-
-        return true;
-    });
+        },
+        {});
     setAttribute("uniform", {"Set the shader uniform to the given value, if it exists. This has to be called while the shader is active"});
 }
 
@@ -943,42 +945,44 @@ void Shader::registerGraphicAttributes()
 /*************/
 void Shader::registerComputeAttributes()
 {
-    addAttribute("computePhase", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
+    addAttribute("computePhase",
+        [&](const Values& args) {
+            if (args.size() < 1)
+                return false;
 
-        // Get additionnal shading options
-        std::string options = ShaderSources.VERSION_DIRECTIVE_GL4;
-        for (uint32_t i = 1; i < args.size(); ++i)
-            options += "#define " + args[i].as<std::string>() + "\n";
+            // Get additionnal shading options
+            std::string options = ShaderSources.VERSION_DIRECTIVE_GL4;
+            for (uint32_t i = 1; i < args.size(); ++i)
+                options += "#define " + args[i].as<std::string>() + "\n";
 
-        if ("resetVisibility" == args[0].as<std::string>())
-        {
-            _currentProgramName = args[0].as<std::string>();
-            setSource(options + ShaderSources.COMPUTE_SHADER_RESET_VISIBILITY, compute);
-            compileProgram();
-        }
-        else if ("resetBlending" == args[0].as<std::string>())
-        {
-            _currentProgramName = args[0].as<std::string>();
-            setSource(options + ShaderSources.COMPUTE_SHADER_RESET_BLENDING, compute);
-            compileProgram();
-        }
-        else if ("computeCameraContribution" == args[0].as<std::string>())
-        {
-            _currentProgramName = args[0].as<std::string>();
-            setSource(options + ShaderSources.COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION, compute);
-            compileProgram();
-        }
-        else if ("transferVisibilityToAttr" == args[0].as<std::string>())
-        {
-            _currentProgramName = args[0].as<std::string>();
-            setSource(options + ShaderSources.COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR, compute);
-            compileProgram();
-        }
+            if ("resetVisibility" == args[0].as<std::string>())
+            {
+                _currentProgramName = args[0].as<std::string>();
+                setSource(options + ShaderSources.COMPUTE_SHADER_RESET_VISIBILITY, compute);
+                compileProgram();
+            }
+            else if ("resetBlending" == args[0].as<std::string>())
+            {
+                _currentProgramName = args[0].as<std::string>();
+                setSource(options + ShaderSources.COMPUTE_SHADER_RESET_BLENDING, compute);
+                compileProgram();
+            }
+            else if ("computeCameraContribution" == args[0].as<std::string>())
+            {
+                _currentProgramName = args[0].as<std::string>();
+                setSource(options + ShaderSources.COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION, compute);
+                compileProgram();
+            }
+            else if ("transferVisibilityToAttr" == args[0].as<std::string>())
+            {
+                _currentProgramName = args[0].as<std::string>();
+                setSource(options + ShaderSources.COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR, compute);
+                compileProgram();
+            }
 
-        return true;
-    });
+            return true;
+        },
+        {});
 }
 
 /*************/
@@ -986,48 +990,52 @@ void Shader::registerFeedbackAttributes()
 {
     GraphObject::registerAttributes();
 
-    addAttribute("feedbackPhase", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
+    addAttribute("feedbackPhase",
+        [&](const Values& args) {
+            if (args.size() < 1)
+                return false;
 
-        // Get additionnal shader options
-        std::string options = ShaderSources.VERSION_DIRECTIVE_GL4;
-        for (uint32_t i = 1; i < args.size(); ++i)
-            options += "#define " + args[i].as<std::string>() + "\n";
+            // Get additionnal shader options
+            std::string options = ShaderSources.VERSION_DIRECTIVE_GL4;
+            for (uint32_t i = 1; i < args.size(); ++i)
+                options += "#define " + args[i].as<std::string>() + "\n";
 
-        if ("tessellateFromCamera" == args[0].as<std::string>())
-        {
-            _currentProgramName = args[0].as<std::string>();
-            setSource(options + ShaderSources.VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, vertex);
-            setSource(options + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_ctrl);
-            setSource(options + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_eval);
-            setSource(options + ShaderSources.GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, geometry);
-            compileProgram();
-        }
+            if ("tessellateFromCamera" == args[0].as<std::string>())
+            {
+                _currentProgramName = args[0].as<std::string>();
+                setSource(options + ShaderSources.VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, vertex);
+                setSource(options + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_ctrl);
+                setSource(options + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_eval);
+                setSource(options + ShaderSources.GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, geometry);
+                compileProgram();
+            }
 
-        return true;
-    });
+            return true;
+        },
+        {});
 
-    addAttribute("feedbackVaryings", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
+    addAttribute("feedbackVaryings",
+        [&](const Values& args) {
+            if (args.size() < 1)
+                return false;
 
-        GLchar* feedbackVaryings[args.size()];
-        std::vector<std::string> varyingNames;
-        for (uint32_t i = 0; i < args.size(); ++i)
-        {
-            varyingNames.push_back(args[i].as<std::string>());
-            feedbackVaryings[i] = new GLchar[256];
-            strcpy(feedbackVaryings[i], varyingNames[i].c_str());
-        }
+            GLchar* feedbackVaryings[args.size()];
+            std::vector<std::string> varyingNames;
+            for (uint32_t i = 0; i < args.size(); ++i)
+            {
+                varyingNames.push_back(args[i].as<std::string>());
+                feedbackVaryings[i] = new GLchar[256];
+                strcpy(feedbackVaryings[i], varyingNames[i].c_str());
+            }
 
-        glTransformFeedbackVaryings(_program, args.size(), const_cast<const GLchar**>(feedbackVaryings), GL_SEPARATE_ATTRIBS);
+            glTransformFeedbackVaryings(_program, args.size(), const_cast<const GLchar**>(feedbackVaryings), GL_SEPARATE_ATTRIBS);
 
-        for (uint32_t i = 0; i < args.size(); ++i)
-            delete feedbackVaryings[i];
+            for (uint32_t i = 0; i < args.size(); ++i)
+                delete feedbackVaryings[i];
 
-        return true;
-    });
+            return true;
+        },
+        {});
 }
 
 } // namespace Splash

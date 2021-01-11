@@ -1293,12 +1293,14 @@ void Camera::registerAttributes()
         {'r'});
     setAttributeDescription("forward", "Move the camera forward along its Z axis");
 
-    addAttribute("calibrate", [&](const Values&) {
-        auto scene = dynamic_cast<Scene*>(_root);
-        if (scene && scene->isMaster())
-            doCalibration();
-        return true;
-    });
+    addAttribute("calibrate",
+        [&](const Values&) {
+            auto scene = dynamic_cast<Scene*>(_root);
+            if (scene && scene->isMaster())
+                doCalibration();
+            return true;
+        },
+        {});
     setAttributeDescription("calibrate", "Compute calibration with the current calibration points");
 
     addAttribute("addCalibrationPoint",
@@ -1309,10 +1311,12 @@ void Camera::registerAttributes()
         {'r', 'r', 'r'});
     setAttributeDescription("addCalibrationPoint", "Add a calibration point at the given position");
 
-    addAttribute("deselectedCalibrationPoint", [&](const Values&) {
-        deselectCalibrationPoint();
-        return true;
-    });
+    addAttribute("deselectedCalibrationPoint",
+        [&](const Values&) {
+            deselectCalibrationPoint();
+            return true;
+        },
+        {});
     setAttributeDescription("deselectCalibrationPoint", "Deselect any calibration point");
 
     addAttribute("moveCalibrationPoint",
@@ -1337,19 +1341,23 @@ void Camera::registerAttributes()
     addAttribute("setCalibrationPoint", [&](const Values& args) { return setCalibrationPoint({args[0].as<float>(), args[1].as<float>()}); }, {'r', 'r'});
     setAttributeDescription("setCalibrationPoint", "Set the 2D projection of a calibration point");
 
-    addAttribute("selectNextCalibrationPoint", [&](const Values&) {
-        _selectedCalibrationPoint = (_selectedCalibrationPoint + 1) % _calibrationPoints.size();
-        return true;
-    });
+    addAttribute("selectNextCalibrationPoint",
+        [&](const Values&) {
+            _selectedCalibrationPoint = (_selectedCalibrationPoint + 1) % _calibrationPoints.size();
+            return true;
+        },
+        {});
     setAttributeDescription("selectNextCalibrationPoint", "Select the next available calibration point");
 
-    addAttribute("selectPreviousCalibrationPoint", [&](const Values&) {
-        if (_selectedCalibrationPoint == 0)
-            _selectedCalibrationPoint = _calibrationPoints.size() - 1;
-        else
-            _selectedCalibrationPoint--;
-        return true;
-    });
+    addAttribute("selectPreviousCalibrationPoint",
+        [&](const Values&) {
+            if (_selectedCalibrationPoint == 0)
+                _selectedCalibrationPoint = _calibrationPoints.size() - 1;
+            else
+                _selectedCalibrationPoint--;
+            return true;
+        },
+        {});
     setAttributeDescription("selectPreviousCalibrationPoint", "Select the previous available calibration point");
 
     // Store / restore calibration points
@@ -1387,7 +1395,8 @@ void Camera::registerAttributes()
                 data.emplace_back(d);
             }
             return data;
-        });
+        },
+        {});
     setAttributeDescription("calibrationPoints", "Set multiple calibration points, as an array of 6D vector (position, projection and status)");
 
     // Rendering options
@@ -1451,16 +1460,18 @@ void Camera::registerAttributes()
         {'r'});
     setAttributeDescription("blendPrecision", "Set the blending precision");
 
-    addAttribute("clearColor", [&](const Values& args) {
-        if (args.size() == 0)
-            _clearColor = CAMERA_FLASH_COLOR;
-        else if (args.size() == 4)
-            _clearColor = dvec4(args[0].as<float>(), args[1].as<float>(), args[2].as<float>(), args[3].as<float>());
-        else
-            return false;
+    addAttribute("clearColor",
+        [&](const Values& args) {
+            if (args.size() == 0)
+                _clearColor = CAMERA_FLASH_COLOR;
+            else if (args.size() == 4)
+                _clearColor = dvec4(args[0].as<float>(), args[1].as<float>(), args[2].as<float>(), args[3].as<float>());
+            else
+                return false;
 
-        return true;
-    });
+            return true;
+        },
+        {});
     setAttributeDescription("clearColor", "Clears the camera, with a default color if no argument is given (as RGBA)");
 
     addAttribute(
@@ -1678,19 +1689,23 @@ void Camera::registerAttributes()
  If set to 0, no points are visible.
  If set to -1, switches visibility status.)");
 
-    addAttribute("switchDisplayAllCalibration", [&](const Values&) {
-        _displayAllCalibrations = !_displayAllCalibrations;
-        return true;
-    });
+    addAttribute("switchDisplayAllCalibration",
+        [&](const Values&) {
+            _displayAllCalibrations = !_displayAllCalibrations;
+            return true;
+        },
+        {});
     setAttributeDescription("switchDisplayAllCalibration", "Switch whether to show all calibration points in this camera");
 
-    addAttribute("flashBG", [&](const Values&) {
-        _flashBG = !_flashBG;
-        return true;
-    });
+    addAttribute("flashBG",
+        [&](const Values&) {
+            _flashBG = !_flashBG;
+            return true;
+        },
+        {});
     setAttributeDescription("flashBG", "Switch background to light gray");
 
-    addAttribute("getReprojectionError", nullptr, [&]() -> Values { return {_calibrationReprojectionError}; }, {});
+    addAttribute("getReprojectionError", [&]() -> Values { return {_calibrationReprojectionError}; });
     setAttributeDescription("getReprojectionError", "Get the reprojection error for the current calibration");
 }
 

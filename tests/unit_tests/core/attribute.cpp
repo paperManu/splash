@@ -23,7 +23,6 @@ TEST_CASE("Testing Attribute usage")
     CHECK_EQ(attr.getSyncMethod(), Attribute::Sync::force_sync);
 
     CHECK(attr.hasGetter());
-    CHECK_FALSE(attr.isDefault());
 
     CHECK(attr({42}));
     CHECK_EQ(attr()[0].as<int>(), 42);
@@ -58,20 +57,4 @@ TEST_CASE("Testing Attribute usage")
         {'s'});
     CHECK(attr({"A girl has no name"}));
     CHECK(attr().empty());
-}
-
-/*************/
-TEST_CASE("Testing Attribute constructors")
-{
-    auto attr = Attribute();
-    CHECK_FALSE(attr.hasGetter());
-    CHECK(attr.isDefault());
-    attr({38});
-    CHECK_EQ(attr()[0].as<int>(), 38);
-
-    attr = Attribute("attribute");
-    CHECK_FALSE(attr.hasGetter());
-    CHECK(attr.isDefault());
-    attr({"Flying machine"});
-    CHECK_EQ(attr()[0].as<std::string>(), "Flying machine");
 }

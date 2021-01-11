@@ -437,22 +437,24 @@ void Image_GPhoto::registerAttributes()
         },
         [&]() -> Values {
             std::string value;
-            doGetProperty("shutterspeed", value);
-            float duration = getFloatFromShutterspeedString(value);
-            return {duration};
+            if (doGetProperty("shutterspeed", value))
+                return {getFloatFromShutterspeedString(value)};
+            else
+                return {};
         },
         {});
     setAttributeDescription("shutterspeed", "Set the camera shutter speed");
 
-    addAttribute("detect", [&](const Values&) {
-        runAsyncTask([=]() { detectCameras(); });
-        return true;
-    });
+    addAttribute("detect",
+        [&](const Values&) {
+            runAsyncTask([=]() { detectCameras(); });
+            return true;
+        },
+        {});
     setAttributeDescription("detect", "Ask for camera detection");
 
     // Status
     addAttribute("ready",
-        [&](const Values&) { return false; },
         [&]() -> Values {
             std::lock_guard<std::recursive_mutex> lock(_gpMutex);
             if (_selectedCameraIndex == -1)

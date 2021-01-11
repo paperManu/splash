@@ -630,6 +630,9 @@ bool Window::setProjectionSurface()
 /*************/
 void Window::setWindowDecoration(bool hasDecoration)
 {
+    if (glfwGetCurrentContext() == nullptr)
+        return;
+
     if (_screenId != -1)
         return;
 
@@ -674,6 +677,9 @@ void Window::updateSwapInterval(int swapInterval)
 /*************/
 void Window::updateWindowShape()
 {
+    if (glfwGetCurrentContext() == nullptr)
+        return;
+
     if (_screenId == -1)
     {
         glfwSetWindowPos(_window->get(), _windowRect[0], _windowRect[1]);
@@ -802,7 +808,6 @@ void Window::registerAttributes()
     setAttributeDescription("swapTestColor", "Set the swap test color");
 
     addAttribute("textureList",
-        [](const Values&) { return true; },
         [&]() -> Values {
             Values textureList;
             for (const auto& layout_index : _layout)
@@ -824,7 +829,7 @@ void Window::registerAttributes()
         });
     setAttributeDescription("textureList", "Get the list of the textures linked to the window");
 
-    addAttribute("presentationDelay", [&](const Values&) { return true; }, [&]() -> Values { return {_presentationDelay}; });
+    addAttribute("presentationDelay", [&]() -> Values { return {_presentationDelay}; });
     setAttributeDescription("presentationDelay", "Delay between the update of an image and its display");
 }
 

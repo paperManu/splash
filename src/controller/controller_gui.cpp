@@ -1494,16 +1494,20 @@ void Gui::registerAttributes()
         {'i', 'i'});
     setAttributeDescription("size", "Set the GUI render resolution");
 
-    addAttribute("hide", [&](const Values&) {
-        _isVisible = false;
-        return true;
-    });
+    addAttribute("hide",
+        [&](const Values&) {
+            _isVisible = false;
+            return true;
+        },
+        {});
     setAttributeDescription("hide", "Hide the GUI");
 
-    addAttribute("show", [&](const Values&) {
-        _isVisible = true;
-        return true;
-    });
+    addAttribute("show",
+        [&](const Values&) {
+            _isVisible = true;
+            return true;
+        },
+        {});
     setAttributeDescription("show", "Show the GUI");
 
     addAttribute(

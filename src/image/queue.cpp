@@ -307,8 +307,8 @@ void Queue::registerAttributes()
                     Source source;
                     source.type = src[0].as<std::string>();
                     source.filename = src[1].as<std::string>();
-                    source.start = (int64_t)(src[2].as<float>() * 1e6);
-                    source.stop = (int64_t)(src[3].as<float>() * 1e6);
+                    source.start = static_cast<int64_t>(src[2].as<float>() * 1e6);
+                    source.stop = static_cast<int64_t>(src[3].as<float>() * 1e6);
                     source.freeRun = src[4].as<bool>();
                     source.args = src[5].as<Values>();
 
@@ -337,16 +337,17 @@ void Queue::registerAttributes()
                 Values source;
                 source.push_back(src.type);
                 source.push_back(src.filename);
-                source.push_back((double)src.start / 1e6);
-                source.push_back((double)src.stop / 1e6);
-                source.push_back((int)src.freeRun);
+                source.push_back(static_cast<double>(src.start) / 1e6);
+                source.push_back(static_cast<double>(src.stop) / 1e6);
+                source.push_back(static_cast<int>(src.freeRun));
                 source.push_back(src.args);
 
                 playlist.emplace_back(std::move(source));
             }
 
             return playlist;
-        });
+        },
+        {});
     setAttributeDescription("playlist", "Set the playlist as an array of [type, filename, start, end, (args)]");
 
     addAttribute(
@@ -424,47 +425,49 @@ void QueueSurrogate::registerAttributes()
      * Create the object for the current source type
      * Args holds the object type (Image, Texture...)
      */
-    addAttribute("source", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
+    addAttribute("source",
+        [&](const Values& args) {
+            if (args.size() != 1)
+                return false;
 
-        addTask([=]() {
-            auto sourceName = _name + DISTANT_NAME_SUFFIX;
-            auto type = args[0].as<std::string>();
+            addTask([=]() {
+                auto sourceName = _name + DISTANT_NAME_SUFFIX;
+                auto type = args[0].as<std::string>();
 
-            if (_source && type.find(_source->getType()) != std::string::npos)
-            {
-                return;
-            }
-            else if (_source)
-            {
-                _filter->unlinkFrom(_source);
-                _source.reset();
-                _root->disposeObject(_name + "_source");
-            }
+                if (_source && type.find(_source->getType()) != std::string::npos)
+                {
+                    return;
+                }
+                else if (_source)
+                {
+                    _filter->unlinkFrom(_source);
+                    _source.reset();
+                    _root->disposeObject(_name + "_source");
+                }
 
-            auto object = std::shared_ptr<GraphObject>();
+                auto object = std::shared_ptr<GraphObject>();
 
-            if (type.find("image") != std::string::npos)
-            {
-                auto image = std::dynamic_pointer_cast<Image>(_root->createObject("image", _name + DISTANT_NAME_SUFFIX).lock());
-                image->zero();
-                image->setRemoteType(type);
-                object = image;
-            }
-            else
-            {
-                return;
-            }
+                if (type.find("image") != std::string::npos)
+                {
+                    auto image = std::dynamic_pointer_cast<Image>(_root->createObject("image", _name + DISTANT_NAME_SUFFIX).lock());
+                    image->zero();
+                    image->setRemoteType(type);
+                    object = image;
+                }
+                else
+                {
+                    return;
+                }
 
-            object->setName(sourceName);
-            object->setAttribute("savable", {false});
-            _source.swap(object);
-            _filter->linkTo(_source);
-        });
+                object->setName(sourceName);
+                object->setAttribute("savable", {false});
+                _source.swap(object);
+                _filter->linkTo(_source);
+            });
 
-        return true;
-    });
+            return true;
+        },
+        {});
 }
 
 } // namespace Splash

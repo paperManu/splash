@@ -21,6 +21,7 @@
 build/
 external/third_parties
 src/config.h
+static/
 tests/assets
 tests/check_image
 tests/check_mesh

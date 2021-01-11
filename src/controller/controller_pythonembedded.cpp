@@ -856,7 +856,7 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* /*self*/, PyObject*
     auto previousValue = that->getObjectAttribute(that->getName(), attributeName);
 
     // Add the attribute to the Python interpreter object
-    // This will replace any previous (or default) attribute (setter and getter included)
+    // This will replace any previous attribute (setter and getter included)
     that->addAttribute(
         attributeName,
         [=](const Values& args) {
@@ -1436,10 +1436,12 @@ void PythonEmbedded::registerAttributes()
 {
     ControllerObject::registerAttributes();
 
-    addAttribute("args", [&](const Values& args) {
-        _pythonArgs = args;
-        return true;
-    });
+    addAttribute("args",
+        [&](const Values& args) {
+            _pythonArgs = args;
+            return true;
+        },
+        {});
 
     addAttribute(
         "file", [&](const Values& args) { return setScriptFile(args[0].as<std::string>()); }, [&]() -> Values { return {_filepath + _scriptName}; }, {'s'});

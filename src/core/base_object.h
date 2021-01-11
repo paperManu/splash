@@ -47,6 +47,13 @@ namespace Splash
 class BaseObject : public std::enable_shared_from_this<BaseObject>
 {
   public:
+    enum class SetAttrStatus : uint8_t
+    {
+        success,
+        no_setter,
+        failure
+    };
+
     /**
      * Constructor.
      */
@@ -55,7 +62,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     /**
      * Destructor.
      */
-    virtual ~BaseObject() {}
+    virtual ~BaseObject() = default;
 
     /**
      * Set the name of the object.
@@ -80,12 +87,13 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      * Set the specified attribute
      * \param attrib Attribute name
      * \param args Values object which holds attribute values
-     * \return Returns true if the parameter exists and was set
+     * \return Returns the status of the operation as a SetAttrStatus
      */
-    bool setAttribute(const std::string& attrib, const Values& args = {});
+    SetAttrStatus setAttribute(const std::string& attrib, const Values& args = {});
 
     /**
-     * Get the specified attribute
+     * Get the specified attribute. If it does not exist, or there is no getter
+     * for this attribute, returns false or an optional with no value
      * \param attrib Attribute name
      * \param args Values object which will hold the attribute values
      * \return Return true if the parameter exists
@@ -97,14 +105,14 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      * Get a list of the object attributes
      * \return Returns a vector holding all the attributes
      */
-    std::vector<std::string> getAttributesList() const;
+    const std::vector<std::string> getAttributesList() const;
 
     /**
      * Get the description for the given attribute, if it exists
      * \param name Name of the attribute
      * \return Returns the description for the attribute
      */
-    std::string getAttributeDescription(const std::string& name) const;
+    const std::string getAttributeDescription(const std::string& name) const;
 
     /**
      * Get a Values holding the description of all of this object's attributes
@@ -140,8 +148,8 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     void runTasks();
 
   protected:
-    std::string _name{""};                             //!< Object name
-    DenseMap<std::string, Attribute> _attribFunctions; //!< Map of all attributes
+    std::string _name{""};                               //!< Object name
+    DenseMap<std::string, Attribute> _attribFunctions{}; //!< Map of all attributes
     mutable std::recursive_mutex _attribMutex;
     bool _updatedParams{true}; //!< True if the parameters have been updated and the object needs to reflect these changes
 
@@ -149,7 +157,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     std::map<uint32_t, std::future<void>> _asyncTasks{};
     std::mutex _asyncTaskMutex{};
 
-    std::list<std::function<void()>> _taskQueue;
+    std::list<std::function<void()>> _taskQueue{};
     std::recursive_mutex _taskMutex;
 
     struct PeriodicTask
@@ -185,21 +193,14 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      * Add a new attribute to this object
      * \param name Attribute name
      * \param set Set function
-     * \param types Vector of char holding the expected parameters for the set function
-     * \return Return a reference to the created attribute
-     */
-    virtual Attribute& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types = {});
-
-    /**
-     * Add a new attribute to this object
-     * \param name Attribute name
-     * \param set Set function
      * \param get Get function
      * \param types Vector of char holding the expected parameters for the set function
      * \return Return a reference to the created attribute
      */
     virtual Attribute& addAttribute(
-        const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types = {});
+        const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types);
+    virtual Attribute& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types);
+    virtual Attribute& addAttribute(const std::string& name, const std::function<const Values()>& get);
 
     /**
      * Run a task asynchronously

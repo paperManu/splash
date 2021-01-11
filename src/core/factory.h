@@ -69,7 +69,7 @@ class Factory
      * \brief Get all creatable object types
      * \return Return a vector of all the creatable objects
      */
-    std::vector<std::string> getObjectTypes();
+    const std::vector<std::string> getObjectTypes() const;
 
     /**
      * \brief Get all objects of the given GraphObject::Category

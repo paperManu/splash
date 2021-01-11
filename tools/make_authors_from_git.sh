@@ -1,9 +1,9 @@
 #!/bin/bash
 
-AUTHORS="../AUTHORS.md"
+AUTHORS="../docs/Authors.md"
 if ! [ -f "$AUTHORS" ]
 then
-    AUTHORS="./AUTHORS.md"
+    AUTHORS="./docs/Authors.md"
     if ! [ -f "$AUTHORS" ]
     then
 	echo "no authors file found, exiting"

@@ -918,12 +918,14 @@ void World::registerAttributes()
         {'s'});
     setAttributeDescription("addObject", "Add an object to the scenes");
 
-    addAttribute("sceneLaunched", [&](const Values&) {
-        lock_guard<mutex> lockChildProcess(_childProcessMutex);
-        _sceneLaunched = true;
-        _childProcessConditionVariable.notify_all();
-        return true;
-    });
+    addAttribute("sceneLaunched",
+        [&](const Values&) {
+            lock_guard<mutex> lockChildProcess(_childProcessMutex);
+            _sceneLaunched = true;
+            _childProcessConditionVariable.notify_all();
+            return true;
+        },
+        {});
     setAttributeDescription("sceneLaunched", "Message sent by Scenes to confirm they are running");
 
     addAttribute("deleteObject",
@@ -1018,10 +1020,12 @@ void World::registerAttributes()
         },
         {'s'});
 
-    addAttribute("quit", [&](const Values&) {
-        _quit = true;
-        return true;
-    });
+    addAttribute("quit",
+        [&](const Values&) {
+            _quit = true;
+            return true;
+        },
+        {});
     setAttributeDescription("quit", "Ask the world to quit");
 
     addAttribute("replaceObject",
@@ -1048,16 +1052,18 @@ void World::registerAttributes()
     setAttributeDescription("replaceObject",
         "Replace the given object by an object of the given type, with the given alias, and links the new object to the objects given by the following parameters");
 
-    addAttribute("save", [&](const Values& args) {
-        if (args.size() != 0)
-            _configFilename = args[0].as<string>();
+    addAttribute("save",
+        [&](const Values& args) {
+            if (args.size() != 0)
+                _configFilename = args[0].as<string>();
 
-        addTask([=]() {
-            Log::get() << "Saving configuration to " << _configFilename << Log::endl;
-            saveConfig();
-        });
-        return true;
-    });
+            addTask([=]() {
+                Log::get() << "Saving configuration to " << _configFilename << Log::endl;
+                saveConfig();
+            });
+            return true;
+        },
+        {});
     setAttributeDescription("save", "Save the configuration to the current file (or a new one if a name is given as parameter)");
 
     addAttribute("saveProject",

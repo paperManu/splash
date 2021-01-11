@@ -30,15 +30,24 @@ Attribute& GraphObject::operator[](const std::string& attr)
 }
 
 /*************/
+Attribute& GraphObject::addAttribute(
+    const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types)
+{
+    auto& attribute = BaseObject::addAttribute(name, set, get, types);
+    initializeTree();
+    return attribute;
+}
+
+/*************/
 Attribute& GraphObject::addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types)
 {
     return BaseObject::addAttribute(name, set, types);
 }
 
 /*************/
-Attribute& GraphObject::addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types)
+Attribute& GraphObject::addAttribute(const std::string& name, const std::function<const Values()>& get)
 {
-    auto& attribute = BaseObject::addAttribute(name, set, get, types);
+    auto& attribute = BaseObject::addAttribute(name, get);
     initializeTree();
     return attribute;
 }

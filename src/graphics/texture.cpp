@@ -34,7 +34,7 @@ void Texture::registerAttributes()
 {
     GraphObject::registerAttributes();
 
-    addAttribute("timestamp", [](const Values&) { return true; }, [&]() -> Values { return {_spec.timestamp}; });
+    addAttribute("timestamp", [&]() -> Values { return {_spec.timestamp}; });
     setAttributeDescription("timestamp", "Timestamp (in µs) for the current texture, which mimicks the timestamp of the input image (if any)");
 }
 

@@ -66,6 +66,7 @@ link_directories(${Python3_LIBRARY_DIRS})
 #
 add_executable(unitTests unit_tests/unitTests.cpp)
 target_sources(unitTests PRIVATE
+    unit_tests/all_attributes.cpp
     unit_tests/core/attribute.cpp
     unit_tests/core/base_object.cpp
     unit_tests/core/factory.cpp

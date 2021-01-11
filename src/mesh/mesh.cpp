@@ -355,10 +355,14 @@ void Mesh::registerAttributes()
 {
     BufferObject::registerAttributes();
 
-    addAttribute("file",
+    addAttribute(
+        "file",
         [&](const Values& args) {
             _filepath = args[0].as<std::string>();
-            return read(Utils::getFullPathFromFilePath(_filepath, _root->getConfigurationPath()));
+            if (_root)
+                return read(Utils::getFullPathFromFilePath(_filepath, _root->getConfigurationPath()));
+            else
+                return true;
         },
         [&]() -> Values { return {_filepath}; },
         {'s'});

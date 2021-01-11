@@ -157,7 +157,7 @@ std::shared_ptr<GraphObject> RootObject::getObject(const std::string& name)
 bool RootObject::set(const std::string& name, const std::string& attrib, const Values& args, bool async)
 {
     if (name == _name || name == SPLASH_ALL_PEERS)
-        return setAttribute(attrib, args);
+        return setAttribute(attrib, args) != BaseObject::SetAttrStatus::failure;
 
     auto object = getObject(name);
     if (object && object->getAttributeSyncMethod(attrib) == Attribute::Sync::force_sync)
@@ -174,7 +174,7 @@ bool RootObject::set(const std::string& name, const std::string& attrib, const V
     else
     {
         if (object)
-            return object->setAttribute(attrib, args);
+            return object->setAttribute(attrib, args) != BaseObject::SetAttrStatus::failure;
         else
             return false;
     }
@@ -364,14 +364,16 @@ void RootObject::propagatePath(const std::string& path)
 /*************/
 void RootObject::registerAttributes()
 {
-    addAttribute("answerMessage", [&](const Values& args) {
-        if (args.size() == 0 || args[0].as<std::string>() != _answerExpected)
-            return false;
-        std::unique_lock<std::mutex> conditionLock(_conditionMutex);
-        _lastAnswerReceived = args;
-        _answerCondition.notify_one();
-        return true;
-    });
+    addAttribute("answerMessage",
+        [&](const Values& args) {
+            if (args.size() == 0 || args[0].as<std::string>() != _answerExpected)
+                return false;
+            std::unique_lock<std::mutex> conditionLock(_conditionMutex);
+            _lastAnswerReceived = args;
+            _answerCondition.notify_one();
+            return true;
+        },
+        {});
 }
 
 /*************/

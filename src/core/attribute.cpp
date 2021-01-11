@@ -19,29 +19,45 @@ CallbackHandle::~CallbackHandle()
 /*************/
 Attribute::Attribute(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::function<Values()>& getFunc, const std::vector<char>& types)
     : _name(name)
+    , _valuesTypes(types)
     , _setFunc(setFunc)
     , _getFunc(getFunc)
-    , _defaultSetAndGet(false)
-    , _valuesTypes(types)
 {
 }
 
 /*************/
-Attribute& Attribute::operator=(Attribute&& a)
+Attribute::Attribute(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::vector<char>& types)
+    : _name(name)
+    , _valuesTypes(types)
+    , _setFunc(setFunc)
+    , _getFunc(nullptr)
+{
+}
+
+/*************/
+Attribute::Attribute(const std::string& name, const std::function<Values()>& getFunc)
+    : _name(name)
+    , _setFunc(nullptr)
+    , _getFunc(getFunc)
+{
+}
+
+/*************/
+Attribute& Attribute::operator=(Attribute&& a) noexcept
 {
     if (this != &a)
     {
-        _name = move(a._name);
-        _objectName = move(a._objectName);
-        _setFunc = move(a._setFunc);
-        _getFunc = move(a._getFunc);
-        _defaultSetAndGet = a._defaultSetAndGet;
-        _objectName = move(a._objectName);
-        _description = move(a._description);
-        _values = std::move(a._values);
-        _valuesTypes = move(a._valuesTypes);
+        _name = std::move(a._name);
+        _objectName = std::move(a._objectName);
+        _description = std::move(a._description);
+        _valuesTypes = std::move(a._valuesTypes);
+
+        _setFunc = std::move(a._setFunc);
+        _getFunc = std::move(a._getFunc);
+
         _syncMethod = a._syncMethod;
-        _callbacks = move(a._callbacks);
+        _callbacks = std::move(a._callbacks);
+        _isLocked = a._isLocked;
     }
 
     return *this;
@@ -56,25 +72,12 @@ bool Attribute::operator()(const Values& args)
     // Run all set callbacks
     {
         std::lock_guard<std::mutex> lockCb(_callbackMutex);
-        for (auto& cb : _callbacks)
+        for (const auto& cb : _callbacks)
             cb.second(_objectName, _name);
     }
 
-    if (!_setFunc && _defaultSetAndGet)
-    {
-        std::lock_guard<std::mutex> lock(_defaultFuncMutex);
-        _values = args;
-
-        _valuesTypes.clear();
-        for (const auto& a : args)
-            _valuesTypes.push_back(a.getTypeAsChar());
-
-        return true;
-    }
-    else if (!_setFunc)
-    {
+    if (!_setFunc)
         return false;
-    }
 
     // Check for arguments correctness.
     // Some attributes may have an unlimited number of arguments, so we do not test for equality.
@@ -89,8 +92,8 @@ bool Attribute::operator()(const Values& args)
         if (args[i].isConvertibleToType(Value::getTypeFromChar(_valuesTypes[i])))
             continue;
 
-        auto type = args[i].getTypeAsChar();
-        auto expected = _valuesTypes[i];
+        const auto type = args[i].getTypeAsChar();
+        const auto expected = _valuesTypes[i];
 
         Log::get() << Log::WARNING << _objectName << "~~" << _name << " - Argument " << i << " is of wrong type " << std::string(&type, &type + 1) << ", expected "
                    << std::string(&expected, &expected + 1) << Log::endl;
@@ -103,15 +106,8 @@ bool Attribute::operator()(const Values& args)
 /*************/
 Values Attribute::operator()() const
 {
-    if (!_getFunc && _defaultSetAndGet)
-    {
-        std::lock_guard<std::mutex> lock(_defaultFuncMutex);
-        return _values;
-    }
-    else if (!_getFunc)
-    {
+    if (!_getFunc)
         return Values();
-    }
 
     return _getFunc();
 }
@@ -149,7 +145,7 @@ CallbackHandle Attribute::registerCallback(std::weak_ptr<BaseObject> caller, Cal
 bool Attribute::unregisterCallback(const CallbackHandle& handle)
 {
     std::lock_guard<std::mutex> lockCb(_callbackMutex);
-    auto callback = _callbacks.find(handle.getId());
+    const auto callback = _callbacks.find(handle.getId());
     if (callback == _callbacks.end())
         return false;
 

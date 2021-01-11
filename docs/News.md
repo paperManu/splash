@@ -1,6 +1,15 @@
 Splash release notes
 ===================
 
+Splash 0.8.24 (2021-01-11)
+-------------------------
+Improvements:
+* Moved the wiki pages into Splash repo
+* Added getter/setter tests for all attributes
+* Added the possibility to define an attribute with no setter
+* Removed default setter and getter for Attribute
+* Improved YUV decoding
+
 Splash 0.8.22 (2020-12-15)
 -------------------------
 Improvements:

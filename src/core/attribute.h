@@ -87,7 +87,7 @@ class Attribute
   public:
     using Callback = std::function<void(const std::string&, const std::string&)>;
 
-    enum class Sync
+    enum class Sync : uint8_t
     {
         auto_sync,
         force_sync,
@@ -108,12 +108,14 @@ class Attribute
      * \param getFunc Getter function. Can be nullptr
      * \param types Vector of char defining the parameters types the setter function expects.
      */
-    Attribute(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::function<Values()>& getFunc = nullptr, const std::vector<char>& types = {});
+    Attribute(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::function<Values()>& getFunc, const std::vector<char>& types);
+    Attribute(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::vector<char>& types);
+    Attribute(const std::string& name, const std::function<Values()>& getFunc);
 
     Attribute(const Attribute&) = delete;
     Attribute& operator=(const Attribute&) = delete;
-    Attribute(Attribute&& a) { operator=(std::move(a)); }
-    Attribute& operator=(Attribute&& a);
+    Attribute(Attribute&& a) noexcept { operator=(std::move(a)); }
+    Attribute& operator=(Attribute&& a) noexcept;
 
     /**
      * Parenthesis operator which calls the setter function if defined, otherwise calls a default setter function which only stores the arguments if the have the right type.
@@ -131,20 +133,20 @@ class Attribute
     Values operator()() const;
 
     /**
-     * Tells whether the setter and getters are the default ones or not.
-     * \return Returns true if the setter and getter are the default ones.
-     */
-    bool isDefault() const { return _defaultSetAndGet; }
-
-    /**
      * Get the types of the wanted arguments.
      * \return Returns the expected types in a Values.
      */
     Values getArgsTypes() const;
 
     /**
+     * Get whether a setter is defined
+     * \return Return true if the default setter is overridden
+     */
+    bool hasSetter() const { return _setFunc != nullptr; }
+
+    /**
      * Get whether a getter is defined
-     * \return Return true if the default getter is overriden
+     * \return Return true if the default getter is overridden
      */
     bool hasGetter() const { return _getFunc != nullptr; }
 
@@ -214,24 +216,19 @@ class Attribute
     void setSyncMethod(const Sync& method) { _syncMethod = method; }
 
   private:
-    mutable std::mutex _defaultFuncMutex{};
-    std::string _name{}; // Name of the attribute
-
-    std::function<bool(const Values&)> _setFunc{};
-    std::function<const Values()> _getFunc{};
-
-    bool _defaultSetAndGet{true};
-
-    std::string _objectName{};        // Name of the object holding this attribute
-    std::string _description{};       // Attribute description
-    Values _values{};                 // Holds the values for the default set and get functions
-    std::vector<char> _valuesTypes{}; // List of the types held in _values
-    Sync _syncMethod{Sync::auto_sync}; //!< Synchronization to consider while setting this attribute
-
     std::mutex _callbackMutex{};
-    std::map<uint32_t, Callback> _callbacks{};
 
-    bool _isLocked{false};
+    std::string _name{"noname"};        // Name of the attribute
+    std::string _objectName{"unknown"}; // Name of the object holding this attribute
+    std::string _description{};       // Attribute description
+    std::vector<char> _valuesTypes{}; // List of the types held in _values
+
+    std::function<bool(const Values&)> _setFunc{}; // Setter function
+    std::function<const Values()> _getFunc{};      // Getter function
+
+    Sync _syncMethod{Sync::auto_sync};         // Synchronization to consider while setting this attribute
+    std::map<uint32_t, Callback> _callbacks{}; // Callbacks invoked when attribute is modified
+    bool _isLocked{false};                     // If true, the setter can not be invoked
 };
 
 } // namespace Splash

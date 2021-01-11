@@ -10,12 +10,12 @@ This document describes this project's development process. Please do your best 
 
 ## Code of Conduct
 
-By participating in this project, you agree to abide by the Splash [Code of Conduct](CODE_OF_CONDUCT.md). We expect all contributors to follow the [Code of Conduct](CODE_OF_CONDUCT.md) and to treat fellow humans with respect. It must be followed in all your interactions with the project.
+By participating in this project, you agree to abide by the Splash [Code of Conduct](Code_of_conduct.md). We expect all contributors to follow the [Code of Conduct](Code_of_conduct.md) and to treat fellow humans with respect. It must be followed in all your interactions with the project.
 
 
 ## Important Resources
 
-* [README](README.md)
+* [README](index.md)
 * [Issue tracker](https://gitlab.com/sat-metalab/splash/-/issues)
 
 
@@ -42,7 +42,9 @@ If you find a bug in the source code, you can help us by [submitting an issue to
 Please include as much information as possible in your issue: branch name and version, OS version, expected and observed behavior, system information, log files, etc. Most importantly, provide a step-by-step procedure on how to reproduce your bug.
 
 
-## Adding tests
+## Tests
+
+### Adding tests
 
 You are welcome to add unit tests if you spot some code that isn't covered by the existing tests.
 
@@ -86,10 +88,25 @@ cd tests/integration_tests
 splash -P integration_tests.py -- --pattern 'test_sample.py'
 ```
 
+### Evaluating test coverage
+
+There is a specific build target meant to measure the test coverage:
+
+```bash
+cd build
+make check_coverage
+```
+
+A `coverage` subdirectory will be created, containing the results. You just have to open `coverage/index.html` in your favorite browser to navigate the analysis.
+
 
 ## Improving Documentation
 
 Should you have a suggestion for the documentation, you can open an issue and outline the problem or improvement you have - however, creating the fix yourself is much better!
+
+All the documentation for Splash can be found in the `docs` subdirectory. It is written in Markdown and should be pretty easy to navigate with a text editor, but it is primarily meant to be used to generate the [Splash website](https://sat-metalab.gitlab.io/splash).
+
+`mkdocs` is used to do the conversion from the Mardown files to the website. The website is updated automatically whenever a new commit is built successfully in either the `master` or the `website` branches. You can check the [Gitlab CI configuration](https://gitlab.com/sat-metalab/splash/tree/master/.gitlab-ci.yml) to learn more about the process.
 
 If you want to help improve the docs and it's a substantial change, create a new issue (or comment on a related existing one) to let others know what you're working on. Small changes (typos, improvements to phrasing) do not need an issue.
 
@@ -157,7 +174,7 @@ To add an integration test, the steps are:
 
 ### Coding style
 
-We use LLVM style for the C++ code, with a few exceptions. See the [clang-format configuration](./.clang-format) for more about this.
+We use LLVM style for the C++ code, with a few exceptions. See the [clang-format configuration](https://gitlab.com/sat-metalab/splash/tree/master/.clang-format) for more about this.
 
 It is possible to let git ensure that you are conforming to the standards by using pre-commit hooks and clang-format:
 ```
@@ -203,7 +220,7 @@ When you are ready to submit you changes for review, either for preliminary revi
 
 Do not forget to:
 
-1. Update the relevant [README.md](README.md) sections, if necessary.
+1. Update the relevant [README](index.md) sections, if necessary.
 2. Add the relevant unit tests, if needed.
 3. Update documentation, if needed.
 4. Rebase your changes in nice, clear commits if your branch's commit history is messy.
@@ -233,7 +250,7 @@ The defects detected by static analysis should be fixed in a new commit, and sub
 
 ### Release process
 
-To release a new version of Splash, use the script provided in `./tools/release_version.py`. This script will take care of testing that the latest commit on **develop** build, update the version number as well as the NEWS.md file, and update the various branches accordingly.
+To release a new version of Splash, use the script provided in `./tools/release_version.py`. This script will take care of testing that the latest commit on **develop** build, update the version number as well as the [News.md](News.md) file, and update the various branches accordingly.
 
 ```bash
 ./tools/release_version.py
@@ -249,4 +266,4 @@ Once a MR has been submitted, your changes will be reviewed and constructive fee
 
 ## License
 
-By contributing to this repository, you agree that your contributions will be licensed in accordance to the [LICENSE](LICENSE.md) document at the root of this repository.
+By contributing to this repository, you agree that your contributions will be licensed in accordance to the [LICENSE](License.md) document at the root of this repository.
