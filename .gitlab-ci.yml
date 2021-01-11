@@ -152,7 +152,6 @@ pages:
     # Build the website
     - DEBIAN_FRONTEND=noninteractive apt install -y python3-pip doxygen graphviz
     - pip3 install mkdocs markdown-include mkdocs-bootswatch
-    - git clone https://gitlab.com/sat-metalab/splash.wiki docs/wiki
     - export LC_ALL=C.UTF-8
     - export LANG=C.UTF-8
     - mkdocs build -f docs/mkdocs.yml
