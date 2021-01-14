@@ -170,7 +170,7 @@ void GeometricCalibrator::setupCalibrationState(const GeometricCalibrator::Confi
     setWorldAttribute("addObject", {"image", _worldGreyImage});
 
     waitForObjectCreation(_worldGreyImage);
-    setObjectAttribute(_worldGreyImage, "pattern", {1});
+    setObjectAttribute(_worldGreyImage, "pattern", {true});
 
     for (size_t index = 0; index < state.windowList.size(); ++index)
     {
