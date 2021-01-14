@@ -274,17 +274,30 @@ void Window::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 }
 
 /*************/
+void Window::updateSizeAndPos()
+{
+    int sizeAndPos[4];
+    glfwGetWindowPos(_window->get(), &sizeAndPos[0], &sizeAndPos[1]);
+    glfwGetFramebufferSize(_window->get(), &sizeAndPos[2], &sizeAndPos[3]);
+
+    for (size_t i = 0; i < 4; ++i)
+    {
+        if (sizeAndPos[i] != _windowRect[i])
+            _resized = true;
+    }
+
+    if (_resized)
+    {
+        for (size_t i = 0; i < 4; ++i)
+            _windowRect[i] = sizeAndPos[i];
+    }
+}
+
+/*************/
 void Window::render()
 {
-    // Get the current window size
-    int w, h;
-    glfwGetFramebufferSize(_window->get(), &w, &h);
-    if (w != _windowRect[2] || h != _windowRect[3])
-    {
-        _resized = true;
-        _windowRect[2] = w;
-        _windowRect[3] = h;
-    }
+    // Get the current window size and position
+    updateSizeAndPos();
 
     // Update the FBO configuration if needed
     if (_resized)
@@ -293,8 +306,7 @@ void Window::render()
         _resized = false;
     }
 
-    glfwGetFramebufferSize(_window->get(), &w, &h);
-    glViewport(0, 0, w, h);
+    glViewport(0, 0, _windowRect[2], _windowRect[3]);
 
 #ifdef DEBUG
     glGetError();
@@ -360,11 +372,11 @@ void Window::render()
         {
             if (t.expired())
                 continue;
-            t.lock()->setAttribute("size", {w, h});
+            t.lock()->setAttribute("size", {_windowRect[2], _windowRect[3]});
         }
     }
     if (_guiTexture != nullptr)
-        _guiTexture->setAttribute("size", {w, h});
+        _guiTexture->setAttribute("size", {_windowRect[2], _windowRect[3]});
 
     // Update the timestamp based on the input textures
     int64_t timestamp{0};

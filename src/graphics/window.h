@@ -54,13 +54,13 @@ class Window : public GraphObject
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
     Window(RootObject* root);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~Window() final;
 
@@ -71,7 +71,7 @@ class Window : public GraphObject
     Window& operator=(const Window&) = delete;
 
     /**
-     * \brief Get grabbed character (not necesserily a specific key)
+     * Get grabbed character (not necesserily a specific key)
      * \param win GLFW window which grabbed the input
      * \param codepoint Character code
      * \return Return the number of characters in the queue before calling this method
@@ -79,7 +79,7 @@ class Window : public GraphObject
     static int getChar(GLFWwindow*& win, unsigned int& codepoint);
 
     /**
-     * \brief Get the next grabbed key in the queue
+     * Get the next grabbed key in the queue
      * \param win GLFW window which grabbed the key
      * \param key Key code
      * \param action Action grabbed (press, release)
@@ -89,7 +89,7 @@ class Window : public GraphObject
     static int getKey(GLFWwindow*& win, int& key, int& action, int& mods);
 
     /**
-     * \brief Get the grabbed mouse action
+     * Get the grabbed mouse action
      * \param win GLFW window which grabbed the key
      * \param btn Mouse button number
      * \param action Mouse action detected (press, release)
@@ -99,7 +99,7 @@ class Window : public GraphObject
     static int getMouseBtn(GLFWwindow*& win, int& btn, int& action, int& mods);
 
     /**
-     * \brief Get the mouse position
+     * Get the mouse position
      * \param win GLFW window the mouse hovers
      * \param xpos X position
      * \param ypos Y position
@@ -107,7 +107,7 @@ class Window : public GraphObject
     static void getMousePos(GLFWwindow*& win, int& xpos, int& ypos);
 
     /**
-     * \brief Get the mouse wheel movement
+     * Get the mouse wheel movement
      * \param win GLFW window the mouse hovers
      * \param xoffset X offset of the wheel
      * \param yoffset Y offset of the wheel
@@ -116,13 +116,13 @@ class Window : public GraphObject
     static int getScroll(GLFWwindow*& win, double& xoffset, double& yoffset);
 
     /**
-     * \brief Get the list of paths dropped onto any window
+     * Get the list of paths dropped onto any window
      * \return Return the list of paths
      */
     static std::vector<std::string> getPathDropped();
 
     /**
-     * \brief Get the quit flag status
+     * Get the quit flag status
      * \return Return the quit flag status
      */
     static int getQuitFlag() { return _quitFlag; }
@@ -134,54 +134,54 @@ class Window : public GraphObject
     virtual int64_t getTimestamp() const final { return _frontBufferTimestamp; }
 
     /**
-     * \brief Check whether the window is initialized
+     * Check whether the window is initialized
      * \return Return true if the window is initialized
      */
     bool isInitialized() const { return _isInitialized; }
 
     /**
-     * \brief Check whether the given GLFW window is related to this object
+     * Check whether the given GLFW window is related to this object
      * \return Return true if the GLFW window is held by this object
      */
     bool isWindow(GLFWwindow* w) const { return (w == _window->get() ? true : false); }
 
     /**
-     * \brief Render this window to screen
+     * Render this window to screen
      */
     void render() final;
 
     /**
-     * \brief Hide / show cursor
+     * Hide / show cursor
      * \param visibility Desired visibility
      */
     void showCursor(bool visibility);
 
     /**
-     * \brief Set a new texture to draw
+     * Set a new texture to draw
      * \param tex Target texture
      */
     void setTexture(const std::shared_ptr<Texture>& tex);
 
     /**
-     * \brief Unset a new texture to draw
+     * Unset a new texture to draw
      * \param tex Target texture
      */
     void unsetTexture(const std::shared_ptr<Texture>& tex);
 
     /**
-     * \brief Swap the back and front buffers
+     * Swap the back and front buffers
      */
     void swapBuffers();
 
   protected:
     /**
-     * \brief Try to link the given GraphObject to this object
+     * Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
     bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
 
     /**
-     * \brief Try to unlink the given GraphObject from this object
+     * Try to unlink the given GraphObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
@@ -234,7 +234,7 @@ class Window : public GraphObject
     static std::atomic_bool _quitFlag;                                      // Grabs close window events
 
     /**
-     * \brief Input callbacks
+     * Input callbacks
      */
     static void keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods);
     static void charCallback(GLFWwindow* win, unsigned int codepoint);
@@ -245,41 +245,46 @@ class Window : public GraphObject
     static void closeCallback(GLFWwindow* win);
 
     /**
-     * \brief Set FBOs up
+     * Update size and position parameters based on the real window parameters
+     */
+    void updateSizeAndPos();
+
+    /**
+     * Set FBOs up
      */
     void setupFBOs();
     void setupReadFBO();
 
     /**
-     * \brief Register new attributes
+     * Register new attributes
      */
     void registerAttributes();
 
     /**
-     * \brief Set up the user events callbacks
+     * Set up the user events callbacks
      */
     void setEventsCallbacks();
 
     /**
-     * \brief Set up the projection surface
+     * Set up the projection surface
      * \return Return true if all is well
      */
     bool setProjectionSurface();
 
     /**
-     * \brief Set whether the window has decorations
+     * Set whether the window has decorations
      * \param hasDecoration Desired decoration status
      */
     void setWindowDecoration(bool hasDecoration);
 
     /**
-     * \brief Update the swap interval. Call this when the _swapInterval has been changed
+     * Update the swap interval. Call this when the _swapInterval has been changed
      * \param swapInterval Desired swap interval
      */
     void updateSwapInterval(int swapInterval);
 
     /**
-     * \brief Update the window size and position to reflect its attributes
+     * Update the window size and position to reflect its attributes
      */
     void updateWindowShape();
 };
