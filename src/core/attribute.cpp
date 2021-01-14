@@ -70,6 +70,7 @@ bool Attribute::operator()(const Values& args)
         return false;
 
     // Run all set callbacks
+    if (!_callbacks.empty())
     {
         std::lock_guard<std::mutex> lockCb(_callbackMutex);
         for (const auto& cb : _callbacks)
