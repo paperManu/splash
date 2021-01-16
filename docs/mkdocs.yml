@@ -18,12 +18,12 @@ nav:
   - Guides:
     - Installation: Installation.md
     - User interface: User_Interface.md
-    - Tutorials: Walkthrough.md
   - Docs:
     - Architecture: Technical_Information.md
     - Frequently asked questions: FAQ.md
     - Advanced usages: Advanced_usages.md
     - API: ./doxygen/index.html
+  - Tutorials: Walkthrough.md
   - Community:
     - Release notes: News.md
     - Contributing: Contributing.md
