@@ -334,3 +334,43 @@ Two windows will appear, one borderless and another one which will show the GUI 
 The cameras parameters, as well as the warp if any, are now transferred to the current configuration file (probe_config.json). The setup is now completed. You should see an image with spherical mapping.
 
 ![Probe Sphere Mapping](./images/probe_calibrated_blending.jpg)
+
+-------------------------------------------
+
+### (Almost) automatic calibration with Calimiro
+
+The automatic calibration is done by [Calimiro](https://gitlab.com/sat-metalab/calimiro). It is designed to work with different cameras, in particular with DSLR, webcams and industrial cameras. We advice to use a fast shutter speed camera with a wide field of view to make the process faster. Note that, as of now, the calibration is only partial, it is still being developped and improved.
+
+#### Prepare the configuration file
+For the calibration to work, first prepare the configuration file. Please refer to the [multi-projector example](#create-the-configuration-using-the-Blender-addon) to learn how to generate the file. Pay particular attention to make sure that Splash is configured such that each physical projector is represented by an object of type "camera" in Splash configuration.
+
+#### Configure the camera
+By default, no cameras are configured to allow flexibility in the choice of the camera used for calibration. The steps to add a camera to Splash configuration are making sure its parameters are valid (resolution, focus, exposure) and connecting it to the element in charge of the geometric calibration. Let's take the example of an OpenCV compatible camera as the steps are globally identical for other types of capture devices (DSLR or V4L2 compatible cameras) :
+
+![Add object drop-down menu](./images/calib_image_opencv.jpg)
+
+- open Splash, then reveal the interface by pressing Ctrl + tab. Feel free to enlarge the interface, it may be more comfortable
+- go to the "Graph" panel
+- add an object of type "image_opencv" by choosing it in the drop-down menu entitled "Add an object". This will create a new node named "image_opencv_1" in the graph. Note that it could be another source type. In fact any "external" source could work: `image_opencv`, `image_v4l2`, `image_shmdata`, `image_gphoto`
+- add another node of type "filter. A node named "filter_2" will be added to the graph. It may be hidden behind a another filter. You can move the nodes around to see more clearly
+- connect the object "image_opencv_1" to "filter_2". To do so, left-click on the first one, then hold down shift while left-clicking on the second one. You should see a link between the two objects
+- do the same to connect the object "image_opencv_1" to the object "geometricCalibrator"
+- if you feel like it, save the current configuration with Ctrl + s, it will always be one less thing to do if you make a mistake
+- click on the node "image_opencv_1" from the graph to configure the camera settings. This step is quite dependent on your camera, but the minimum is to activate the camera by entering "0" in the field named "...". This will select the default camera and open the camera for capture
+- you can now switch to the "Medias" panel. In this panel you will see the object "image_opencv_1", click on it
+- by clicking on the field "Filter preview: filter_2", you can view the camera capture
+- once the settings are correct, you can proceed to the actual calibration
+
+![Nodes setup and connections](./images/calib_geometriccalibrator.jpg)
+
+#### Calibrate
+The calibration process is done from the "Main" tab in the section "Geometric calibration. The pipeline is as follow:
+- start the calibration by clicking on "Start calibration". All the projectors should go black
+- position the camera to the desired position
+- click on "Capture new position". A sequence of structured light patterns should be displayed each projector at a time. When done, all projectors should go black again
+- repeat the previous step for different positions, so that each area of the projection surface is captured at least 3 times
+- finally, click on "Finalize calibration"
+
+![Splash geometric calibration panel](./images/calib_export_panel.jpg)
+
+The result of the calibration process is available in the `/tmp/calimiro_$PID`directory, `$PID` being the process number of the Splash instance.
