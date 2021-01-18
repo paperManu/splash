@@ -106,7 +106,7 @@ void FilterCustom::registerAttributes()
     addAttribute(
         "fileFilterSource",
         [&](const Values& args) {
-            auto srcFile = args[0].as<std::string>();
+            const auto srcFile = args[0].as<std::string>();
             if (srcFile.empty())
                 return true; // No shader specified
 
@@ -122,7 +122,11 @@ void FilterCustom::registerAttributes()
 
                 _shaderSourceFile = srcFile;
                 _shaderSource = "";
-                addTask([=]() { setFilterSource(contents); });
+                addTask([=]() {
+                    setFilterSource(contents);
+                    _lastShaderSourceRead = Timer::getTime();
+                });
+
                 return true;
             }
             else
@@ -134,6 +138,9 @@ void FilterCustom::registerAttributes()
         [&]() -> Values { return {_shaderSourceFile}; },
         {'s'});
     setAttributeDescription("fileFilterSource", "Set the fragment shader source for the filter from a file");
+
+    addAttribute("shaderReadTime", [&]() -> Values { return {_lastShaderSourceRead}; });
+    setAttributeDescription("shaderReadTime", "Time at which the shader was read");
 
     addAttribute(
         "watchShaderFile",
@@ -151,7 +158,7 @@ void FilterCustom::registerAttributes()
                         std::filesystem::path sourcePath(_shaderSourceFile);
                         try
                         {
-                            auto lastWriteTime = std::filesystem::last_write_time(sourcePath);
+                            const auto lastWriteTime = std::filesystem::last_write_time(sourcePath);
                             if (lastWriteTime != _lastShaderSourceWrite)
                             {
                                 _lastShaderSourceWrite = lastWriteTime;
