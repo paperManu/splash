@@ -443,11 +443,17 @@ void Image::registerAttributes()
 
     addAttribute("pattern",
         [&](const Values& args) {
-            if (args[0].as<bool>())
-                createPattern();
+            if (_showPattern != args[0].as<bool>())
+            {
+                _showPattern = args[0].as<bool>();
+                if (_showPattern)
+                    createPattern();
+                else
+                    read(_filepath);
+            }
             return true;
         },
-        [&]() -> Values { return {false}; },
+        [&]() -> Values { return {_showPattern}; },
         {'b'});
     setAttributeDescription("pattern", "Set to true to replace the image with a pattern");
 
