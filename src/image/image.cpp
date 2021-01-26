@@ -161,7 +161,7 @@ std::shared_ptr<SerializedObject> Image::serialize() const
 /*************/
 bool Image::deserialize(const std::shared_ptr<SerializedObject>& obj)
 {
-    if (obj.get() == nullptr || obj->size() == 0)
+    if (obj == nullptr || obj->size() == 0)
         return false;
 
     if (Timer::get().isDebug())
@@ -443,11 +443,17 @@ void Image::registerAttributes()
 
     addAttribute("pattern",
         [&](const Values& args) {
-            if (args[0].as<bool>())
-                createPattern();
+            if (_showPattern != args[0].as<bool>())
+            {
+                _showPattern = args[0].as<bool>();
+                if (_showPattern)
+                    createPattern();
+                else
+                    read(_filepath);
+            }
             return true;
         },
-        [&]() -> Values { return {false}; },
+        [&]() -> Values { return {_showPattern}; },
         {'b'});
     setAttributeDescription("pattern", "Set to true to replace the image with a pattern");
 

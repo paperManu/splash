@@ -1,13 +1,15 @@
 Walkthrough
 ===========
 
-This section shows different ways of using Splash through four examples. The two first examples concentrate on how Splash was meant to be used, which is also the only approach where blending multiple projectors works. The third example illustrates the use of a virtual probe to convert from a cubemap projection to a spherical projection. Laslty, we show an alternative usage involving the Blender addon to map an object in a more user-friendly manner, closer to what exists in softwares like MadMapper.
+This section shows different ways of using Splash through examples. The examples are grouped in two sections: standard and advanced usages. As the names suggest, standard usages relate to easy use cases of Splash, while advanced usages relate to less common and more complexe use cases.
 
 All these examples rely on the Blender exporter, so you need to install [Blender](https://blender.org) as well as the [Splash addon](../User_Interface/#blender_export).
 
 -------------------------------------------
 
-## Single projector example
+## Standard usages
+
+### Single projector example
 
 This example shows how to project onto a known object for which we have a 3D model. The workflow is as follows:
 - create a 3D model of the object which will serve as a projection surface,
@@ -15,7 +17,7 @@ This example shows how to project onto a known object for which we have a 3D mod
 - open the file in Splash, calibrate the projector,
 - load some contents to play onto the surface.
 
-### Create a 3D model of the object, as well as the draft scene
+#### Create a 3D model of the object, as well as the draft scene
 To keep things simple, the projection surface will be a simple box, or a cube in our case. This makes the creation of the 3D model easy, which is good as it is a bit out of the scope of Splash. Indeed, Splash is dedicated to handling the video-projectors, not creating the 3D model. So creating the model from the dimensions of the real object is an option, [photogrammetry](https://en.wikipedia.org/wiki/Photogrammetry) is another.
 
 So, assuming you know how to use Blender, at this point we have a real object and its virtual counterpart, which looks quite similar geometry-wise. I did not measure the plaster cube, which proved sufficient if not perfect in the following steps.
@@ -35,7 +37,7 @@ The GUI window is created through a dedicated node, the other window is created 
 Now we have to click on 'Export configuration' from the World node, which will export all the nodes connected to it. Let's name the output file 'configuration.json'. The Blender object's mesh will be automatically exported in the same directory.
 
 
-### Projector calibration inside Splash
+#### Projector calibration inside Splash
 Now is the time to run Splash with our newly created configuration file. To do so, either open Splash with a default configuration file (this will be the case on OSX if you launch the application bundle) and drag&drop the new configuration file onto one of the windows ; or launch Splash in command line with the configuration file as a parameter:
 
 ``` bash
@@ -61,7 +63,7 @@ Once you have set seven vertices, you can ask for Splash to calibrate the camera
 Switch back to textured view with Ctrl + T, and save the result with Ctrl + S. The calibration is done, and we can now set a video to play onto the box!
 
 
-### Add some video to play
+#### Add some video to play
 The final step is to replace the static texture used previously with a film. Still in Splash, go to the Medias tabulation. There you have a list of the inputs of your configuration and you can modify them. Select the only object in the list, that change its type from "image" to "video". Next, update the "file" attribute with the full path to a video file.
 
 And that's it, you should now see the video playing onto the object, according to the UV coordinates created in Blender. Here I set the same coordinates for all faces of the cube, so that the same video is mapped on each one of them.
@@ -72,7 +74,7 @@ There is a lot more to it, as with this method you can calibrate multiple projec
 
 -------------------------------------------
 
-## Multi-projector example
+### Multi-projector example
 
 This example explains step by step how to calibrate multiple projectors on a relatively simple surface. The projection surface is a tilted dome, projected onto with three video-projectors. The workflow is as follows:
 - create a low definition 3D model of the projection surface, used for calibration,
@@ -82,7 +84,7 @@ This example explains step by step how to calibrate multiple projectors on a rel
 - replace the low definition 3D model with the high definition one,
 - load some contents to play onto the surface.
 
-### Create a low definition (calibration) 3D model of the object
+#### Create a low definition (calibration) 3D model of the object
 The reason why a low definition 3D model is needed comes from how Splash handles video-projectors calibration. Basically, the idea is to tell Splash where a point of the 3D model should be projected onto the projection surface. Splash needs at least six points to be specified for the calibration process to run.
 
 The thing is that it is easier to work with a very simple 3D model containing only the points for which we know precisely the position of the projection. These points can be taken as the intersections of edges, seams, or any point measured onto the surface. Using these points, a very basic 3D model is created and will be used throughout the calibration process.
@@ -97,7 +99,7 @@ Finally, we need some texture coordinates to be able to display a pattern image 
 
 In the next sections, this low definition 3D model will be referred to as the calibration model.
 
-### Create the configuration using the Blender addon
+#### Create the configuration using the Blender addon
 Now that we have the calibration model, we can go forward with the creation of the base configuration for Splash, inside the same Blender project. For this example, we will consider that there are three video-projectors connected to the second, third and fourth outputs of the (only) graphic card. This first output is sent to an additional display for controlling purpose. All outputs are set to 1920x1080.
 
 ![Output configuration](./images/nvsettings.jpg)
@@ -114,7 +116,7 @@ An Object node is connected to all cameras as all video-projectors target the sa
 
 Now we can export the Splash configuration by clicking on 'Export configuration' on the World node, which will export all the nodes connected to it. Let's name the output file `configuration.json`. The calibration model will be automatically exported in the same directory as the configuration file, as its name has been entered in the Mesh node.
 
-### Calibrate the multiple video-projectors
+#### Calibrate the multiple video-projectors
 Here comes the exciting part, the calibration of the video-projectors. Load the newly exported calibration filer, either by running Splash and drag&dropping the file `calibration.json`, or by launching Splash from the command line with the configuration file as a parameter:
 
 ``` bash
@@ -126,7 +128,7 @@ Two windows will appear. One is the GUI and shows up on the monitor, the other w
 
 ![Splash GUI with multiview configuration](./images/splash_multiview_gui.jpg)
 
-#### General information about calibration
+##### General information about calibration
 
 Select the GUI window and press Ctrl+Tab: the GUI shows up! You can find additional information about the GUI in the [GUI](./Gui) page. The important tabulation for now is named 'Cameras'. Open it by clicking on it. From this tabulation you can select any of the cameras defined earlier in Blender. Note that when a camera is selected, it is highlighted by an orange seam, so as to help seeing to which video-projector this camera's output is sent. By default the first camera from the list is selected, which is kind of an overview camera and is not sent anywhere. You have to go back to selecting this camera to disable any highlighting of the other cameras.
 
@@ -157,7 +159,7 @@ Once at least six vertices have been set this way, you can ask for Splash to cal
 |:--------------------------------------------------:|:------------------------------------------------:|
 | ![](./images/semidome_first_proj_uncalibrated.jpg) | ![](./images/semidome_first_proj_calibrated.jpg) |
 
-#### Calibration!
+##### Calibration!
 
 We are now ready to calibrate all three video-projectors. Some general thoughts to begin with: the projection surface is a dome, which means that it has quite a few symetries. This allows us to start however we want. This would obviously not be the case with a non-symetrical object, like a room for example. Having that many symetries can also be a hurdle: once the first camera has been calibrated, it is not possible to calibrate the next camera without referring to the texture. With a non-symetrical object, the 3D model should be enough.
 
@@ -176,7 +178,7 @@ You can now go on to the third camera. Select it in the camera list: as soon as 
 
 The first pass of calibration is finished, the next step would be to check the result, but for this we need a higher definition 3D model of our projection surface. Save the configuration by pressing Ctrl+S.
 
-### Create a high definition 3D model, and replace the low definition one
+#### Create a high definition 3D model, and replace the low definition one
 
 There are multiples ways to create a high definition 3D model of a projection surface. As we are projecting onto a dome, we only need to create a UV sphere that we will cut in half. The only prerequisite is that its diameter is precisely the same as the diameter of the calibration model. We also need to generate the texture coordinates. To make it match a spherical projection, do as follows:
 
@@ -200,7 +202,7 @@ Then browse to the directory where the `configuration.json` has been exported, a
 
 Go back to Splash. In the Meshes tabulation, open the 'mesh' object, then set the source obj file to the newly exported file (either by manually typing the path, or by selecting it with the '...' button). Save the configuration by pressing Ctrl+S.
 
-### Calibration, second round
+#### Calibration, second round
 
 We can now fine-tune the calibration. Replacing the calibration model with the high definition one should already have improved things quite a bit, but chances are that there is still some work to do. There is not much to learn here, but here are a few tricks to make the projections match a bit better:
 
@@ -221,59 +223,14 @@ Lastly, when the calibration seems correct, we can activate the blending of the 
 
 ![High definition dome, blended](./images/semidome_wireframe_blended.jpg)
 
-### Load some video contents
+#### Load some video contents
 The final step is to replace the static texture used previously with a film. Still in Splash, go to the Medias tabulation. There you have a list of the inputs of your configuration and you can modify them. Select the only object in the list, that change its type from "image" to "video". Next, update the "file" attribute with the full path to a video file.
 
 -------------------------------------------
 
-## Virtual probe example
+## Advanced usages
 
-This example illustrates how to use a virtual probe. It supports spherical mapping and equirectangular mapping. It is a useful feature when the input source is incompatible with the projection surface. We will demonstrate, in the following example, how it can be used to create a spherical or equirectangular projection from a cubemap. Below is the cubemap image that will be displayed in the dome.
-
-![Probe cubemap image](./images/probe_image_cubemap.jpg)
-
-As with the previous example, the pipeline is as follows:
-
-- create a low definition 3D model of the projection surface, used for calibration,
-- export from Blender a draft configuration file,
-- open the file in Splash, calibrate the video-projectors using the color-map,
-- create a high definition 3D model of the projection surface, used for projection,
-- replace the low definition 3D model with the high definition one,
-- In the Blender configuration file, replace the Image by the probe setup
-- load the cubemap image to the projection surface
-
-Since the workflow repeats the same steps as the previous example, this example will continue where the previous demonstration left off, that is, after loading the high definition mesh into Splash. Save this configuration with Ctrl + s.
-
-### Create a 3D model of the cubemap and update the Node tree
-We will start from the previous Blender configuration file. The Image node is now replaced by a Probe node. An Object node is connected to the probe. This object receives as input an Image node (this image is rendered under a cubemap projection) and a Mesh node associated to a cube mesh. Below is the final node tree:
-
-![Probe Blender tree](./images/probe_blender_node_view_box.jpg)
-
-Notice that the probe projection is set to spherical and the render width and height is 2048x2048 in our case. The cubemap object node has back culling since we are "virtually" projecting inside a cube.
-Attention must be taken when generating the cube uvs. The texture coordinate must be coherent with the received image cubemap. If necessary, reorder/scale Blender's "UV island".
-
-![Probe Blender uvs](./images/probe_uvs_cube.jpg)
-
-Splash configuration can be exported via the "Export configuration" button of the World node. The 3D models must be exported as well. Make sure to save this configuration file with a different name than the calibrated configuration file from the previous example.
-
-### Load the new configuration in Splash
-Load the configuration file from the command line:
-
-``` bash
-splash probe_config.json
-```
-
-Two windows will appear, one borderless and another one which will show the GUI when pressing Ctrl + Tab. The cameras of this configuration files are not calibrated. We will copy the cameras positions and orientations from the previous example. In the File menu, select 'Copy calibration from configuration', then select the file from which to copy the configuration.
-
-![Probe copy configuration](./images/probe_copy_config.jpg)
-
-The cameras parameters, as well as the warp if any, are now transferred to the current configuration file (probe_config.json). The setup is now completed. You should see an image with spherical mapping.
-
-![Probe Sphere Mapping](./images/probe_calibrated_blending.jpg)
-
--------------------------------------------
-
-## Shape placement example
+### Shape placement example
 
 This example shows an alternative use of Splash, sideways from its original target usage and closer to what can be found in most single projector video-mapping softwares. The idea is to place polygons on a real object directly on the projection, which implies that there is no need to create a precise 3D model of the objets. The downside is that this approach can not handle automatic blending when using multiple projectors. The workflow is as follows:
 
@@ -287,7 +244,7 @@ This example shows an alternative use of Splash, sideways from its original targ
 
 To be able to follow this guide, you need to install the shmdata addon for Blender: see [this page](../User_Interface/#blender-addons) to install it.
 
-### Create and export a configuration file from Blender
+#### Create and export a configuration file from Blender
 Let's say that placing the video-projector is up to the user, and start with the export from Blender. Our goal here is to create a very simple scene which will roughly match the real installation. Once Blender is started, you can delete the light from the default startup scene. Place the camera along the Y axis and make of look toward this same axis. You should get a scene looking like this, from a top-down view:
 
 ![Complex scene setup](./images/tutorial_shapes/blender_scene.jpg)
@@ -306,7 +263,7 @@ The main difference with the previous example here is that instead of setting th
 
 Click on 'Export tree' from the World node to export all the nodes connected to it, and call the output file 'configuration.json'
 
-### Load the configuration in Splash
+#### Load the configuration in Splash
 This part is really easy. Either drop the newly created configuration file on the Splash window, or load it from the command line:
 
 ``` bash
@@ -316,7 +273,7 @@ splash configuration.json
 Two windows will appear, one borderless (and fullscreen if set correctly) and another one which will show the GUI when pressing Ctrl + Tab. The most useful command in Splash in this case it the switch from Wireframe to Textured, either using the keyboard shortcuts (Ctrl + W and Ctrl + T) or from the GUI.
 
 
-### Update the poylgons and their texture coordinates from Blender
+#### Update the polygons and their texture coordinates from Blender
 Here is the decisive moment. Back in Blender, select the cube and enter Edit mode (press Tab). From there, any modification to the mesh will show up immediately in Splash. The idea here is to place the polygons so that they match the geometry of the objects projected onto, like this:
 
 ![The polygons](./images/tutorial_shapes/target_with_polys.jpg)
@@ -330,3 +287,90 @@ With a very simple video of concentric light circle, you can obtain something li
 ![CIRCLES!](./images/tutorial_shapes/projection_result.gif)
 
 Once again, the Blender community has excellent resources regarding modeling in Blender, to help you with the creation of the polygons and even of the videos to project!
+
+-------------------------------------------
+
+### Virtual probe example
+
+This example illustrates how to use a virtual probe. It supports spherical mapping and equirectangular mapping. It is a useful feature when the input source is incompatible with the projection surface. We will demonstrate, in the following example, how it can be used to create a spherical or equirectangular projection from a cubemap. Below is the cubemap image that will be displayed in the dome.
+
+![Probe cubemap image](./images/probe_image_cubemap.jpg)
+
+As with the previous example, the pipeline is as follows:
+
+- create a low definition 3D model of the projection surface, used for calibration,
+- export from Blender a draft configuration file,
+- open the file in Splash, calibrate the video-projectors using the color-map,
+- create a high definition 3D model of the projection surface, used for projection,
+- replace the low definition 3D model with the high definition one,
+- In the Blender configuration file, replace the Image by the probe setup
+- load the cubemap image to the projection surface
+
+Since the workflow repeats the same steps as the previous example, this example will continue where the previous demonstration left off, that is, after loading the high definition mesh into Splash. Save this configuration with Ctrl + s.
+
+#### Create a 3D model of the cubemap and update the Node tree
+We will start from the previous Blender configuration file. The Image node is now replaced by a Probe node. An Object node is connected to the probe. This object receives as input an Image node (this image is rendered under a cubemap projection) and a Mesh node associated to a cube mesh. Below is the final node tree:
+
+![Probe Blender tree](./images/probe_blender_node_view_box.jpg)
+
+Notice that the probe projection is set to spherical and the render width and height is 2048x2048 in our case. The cubemap object node has back culling since we are "virtually" projecting inside a cube.
+Attention must be taken when generating the cube uvs. The texture coordinate must be coherent with the received image cubemap. If necessary, reorder/scale Blender's "UV island".
+
+![Probe Blender uvs](./images/probe_uvs_cube.jpg)
+
+Splash configuration can be exported via the "Export configuration" button of the World node. The 3D models must be exported as well. Make sure to save this configuration file with a different name than the calibrated configuration file from the previous example.
+
+#### Load the new configuration in Splash
+Load the configuration file from the command line:
+
+``` bash
+splash probe_config.json
+```
+
+Two windows will appear, one borderless and another one which will show the GUI when pressing Ctrl + Tab. The cameras of this configuration files are not calibrated. We will copy the cameras positions and orientations from the previous example. In the File menu, select 'Copy calibration from configuration', then select the file from which to copy the configuration.
+
+![Probe copy configuration](./images/probe_copy_config.jpg)
+
+The cameras parameters, as well as the warp if any, are now transferred to the current configuration file (probe_config.json). The setup is now completed. You should see an image with spherical mapping.
+
+![Probe Sphere Mapping](./images/probe_calibrated_blending.jpg)
+
+-------------------------------------------
+
+### (Almost) automatic calibration with Calimiro
+
+The automatic calibration is done by [Calimiro](https://gitlab.com/sat-metalab/calimiro). It is designed to work with different cameras, in particular with DSLR, webcams and industrial cameras. We advice to use a fast shutter speed camera with a wide field of view to make the process faster. Note that, as of now, the calibration is only partial, it is still being developped and improved.
+
+#### Prepare the configuration file
+For the calibration to work, first prepare the configuration file. Please refer to the [multi-projector example](#create-the-configuration-using-the-Blender-addon) to learn how to generate the file. Pay particular attention to make sure that Splash is configured such that each physical projector is represented by an object of type "camera" in Splash configuration.
+
+#### Configure the camera
+By default, no cameras are configured to allow flexibility in the choice of the camera used for calibration. The steps to add a camera to Splash configuration are making sure its parameters are valid (resolution, focus, exposure) and connecting it to the element in charge of the geometric calibration. Let's take the example of an OpenCV compatible camera as the steps are globally identical for other types of capture devices (DSLR or V4L2 compatible cameras) :
+
+![Add object drop-down menu](./images/calib_image_opencv.jpg)
+
+- open Splash, then reveal the interface by pressing Ctrl + tab. Feel free to enlarge the interface, it may be more comfortable
+- go to the "Graph" panel
+- add an object of type "image_opencv" by choosing it in the drop-down menu entitled "Add an object". This will create a new node named "image_opencv_1" in the graph. Note that it could be another source type. In fact any "external" source could work: `image_opencv`, `image_v4l2`, `image_shmdata`, `image_gphoto`
+- add another node of type "filter. A node named "filter_2" will be added to the graph. It may be hidden behind a another filter. You can move the nodes around to see more clearly
+- connect the object "image_opencv_1" to "filter_2". To do so, left-click on the first one, then hold down shift while left-clicking on the second one. You should see a link between the two objects
+- do the same to connect the object "image_opencv_1" to the object "geometricCalibrator"
+- if you feel like it, save the current configuration with Ctrl + s, it will always be one less thing to do if you make a mistake
+- click on the node "image_opencv_1" from the graph to configure the camera settings. This step is quite dependent on your camera, but the minimum is to activate the camera by entering "0" in the field named "...". This will select the default camera and open the camera for capture
+- you can now switch to the "Medias" panel. In this panel you will see the object "image_opencv_1", click on it
+- by clicking on the field "Filter preview: filter_2", you can view the camera capture
+- once the settings are correct, you can proceed to the actual calibration
+
+![Nodes setup and connections](./images/calib_geometriccalibrator.jpg)
+
+#### Calibrate
+The calibration process is done from the "Main" tab in the section "Geometric calibration. The pipeline is as follow:
+- start the calibration by clicking on "Start calibration". All the projectors should go black
+- position the camera to the desired position
+- click on "Capture new position". A sequence of structured light patterns should be displayed each projector at a time. When done, all projectors should go black again
+- repeat the previous step for different positions, so that each area of the projection surface is captured at least 3 times
+- finally, click on "Finalize calibration"
+
+![Splash geometric calibration panel](./images/calib_export_panel.jpg)
+
+The result of the calibration process is available in the `/tmp/calimiro_$PID`directory, `$PID` being the process number of the Splash instance.

@@ -107,13 +107,15 @@ TEST_CASE("Testing BaseObject class")
     CHECK_EQ(object->getName(), "Classe");
 
     int integer_value = 42;
-    float float_value = 3.1415;
+    float float_value = 3.1415f;
     std::string string_value = "T'es sûr qu'on dit pas ouiche ?";
     Values array_value{1, 4.2, "sheraf"};
 
-    object->setAttribute("integer", {integer_value});
-    object->setAttribute("float", {float_value});
-    object->setAttribute("string", {string_value});
+    CHECK(object->setAttribute("integer", {integer_value}) == BaseObject::SetAttrStatus::success);
+    CHECK(object->setAttribute("float", {float_value}) == BaseObject::SetAttrStatus::success);
+    CHECK(object->setAttribute("string", {string_value}) == BaseObject::SetAttrStatus::success);
+
+    CHECK(object->setAttribute("non_existing_attr", {"whichever value"}) == BaseObject::SetAttrStatus::failure);
 
     Values value;
     CHECK(object->getAttribute("integer", value));

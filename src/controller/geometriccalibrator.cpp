@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <thread>
 
-#include <opencv2/opencv.hpp>
 #include <calimiro/calimiro.h>
+#include <opencv2/opencv.hpp>
 
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
@@ -60,9 +60,9 @@ void GeometricCalibrator::calibrate()
 
     _running = true;
     _calibrationFuture = std::async(std::launch::async, [=]() {
-        auto state = saveCurrentState();
+        const auto state = saveCurrentState();
         setupCalibrationState(state);
-        auto params = calibrationFunc(state);
+        const auto params = calibrationFunc(state);
         restoreState(state);
         _running = false;
 
@@ -93,7 +93,7 @@ bool GeometricCalibrator::linkIt(const std::shared_ptr<GraphObject>& obj)
 /*************/
 void GeometricCalibrator::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    auto image = std::dynamic_pointer_cast<Image>(obj);
+    const auto image = std::dynamic_pointer_cast<Image>(obj);
     if (!image)
         return;
 
@@ -126,8 +126,8 @@ void GeometricCalibrator::restoreState(const GeometricCalibrator::ConfigurationS
 
     for (size_t index = 0; index < state.windowList.size(); ++index)
     {
-        auto& windowName = state.windowList[index];
-        auto filterName = _worldFilterPrefix + std::to_string(index);
+        const auto& windowName = state.windowList[index];
+        const auto filterName = _worldFilterPrefix + std::to_string(index);
         setWorldAttribute("unlink", {filterName, windowName});
         setWorldAttribute("unlink", {_worldBlackImage, filterName});
         setWorldAttribute("unlink", {_worldGreyImage, filterName});
@@ -142,7 +142,7 @@ void GeometricCalibrator::restoreState(const GeometricCalibrator::ConfigurationS
     // Reset the original windows state
     for (size_t index = 0; index < state.windowList.size(); ++index)
     {
-        auto& windowName = state.windowList[index];
+        const auto& windowName = state.windowList[index];
         setObjectAttribute(windowName, "layout", {state.windowLayouts[index]});
         for (const auto& objectName : state.objectLinks.at(windowName))
             setWorldAttribute("link", {objectName, windowName});
@@ -170,7 +170,7 @@ void GeometricCalibrator::setupCalibrationState(const GeometricCalibrator::Confi
     setWorldAttribute("addObject", {"image", _worldGreyImage});
 
     waitForObjectCreation(_worldGreyImage);
-    setObjectAttribute(_worldGreyImage, "pattern", {1});
+    setObjectAttribute(_worldGreyImage, "pattern", {true});
 
     for (size_t index = 0; index < state.windowList.size(); ++index)
     {
@@ -178,10 +178,10 @@ void GeometricCalibrator::setupCalibrationState(const GeometricCalibrator::Confi
         if (state.windowTextureCount[index] == 0)
             continue;
 
-        auto filterName = _worldFilterPrefix + std::to_string(index);
+        const auto filterName = _worldFilterPrefix + std::to_string(index);
         setWorldAttribute("addObject", {"filter_custom", filterName});
 
-        auto& windowName = state.windowList[index];
+        const auto& windowName = state.windowList[index];
         setWorldAttribute("link", {_worldBlackImage, filterName});
         setWorldAttribute("link", {_worldGreyImage, filterName});
         setWorldAttribute("link", {_worldImageName, filterName});
@@ -195,15 +195,17 @@ void GeometricCalibrator::setupCalibrationState(const GeometricCalibrator::Confi
         if (state.windowTextureCount[index] == 0)
             continue;
 
-        auto filterName = _worldFilterPrefix + std::to_string(index);
+        const auto filterName = _worldFilterPrefix + std::to_string(index);
         waitForObjectCreation(filterName);
         setObjectAttribute(filterName, "fileFilterSource", {std::string(DATADIR) + "/shaders/geometric_calibration_filter.frag"});
 
-        for (auto attrList = getObjectAttributes(filterName); attrList.find("subdivs") == attrList.cend(); attrList = getObjectAttributes(filterName))
+        // Check that the shader source file has been loaded
+        while (getObjectAttribute(filterName, "shaderReadTime").empty() || getObjectAttribute(filterName, "shaderReadTime")[0].as<int64_t>() == 0ll)
             std::this_thread::sleep_for(15ms);
-        auto windowSize = getObjectAttribute(state.windowList[index], "size");
+
+        const auto windowSize = getObjectAttribute(state.windowList[index], "size");
         setObjectAttribute(filterName, "subdivs", {state.windowTextureCount[index]});
-        setObjectAttribute(filterName, "texLayout", {0, 0, 0, 0});
+        setObjectAttribute(filterName, "texLayout", {1, 1, 1, 1});
         setObjectAttribute(filterName, "sizeOverride", windowSize);
     }
 }
@@ -214,13 +216,6 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
     // Begin calibration
     calimiro::Workspace workspace;
     calimiro::Structured_Light structuredLight(&_logger, _structuredLightScale);
-
-    // Set all cameras to display a pattern
-    for (size_t index = 0; index < state.windowList.size(); ++index)
-    {
-        auto filterName = _worldFilterPrefix + std::to_string(index);
-        setObjectAttribute(filterName, "texLayout", {1, 1, 1, 1});
-    }
 
     Image imageObject(_root);
     _finalizeCalibration = false;
@@ -241,7 +236,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
         // Set all cameras to black
         for (size_t index = 0; index < state.windowList.size(); ++index)
         {
-            auto filterName = _worldFilterPrefix + std::to_string(index);
+            const auto filterName = _worldFilterPrefix + std::to_string(index);
             setObjectAttribute(filterName, "texLayout", {0, 0, 0, 0});
         }
 
@@ -250,9 +245,9 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
         for (size_t cameraIndex = 0; cameraIndex < state.cameraList.size(); ++cameraIndex)
         {
             const auto& cameraName = state.cameraList[cameraIndex];
-            auto cameraSize = getObjectAttribute(cameraName, "size");
-            auto camWidth = cameraSize[0].as<int>();
-            auto camHeight = cameraSize[1].as<int>();
+            const auto cameraSize = getObjectAttribute(cameraName, "size");
+            const auto camWidth = cameraSize[0].as<int>();
+            const auto camHeight = cameraSize[1].as<int>();
             auto patterns = structuredLight.create(camWidth, camHeight);
 
             // Convert patterns to RGB
@@ -272,7 +267,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
             int targetLayoutIndex = 0;
             for (size_t index = 0; index < state.windowList.size(); ++index)
             {
-                auto& windowName = state.windowList[index];
+                const auto& windowName = state.windowList[index];
                 targetLayoutIndex = 0;
                 for (const auto& objectName : state.objectLinks.at(windowName))
                 {
@@ -299,16 +294,16 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
             std::vector<cv::Mat1b> capturedPatterns{};
             for (size_t patternIndex = 0; patternIndex < patterns.size(); ++patternIndex)
             {
-                auto& pattern = patterns[patternIndex];
+                const auto& pattern = patterns[patternIndex];
 
-                auto channels = pattern.channels();
+                const auto channels = pattern.channels();
                 ImageBufferSpec spec(camWidth, camHeight, channels, 8 * channels, ImageBufferSpec::Type::UINT8, "RGB");
                 spec.videoFrame = false;
                 ImageBuffer imageBuffer(spec, pattern.data);
 
                 imageObject.set(imageBuffer);
                 imageObject.update(); // We have to force the update, as Image is double-buffered
-                auto serializedImage = imageObject.serialize();
+                const auto serializedImage = imageObject.serialize();
 
                 // Send the buffer, and make sure it has been received and displayed
                 sendBuffer(_worldImageName, serializedImage);
@@ -344,7 +339,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
                 else if (spec.format.find("BGR") != std::string::npos)
                 {
                     assert(spec.channels == 4 || spec.channels == 3);
-                    auto bgraImage = cv::Mat(spec.height, spec.width, spec.channels == 4 ? CV_8UC4 : CV_8UC3, imageBuffer.data());
+                    const auto bgraImage = cv::Mat(spec.height, spec.width, spec.channels == 4 ? CV_8UC4 : CV_8UC3, imageBuffer.data());
                     cv::cvtColor(bgraImage, capturedImage, cv::COLOR_BGR2GRAY);
                 }
                 else if (spec.format == "YUYV")
@@ -441,8 +436,8 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
     reconstruction.convertSfMStructure();
 
     // Generate the mesh
-    auto points =
-        calimiro::utils::readPly(&_logger, std::filesystem::path(workspace.getWorkPath()) / calimiro::constants::cOutputDirectory / calimiro::constants::cPointCloudStructureFromKnownPoses_ply);
+    auto points = calimiro::utils::readPly(
+        &_logger, std::filesystem::path(workspace.getWorkPath()) / calimiro::constants::cOutputDirectory / calimiro::constants::cPointCloudStructureFromKnownPoses_ply);
     auto geometry = calimiro::Geometry(&_logger, points, {}, {}, {});
     auto geometryNormals = geometry.computeNormalsPointSet();
     auto geometryMesh = geometryNormals.marchingCubes(600);
@@ -548,32 +543,41 @@ void GeometricCalibrator::applyCalibration(const GeometricCalibrator::Configurat
 /*************/
 void GeometricCalibrator::registerAttributes()
 {
-    addAttribute("calibrate", [&](const Values&) {
-        calibrate();
-        return true;
-    }, {});
+    addAttribute("calibrate",
+        [&](const Values&) {
+            calibrate();
+            return true;
+        },
+        {});
     setAttributeDescription("calibrate", "Run the geometric calibration");
 
-    addAttribute("nextPosition", [&](const Values&) {
-        _nextPosition = true;
-        return true;
-    }, {});
+    addAttribute("nextPosition",
+        [&](const Values&) {
+            _nextPosition = true;
+            return true;
+        },
+        {});
     setAttributeDescription("nextPosition", "Signals the calibration algorithm to capture the next position");
 
-    addAttribute("finalizeCalibration", [&](const Values&) {
-        _finalizeCalibration = true;
-        return true;
-    }, {});
+    addAttribute("finalizeCalibration",
+        [&](const Values&) {
+            _finalizeCalibration = true;
+            return true;
+        },
+        {});
     setAttributeDescription("finalizeCalibration", "Signals the calibration algorithm to finalize the calibration process");
 
-    addAttribute("abortCalibration", [&](const Values&) {
-        _abortCalibration = true;
-        _finalizeCalibration = true;
-        return true;
-    }, {});
+    addAttribute("abortCalibration",
+        [&](const Values&) {
+            _abortCalibration = true;
+            _finalizeCalibration = true;
+            return true;
+        },
+        {});
     setAttributeDescription("abortCalibration", "Signals the calibration algorithm to abort");
 
-    addAttribute("cameraFocal",
+    addAttribute(
+        "cameraFocal",
         [&](const Values& args) {
             _cameraFocal = args[0].as<float>();
             return true;
@@ -582,7 +586,8 @@ void GeometricCalibrator::registerAttributes()
         {'r'});
     setAttributeDescription("cameraFocal", "Capture camera focal, in pixels (relatively to the sensor size)");
 
-    addAttribute("cameraModel",
+    addAttribute(
+        "cameraModel",
         [&](const Values& args) {
             auto model = args[0].as<std::string>();
             if (model.find("PINHOLE") == 0)
@@ -602,7 +607,8 @@ void GeometricCalibrator::registerAttributes()
         {'s'});
     setAttributeDescription("cameraModel", "Camera model used for reconstruction, either PINHOLE or FISHEYE");
 
-    addAttribute("captureDelay",
+    addAttribute(
+        "captureDelay",
         [&](const Values& args) {
             _captureDelay = std::chrono::milliseconds(args[0].as<int>());
             return true;
@@ -611,7 +617,8 @@ void GeometricCalibrator::registerAttributes()
         {'i'});
     setAttributeDescription("captureDelay", "Delay between the display of the next pattern and grabbing it through the camera");
 
-    addAttribute("patternScale",
+    addAttribute(
+        "patternScale",
         [&](const Values& args) {
             _structuredLightScale = args[0].as<float>();
             return true;

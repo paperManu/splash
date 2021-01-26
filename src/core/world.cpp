@@ -153,7 +153,8 @@ void World::run()
                     {
                         auto serializedObject = bufferObject->serialize();
                         bufferObject->setNotUpdated();
-                        serializedObjects[name] = serializedObject;
+                        if (serializedObject)
+                            serializedObjects[bufferObject->getDistantName()] = serializedObject;
                     }
                 }
             }

@@ -42,6 +42,10 @@ BaseObject::SetAttrStatus BaseObject::setAttribute(const std::string& attrib, co
 {
     std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     auto attribFunction = _attribFunctions.find(attrib);
+
+    if (attribFunction == _attribFunctions.end())
+        return SetAttrStatus::failure;
+
     _updatedParams = true;
 
     // If no setter function has been set,
@@ -68,10 +72,10 @@ bool BaseObject::getAttribute(const std::string& attrib, Values& args) const
         return false;
     }
 
-    args = attribFunction->second();
-    if (args.empty())
+    if (!attribFunction->second.hasGetter())
         return false;
 
+    args = attribFunction->second();
     return true;
 }
 

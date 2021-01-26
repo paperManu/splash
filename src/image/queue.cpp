@@ -63,7 +63,7 @@ void Queue::update()
     }
     else
     {
-        auto previousTime = _currentTime;
+        const auto previousTime = _currentTime;
         _currentTime = Timer::getTime() - _startTime;
 
         if (_paused)
@@ -83,7 +83,7 @@ void Queue::update()
 
     // Get the current index regarding the current time
     uint32_t sourceIndex = 0;
-    for (auto& playSource : _playlist)
+    for (const auto& playSource : _playlist)
     {
         if (playSource.start <= _currentTime && playSource.stop > _currentTime)
             break;
@@ -117,10 +117,8 @@ void Queue::update()
         }
         else
         {
-            auto& sourceParameters = _playlist[_currentSourceIndex];
-
-            if (!_currentSource || _currentSource->getType() != sourceParameters.type)
-                _currentSource = std::dynamic_pointer_cast<BufferObject>(_factory->create(sourceParameters.type));
+            const auto& sourceParameters = _playlist[_currentSourceIndex];
+            _currentSource = std::dynamic_pointer_cast<BufferObject>(_factory->create(sourceParameters.type));
 
             if (_currentSource)
                 _playing = true;
@@ -135,7 +133,7 @@ void Queue::update()
             {
                 // If we use the master clock, set a timeshift to be correctly placed in the video
                 // (as the source gets its clock from the same Timer)
-                _currentSource->setAttribute("timeShift", {-(float)sourceParameters.start / 1e6});
+                _currentSource->setAttribute("timeShift", {-static_cast<float>(sourceParameters.start) / 1e6});
                 _currentSource->setAttribute("useClock", {true});
             }
             else

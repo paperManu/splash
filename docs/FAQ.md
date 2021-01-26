@@ -119,3 +119,9 @@ To connect an additional image to an object, on the GUI control panel:
 - _I cannot see any image on my 3D model_: for the image to be projected correctly, the 3D model needs to have some texture coordinates set (also known as UV coordinates). The texture coordinates can be added from the 3D modeling software you used to create the model (i.e. Blender).
 - _I can load images, but I get errors when I load videos_: be sure to change the media type to `video` before trying to load a video. This can be done in the Media panel.
 - _Splash keeps complaining about 'No protocol specified', and GLFW is unable to initialize'_: if you are on Ubuntu 17.10, Wayland is running alongside Xorg when using a window manager which does not support Wayland. You need to force the display server ID, using the -S option of Splash (see ```splash --help```)
+
+### 3D models
+
+- _The texture coordinates do not match the planar surface I'm projecting onto, despite the corners being placed correctly_: this happens when the original 3D model for this surface is a quad. Due to its internal working, Splash converts quads to triangles automatically. This process can lead in some cases to deformations of the texture coordinates. For now the easiest way to fix this is to subdivide the 3D model prior to exporting it for Splash. Note that this behavior can also be seen in the 3D modeler.
+
+![Quads subdivision to fix UV errors](./images/quads_subdiv.jpg)

@@ -55,6 +55,7 @@ class FilterCustom : public Filter
     std::string _shaderSourceFile{""};                        //!< User defined fragment shader filter source file
     bool _watchShaderFile{false};                             //!< If true, updates shader automatically if source file changes
     std::filesystem::file_time_type _lastShaderSourceWrite{}; //!< Last time the shader source has been updated
+    int64_t _lastShaderSourceRead{0ll};                       //!< Last time the shader source was read
 
     /**
      * Register new functors to modify attributes

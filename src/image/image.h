@@ -182,6 +182,7 @@ class Image : public BufferObject
     bool _flip{false};
     bool _flop{false};
     bool _imageUpdated{false};
+    bool _showPattern{false};
     bool _srgb{true};
     bool _benchmark{false};
 
