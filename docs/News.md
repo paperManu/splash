@@ -1,6 +1,26 @@
 Splash release notes
 ===================
 
+Splash 0.8.26 (2021-01-26)
+-------------------------
+Improvements:
+* Pattern flag is now persistent for fixed image sources
+* Improved behavior of the GeometricCalibrator upon starting calibration
+
+Bugs fixed:
+* Fixed queue objects
+* Fixed window position not being updated in the GUI
+* Fixed empty leaves being removed when an attribute has an empty value, even though its getter exists
+* Fixed issue with not testing that an attribute exists before setting it
+* Fixed metainfo file to point to correct image
+* Fixed start calibration warning
+
+Documentation:
+* Added a tutorial for the automatic calibration
+* Added a direct tab for the walkthrough
+* Added FAQ entry regarding quads issues
+* Reordered walkthrough examples
+
 Splash 0.8.24 (2021-01-11)
 -------------------------
 Improvements:
