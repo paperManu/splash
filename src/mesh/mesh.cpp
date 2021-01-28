@@ -50,14 +50,9 @@ bool Mesh::operator==(Mesh& otherMesh) const
 std::vector<float> Mesh::getVertCoords() const
 {
     std::lock_guard<Spinlock> lock(_readMutex);
-    std::vector<float> coords;
-    for (auto& v : _mesh.vertices)
-    {
-        coords.push_back(v[0]);
-        coords.push_back(v[1]);
-        coords.push_back(v[2]);
-        coords.push_back(v[3]);
-    }
+    const auto vertPtr = reinterpret_cast<const float*>(_mesh.vertices.data());
+    const auto vertCount = _mesh.vertices.size() * 4;
+    std::vector<float> coords(vertPtr, vertPtr + vertCount);
     return coords;
 }
 
@@ -65,12 +60,9 @@ std::vector<float> Mesh::getVertCoords() const
 std::vector<float> Mesh::getUVCoords() const
 {
     std::lock_guard<Spinlock> lock(_readMutex);
-    std::vector<float> coords;
-    for (auto& u : _mesh.uvs)
-    {
-        coords.push_back(u[0]);
-        coords.push_back(u[1]);
-    }
+    const auto uvPtr = reinterpret_cast<const float*>(_mesh.uvs.data());
+    const auto uvCount = _mesh.uvs.size() * 2;
+    std::vector<float> coords(uvPtr, uvPtr + uvCount);
     return coords;
 }
 
@@ -78,14 +70,9 @@ std::vector<float> Mesh::getUVCoords() const
 std::vector<float> Mesh::getNormals() const
 {
     std::lock_guard<Spinlock> lock(_readMutex);
-    std::vector<float> normals;
-    for (auto& n : _mesh.normals)
-    {
-        normals.push_back(n[0]);
-        normals.push_back(n[1]);
-        normals.push_back(n[2]);
-        normals.push_back(0.f);
-    }
+    const auto normalsPtr = reinterpret_cast<const float*>(_mesh.normals.data());
+    const auto normalsCount = _mesh.normals.size() * 4;
+    std::vector<float> normals(normalsPtr,  normalsPtr + normalsCount);
     return normals;
 }
 
@@ -93,14 +80,9 @@ std::vector<float> Mesh::getNormals() const
 std::vector<float> Mesh::getAnnexe() const
 {
     std::lock_guard<Spinlock> lock(_readMutex);
-    std::vector<float> annexe;
-    for (auto& a : _mesh.annexe)
-    {
-        annexe.push_back(a[0]);
-        annexe.push_back(a[1]);
-        annexe.push_back(a[2]);
-        annexe.push_back(a[3]);
-    }
+    const auto annexePtr = reinterpret_cast<const float*>(_mesh.annexe.data());
+    const auto annexeCount = _mesh.annexe.size() * 2;
+    std::vector<float> annexe(annexePtr, annexePtr + annexeCount);
     return annexe;
 }
 
@@ -132,7 +114,7 @@ bool Mesh::read(const std::string& filename)
 /*************/
 std::shared_ptr<SerializedObject> Mesh::serialize() const
 {
-    auto obj = std::make_shared<SerializedObject>();
+    const auto obj = std::make_shared<SerializedObject>();
 
     if (Timer::get().isDebug())
         Timer::get() << "serialize " + _name;
@@ -145,7 +127,7 @@ std::shared_ptr<SerializedObject> Mesh::serialize() const
     data.push_back(getAnnexe());
 
     std::lock_guard<Spinlock> lock(_readMutex);
-    int nbrVertices = data[0].size() / 4;
+    const int nbrVertices = data[0].size() / 4;
     int totalSize = sizeof(nbrVertices); // We add to all this the total number of vertices
     for (auto& d : data)
         totalSize += d.size() * sizeof(d[0]);
@@ -218,39 +200,22 @@ bool Mesh::deserialize(const std::shared_ptr<SerializedObject>& obj)
         MeshContainer mesh;
 
         mesh.vertices.resize(nbrVertices);
-        for (int i = 0; i < nbrVertices; ++i)
-        {
-            mesh.vertices[i][0] = data[0][i * 4 + 0];
-            mesh.vertices[i][1] = data[0][i * 4 + 1];
-            mesh.vertices[i][2] = data[0][i * 4 + 2];
-            mesh.vertices[i][3] = data[0][i * 4 + 3];
-        }
+        const auto vertPtr = reinterpret_cast<float*>(mesh.vertices.data());
+        std::copy(data[0].data(), data[0].data() + nbrVertices * 4, vertPtr);
 
         mesh.uvs.resize(nbrVertices);
-        for (int i = 0; i < nbrVertices; ++i)
-        {
-            mesh.uvs[i][0] = data[1][i * 2 + 0];
-            mesh.uvs[i][1] = data[1][i * 2 + 1];
-        }
+        const auto uvsPtr = reinterpret_cast<float*>(mesh.uvs.data());
+        std::copy(data[1].data(), data[1].data() + nbrVertices * 2, uvsPtr);
 
         mesh.normals.resize(nbrVertices);
-        for (int i = 0; i < nbrVertices; ++i)
-        {
-            mesh.normals[i][0] = data[2][i * 4 + 0];
-            mesh.normals[i][1] = data[2][i * 4 + 1];
-            mesh.normals[i][2] = data[2][i * 4 + 2];
-        }
+        const auto normalsPtr = reinterpret_cast<float*>(mesh.normals.data());
+        std::copy(data[2].data(), data[2].data() + nbrVertices * 4, normalsPtr);
 
         if (hasAnnexe)
         {
             mesh.annexe.resize(nbrVertices);
-            for (int i = 0; i < nbrVertices; ++i)
-            {
-                mesh.annexe[i][0] = data[3][i * 4 + 0];
-                mesh.annexe[i][1] = data[3][i * 4 + 1];
-                mesh.annexe[i][2] = data[3][i * 4 + 2];
-                mesh.annexe[i][3] = data[3][i * 4 + 3];
-            }
+            const auto annexePtr = reinterpret_cast<float*>(mesh.annexe.data());
+            std::copy(data[3].data(), data[3].data() + nbrVertices * 4, annexePtr);
         }
 
         _bufferMesh = mesh;
@@ -302,12 +267,12 @@ void Mesh::createDefaultMesh(int subdiv)
         glm::vec2 position;
         glm::vec2 uv;
 
-        uv.y = (float)v / ((float)(subdiv + 1));
+        uv.y = static_cast<float>(v) / static_cast<float>(subdiv + 1);
         position.y = uv.y * 2.f - 1.f;
 
         for (int u = 0; u < subdiv + 2; ++u)
         {
-            uv.x = (float)u / ((float)(subdiv + 1));
+            uv.x = static_cast<float>(u) / static_cast<float>(subdiv + 1);
             position.x = uv.x * 2.f - 1.f;
 
             positions.push_back(position);
@@ -335,12 +300,8 @@ void Mesh::createDefaultMesh(int subdiv)
             mesh.uvs.push_back(uvs[u + 1 + (v + 1) * (subdiv + 2)]);
             mesh.uvs.push_back(uvs[u + (v + 1) * (subdiv + 2)]);
 
-            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
+            for (size_t i = 0; i < 6; ++i)
+                mesh.normals.push_back(glm::vec4(0.0, 0.0, 1.0, 0.0));
         }
     }
 

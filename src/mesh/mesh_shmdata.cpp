@@ -65,12 +65,12 @@ void Mesh_Shmdata::onData(void* data, int /*data_size*/)
     int* intPtr = (int*)data;
     float* floatPtr = (float*)data;
 
-    int verticeNbr = *(intPtr++);
-    int polyNbr = *(intPtr++);
+    const int verticeNbr = *(intPtr++);
+    const int polyNbr = *(intPtr++);
 
     std::vector<glm::vec4> vertices(verticeNbr);
     std::vector<glm::vec2> uvs(verticeNbr);
-    std::vector<glm::vec3> normals(verticeNbr);
+    std::vector<glm::vec4> normals(verticeNbr);
 
     floatPtr += 2;
     // First, create the vertices with no UV, normals or faces
@@ -78,7 +78,7 @@ void Mesh_Shmdata::onData(void* data, int /*data_size*/)
     {
         vertices[v] = glm::vec4(floatPtr[0], floatPtr[1], floatPtr[2], 1.f);
         uvs[v] = glm::vec2(floatPtr[3], floatPtr[4]);
-        normals[v] = glm::vec3(floatPtr[5], floatPtr[6], floatPtr[7]);
+        normals[v] = glm::vec4(floatPtr[5], floatPtr[6], floatPtr[7], 0.f);
         floatPtr += 8;
     }
 

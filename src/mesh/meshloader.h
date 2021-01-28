@@ -49,7 +49,7 @@ class Base
     virtual bool load(const std::string& filename) = 0;
     virtual std::vector<glm::vec4> getVertices() const = 0;
     virtual std::vector<glm::vec2> getUVs() const = 0;
-    virtual std::vector<glm::vec3> getNormals() const = 0;
+    virtual std::vector<glm::vec4> getNormals() const = 0;
     virtual std::vector<std::vector<int>> getFaces() const = 0;
 };
 
@@ -169,7 +169,7 @@ class Obj : public Base
             else if ((pos = line.find("vn ")) == 0)
             {
                 pos += 2;
-                glm::vec3 normal;
+                glm::vec4 normal;
                 int index = 0;
                 do
                 {
@@ -180,6 +180,7 @@ class Obj : public Base
                     pos = line.find(" ");
                 } while (pos != std::string::npos && index < 3);
 
+                normal[3] = 0.f;
                 _normals.push_back(normal);
             }
             else if ((pos = line.find("f ")) == 0)
@@ -308,9 +309,9 @@ class Obj : public Base
      * Get the normals of the loaded obj file
      * \return Return a vector of normals
      */
-    std::vector<glm::vec3> getNormals() const
+    std::vector<glm::vec4> getNormals() const
     {
-        std::vector<glm::vec3> normals;
+        std::vector<glm::vec4> normals;
 
         for (auto& face : _faces)
         {
@@ -318,7 +319,7 @@ class Obj : public Base
             {
                 auto edge1 = glm::vec3(_vertices[face[1].vertexId] - _vertices[face[0].vertexId]);
                 auto edge2 = glm::vec3(_vertices[face[2].vertexId] - _vertices[face[0].vertexId]);
-                auto normal = glm::normalize(glm::cross(edge1, edge2));
+                auto normal = glm::vec4(glm::normalize(glm::cross(edge1, edge2)), 0.0);
 
                 normals.push_back(normal);
                 normals.push_back(normal);
@@ -344,7 +345,7 @@ class Obj : public Base
   private:
     std::vector<glm::vec4> _vertices;
     std::vector<glm::vec2> _uvs;
-    std::vector<glm::vec3> _normals;
+    std::vector<glm::vec4> _normals;
 
     struct FaceVertex
     {
