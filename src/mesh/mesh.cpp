@@ -47,7 +47,14 @@ bool Mesh::operator==(Mesh& otherMesh) const
 }
 
 /*************/
-std::vector<float> Mesh::getVertCoords() const
+std::vector<glm::vec4> Mesh::getVertCoords() const
+{
+    std::lock_guard<Spinlock> lock(_readMutex);
+    return _mesh.vertices;
+}
+
+/*************/
+std::vector<float> Mesh::getVertCoordsFlat() const
 {
     std::lock_guard<Spinlock> lock(_readMutex);
     const auto vertPtr = reinterpret_cast<const float*>(_mesh.vertices.data());
@@ -57,7 +64,14 @@ std::vector<float> Mesh::getVertCoords() const
 }
 
 /*************/
-std::vector<float> Mesh::getUVCoords() const
+std::vector<glm::vec2> Mesh::getUVCoords() const
+{
+    std::lock_guard<Spinlock> lock(_readMutex);
+    return _mesh.uvs;
+}
+
+/*************/
+std::vector<float> Mesh::getUVCoordsFlat() const
 {
     std::lock_guard<Spinlock> lock(_readMutex);
     const auto uvPtr = reinterpret_cast<const float*>(_mesh.uvs.data());
@@ -67,7 +81,14 @@ std::vector<float> Mesh::getUVCoords() const
 }
 
 /*************/
-std::vector<float> Mesh::getNormals() const
+std::vector<glm::vec4> Mesh::getNormals() const
+{
+    std::lock_guard<Spinlock> lock(_readMutex);
+    return _mesh.normals;
+}
+
+/*************/
+std::vector<float> Mesh::getNormalsFlat() const
 {
     std::lock_guard<Spinlock> lock(_readMutex);
     const auto normalsPtr = reinterpret_cast<const float*>(_mesh.normals.data());
@@ -77,7 +98,14 @@ std::vector<float> Mesh::getNormals() const
 }
 
 /*************/
-std::vector<float> Mesh::getAnnexe() const
+std::vector<glm::vec4> Mesh::getAnnexe() const
+{
+    std::lock_guard<Spinlock> lock(_readMutex);
+    return _mesh.annexe;
+}
+
+/*************/
+std::vector<float> Mesh::getAnnexeFlat() const
 {
     std::lock_guard<Spinlock> lock(_readMutex);
     const auto annexePtr = reinterpret_cast<const float*>(_mesh.annexe.data());
@@ -121,10 +149,10 @@ std::shared_ptr<SerializedObject> Mesh::serialize() const
 
     // For this, we will use the getVertex, getUV, etc. methods to create a serialized representation of the mesh
     std::vector<std::vector<float>> data;
-    data.push_back(getVertCoords());
-    data.push_back(getUVCoords());
-    data.push_back(getNormals());
-    data.push_back(getAnnexe());
+    data.push_back(getVertCoordsFlat());
+    data.push_back(getUVCoordsFlat());
+    data.push_back(getNormalsFlat());
+    data.push_back(getAnnexeFlat());
 
     std::lock_guard<Spinlock> lock(_readMutex);
     const int nbrVertices = data[0].size() / 4;
@@ -338,4 +366,4 @@ void Mesh::registerAttributes()
     setAttributeDescription("benchmark", "Set to true to resend the image even when not updated");
 }
 
-} // end of namespace
+} // namespace Splash
