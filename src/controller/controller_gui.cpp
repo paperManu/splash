@@ -690,7 +690,7 @@ void Gui::drawMenuBar()
 
         if (_menuAction == MenuAction::OpenConfiguration)
         {
-            if (SplashImGui::FileSelector("Open configuration", path, cancelled, {{"json"}}))
+            if (SplashImGui::FileSelector("Open configuration", path, cancelled, {{".json"}}))
             {
                 _showFileSelector = false;
                 if (!cancelled)
@@ -702,7 +702,7 @@ void Gui::drawMenuBar()
         }
         else if (_menuAction == MenuAction::OpenProject)
         {
-            if (SplashImGui::FileSelector("Open project", path, cancelled, {{"json"}}))
+            if (SplashImGui::FileSelector("Open project", path, cancelled, {{".json"}}))
             {
                 _showFileSelector = false;
                 if (!cancelled)
@@ -714,7 +714,7 @@ void Gui::drawMenuBar()
         }
         else if (_menuAction == MenuAction::CopyCalibration)
         {
-            if (SplashImGui::FileSelector("Copy calibration from...", path, cancelled, {{"json"}}))
+            if (SplashImGui::FileSelector("Copy calibration from...", path, cancelled, {{".json"}}))
             {
                 _showFileSelector = false;
                 if (!cancelled)
@@ -723,7 +723,7 @@ void Gui::drawMenuBar()
         }
         else if (_menuAction == MenuAction::SaveConfigurationAs)
         {
-            if (SplashImGui::FileSelector("Save configuration as...", path, cancelled, {{"json"}}, true, true))
+            if (SplashImGui::FileSelector("Save configuration as...", path, cancelled, {{".json"}}, true, true))
             {
                 _showFileSelector = false;
                 if (!cancelled)
@@ -735,7 +735,7 @@ void Gui::drawMenuBar()
         }
         else if (_menuAction == MenuAction::SaveProjectAs)
         {
-            if (SplashImGui::FileSelector("Save project as...", path, cancelled, {{"json"}}, true, true))
+            if (SplashImGui::FileSelector("Save project as...", path, cancelled, {{".json"}}, true, true))
             {
                 _showFileSelector = false;
                 if (!cancelled)
