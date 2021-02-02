@@ -49,6 +49,7 @@ class GuiNodeView : public GuiWidget
     bool _isHovered{false};
     std::string _clickedNode{""};
     std::string _sourceNode{""};
+    std::string _capturedNode{""};
     std::vector<std::string> _objectTypes{};
 
     // Node render settings
