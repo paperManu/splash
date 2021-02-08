@@ -5,3 +5,4 @@
 * Sergio Jiménez Herena
 * Pascal Huerst
 * Josh Beckwith
+* Frédéric Lestage
