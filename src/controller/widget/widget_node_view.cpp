@@ -220,10 +220,8 @@ void GuiNodeView::render()
 
     if (viewCaptured)
     {
-        float dx = io.MouseDelta.x;
-        float dy = io.MouseDelta.y;
-        _viewShift[0] += dx;
-        _viewShift[1] += dy;
+        _viewShift[0] += io.MouseDelta.x;
+        _viewShift[1] += io.MouseDelta.y;
     }
 
     // Select an object by its name
@@ -277,17 +275,13 @@ void GuiNodeView::renderNode(const std::string& name)
     }
 
     ImGui::BeginChild(std::string("node_" + name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1]), false);
-    if (ImGui::Button(getObjectAlias(name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1])))
-    {
-        _clickedNode = name;
-        _sourceNode = name;
-    }
 
+    ImGui::Button(getObjectAlias(name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1]));
     if (ImGui::IsItemHovered())
     {
-        // Object linking
         if (io.MouseClicked[0])
         {
+            // Object linking
             if (io.KeyShift)
             {
                 if (dynamic_cast<Scene*>(_root))
@@ -298,17 +292,29 @@ void GuiNodeView::renderNode(const std::string& name)
                 if (dynamic_cast<Scene*>(_root))
                     setWorldAttribute("unlink", {_sourceNode, name});
             }
+            else
+            {
+                _clickedNode = name;
+                _sourceNode = name;
+            }
         }
-
-        // Dragging
-        if (io.MouseDownDuration[0] > 0.0)
+        else if (io.MouseDownDuration[0] > 0.0)
         {
-            float dx = io.MouseDelta.x;
-            float dy = io.MouseDelta.y;
-            auto& nodePos = (*pos).second;
-            nodePos[0] += dx;
-            nodePos[1] += dy;
+            // Dragging
+            _capturedNode = name;
         }
+    }
+
+    if (io.MouseReleased[0])
+        _capturedNode.clear();
+
+    if (_capturedNode == name)
+    {
+        float dx = io.MouseDelta.x;
+        float dy = io.MouseDelta.y;
+        auto& nodePos = (*pos).second;
+        nodePos[0] += dx;
+        nodePos[1] += dy;
     }
 
     ImGui::EndChild();

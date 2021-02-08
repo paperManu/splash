@@ -50,19 +50,21 @@ void GuiControl::render()
 
     if (_targetObjectName != "")
     {
+        ImGui::Text("Type: %s", getObjectTypes()[_targetObjectName].c_str());
+
+        ImGui::BeginChild("##parameters", ImVec2(0, -26), true);
+        auto attributes = getObjectAttributes(_targetObjectName);
+        drawAttributes(_targetObjectName, attributes);
+        ImGui::EndChild();
+
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.15, 0.01, 0.01, 1.0));
         if (ImGui::Button("Delete selected object"))
         {
             setWorldAttribute("deleteObject", {_targetObjectName});
             _targetObjectName = "";
             _targetIndex = -1;
         }
-
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Spacing();
-
-        auto attributes = getObjectAttributes(_targetObjectName);
-        drawAttributes(_targetObjectName, attributes);
+        ImGui::PopStyleColor();
     }
 
     ImGui::EndChild();

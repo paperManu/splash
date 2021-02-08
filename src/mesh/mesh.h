@@ -68,28 +68,52 @@ class Mesh : public BufferObject
     bool operator==(Mesh& otherMesh) const;
 
     /**
-     * \brief Get a 1D vector of all points of the mesh, in normalized coordinates
+     * \brief Get a vector of all points in the mesh, in normalized coordinates
      * \return Return a vector representing all points of the mesh
      */
-    virtual std::vector<float> getVertCoords() const;
+    virtual std::vector<glm::vec4> getVertCoords() const;
 
     /**
-     * \brief Get a 1D vector of the UV coordinates for all points, same order as getVertCoords()
+     * \brief Get a flattened vector of all points of the mesh, in normalized coordinates
+     * \return Return a flattened vector representing all points of the mesh
+     */
+    virtual std::vector<float> getVertCoordsFlat() const;
+
+    /**
+     * \brief Get a vector of the UV coordinates for all points, same order as getVertCoords()
      * \return Return a vector representing the UV coordinates
      */
-    virtual std::vector<float> getUVCoords() const;
+    virtual std::vector<glm::vec2> getUVCoords() const;
 
     /**
-     * \brief Get a 1D vector of the normal at each vertex, same order as getVertCoords(), normalized coords
+     * \brief Get a flattened vector of the UV coordinates for all points, same order as getVertCoordsFlat()
+     * \return Return a flattened vector representing the UV coordinates
+     */
+    virtual std::vector<float> getUVCoordsFlat() const;
+
+    /**
+     * \brief Get a vector of the normal at each vertex, same order as getVertCoords(), in normalized coordinates
      * \return Return a vector representing the normals
      */
-    virtual std::vector<float> getNormals() const;
+    virtual std::vector<glm::vec4> getNormals() const;
 
     /**
-     * \brief Get a 1D vector of the annexe at each vertex, same order as getVertCoords()
+     * \brief Get a flattened vector of the normal at each vertex, same order as getVertCoordsFlat(), in normalized coordinates
+     * \return Return a flattened vector representing the normals
+     */
+    virtual std::vector<float> getNormalsFlat() const;
+
+    /**
+     * \brief Get a vector of the annexe at each vertex, same order as getVertCoords()
      * \return Return a vector representing the annexes
      */
-    virtual std::vector<float> getAnnexe() const;
+    virtual std::vector<glm::vec4> getAnnexe() const;
+
+    /**
+     * \brief Get a flattened vector of the annexe at each vertex, same order as getVertCoords()
+     * \return Return a flattened vector representing the annexes
+     */
+    virtual std::vector<float> getAnnexeFlat() const;
 
     /**
      * \brief Read / update the mesh
@@ -121,7 +145,7 @@ class Mesh : public BufferObject
     {
         std::vector<glm::vec4> vertices;
         std::vector<glm::vec2> uvs;
-        std::vector<glm::vec3> normals;
+        std::vector<glm::vec4> normals;
         std::vector<glm::vec4> annexe;
     };
 

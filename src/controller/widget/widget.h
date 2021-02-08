@@ -50,8 +50,28 @@ class Scene;
 
 namespace SplashImGui
 {
-bool FileSelectorParseDir(const std::string& path, std::vector<std::string>& list, const std::vector<std::string>& extensions, bool showNormalFiles);
+
+/**
+ * Displays a file selector
+ * \param label Label for the file selector window
+ * \param path Path to the directory to parse
+ * \param cancelled If the selection is cancelled, this will be set to false
+ * \param extensions Filter out all extensions except these ones. Full extensions should be specified, i.e {{".bmp"}}
+ * \param showNormalFiles If false, only show directories
+ * \param newFile If true, a new file will be created based on the entered file name
+ * \return Return true if a selection was done or cancelled, false if the window should remain open
+ */
 bool FileSelector(const std::string& label, std::string& path, bool& cancelled, const std::vector<std::string>& extensions, bool showNormalFiles = true, bool newFile = false);
+
+/**
+ * Utility function used by FileSelector
+ * \param path Path to parse
+ * \param list File and directory list will be put in there
+ * \param extensions Filter out all extensions except these ones. Full extensions should be specified, i.e {{".bmp"}}
+ * \param showNormalFiles If false, only show directories
+ * \return Return true if the path is a directory
+ */
+bool FileSelectorParseDir(const std::string& path, std::vector<std::string>& list, const std::vector<std::string>& extensions, bool showNormalFiles);
 
 /**
  * Utility method to call InputText on a std::string

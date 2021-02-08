@@ -291,7 +291,7 @@ void GuiMedia::render()
             {
                 static std::string path = _root->getMediaPath();
                 bool cancelled;
-                static const std::vector<std::string> extensions{{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"}, {"avi"}, {"mov"}, {"mp4"}};
+                static const std::vector<std::string> extensions{{".bmp"}, {".jpg"}, {".png"}, {".tga"}, {".tif"}, {".avi"}, {".mov"}, {".mp4"}};
                 if (SplashImGui::FileSelector(mediaAlias, path, cancelled, extensions))
                 {
                     if (!cancelled)

@@ -193,6 +193,7 @@ bool FileSelector(const std::string& label, std::string& path, bool& cancelled, 
     if (disableSelectPathButton)
     {
         ImGui::PopStyleVar();
+        ImGui::PopItemFlag();
     }
 
     ImGui::SameLine();

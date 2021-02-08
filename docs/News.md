@@ -1,5 +1,16 @@
-Splash release notes
+cccccccccccc                                       
 ===================
+
+Splash 0.8.28 (2021-02-08)
+-------------------------
+Improvements:
+* Improved nodes behavior in the graph tabulation
+* Improved attribute view in the graph tabulation
+* Improved Mesh getters
+* Renamed mesh getters to .Flat and added addtionnal getters that returns glm::vec
+
+Bugs fixed:
+* Fixed FileSelector, added documentation to it, and fixed its usages
 
 Splash 0.8.26 (2021-01-26)
 -------------------------

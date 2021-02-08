@@ -209,7 +209,7 @@ float Geometry::pickVertex(dvec3 p, dvec3& v)
     dvec3 closestVertex;
 
     assert(_mesh);
-    std::vector<float> vertices = _mesh->getVertCoords();
+    std::vector<float> vertices = _mesh->getVertCoordsFlat();
     for (uint32_t i = 0; i < vertices.size(); i += 4)
     {
         dvec3 vertex(vertices[i], vertices[i + 1], vertices[i + 2]);
@@ -250,27 +250,27 @@ void Geometry::update()
     {
         _mesh->update();
 
-        std::vector<float> vertices = _mesh->getVertCoords();
+        std::vector<float> vertices = _mesh->getVertCoordsFlat();
         if (vertices.empty())
             return;
 
         _verticesNumber = vertices.size() / 4;
         _glBuffers[0] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, vertices.data());
 
-        std::vector<float> texcoords = _mesh->getUVCoords();
+        std::vector<float> texcoords = _mesh->getUVCoordsFlat();
         if (!texcoords.empty())
             _glBuffers[1] = std::make_shared<GpuBuffer>(2, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, texcoords.data());
         else
             _glBuffers[1] = std::make_shared<GpuBuffer>(2, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr);
 
-        std::vector<float> normals = _mesh->getNormals();
+        std::vector<float> normals = _mesh->getNormalsFlat();
         if (!normals.empty())
             _glBuffers[2] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, normals.data());
         else
             _glBuffers[2] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr);
 
         // An additional annexe buffer, to be filled by compute shaders. Contains a vec4 for each vertex
-        std::vector<float> annexe = _mesh->getAnnexe();
+        std::vector<float> annexe = _mesh->getAnnexeFlat();
         if (!annexe.empty())
             _glBuffers[3] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, annexe.data());
         else

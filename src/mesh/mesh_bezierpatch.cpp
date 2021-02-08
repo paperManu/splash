@@ -80,12 +80,12 @@ void Mesh_BezierPatch::createPatch(int width, int height)
         glm::vec2 position;
         glm::vec2 uv;
 
-        uv.y = (float)v / ((float)height - 1.f);
+        uv.y = static_cast<float>(v) / static_cast<float>(height - 1);
         position.y = uv.y * 2.f - 1.f;
 
         for (int u = 0; u < width; ++u)
         {
-            uv.x = (float)u / ((float)width - 1.f);
+            uv.x = static_cast<float>(u) / static_cast<float>(width - 1);
             position.x = uv.x * 2.f - 1.f;
             patch.vertices.push_back(position);
         }
@@ -103,14 +103,14 @@ void Mesh_BezierPatch::createPatch(Patch& patch)
 
     std::lock_guard<std::mutex> lock(_patchMutex);
 
-    int width = patch.size.x;
-    int height = patch.size.y;
+    const int width = patch.size.x;
+    const int height = patch.size.y;
 
     // Set uv coordinates to the patch
     patch.uvs.resize(patch.vertices.size());
     for (int v = 0; v < height; ++v)
         for (int u = 0; u < width; ++u)
-            patch.uvs[u + v * width] = glm::vec2((float)u / ((float)width - 1.f), (float)v / ((float)height - 1.f));
+            patch.uvs[u + v * width] = glm::vec2(static_cast<float>(u) / static_cast<float>(width - 1), static_cast<float>(v) / static_cast<float>(height - 1));
 
     _patch = patch;
     _patchUpdated = true;
@@ -136,12 +136,8 @@ void Mesh_BezierPatch::createPatch(Patch& patch)
             mesh.uvs.push_back(patch.uvs[u + (v + 1) * width]);
             mesh.uvs.push_back(patch.uvs[u + 1 + v * width]);
 
-            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
+            for (size_t i = 0; i < 6; ++i)
+                mesh.normals.push_back(glm::vec4(0.0, 0.0, 1.0, 0.0));
         }
     }
     _bezierControl = mesh;
@@ -164,10 +160,10 @@ void Mesh_BezierPatch::updatePatch()
         _binomialCoeffsY.clear();
 
         for (int i = 0; i < _patch.size.x; ++i)
-            _binomialCoeffsX.push_back((float)binomialCoeff(_patch.size.x - 1, i));
+            _binomialCoeffsX.push_back(static_cast<float>(binomialCoeff(_patch.size.x - 1, i)));
 
         for (int i = 0; i < _patch.size.y; ++i)
-            _binomialCoeffsY.push_back((float)binomialCoeff(_patch.size.y - 1, i));
+            _binomialCoeffsY.push_back(static_cast<float>(binomialCoeff(_patch.size.y - 1, i)));
 
         _binomialDimensions = _patch.size;
     }
@@ -177,19 +173,21 @@ void Mesh_BezierPatch::updatePatch()
     {
         glm::vec2 uv;
 
-        uv.y = (float)v / ((float)_patchResolution - 1.f);
+        uv.y = static_cast<float>(v) / static_cast<float>(_patchResolution - 1);
 
         for (int u = 0; u < _patchResolution; ++u)
         {
-            uv.x = (float)u / ((float)_patchResolution - 1.f);
+            uv.x = static_cast<float>(u) / static_cast<float>(_patchResolution - 1);
 
             glm::vec2 vertex{0.f, 0.f};
-            for (int j = 0; j < _patch.size.y; ++j)
+            for (float j = 0; j < _patch.size.y; ++j)
             {
-                for (int i = 0; i < _patch.size.x; ++i)
+                for (float i = 0; i < _patch.size.x; ++i)
                 {
-                    float factor = _binomialCoeffsY[j] * pow(uv.y, (float)j) * pow(1.f - uv.y, (float)_patch.size.y - 1.f - (float)j) * _binomialCoeffsX[i] * pow(uv.x, (float)i) *
-                                   pow(1.f - uv.x, (float)_patch.size.x - 1.f - (float)i);
+                    const auto iAsFloat = static_cast<float>(i);
+                    const auto jAsFloat = static_cast<float>(j);
+                    float factor = _binomialCoeffsY[j] * pow(uv.y, jAsFloat) * pow(1.f - uv.y, static_cast<float>(_patch.size.y) - 1.f - jAsFloat) * _binomialCoeffsX[i] * pow(uv.x, iAsFloat) *
+                                   pow(1.f - uv.x, static_cast<float>(_patch.size.x) - 1.f - iAsFloat);
                     vertex += factor * _patch.vertices[i + j * _patch.size.x];
                 }
             }
@@ -221,12 +219,8 @@ void Mesh_BezierPatch::updatePatch()
             mesh.uvs.push_back(uvs[u + 1 + (v + 1) * _patchResolution]);
             mesh.uvs.push_back(uvs[u + (v + 1) * _patchResolution]);
 
-            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
+            for (size_t i = 0; i < 6; ++i)
+                mesh.normals.push_back(glm::vec4(0.0, 0.0, 1.0, 0.0));
         }
     }
 
@@ -244,15 +238,15 @@ void Mesh_BezierPatch::registerAttributes()
 
     addAttribute("patchControl",
         [&](const Values& args) {
-            auto width = args[0].as<uint32_t>();
-            auto height = args[1].as<uint32_t>();
+            const auto width = args[0].as<uint32_t>();
+            const auto height = args[1].as<uint32_t>();
 
             if (args.size() - 2 != height * width)
                 return false;
 
             Patch patch;
             patch.size = glm::ivec2(width, height);
-            for (uint32_t p = 2; p < args.size(); ++p)
+            for (size_t p = 2; p < args.size(); ++p)
                 patch.vertices.push_back(glm::vec2(args[p].as<Values>()[0].as<float>(), args[p].as<Values>()[1].as<float>()));
 
             createPatch(patch);
