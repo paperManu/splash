@@ -73,6 +73,10 @@ endif()
 find_package(PkgConfig REQUIRED)
 find_package(Threads REQUIRED)
 
+if (USE_SYSTEM_LIBS)
+  find_package(glfw3 REQUIRED)
+endif()
+
 # Mandatory dependencies
 pkg_search_module(JSONCPP REQUIRED jsoncpp)
 pkg_search_module(GSL REQUIRED gsl)
@@ -230,6 +234,7 @@ endfunction()
 
 info_cfg_option(USE_SYSTEM_LIBS)
 info_cfg_option(GPHOTO_VERSION)
+info_cfg_option(glfw3_VERSION)
 info_cfg_option(FFMPEG_libavformat_VERSION)
 info_cfg_option(FFMPEG_libavcodec_VERSION)
 info_cfg_option(FFMPEG_libavutil_VERSION)
