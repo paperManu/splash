@@ -261,6 +261,7 @@ def update_changelog(package: str, version: List[int]) -> None:
 
     subprocess.call([get_git_config("core.editor", "vim"), new_file_path])
     os.rename(new_file_path, orig_file_path)
+    git_add([orig_file_path])
 
 
 @atexit.register  # Only clean on exit if the release was successful.
