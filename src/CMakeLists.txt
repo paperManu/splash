@@ -190,7 +190,7 @@ if (GPHOTO_FOUND AND OPENCV_FOUND)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         set_source_files_properties(
             controller/colorcalibrator.cpp
-            PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized -Wno-unused-result -Wno-int-in-bool-context -Wno-sign-compare -Wno-ignored-attributes -Wno-deprecated-declarations -Wno-delete-non-virtual-dtor -Wno-unused-parameter -Wno-strict-aliasing -Wno-format -Wno-unused-but-set-variable -Wno-misleading-indentation -Wno-switch"
+            PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized"
         )
     endif()
 
