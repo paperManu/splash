@@ -1,5 +1,17 @@
-cccccccccccc                                       
-===================
+Splash release notes
+====================
+
+Splash 0.8.30 (2021-02-22)
+-------------------------
+Improvements:
+* Added script to generate Ubuntu package
+* Removed some flags specific to colorcalibrator.cpp
+
+Bugs fixed:
+* Fixed Cmake not checking for GLFW3 when building against system libs
+
+Documentation:
+* Removed docs/index.md
 
 Splash 0.8.28 (2021-02-08)
 -------------------------

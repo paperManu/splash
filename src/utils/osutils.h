@@ -129,9 +129,10 @@ inline bool setRealTime()
 inline int xioctl(int fd, int request, void* arg)
 {
     int res;
-    do {
+    do
+    {
         res = ioctl(fd, request, arg);
-    } while(res == -1 && errno == EINTR);
+    } while (res == -1 && errno == EINTR);
 
     return res;
 }

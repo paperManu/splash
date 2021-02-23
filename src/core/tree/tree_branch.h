@@ -31,9 +31,9 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <string>
 #include <tuple>
-#include <set>
 #include <utility>
 
 #include "./core/constants.h"
@@ -59,7 +59,6 @@ class Branch
   public:
     using UpdateCallback = std::function<void(Branch&, std::string)>;
     using UpdateCallbackID = int;
-
 
     /**
      * Targets for callbacks

@@ -76,7 +76,7 @@ class DenseDeque
         _data = other._data;
         return *this;
     }
-    
+
     // Comparison operators
     inline bool operator==(const DenseDeque<T>& rhs) const { return _data == rhs._data; }
     inline bool operator!=(const DenseDeque<T>& rhs) const { return _data != rhs._data; }

@@ -1003,8 +1003,7 @@ void Scene::registerAttributes()
         {'b'});
     setAttributeDescription("runInBackground", "If true, Splash will run in the background (useful for background processing)");
 
-    addAttribute(
-        "swapInterval",
+    addAttribute("swapInterval",
         [&](const Values& args) {
             _swapInterval = std::max(-1, args[0].as<int>());
             _targetFrameDuration = updateTargetFrameDuration();
@@ -1018,8 +1017,7 @@ void Scene::registerAttributes()
 /*************/
 void Scene::initializeTree()
 {
-    _tree.addCallbackToLeafAt(
-        "/world/attributes/masterClock",
+    _tree.addCallbackToLeafAt("/world/attributes/masterClock",
         [](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
             auto args = value.as<Values>();
             Timer::Point clock;

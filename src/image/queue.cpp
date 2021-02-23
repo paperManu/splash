@@ -273,8 +273,7 @@ void Queue::registerAttributes()
 {
     BufferObject::registerAttributes();
 
-    addAttribute(
-        "loop",
+    addAttribute("loop",
         [&](const Values& args) {
             _loop = args[0].as<bool>();
             return true;
@@ -283,8 +282,7 @@ void Queue::registerAttributes()
         {'b'});
     setAttributeDescription("loop", "Set whether to loop through the queue or not");
 
-    addAttribute(
-        "pause",
+    addAttribute("pause",
         [&](const Values& args) {
             _paused = args[0].as<bool>();
             return true;
@@ -293,8 +291,7 @@ void Queue::registerAttributes()
         {'b'});
     setAttributeDescription("pause", "Pause the queue if true");
 
-    addAttribute(
-        "playlist",
+    addAttribute("playlist",
         [&](const Values& args) {
             std::lock_guard<std::mutex> lock(_playlistMutex);
             std::vector<Source> playlist;
@@ -355,8 +352,7 @@ void Queue::registerAttributes()
         "elapsed", [&](const Values& /*args*/) { return true; }, [&]() -> Values { return {static_cast<float>(_currentTime / 1e6)}; }, {'r'});
     setAttributeDescription("elapsed", "Time elapsed since the beginning of the queue");
 
-    addAttribute(
-        "seek",
+    addAttribute("seek",
         [&](const Values& args) {
             _seekTime = args[0].as<float>();
             _startTime = Timer::getTime() - static_cast<int64_t>(_seekTime * 1e6);
@@ -367,8 +363,7 @@ void Queue::registerAttributes()
         {'r'});
     setAttributeDescription("seek", "Seek through the playlist");
 
-    addAttribute(
-        "useClock",
+    addAttribute("useClock",
         [&](const Values& args) {
             _useClock = args[0].as<bool>();
             if (_currentSource)

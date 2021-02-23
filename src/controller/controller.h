@@ -168,7 +168,7 @@ class ControllerObject : public GraphObject
      * Get all objects of the given base type, including derived types
      * \return Return a list of objects of the given type
      */
-    template<typename T>
+    template <typename T>
     std::vector<std::shared_ptr<T>> getObjectsOfBaseType() const;
 
     /**
@@ -241,7 +241,7 @@ class ControllerObject : public GraphObject
 };
 
 /*************/
-template<typename T>
+template <typename T>
 std::vector<std::shared_ptr<T>> ControllerObject::getObjectsOfBaseType() const
 {
     auto scene = dynamic_cast<Scene*>(_root);

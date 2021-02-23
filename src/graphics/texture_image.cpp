@@ -593,8 +593,7 @@ void Texture_Image::registerAttributes()
 {
     Texture::registerAttributes();
 
-    addAttribute(
-        "filtering",
+    addAttribute("filtering",
         [&](const Values& args) {
             _filtering = args[0].as<bool>();
             return true;
@@ -611,8 +610,7 @@ void Texture_Image::registerAttributes()
         {'b'});
     setAttributeDescription("clampToEdge", "If true, clamp the texture to the edge");
 
-    addAttribute(
-        "size",
+    addAttribute("size",
         [&](const Values& args) {
             resize(args[0].as<int>(), args[1].as<int>());
             return true;
