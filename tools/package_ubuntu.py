@@ -102,6 +102,7 @@ def git_clean() -> None:
     """
     Clean the git repository of all temporary and untracked files
     """
+    subprocess.call("git stash push --keep-index", shell=True)
     subprocess.call("git clean -d -X -f", shell=True)
     subprocess.call("git clean -d -f", shell=True)
 
