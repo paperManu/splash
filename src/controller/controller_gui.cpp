@@ -559,7 +559,7 @@ void Gui::drawMainTab()
     assert(!looseClockValue.empty());
     looseClock = looseClockValue[0].as<bool>();
     if (ImGui::Checkbox("Loose master clock", &looseClock))
-        setWorldAttribute("looseClock", {static_cast<int>(looseClock)});
+        setWorldAttribute("looseClock", {looseClock});
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Loose clock: if activated, the master clock is only "
                           "used as an indication, not a hard constraint");
