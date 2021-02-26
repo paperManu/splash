@@ -419,7 +419,7 @@ void Filter::registerDefaultShaderAttributes()
         [&]() -> Values {
             auto it = _filterUniforms.find("_invertChannels");
             if (it == _filterUniforms.end())
-                _filterUniforms["_invertChannels"] = {true};
+                _filterUniforms["_invertChannels"] = {false};
             return _filterUniforms["_invertChannels"];
         },
         {'b'});
