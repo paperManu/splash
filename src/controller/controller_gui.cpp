@@ -3,6 +3,7 @@
 #include <fstream>
 
 #include "./controller/controller.h"
+#include "./controller/widget/widget_calibration.h"
 #include "./controller/widget/widget_camera.h"
 #include "./controller/widget/widget_control.h"
 #include "./controller/widget/widget_filters.h"
@@ -482,33 +483,6 @@ void Gui::drawMainTab()
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Activate color LUT, once calibrated");
 
-#endif
-
-#if HAVE_CALIMIRO
-    ImGui::Separator();
-    ImGui::Text("Geometric calibration");
-    if (ImGui::Button("Start calibration", ImVec2(availableSize[0] / 3.f, 32.f)))
-        setObjectAttribute("geometricCalibrator", "calibrate", {1});
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Enter the calibration mode");
-
-    ImGui::SameLine();
-    if (ImGui::Button("Capture new position", ImVec2(availableSize[0] / 3.f, 32.f)))
-        setObjectAttribute("geometricCalibrator", "nextPosition", {1});
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Capture the patterns for the current camera position");
-
-    ImGui::SameLine();
-    if (ImGui::Button("Finalize calibration", ImVec2(availableSize[0] / 3.f, 32.f)))
-        setObjectAttribute("geometricCalibrator", "finalizeCalibration", {1});
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Compute calibration from the captured patterns");
-
-    ImGui::SameLine();
-    if (ImGui::Button("Abort calibration", ImVec2(availableSize[0] / 3.f, 32.f)))
-        setObjectAttribute("geometricCalibrator", "abortCalibration", {1});
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Abort the calibration process");
 #endif
 
     // Media directory
@@ -1309,6 +1283,10 @@ void Gui::initImWidgets()
     // Warp control
     auto warpControl = std::make_shared<GuiWarp>(_scene, "Warps");
     _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWarp>(warpControl));
+
+    // Calibration (Calimiro)
+    auto calibrationControl = std::make_shared<GuiCalibration>(_scene, "Calibration");
+    _guiWidgets.push_back(std::dynamic_pointer_cast<GuiCalibration>(calibrationControl));
 
     if (Log::get().getVerbosity() == Log::DEBUGGING)
     {
