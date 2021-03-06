@@ -455,10 +455,9 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
     {
         const auto& cameraName = state.cameraList[cameraIndex];
         auto cameraSize = getObjectAttribute(cameraName, "size");
-        auto camHeight = cameraSize[1].as<int>();
 
         calimiro::MapXYZs pixelMap(&_logger, workspace.getWorkPath());
-        pixelMap.pixelToProj(camHeight, _structuredLightScale);
+        pixelMap.pixelToProj(_structuredLightScale);
         auto matchesByProj = pixelMap.sampling(15);
 
         std::shared_ptr<calimiro::Camera> cameraModel{nullptr};
