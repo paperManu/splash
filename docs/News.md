@@ -1,6 +1,15 @@
 Splash release notes
 ====================
 
+Splash 0.8.32 (2021-03-08)
+-------------------------
+Bugs fixed:
+* Fixed issues following Calimiro api changes
+* Fixed issues with non-US keyboards, by updating GLFW
+
+Documentation:
+* Fixed broken links
+
 Splash 0.8.30 (2021-02-22)
 -------------------------
 Improvements:
