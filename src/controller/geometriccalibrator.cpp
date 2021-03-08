@@ -442,7 +442,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
     auto geometryNormals = geometry.computeNormalsPointSet();
     auto geometryMesh = geometryNormals.marchingCubes(600);
     auto geometryMeshClean = geometryMesh.simplifyGeometry();
-    auto geometryMeshUvs = geometryMeshClean.uvCoordinatesSphere();
+    auto geometryMeshUvs = geometryMeshClean.computeUVCoordinates(_uvMethod, _uvCameraPosition, glm::normalize(_uvCameraOrientation));
 
     calimiro::Obj objFile(&_logger, geometryMeshUvs);
     objFile.writeMesh(std::filesystem::path(workspace.getWorkPath()) / _finalMeshName);
@@ -455,10 +455,9 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
     {
         const auto& cameraName = state.cameraList[cameraIndex];
         auto cameraSize = getObjectAttribute(cameraName, "size");
-        auto camHeight = cameraSize[1].as<int>();
 
         calimiro::MapXYZs pixelMap(&_logger, workspace.getWorkPath());
-        pixelMap.pixelToProj(camHeight, _structuredLightScale);
+        pixelMap.pixelToProj(_structuredLightScale);
         auto matchesByProj = pixelMap.sampling(15);
 
         std::shared_ptr<calimiro::Camera> cameraModel{nullptr};
@@ -545,6 +544,7 @@ void GeometricCalibrator::registerAttributes()
 {
     addAttribute("calibrate",
         [&](const Values&) {
+            _positionCount = 0;
             calibrate();
             return true;
         },
@@ -554,6 +554,7 @@ void GeometricCalibrator::registerAttributes()
     addAttribute("nextPosition",
         [&](const Values&) {
             _nextPosition = true;
+            ++_positionCount;
             return true;
         },
         {});
@@ -626,6 +627,43 @@ void GeometricCalibrator::registerAttributes()
         [&]() -> Values { return {_structuredLightScale}; },
         {'r'});
     setAttributeDescription("patternScale", "Scale of the structured light pattern to be projected");
+
+    addAttribute("positionCount", {}, [&]() -> Values { return {_positionCount}; }, {'i'});
+    setAttributeDescription("positionCount", "The number of captured position for the current calibration");
+
+    addAttribute(
+        "uvMethod",
+        [&](const Values& args) {
+            _uvMethod = (calimiro::TextureCoordinates::UVMethod)args[0].as<int>();
+            return true;
+        },
+        [&]() -> Values { return {calimiro::TextureCoordinates::getUVMethodTitle(_uvMethod)}; },
+        {'i'});
+    setAttributeDescription("uvMethod", "Method for computing uv coordinates");
+
+    addAttribute(
+        "uvCameraPosition",
+        [&](const Values& args) {
+            _uvCameraPosition = glm::vec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
+            return true;
+        },
+        [&]() -> Values {
+            return {_uvCameraPosition.x, _uvCameraPosition.y, _uvCameraPosition.z};
+        },
+        {'r', 'r', 'r'});
+    setAttributeDescription("uvCameraPosition", "Camera position for computing uv coordinates");
+
+    addAttribute(
+        "uvCameraOrientation",
+        [&](const Values& args) {
+            _uvCameraOrientation = glm::vec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
+            return true;
+        },
+        [&]() -> Values {
+            return {_uvCameraOrientation.x, _uvCameraOrientation.y, _uvCameraOrientation.z};
+        },
+        {'r', 'r', 'r'});
+    setAttributeDescription("uvCameraOrientation", "Camera orientation for computing uv coordinates");
 }
 
 } // namespace Splash

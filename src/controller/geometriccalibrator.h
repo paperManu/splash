@@ -32,6 +32,8 @@
 #include <mutex>
 #include <optional>
 
+#include <calimiro/texture_coordinates.h>
+
 #include "./core/constants.h"
 
 #include "./controller/controller.h"
@@ -127,6 +129,11 @@ class GeometricCalibrator : public ControllerObject
     bool _nextPosition{false};        //!< Set to true to capture from next camera position
     bool _finalizeCalibration{false}; //!< Set to true to finalize calibration
     bool _abortCalibration{false};
+    int _positionCount;
+
+    calimiro::TextureCoordinates::UVMethod _uvMethod;
+    glm::vec3 _uvCameraPosition = glm::vec3(0.f, 0.f, 0.f);
+    glm::vec3 _uvCameraOrientation = glm::vec3(0.f, 0.f, 1.f);
 
     float _cameraFocal{5000.f};
     CameraModel _cameraModel{CameraModel::Pinhole};

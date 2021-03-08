@@ -235,7 +235,7 @@ if __name__ == "__main__":
 
     print("Version number updated, now building dependencies.")
 
-    if subprocess.call(f"./make_deps.sh", shell=True) != 0:
+    if subprocess.call("./make_deps.sh", shell=True) != 0:
         printerr("Error while building dependencies.")
 
     print("Now executing unit tests.")
@@ -260,6 +260,13 @@ if __name__ == "__main__":
     update_changelog(git_project, release_version)
     update_config_file(git_project, release_version, version_pattern)
     update_metainfo_file(git_project, release_version)
+
+    os.chdir(build_dir)
+    if subprocess.call("rm -rf * && cmake .. && make blenderSplash && make splash-launcher", shell=True) != 0:
+        printerr(f"{git_project} new version build failed, stopping the release.")
+    os.chdir(os.path.join(libs_root_path, git_project))
+    git_add([desktop_file, blender_addon_init_file])
+
     git_commit("Updated News and version number")
 
     assert(git_checkout(bringup_branch) == 0), f"Could not checkout branch {bringup_branch}"
@@ -277,9 +284,9 @@ if __name__ == "__main__":
         release_version[2] = 1
     update_config_file(git_project, release_version, version_pattern)
 
-    print(f"Updating the version number across the repository.")
+    print("Updating the version number across the repository.")
     os.chdir(build_dir)
-    if subprocess.call(f"rm -rf * && cmake .. && make blenderSplash && make splash-launcher", shell=True) != 0:
+    if subprocess.call("rm -rf * && cmake .. && make blenderSplash && make splash-launcher", shell=True) != 0:
         printerr(f"{git_project} new version build failed, stopping the release.")
     os.chdir(os.path.join(libs_root_path, git_project))
     git_add([desktop_file, blender_addon_init_file])

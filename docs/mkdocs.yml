@@ -14,7 +14,7 @@ markdown_extensions:
       base_path: docs
 
 nav:
-  - Home: Home.md
+  - Home: index.md
   - Guides:
     - Installation: Installation.md
     - User interface: User_Interface.md

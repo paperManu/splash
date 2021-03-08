@@ -15,7 +15,7 @@ By participating in this project, you agree to abide by the Splash [Code of Cond
 
 ## Important Resources
 
-* [README](Home.md)
+* [README](index.md)
 * [Issue tracker](https://gitlab.com/sat-metalab/splash/-/issues)
 
 
@@ -191,7 +191,7 @@ The [master](https://gitlab.com/sat-metalab/splash/tree/master) branch contains 
 
 Modifications are made into a dedicated branch that needs to be merged into the **develop** branch through a Gitlab merge request. When you modification is ready, you need to prepare your merge request as follow:
 
-* Update your **develop** branch.
+* Update your **develop** branch. 
 ```
 git fetch
 git checkout develop
@@ -208,7 +208,7 @@ When your feature branch is ready, submit a Merge Request to **develop**. When t
 Core developers will prepare new releases regularly by creating a *release branch* from **develop** (named *release/<new_version>*). This new branch allows developers to test the release's stability and prepare the relevant metadata. Eventually, when this new release has been tested and deemed stable enough, it will be merged in the **master** branch by the core team. This new commit on **master** will be tagged for future reference and the original release branch will then be deleted
 
 ### CI pipeline
-
+	
 This repository includes a CI pipeline, used to validate that incoming commits do not break the build, and that all unit tests still pass. It will be run automatically when a new commit is pushed to the repository. If the pipeline fails, it is your responsability to checkout the [CI Jobs page](https://gitlab.com/sat-metalab/splash/-/jobs) and figure out how to fix it. A Merge Requests that breaks the pipeline will not be merged by the core developers.
 
 
@@ -220,7 +220,7 @@ When you are ready to submit you changes for review, either for preliminary revi
 
 Do not forget to:
 
-1. Update the relevant [README](Home.md) sections, if necessary.
+1. Update the relevant [README](index.md) sections, if necessary.
 2. Add the relevant unit tests, if needed.
 3. Update documentation, if needed.
 4. Rebase your changes in nice, clear commits if your branch's commit history is messy.
@@ -229,7 +229,7 @@ A core developer will merge your changes into **develop** when all feedback have
 
 ### Review Process
 
-The core developer team regularly checks the repository for new merge requests. We expect the CI pipeline to succeed before approval of the MR. If it doesn't, your MR will not be merged.
+The core developer team regularly checks the repository for new merge requests. We expect the CI pipeline to succeed before approval of the MR. If it doesn't, your MR will not be merged. 
 
 If the MR concerns a minor issue, it will be merged immediately after one of the core developers approves it, if the CI succeeds. For more serious issues, we will wait a day or two after all feedback has been addressed before merging the request.
 
