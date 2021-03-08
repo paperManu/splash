@@ -314,7 +314,7 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
             case 1:
             {
                 auto tmp = attribute[0].as<int64_t>();
-                static const float step = 1;
+                static const int step = 1;
                 if (ImGui::InputScalar(attrName.c_str(), ImGuiDataType_S64, &tmp, &step, &step, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
                     setObjectAttribute(objName, attrName, {static_cast<int64_t>(tmp)});
                 break;

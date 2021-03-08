@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #if HAVE_DATAPATH
+#include "rgb133control.h"
 #include "rgb133v4l2.h"
 #endif
 

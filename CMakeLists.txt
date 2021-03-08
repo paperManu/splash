@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(
     splash
-    VERSION 0.8.30
+    VERSION 0.8.32
     LANGUAGES C CXX
 )
 
@@ -132,7 +132,7 @@ if (PROFILE_OPENGL)
 endif()
 
 if (DATAPATH_SDK_PATH)
-    if (IS_DIRECTORY "${DATAPATH_SDK_PATH}/include" AND IS_DIRECTORY "${DATAPATH_SDK_PATH}/utils")
+    if (IS_DIRECTORY "${DATAPATH_SDK_PATH}/include" AND EXISTS "${DATAPATH_SDK_PATH}/include/rgb133v4l2.h")
         set(HAVE_DATAPATH 1)
     else()
         set(DATAPATH_SDK_PATH "")
