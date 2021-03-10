@@ -331,8 +331,6 @@ void GraphObject::initializeTree()
                 auto attribIt = _attribFunctions.find(attributeName);
                 if (attribIt == _attribFunctions.end())
                     return;
-                if (value == attribIt->second())
-                    return;
                 setAttribute(attributeName, value.as<Values>());
             });
         }

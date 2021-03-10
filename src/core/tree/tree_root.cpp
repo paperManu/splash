@@ -445,7 +445,7 @@ bool Root::hasLeafAt(const std::string& path) const
 }
 
 /*************/
-bool Root::setValueForLeafAt(const std::string& path, const Value& value, int64_t timestamp, bool silent)
+bool Root::setValueForLeafAt(const std::string& path, const Value& value, int64_t timestamp, bool force)
 {
     chrono::system_clock::time_point timePoint;
     if (timestamp)
@@ -453,29 +453,40 @@ bool Root::setValueForLeafAt(const std::string& path, const Value& value, int64_
     else
         timePoint = chrono::system_clock::now();
 
-    return setValueForLeafAt(path, value, timePoint, silent);
+    return setValueForLeafAt(path, value, timePoint, force);
 }
 
 /*************/
-bool Root::setValueForLeafAt(const std::string& path, const Value& value, chrono::system_clock::time_point timestamp, bool silent)
+bool Root::setValueForLeafAt(const std::string& path, const Value& value, chrono::system_clock::time_point timestamp, bool force)
 {
     std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto leaf = getLeafAt(processPath(path));
     if (!leaf)
         return false;
 
-    if (value == leaf->get())
+    if (!force && value == leaf->get())
         return true;
+
+    if (!writeValueToLeafAt(path, value, timestamp))
+        return false;
+
+    std::lock_guard<std::recursive_mutex> lock(_updatesMutex);
+    auto seed = std::make_tuple(Task::SetLeaf, Values({path, value}), timestamp, _uuid);
+    _updates.emplace_back(std::move(seed));
+
+    return true;
+}
+
+/*************/
+bool Root::writeValueToLeafAt(const std::string& path, const Value& value, chrono::system_clock::time_point timestamp)
+{
+    std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
+    auto leaf = getLeafAt(processPath(path));
+    if (!leaf)
+        return false;
 
     if (!leaf->set(value, timestamp))
         return false;
-
-    if (!silent)
-    {
-        std::lock_guard<std::recursive_mutex> lock(_updatesMutex);
-        auto seed = std::make_tuple(Task::SetLeaf, Values({path, value}), timestamp, _uuid);
-        _updates.emplace_back(std::move(seed));
-    }
 
     return true;
 }
@@ -644,7 +655,7 @@ bool Root::processQueue(bool propagate)
             }
             auto leafPath = args[0].as<std::string>();
             auto& value = args[1];
-            if (!setValueForLeafAt(leafPath, value, timestamp, true))
+            if (!writeValueToLeafAt(leafPath, value, timestamp))
             {
                 _hasError = true;
                 _errorMsg = "Error while setting leaf at path " + leafPath;
