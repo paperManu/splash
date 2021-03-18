@@ -123,6 +123,11 @@ The list of outstanding feature requests and bugs can be found on the [GitLab is
 
 ### Debugging
 
+When debugging, the first step is to compile Splash in `Debug` mode. From the build directory, run:
+```bash
+cmake -DCMAKE_BUILD_TYPE=Debug ..
+```
+
 As Splash runs multiple processes on a single computer (and hopefully someday on multiple computers), debugging its behavior can be a bit tricky. The main reason is that the rendering can be run in a subprocess executed when calling Splash from the command line. Therefore, when the software is invoked from `gdb`, `gdb` will not catch the issues in the subprocess.
 
 A workaround is to run the subprocesses manually and to tell the main executable to communicate with these processes instead of spawning its own. We will use the default configuration as an example, located in `./data/share/splash/splash.json` and installed in `${PREFIX}/share/splash/`
