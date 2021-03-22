@@ -1,6 +1,14 @@
 Splash release notes
 ====================
 
+Splash 0.8.34 (2021-03-22)
+-------------------------
+Improvements:
+* Added lock buttons going red when the attribute is locked
+
+Documentation:
+* Added debug compilation documentation
+
 Splash 0.8.32 (2021-03-08)
 -------------------------
 Bugs fixed:
