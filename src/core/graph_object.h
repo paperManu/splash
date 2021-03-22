@@ -26,6 +26,7 @@
 #define SPLASH_GRAPH_OBJECT_H
 
 #include "./core/base_object.h"
+#include "./utils/dense_set.h"
 
 namespace Splash
 {
@@ -257,6 +258,7 @@ class GraphObject : public BaseObject
     std::string _remoteType{""};          //!< When the object root is a Scene, this is the type of the corresponding object in the World
     std::string _alias{""};               //!< Alias name
     std::vector<GraphObject*> _parents{}; //!< Objects parents
+    DenseSet<std::string> _lockedAttributes;
     std::unordered_map<std::string, int> _treeCallbackIds{};
 
     Priority _renderingPriority{Priority::NO_RENDER}; //!< Rendering priority, if negative the object won't be rendered

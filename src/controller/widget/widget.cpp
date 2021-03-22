@@ -247,7 +247,9 @@ GuiWidget::GuiWidget(Scene* scene, const std::string& name)
 /*************/
 void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_map<std::string, Values>& attributes)
 {
-    auto objAlias = getObjectAlias(objName);
+    const auto objAlias = getObjectAlias(objName);
+    const auto lockedAttributes = getObjectAttribute(objName, "lockedAttributes");
+
     std::vector<std::string> attributeNames;
     for (const auto& attr : attributes)
         attributeNames.push_back(attr.first);
@@ -255,6 +257,7 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
 
     ImVec2 availableSize = ImGui::GetContentRegionAvail();
     ImGui::PushItemWidth(availableSize.x * 0.5);
+
     for (const auto& attrName : attributeNames)
     {
         if (find(_hiddenAttributes.begin(), _hiddenAttributes.end(), attrName) != _hiddenAttributes.end())
@@ -264,26 +267,35 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
         if (attribute.empty() || attribute.size() > 4)
             continue;
 
+        // Check whether the attribute is locked, in which case we set
+        // the locking button color to red
+        const bool isLocked =
+            std::find_if(lockedAttributes.begin(), lockedAttributes.end(), [&](const Value& name) { return name.as<std::string>() == attrName; }) != lockedAttributes.end();
+
+        ImGui::PushID((objName + attrName).c_str());
+        if (isLocked)
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.15, 0.01, 0.01, 1.0));
+        if (ImGui::Button("L"))
+            setObjectAttribute(objName, "switchLock", {attrName});
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Lock / Unlock this attribute");
+        if (isLocked)
+            ImGui::PopStyleColor();
+        ImGui::SameLine();
+
         switch (attribute[0].getType())
         {
         default:
+            ImGui::Text("%s", attrName.c_str());
             continue;
         case Value::Type::boolean:
         {
-            ImGui::PushID(attrName.c_str());
-            if (ImGui::Button("L"))
-                setObjectAttribute(objName, "switchLock", {attrName});
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Lock / Unlock this attribute");
-            ImGui::SameLine();
-
             if (ImGui::Button("R"))
                 setObjectAttribute(objName, attrName, attribute);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("If pressed, resend the value as-is");
             ImGui::SameLine();
 
-            ImGui::PopID();
             auto tmp = attribute[0].as<bool>();
             if (ImGui::Checkbox(attrName.c_str(), &tmp))
                 setObjectAttribute(objName, attrName, {static_cast<bool>(tmp)});
@@ -292,20 +304,11 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
         }
         case Value::Type::integer:
         {
-            ImGui::PushID(attrName.c_str());
-            if (ImGui::Button("L"))
-                setObjectAttribute(objName, "switchLock", {attrName});
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Lock / Unlock this attribute");
-            ImGui::SameLine();
-
             if (ImGui::Button("R"))
                 setObjectAttribute(objName, attrName, attribute);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("If pressed, resend the value as-is");
             ImGui::SameLine();
-
-            ImGui::PopID();
 
             switch (attribute.size())
             {
@@ -355,20 +358,11 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
         }
         case Value::Type::real:
         {
-            ImGui::PushID(attrName.c_str());
-            if (ImGui::Button("L"))
-                setObjectAttribute(objName, "switchLock", {attrName});
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Lock / Unlock this attribute");
-            ImGui::SameLine();
-
             if (ImGui::Button("R"))
                 setObjectAttribute(objName, attrName, attribute);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("If pressed, resend the value as-is");
             ImGui::SameLine();
-
-            ImGui::PopID();
 
             int precision = 0;
             if (attribute[0].getType() == Value::Type::real)
@@ -461,7 +455,6 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                 {
 
                     std::string tmp = v.as<std::string>();
-                    ImGui::PushID((objName + attrName).c_str());
                     if (SplashImGui::InputText("", tmp, ImGuiInputTextFlags_EnterReturnsTrue))
                         setObjectAttribute(objName, attrName, {tmp});
 
@@ -490,8 +483,6 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                             _fileSelectorTarget = "";
                         }
                     }
-
-                    ImGui::PopID();
                 }
                 // For everything else ...
                 else
@@ -504,6 +495,7 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
             break;
         }
         }
+        ImGui::PopID();
 
         if (ImGui::IsItemHovered())
         {

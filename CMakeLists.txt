@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(
     splash
-    VERSION 0.8.32
+    VERSION 0.8.34
     LANGUAGES C CXX
 )
 
@@ -93,7 +93,7 @@ pkg_search_module(GPHOTO libgphoto2)
 pkg_search_module(JACK jack)
 pkg_search_module(PORTAUDIO portaudio-2.0)
 pkg_search_module(SHMDATA shmdata-1.3)
-pkg_search_module(CALIMIRO calimiro-0.1)
+pkg_search_module(CALIMIRO calimiro-0.2)
 
 #
 # Configuration
