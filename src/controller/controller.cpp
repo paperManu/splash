@@ -377,7 +377,7 @@ void ControllerObject::setObjectAttribute(const std::string& name, const std::st
     {
         auto path = "/" + branchName + "/objects/" + name + "/attributes/" + attr;
         if (tree->hasLeafAt(path))
-            tree->setValueForLeafAt(path, values);
+            tree->setValueForLeafAt(path, values, 0, true);
         else
             _root->addTreeCommand(branchName, RootObject::Command::callObject, {name, attr, values});
     }

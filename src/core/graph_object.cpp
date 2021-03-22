@@ -259,7 +259,8 @@ void GraphObject::registerAttributes()
     addAttribute("switchLock",
         [&](const Values& args) {
             std::unique_lock<std::recursive_mutex> lock(_attribMutex);
-            auto attribIterator = _attribFunctions.find(args[0].as<std::string>());
+            const auto attribName = args[0].as<std::string>();
+            auto attribIterator = _attribFunctions.find(attribName);
             if (attribIterator == _attribFunctions.end())
                 return false;
 
@@ -269,17 +270,27 @@ void GraphObject::registerAttributes()
             {
                 status = "Unlocked";
                 attribFunctor.unlock();
+                _lockedAttributes.erase(attribName);
             }
             else
             {
                 status = "Locked";
                 attribFunctor.lock();
+                _lockedAttributes.insert(attribName);
             }
 
-            Log::get() << Log::MESSAGE << _name << "~~" << args[0].as<std::string>() << " - " << status << Log::endl;
             return true;
         },
         {'s'});
+
+    addAttribute("lockedAttributes",
+        [&]() -> Values{
+            std::unique_lock<std::recursive_mutex> lock(_attribMutex);
+            Values lockedAttributes;
+            for (const auto& attr : _lockedAttributes)
+                lockedAttributes.push_back(Value(attr));
+            return lockedAttributes;
+        });
 
     addAttribute(
         "timestamp", [](const Values&) { return true; }, [&]() -> Values { return {getTimestamp()}; }, {'i'});
@@ -330,8 +341,6 @@ void GraphObject::initializeTree()
             _treeCallbackIds[attributeName] = tree->addCallbackToLeafAt(leafPath, [=](const Value& value, const std::chrono::system_clock::time_point& /*timestamp*/) {
                 auto attribIt = _attribFunctions.find(attributeName);
                 if (attribIt == _attribFunctions.end())
-                    return;
-                if (value == attribIt->second())
                     return;
                 setAttribute(attributeName, value.as<Values>());
             });
