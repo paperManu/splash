@@ -37,7 +37,7 @@ class GlWindow
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param w Pointer to an existing GLFWwindow
      * \param mainWindow Pointer to an existing GLFWwindow which is shared with w
      */
@@ -49,7 +49,7 @@ class GlWindow
     }
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~GlWindow()
     {
@@ -58,19 +58,19 @@ class GlWindow
     }
 
     /**
-     * \brief Get the pointer to the GLFW window
+     * Get the pointer to the GLFW window
      * \return Return the pointer to the GLFW window
      */
     GLFWwindow* get() const { return _window; }
 
     /**
-     * \brief Get the pointer to the main GLFW window
+     * Get the pointer to the main GLFW window
      * \return Return the main GLFW window
      */
     GLFWwindow* getMainWindow() const { return _mainWindow; }
 
     /**
-     * \brief Set the context of this window as current
+     * Set the context of this window as current
      * \return Return true if everything went well
      */
     bool setAsCurrentContext() const
@@ -84,7 +84,7 @@ class GlWindow
     }
 
     /**
-     * \brief Release the context
+     * Release the context
      */
     void releaseContext() const
     {
