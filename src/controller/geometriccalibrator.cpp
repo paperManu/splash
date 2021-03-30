@@ -436,7 +436,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
     reconstruction.convertSfMStructure();
 
     // Generate the mesh
-    auto points = calimiro::utils::readPly(
+    auto points = calimiro::utils::readVerticesFromPly(
         &_logger, std::filesystem::path(workspace.getWorkPath()) / calimiro::constants::cOutputDirectory / calimiro::constants::cPointCloudStructureFromKnownPoses_ply);
     auto geometry = calimiro::Geometry(&_logger, points, {}, {}, {});
     auto geometryNormals = geometry.computeNormalsPointSet();
