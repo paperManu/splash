@@ -1349,23 +1349,33 @@ void Gui::initImWidgets()
             stats[branchName + "_warp"] = runningAverage(stats[branchName + "_warp"], getLeafValue(durationPath + "/warp"));
             stats[branchName + "_window"] = runningAverage(stats[branchName + "_window"], getLeafValue(durationPath + "/window"));
             stats[branchName + "_swap"] = runningAverage(stats[branchName + "_swap"], getLeafValue(durationPath + "/swap"));
-
-            stream << "- " + branchName + ":\n";
-            stream << "    Framerate: " << std::setprecision(4) << stats[branchName + "_loop_scene_fps"] << " fps\n";
-            stream << "    Time per frame: " << stats[branchName + "_loop_scene"] << " ms\n";
-            stream << "    Texture upload: " << std::setprecision(4) << stats[branchName + "_textureUpload"] << " ms\n";
-            stream << "    Blending: " << std::setprecision(4) << stats[branchName + "_blender"] << " ms\n";
-            stream << "    Filters: " << std::setprecision(4) << stats[branchName + "_filter"] << " ms\n";
-            stream << "    Cameras: " << std::setprecision(4) << stats[branchName + "_camera"] << " ms\n";
-            stream << "    Warps: " << std::setprecision(4) << stats[branchName + "_warp"] << " ms\n";
-            stream << "    Windows: " << std::setprecision(4) << stats[branchName + "_window"] << " ms\n";
-            stream << "    Swapping: " << std::setprecision(4) << stats[branchName + "_swap"] << " ms\n";
+            stats[branchName + "_gl_time_per_frame"] = runningAverage(stats[branchName + "_gl_time_per_frame"], getLeafValue(durationPath + "/" + GL_TIMING_PREFIX + GL_TIMING_TIME_PER_FRAME));
+            stats[branchName + "_gl_tex_upload"] = runningAverage(stats[branchName + "_gl_tex_upload"], getLeafValue(durationPath + "/" + GL_TIMING_PREFIX + GL_TIMING_TEXTURES_UPLOAD));
+            stats[branchName + "_gl_rendering"] = runningAverage(stats[branchName + "_gl_rendering"], getLeafValue(durationPath + "/" + GL_TIMING_PREFIX + GL_TIMING_RENDERING));
+            stats[branchName + "_gl_swap"] = runningAverage(stats[branchName + "_gl_swap"], getLeafValue(durationPath + "/" + GL_TIMING_PREFIX + GL_TIMING_SWAP));
 
             if (tree->hasLeafAt(durationPath + "/gui"))
             {
                 stats[branchName + "_gui"] = runningAverage(stats[branchName + "_gui"], getLeafValue(durationPath + "/gui"));
                 stream << "    GUI rendering: " << std::setprecision(4) << stats[branchName + "_gui"] << " ms\n";
             }
+
+            stream << "- " + branchName + ":\n";
+            stream << "    CPU:\n";
+            stream << "        Framerate: " << std::setprecision(4) << stats[branchName + "_loop_scene_fps"] << " fps\n";
+            stream << "        Time per frame: " << stats[branchName + "_loop_scene"] << " ms\n";
+            stream << "        Texture upload: " << std::setprecision(4) << stats[branchName + "_textureUpload"] << " ms\n";
+            stream << "        Blending: " << std::setprecision(4) << stats[branchName + "_blender"] << " ms\n";
+            stream << "        Filters: " << std::setprecision(4) << stats[branchName + "_filter"] << " ms\n";
+            stream << "        Cameras: " << std::setprecision(4) << stats[branchName + "_camera"] << " ms\n";
+            stream << "        Warps: " << std::setprecision(4) << stats[branchName + "_warp"] << " ms\n";
+            stream << "        Windows: " << std::setprecision(4) << stats[branchName + "_window"] << " ms\n";
+            stream << "        Swapping: " << std::setprecision(4) << stats[branchName + "_swap"] << " ms\n";
+            stream << "    GPU:\n";
+            stream << "        Time per frame: " << stats[branchName + "_gl_time_per_frame"] << " ms\n";
+            stream << "        Texture upload: " << stats[branchName + "_gl_tex_upload"] << " ms\n";
+            stream << "        Rendering: " << stats[branchName + "_gl_rendering"] << " ms\n";
+            stream << "        Swapping: " << stats[branchName + "_gl_swap"] << " ms\n";
         }
 
         return stream.str();

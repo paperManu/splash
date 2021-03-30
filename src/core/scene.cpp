@@ -243,6 +243,7 @@ void Scene::remove(const std::string& name)
 /*************/
 void Scene::render()
 {
+    PROFILEGL(GL_TIMING_TIME_PER_FRAME);
     // We want to have as much time as possible for uploading the textures,
     // so we start it right now.
     bool expectedAtomicValue = false;
@@ -250,6 +251,7 @@ void Scene::render()
     {
         TracyGpuZone("Upload textures");
         ZoneScopedN("Upload textures");
+        PROFILEGL(GL_TIMING_TEXTURES_UPLOAD);
 
         Timer::get() << "textureUpload";
         std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
@@ -271,9 +273,9 @@ void Scene::render()
     {
         TracyGpuZone("Scene rendering");
         ZoneScopedN("Scene rendering");
-#ifdef PROFILE
-        PROFILEGL("Render loop")
-#endif
+
+        PROFILEGL(GL_TIMING_RENDERING)
+
         // Create lists of objects to update and to render
         std::map<GraphObject::Priority, std::vector<std::shared_ptr<GraphObject>>> objectList{};
         {
@@ -322,9 +324,7 @@ void Scene::render()
                 TracyGpuZone("Rendering an object");
                 ZoneScopedN("Rendering an object");
                 ZoneName(obj->getName().c_str(), obj->getName().size());
-#ifdef PROFILE
-                PROFILEGL("object " + obj->getName());
-#endif
+
                 obj->update();
 
                 auto objectCategory = obj->getCategory();
@@ -345,27 +345,32 @@ void Scene::render()
             if (objPriority.second.size() != 0)
                 Timer::get() >> objPriority.second[0]->getType();
         }
-
-        {
-            TracyGpuZone("Swap");
-            ZoneScopedN("Swap");
-#ifdef PROFILE
-            PROFILEGL("swap buffers");
-#endif
-            // Swap all buffers at once
-            Timer::get() << "swap";
-            for (auto& obj : _objects)
-                if (obj.second->getType() == "window")
-                    std::dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
-            Timer::get() >> "swap";
-
-        }
-        
-        TracyGpuCollect;
     }
 
-#ifdef PROFILE
+    {
+        TracyGpuZone("Swap");
+        ZoneScopedN("Swap");
+
+        PROFILEGL(GL_TIMING_SWAP);
+
+        // Swap all buffers at once
+        Timer::get() << "swap";
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "window")
+                std::dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
+        Timer::get() >> "swap";
+    }
+
+    TracyGpuCollect;
+
     ProfilerGL::get().gatherTimings();
+    ProfilerGL::get().processTimings();
+    const auto glTimings = ProfilerGL::get().getTimings();
+    for (const auto& threadTimings : glTimings)
+        for (const auto& glTiming : threadTimings.second)
+            Timer::get().setDuration(GL_TIMING_PREFIX + glTiming.getScope(), glTiming.getDuration() / 1000.0);
+#ifndef PROFILE_GPU
+    ProfilerGL::get().clearTimings();
 #endif
 }
 
@@ -453,7 +458,7 @@ void Scene::run()
     _tree.cutBranchAt("/" + _name);
     propagateTree();
 
-#ifdef PROFILE
+#ifdef PROFILE_GPU
     ProfilerGL::get().processTimings();
     ProfilerGL::get().processFlamegraph("/tmp/splash_profiling_data_" + _name);
 #endif

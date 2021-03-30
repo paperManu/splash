@@ -42,6 +42,12 @@
 #define GL_VENDOR_AMD "X.Org"
 #define GL_VENDOR_INTEL "Intel"
 
+#define GL_TIMING_PREFIX "__gl_timing_"
+#define GL_TIMING_TIME_PER_FRAME "time_per_frame"
+#define GL_TIMING_TEXTURES_UPLOAD "texture_upload"
+#define GL_TIMING_RENDERING "rendering"
+#define GL_TIMING_SWAP "swap"
+
 #include <execinfo.h>
 #include <iostream>
 
