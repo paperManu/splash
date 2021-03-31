@@ -517,16 +517,16 @@ void Gui::drawMainTab()
 
 #if HAVE_PORTAUDIO
     ImGui::Separator();
-    ImGui::Text("Master clock");
+    ImGui::Text("Master/LTC clock");
     auto clockDeviceValue = getWorldAttribute("clockDeviceName");
     assert(!clockDeviceValue.empty());
     auto clockDeviceName = clockDeviceValue[0].as<std::string>();
     if (SplashImGui::InputText("##clockDeviceName", clockDeviceName, ImGuiInputTextFlags_EnterReturnsTrue))
         setWorldAttribute("clockDeviceName", {clockDeviceName});
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Set the audio input device name from which to read the LTC clock");
+        ImGui::SetTooltip("If a JACK audio server is used, specify the input device name to read the LTC clock from.\nOtherwise the default Pulseaudio input is used.");
     ImGui::SameLine();
-    ImGui::Text("Audio input device");
+    ImGui::Text("JACK audio input device");
 
     static auto looseClock = false;
     auto looseClockValue = getWorldAttribute("looseClock");
