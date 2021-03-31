@@ -31,3 +31,6 @@
 [submodule "external/flamegraph"]
 	path = external/flamegraph
 	url = https://github.com/brendangregg/FlameGraph.git
+[submodule "external/tracy"]
+	path = external/tracy
+	url = https://github.com/wolfpld/tracy.git

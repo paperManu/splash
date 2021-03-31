@@ -35,6 +35,11 @@ set_source_files_properties(
 )
 
 set_source_files_properties(
+    ../external/tracy/TracyClient.cpp
+    PROPERTIES COMPILE_FLAGS "-Wno-error -Wno-all -Wno-extra -Wno-unused-parameter"
+)
+
+set_source_files_properties(
     core/link.cpp
     PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized"
 )
@@ -61,6 +66,7 @@ include_directories(../external/imgui)
 include_directories(../external/libltc/src)
 include_directories(../external/stb)
 include_directories(../external/syphon/build/Release/Syphon.framework/Headers)
+include_directories(../external/tracy)
 
 if (HAVE_DATAPATH)
     include_directories(${DATAPATH_SDK_PATH}/include)
@@ -179,7 +185,8 @@ target_sources(splash-${API_VERSION} PRIVATE
     ../external/imgui/imgui_draw.cpp
     ../external/imgui/imgui_widgets.cpp
     ../external/imgui/imgui.cpp
-	../external/hap/source/hap.c
+    ../external/hap/source/hap.c
+    ../external/tracy/TracyClient.cpp
 )
 
     target_sources(splash-${API_VERSION} PRIVATE
