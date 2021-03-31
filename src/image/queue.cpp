@@ -190,6 +190,9 @@ void Queue::cleanPlaylist(std::vector<Source>& playlist)
     // Find duration for videos with stop == 0
     for (auto& source : playlist)
     {
+        if (source.type != "image_ffmpeg")
+            continue;
+
         if (source.stop > source.start)
             continue;
 
@@ -313,7 +316,7 @@ void Queue::registerAttributes()
                     source.freeRun = src[4].as<bool>();
                     source.args = src[5].as<Values>();
 
-                    if (source.start > source.stop)
+                    if (source.start > source.stop && source.stop != 0.0)
                         return false;
 
                     playlist.push_back(source);
