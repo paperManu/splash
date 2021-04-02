@@ -28,7 +28,7 @@
 #include "./config.h" // Must be included before HAVE_CALIMIRO is used, even if its also indirectly added by widget.h
 
 #if HAVE_CALIMIRO
-#include <calimiro/texture_coordinates.h>
+#include <calimiro/texture_coordinates/texCoordUtils.h>
 #endif
 
 #include "./controller/widget/widget.h"
@@ -44,11 +44,19 @@ class GuiCalibration : public GuiWidget
     void render() final;
     int updateWindowFlags() final;
 
-#if HAVE_CALIMIRO
   private:
-    std::vector<std::string> _uvMethodsList;
-    std::map<std::string, calimiro::TextureCoordinates::UVMethod> _stringToUVMethod;
+#if HAVE_CALIMIRO
+    std::vector<std::string> _texCoordMethodsList;
+    std::map<std::string, calimiro::TexCoordUtils::texCoordMethod> _stringToMethod;
+
+    void renderGeometricCalibration(ImVec2& availableSize);
+    void renderTexCoordCalibration(ImVec2& availableSize);
 #endif
+
+    /**
+     * Getter for the meshes in the scene
+     */
+    const std::list<std::shared_ptr<Mesh>> getSceneMeshes();
 };
 
 } // namespace Splash

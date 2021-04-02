@@ -230,6 +230,7 @@ endif()
 if (CALIMIRO_FOUND AND OPENCV_FOUND)
     target_sources(splash-${API_VERSION} PRIVATE
         controller/geometriccalibrator.cpp
+        controller/texcoordgenerator.cpp
     )
 endif()
 

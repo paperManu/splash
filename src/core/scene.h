@@ -236,6 +236,7 @@ class Scene : public RootObject
 #endif
 #if HAVE_CALIMIRO
     std::shared_ptr<GraphObject> _geometricCalibrator{nullptr};
+    std::shared_ptr<GraphObject> _texCoordGenerator{nullptr};
 #endif
 
   private:

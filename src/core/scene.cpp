@@ -43,6 +43,7 @@
 
 #if HAVE_CALIMIRO
 #include "./controller/geometriccalibrator.h"
+#include "./controller/texcoordgenerator.h"
 #endif
 
 namespace chrono = std::chrono;
@@ -528,6 +529,10 @@ void Scene::setAsMaster(const std::string& configFilePath)
     _geometricCalibrator = std::make_shared<GeometricCalibrator>(this);
     _geometricCalibrator->setName("geometricCalibrator");
     _objects["geometricCalibrator"] = _geometricCalibrator;
+
+    _texCoordGenerator = std::make_shared<TexCoordGenerator>(this);
+    _texCoordGenerator->setName("texCoordGenerator");
+    _objects["texCoordGenerator"] = _texCoordGenerator;
 #endif
 }
 
