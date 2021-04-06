@@ -59,24 +59,24 @@ void GuiCalibration::renderGeometricCalibration(ImVec2& availableSize)
 
     // Calibration actions
     if (ImGui::Button("Start calibration", ImVec2(availableSize.x * 0.5f - 12.f, 32.f)))
-        setObjectAttribute("geometricCalibrator", "calibrate", {1});
+        setObjectAttribute("geometricCalibrator", "calibrate", {});
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Enter the calibration mode");
 
     ImGui::SameLine();
     if (ImGui::Button("Capture new position", ImVec2(availableSize.x * 0.5f - 12.f, 32.f)))
-        setObjectAttribute("geometricCalibrator", "nextPosition", {1});
+        setObjectAttribute("geometricCalibrator", "nextPosition", {});
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Capture the patterns for the current camera position");
 
     if (ImGui::Button("Finalize calibration", ImVec2(availableSize.x * 0.5f - 12.f, 32.f)))
-        setObjectAttribute("geometricCalibrator", "finalizeCalibration", {1});
+        setObjectAttribute("geometricCalibrator", "finalizeCalibration", {});
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Compute calibration from the captured patterns");
 
     ImGui::SameLine();
     if (ImGui::Button("Abort calibration", ImVec2(availableSize.x * 0.5f - 12.f, 32.f)))
-        setObjectAttribute("geometricCalibrator", "abortCalibration", {1});
+        setObjectAttribute("geometricCalibrator", "abortCalibration", {});
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Abort the calibration process");
 }
@@ -170,7 +170,7 @@ void GuiCalibration::renderTexCoordCalibration(ImVec2& availableSize)
         if (ImGui::Button(meshBtnLabel.c_str(), ImVec2(availableSize.x * 0.5f - 12.f, 32.f)))
         {
             setObjectAttribute("texCoordGenerator", "meshName", {mesh->getName()});
-            setObjectAttribute("texCoordGenerator", "generate", {1});
+            setObjectAttribute("texCoordGenerator", "generate", {});
         }
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Generate the texture coordinates for the mesh: %s ", mesh->getName().c_str());

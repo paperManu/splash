@@ -319,7 +319,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
 
                 const auto updateTime = Timer::getTime();
                 // Some grabber need to be asked to capture a frame
-                setObjectAttribute(_grabber->getName(), "capture", {1});
+                setObjectAttribute(_grabber->getName(), "capture", {});
                 while (updateTime > imageBuffer.getSpec().timestamp)
                 {
                     imageBuffer = _grabber->get();
@@ -410,7 +410,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
         workspace.exportMatrixToYaml(mergedProjectors.value(), "decoded_matrix/pos_" + std::to_string(positionIndex));
 
         ++positionIndex;
-        setObjectAttribute("gui", "show", {1});
+        setObjectAttribute("gui", "show", {});
     }
     _finalizeCalibration = false;
 

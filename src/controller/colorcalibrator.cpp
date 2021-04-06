@@ -90,7 +90,7 @@ void ColorCalibrator::update()
         for (auto& params : _calibrationParams)
         {
             setObjectAttribute(params.camName, "hide", {true});
-            setObjectAttribute(params.camName, "flashBG", {1});
+            setObjectAttribute(params.camName, "flashBG", {});
             setObjectAttribute(params.camName, "clearColor", {0.7, 0.7, 0.7, 1.0});
         }
         mediumExposureTime = findCorrectExposure();
@@ -318,7 +318,7 @@ void ColorCalibrator::update()
         for (auto& params : _calibrationParams)
         {
             setObjectAttribute(params.camName, "hide", {false});
-            setObjectAttribute(params.camName, "flashBG", {0});
+            setObjectAttribute(params.camName, "flashBG", {});
             setObjectAttribute(params.camName, "clearColor", {});
         }
 
