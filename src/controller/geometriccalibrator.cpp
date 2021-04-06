@@ -22,6 +22,8 @@
 #include "./image/image_gphoto.h"
 #endif
 
+#include "./texcoordgenerator.h"
+
 using namespace std::chrono;
 
 namespace Splash
@@ -317,7 +319,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
 
                 const auto updateTime = Timer::getTime();
                 // Some grabber need to be asked to capture a frame
-                setObjectAttribute(_grabber->getName(), "capture", {1});
+                setObjectAttribute(_grabber->getName(), "capture", {});
                 while (updateTime > imageBuffer.getSpec().timestamp)
                 {
                     imageBuffer = _grabber->get();
@@ -408,7 +410,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
         workspace.exportMatrixToYaml(mergedProjectors.value(), "decoded_matrix/pos_" + std::to_string(positionIndex));
 
         ++positionIndex;
-        setObjectAttribute("gui", "show", {1});
+        setObjectAttribute("gui", "show", {});
     }
     _finalizeCalibration = false;
 
@@ -436,16 +438,30 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
     reconstruction.convertSfMStructure();
 
     // Generate the mesh
-    auto points = calimiro::utils::readPly(
+    const auto points = calimiro::utils::readVerticesFromPly(
         &_logger, std::filesystem::path(workspace.getWorkPath()) / calimiro::constants::cOutputDirectory / calimiro::constants::cPointCloudStructureFromKnownPoses_ply);
     auto geometry = calimiro::Geometry(&_logger, points, {}, {}, {});
     auto geometryNormals = geometry.computeNormalsPointSet();
     auto geometryMesh = geometryNormals.marchingCubes(600);
     auto geometryMeshClean = geometryMesh.simplifyGeometry();
-    auto geometryMeshUvs = geometryMeshClean.computeUVCoordinates(_uvMethod, _uvCameraPosition, glm::normalize(_uvCameraOrientation));
 
-    calimiro::Obj objFile(&_logger, geometryMeshUvs);
-    objFile.writeMesh(std::filesystem::path(workspace.getWorkPath()) / _finalMeshName);
+    auto geometryMeshToWrite = geometryMeshClean;
+    if (_computeTexCoord)
+    {
+        const auto texCoordGenerator = std::dynamic_pointer_cast<TexCoordGenerator>(getObjectPtr("texCoordGenerator"));
+        auto geometryTexCoord = texCoordGenerator->generateTexCoordFromGeometry(geometryMeshClean);
+        geometryMeshToWrite = geometryTexCoord;
+    }
+
+    calimiro::Obj objFile(&_logger, geometryMeshToWrite);
+    bool tmpWriteSuccess = objFile.writeMesh(std::filesystem::path(workspace.getWorkPath()) / _finalMeshName);
+
+    assert(tmpWriteSuccess);
+    if (!tmpWriteSuccess)
+    {
+        Log::get() << Log::WARNING << "GeometricCalibrator::" << __FUNCTION__ << " - Unable to write file " << workspace.getWorkPath() << _finalMeshName << Log::endl;
+        return {};
+    }
 
     Calibration calibration;
     calibration.meshPath = workspace.getWorkPath() + "/" + _finalMeshName;
@@ -528,6 +544,9 @@ void GeometricCalibrator::applyCalibration(const GeometricCalibrator::Configurat
     waitForObjectCreation(calibrationPrefixName + "mesh");
     setObjectAttribute(calibrationPrefixName + "mesh", "file", {calibration.meshPath});
 
+    // Add a default texture to the new mesh
+    setObjectAttribute(calibrationPrefixName + "image", "file", {std::string(DATADIR) + "color_map.png"});
+
     // Apply projector calibration
     for (const auto& params : calibration.params)
     {
@@ -576,6 +595,16 @@ void GeometricCalibrator::registerAttributes()
         },
         {});
     setAttributeDescription("abortCalibration", "Signals the calibration algorithm to abort");
+
+    addAttribute(
+        "computeTexCoord",
+        [&](const Values& args) {
+            _computeTexCoord = args[0].as<bool>();
+            return true;
+        },
+        [&]() -> Values { return {_computeTexCoord}; },
+        {'b'});
+    setAttributeDescription("computeTexCoord", "Compute texture coordinates during mesh generation");
 
     addAttribute(
         "cameraFocal",
@@ -630,40 +659,6 @@ void GeometricCalibrator::registerAttributes()
 
     addAttribute("positionCount", {}, [&]() -> Values { return {_positionCount}; }, {'i'});
     setAttributeDescription("positionCount", "The number of captured position for the current calibration");
-
-    addAttribute(
-        "uvMethod",
-        [&](const Values& args) {
-            _uvMethod = (calimiro::TextureCoordinates::UVMethod)args[0].as<int>();
-            return true;
-        },
-        [&]() -> Values { return {calimiro::TextureCoordinates::getUVMethodTitle(_uvMethod)}; },
-        {'i'});
-    setAttributeDescription("uvMethod", "Method for computing uv coordinates");
-
-    addAttribute(
-        "uvCameraPosition",
-        [&](const Values& args) {
-            _uvCameraPosition = glm::vec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
-            return true;
-        },
-        [&]() -> Values {
-            return {_uvCameraPosition.x, _uvCameraPosition.y, _uvCameraPosition.z};
-        },
-        {'r', 'r', 'r'});
-    setAttributeDescription("uvCameraPosition", "Camera position for computing uv coordinates");
-
-    addAttribute(
-        "uvCameraOrientation",
-        [&](const Values& args) {
-            _uvCameraOrientation = glm::vec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
-            return true;
-        },
-        [&]() -> Values {
-            return {_uvCameraOrientation.x, _uvCameraOrientation.y, _uvCameraOrientation.z};
-        },
-        {'r', 'r', 'r'});
-    setAttributeDescription("uvCameraOrientation", "Camera orientation for computing uv coordinates");
 }
 
 } // namespace Splash

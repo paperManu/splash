@@ -194,7 +194,6 @@ class Window : public GraphObject
     int64_t _frontBufferTimestamp{0};
     int64_t _presentationDelay{0};
 
-    int _screenId{-1};
     bool _withDecoration{true};
     int _windowRect[4];
     bool _resized{true};
@@ -202,6 +201,7 @@ class Window : public GraphObject
     float _gammaCorrection{2.2f};
     Values _layout{0, 1, 2, 3};
     int _swapInterval{1};
+    int _snapDistance{16};
     bool _guiOnly{false};
 
     // Swap synchronization test
@@ -276,6 +276,13 @@ class Window : public GraphObject
      * \param hasDecoration Desired decoration status
      */
     void setWindowDecoration(bool hasDecoration);
+
+    /**
+     * Snap the window to the borders
+     * \param distance Snap distance
+     * \return Return true if the window has been snapped to a border
+     */
+    bool snapWindow(int distance);
 
     /**
      * Update the swap interval. Call this when the _swapInterval has been changed

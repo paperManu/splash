@@ -15,6 +15,6 @@ TEST_CASE("Testing creating a Scene")
     Scene scene(context);
     auto sceneThread = std::thread([&]() { scene.run(); });
     std::this_thread::sleep_for(2s);
-    scene.setAttribute("quit", {1});
+    scene.setAttribute("quit", {});
     sceneThread.join();
 }

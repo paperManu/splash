@@ -113,6 +113,63 @@ If you want to help improve the docs and it's a substantial change, create a new
 For large fixes, please build and test the documentation before submitting the MR to be sure you haven't accidentally introduced any layout or formatting issues.
 
 
+## Performance profiling
+
+### Using Tracy
+[Tracy](https://github.com/wolfpld/tracy) is a low-overhead, high performance profiling tool for CPU and GPU. It allows for profiling a software over the network and gives very precise measurements based on code instrumentation.
+
+Splash has a few instrumentation zones already defined, in `./src/core/world.cpp` and `./src/core/scene.cpp`. They allow for having a good overview of the software performances of the software and get a glimpse over what the overall performances look like. To activate profiling through Tracy, Splash must be built using the following option:
+```bash
+cmake -DPROFILE=ON ..
+```
+
+Once compiled and installed Splash can be used as usual. The impact of Tracy on the performances of Splash is minimal but has not be thoroughly measured, so it should be kept disabled by default. To show the measurements you need to run the Tracy Profiler. You can either run it manually after having built it [based on its documentation](https://github.com/wolfpld/tracy/releases), or you can run it through the `CMake` target:
+```bash
+make tracy-profiler
+```
+
+This can take some time to build the first time this command is called, but it should be faster afterwards.
+
+You are strongly advised to read Tracy's documentation to learn how to use the profiler, and if needed how to add profiling zones in the code.
+
+### Using flamegraphs
+A header-only profiler has been implemented to measure the time spent in OpenGL operations. To activate profiling, Splash must be compiled with the `PROFILE_OPENGL` flag activated:
+```bash
+cmake -DPROFILE_OPENGL=ON ..
+```
+
+It supports multiple threads and uses a RAII implementation to ease its use. If you want to profile a block of code just include the header include/profilerGL.h into your source and call:
+```cpp
+PROFILEGL("My scope name")
+```
+
+every time you want to measure the time spent by the graphics driver in nanoseconds in the current scope. If you use PROFILE blocks in multiple threads they will be separated appropriately in the processed data. The hierarchy of execution scopes is also preserved so as to know which proportion of time is spent in the current scope or in its underlying profiled scopes. All the processing time not profiled will be accounted for in the duration of the directly higher profiled scope.
+
+Currently, only one format of display is supported: [FlameGraph](https://github.com/brendangregg/FlameGraph). Whenever you want to process the profiling data you need to call:
+```cpp
+ProfilerGL::get().processTimings();
+```
+
+This will preprocess the data to sort through the cumulated timings in all profiled scopes. After that to postprocess the data for FlameGraph:
+```cpp
+ProfilerGL::get().processFlamegraph();
+```
+
+If you want to flush the data at this point:
+```cpp
+ProfilerGL::get().clearTimings();
+```
+
+Once you have done that just use the FlameGraph to create the browsable graph:
+```cpp
+flamegraph.pl /tmp/splash_profiling_data_${SCENE_NAME} > /tmp/profiling_data.svg
+```
+
+With `SCENE_NAME` being the name as shown in the user interface, in the performances section (lower left corner).
+
+The resulting file can be opened the svg with your browser. As of now, there is no way to view the profiling information in the Splash GUI.
+
+
 ## Contributing
 
 Please send your pull request at the [SAT-Metalab's Gitlab repository](https://gitlab.com/sat-metalab/splash). If you do not know how to make a pull request, Gitlab provides some [help about collaborating on projects using issues and pull requests](https://docs.gitlab.com/ee/gitlab-basics/add-merge-request.html).

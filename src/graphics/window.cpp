@@ -274,6 +274,61 @@ void Window::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 }
 
 /*************/
+bool Window::snapWindow(int distance)
+{
+    int sizeAndPos[4];
+    glfwGetWindowPos(_window->get(), &sizeAndPos[0], &sizeAndPos[1]);
+    glfwGetFramebufferSize(_window->get(), &sizeAndPos[2], &sizeAndPos[3]);
+
+    if (distance != 0)
+    {
+        int monitorCount;
+        const auto monitors = glfwGetMonitors(&monitorCount);
+        bool windowShapeUpdated = false;
+
+        for (int i = 0; i < monitorCount; ++i)
+        {
+            int xpos, ypos;
+            glfwGetMonitorPos(monitors[i], &xpos, &ypos);
+            const auto mode = glfwGetVideoMode(monitors[i]);
+
+            // Check whether the upper right corner is close to the top or left borders of a monitor
+            if (abs(xpos - sizeAndPos[0]) < distance)
+            {
+                sizeAndPos[0] = xpos;
+                windowShapeUpdated = true;
+            }
+            if (abs(ypos - sizeAndPos[1]) < distance)
+            {
+                sizeAndPos[1] = ypos;
+                windowShapeUpdated = true;
+            }
+
+            // Check whether the lower right corner is close to bottom or right borders of a monitor
+            if (abs(xpos + mode->width - sizeAndPos[0] - sizeAndPos[2]) < distance)
+            {
+                sizeAndPos[2] = xpos + mode->width - sizeAndPos[0];
+                windowShapeUpdated = true;
+            }
+            if (abs(ypos + mode->height - sizeAndPos[1] - sizeAndPos[3]) < distance)
+            {
+                sizeAndPos[3] = ypos + mode->height - sizeAndPos[1];
+                windowShapeUpdated = true;
+            }
+        }
+
+        if (windowShapeUpdated)
+        {
+            memcpy(_windowRect, sizeAndPos, 4 * sizeof(int));
+            updateWindowShape();
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/*************/
 void Window::updateSizeAndPos()
 {
     int sizeAndPos[4];
@@ -281,23 +336,19 @@ void Window::updateSizeAndPos()
     glfwGetFramebufferSize(_window->get(), &sizeAndPos[2], &sizeAndPos[3]);
 
     for (size_t i = 0; i < 4; ++i)
-    {
         if (sizeAndPos[i] != _windowRect[i])
             _resized = true;
-    }
 
     if (_resized)
-    {
-        for (size_t i = 0; i < 4; ++i)
-            _windowRect[i] = sizeAndPos[i];
-    }
+        memcpy(_windowRect, sizeAndPos, 4 * sizeof(int));
 }
 
 /*************/
 void Window::render()
 {
-    // Get the current window size and position
-    updateSizeAndPos();
+    // Update the window position and size
+    if (!snapWindow(_snapDistance))
+        updateSizeAndPos();
 
     // Update the FBO configuration if needed
     if (_resized)
@@ -645,9 +696,6 @@ void Window::setWindowDecoration(bool hasDecoration)
     if (glfwGetCurrentContext() == nullptr)
         return;
 
-    if (_screenId != -1)
-        return;
-
     glfwWindowHint(GLFW_VISIBLE, true);
     glfwWindowHint(GLFW_RESIZABLE, hasDecoration);
     glfwWindowHint(GLFW_DECORATED, hasDecoration);
@@ -692,11 +740,8 @@ void Window::updateWindowShape()
     if (glfwGetCurrentContext() == nullptr)
         return;
 
-    if (_screenId == -1)
-    {
-        glfwSetWindowPos(_window->get(), _windowRect[0], _windowRect[1]);
-        glfwSetWindowSize(_window->get(), _windowRect[2], _windowRect[3]);
-    }
+    glfwSetWindowPos(_window->get(), _windowRect[0], _windowRect[1]);
+    glfwSetWindowSize(_window->get(), _windowRect[2], _windowRect[3]);
 }
 
 /*************/
@@ -704,7 +749,8 @@ void Window::registerAttributes()
 {
     GraphObject::registerAttributes();
 
-    addAttribute("decorated",
+    addAttribute(
+        "decorated",
         [&](const Values& args) {
             _withDecoration = args[0].as<bool>();
             setWindowDecoration(_withDecoration);
@@ -715,7 +761,8 @@ void Window::registerAttributes()
         {'b'});
     setAttributeDescription("decorated", "If set to 0, the window is drawn without decoration");
 
-    addAttribute("guiOnly",
+    addAttribute(
+        "guiOnly",
         [&](const Values& args) {
             _guiOnly = args[0].as<bool>();
             return true;
@@ -724,7 +771,8 @@ void Window::registerAttributes()
         {'b'});
     setAttributeDescription("guiOnly", "If true, only the GUI will be able to link to this window. Does not affect pre-existing links.");
 
-    addAttribute("srgb",
+    addAttribute(
+        "srgb",
         [&](const Values& args) {
             _srgb = args[0].as<bool>();
             return true;
@@ -733,7 +781,8 @@ void Window::registerAttributes()
         {'b'});
     setAttributeDescription("srgb", "If true, the window is drawn in the sRGB color space");
 
-    addAttribute("gamma",
+    addAttribute(
+        "gamma",
         [&](const Values& args) {
             _gammaCorrection = args[0].as<float>();
             return true;
@@ -743,7 +792,8 @@ void Window::registerAttributes()
     setAttributeDescription("gamma", "Set the gamma correction for this window");
 
     // Attribute to configure the placement of the various texture input
-    addAttribute("layout",
+    addAttribute(
+        "layout",
         [&](const Values& args) {
             _layout.clear();
             for (auto& arg : args)
@@ -761,7 +811,8 @@ void Window::registerAttributes()
         {'i'});
     setAttributeDescription("layout", "Set the placement of the various input textures");
 
-    addAttribute("position",
+    addAttribute(
+        "position",
         [&](const Values& args) {
             _windowRect[0] = args[0].as<int>();
             _windowRect[1] = args[1].as<int>();
@@ -781,7 +832,8 @@ void Window::registerAttributes()
         },
         {'b'});
 
-    addAttribute("size",
+    addAttribute(
+        "size",
         [&](const Values& args) {
             _windowRect[2] = args[0].as<int>();
             _windowRect[3] = args[1].as<int>();
@@ -794,6 +846,16 @@ void Window::registerAttributes()
         },
         {'i', 'i'});
     setAttributeDescription("size", "Set the window dimensions");
+
+    addAttribute(
+        "snapDistance",
+        [&](const Values& args) {
+            _snapDistance = args[0].as<int>();
+            return true;
+        },
+        [&]() -> Values { return {_snapDistance}; },
+        {'i'});
+    setAttributeDescription("snapDistance", "Distance to snap the window to the screen borders");
 
     addAttribute("swapInterval",
         [&](const Values& args) {
@@ -819,26 +881,25 @@ void Window::registerAttributes()
         {'r', 'r', 'r', 'r'});
     setAttributeDescription("swapTestColor", "Set the swap test color");
 
-    addAttribute("textureList",
-        [&]() -> Values {
-            Values textureList;
-            for (const auto& layout_index : _layout)
+    addAttribute("textureList", [&]() -> Values {
+        Values textureList;
+        for (const auto& layout_index : _layout)
+        {
+            auto index = layout_index.as<size_t>();
+            if (index >= _inTextures.size())
+                continue;
+
+            auto texture = _inTextures[index].lock();
+            if (!texture)
             {
-                auto index = layout_index.as<size_t>();
-                if (index >= _inTextures.size())
-                    continue;
-
-                auto texture = _inTextures[index].lock();
-                if (!texture)
-                {
-                    textureList.push_back("");
-                    continue;
-                }
-
-                textureList.push_back(texture->getName());
+                textureList.push_back("");
+                continue;
             }
-            return textureList;
-        });
+
+            textureList.push_back(texture->getName());
+        }
+        return textureList;
+    });
     setAttributeDescription("textureList", "Get the list of the textures linked to the window");
 
     addAttribute("presentationDelay", [&]() -> Values { return {_presentationDelay}; });

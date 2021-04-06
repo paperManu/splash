@@ -8,6 +8,7 @@ This section provides information about more advanced usages of Splash, which go
 - [GLSL filter shaders](#glsl-filter-shaders)
 - [Piping video into Splash](#piping-video-through-v4l2loopback-or-shmdata)
 - [Grabbing rendered images out of Splash](#grabbing-rendered-images-out-of-Splash)
+- [Using with NDI network streams](#using-with-ndi-render-streams)
 
 
 -----------------------------------------------
@@ -226,3 +227,40 @@ You should see frames information printed onto the screen, as well as the caps f
 Do not hesitate to play with the other parameters, in particular the framerate and the bitrate (for the SinkShmdataEncoded object). Also not that by default the size of the image sent is the size of the input image (the Warp in our case). You can resize the image using the Filter object.
 
 Lastly, the internal rendering of Splash is done in a linear color space, which means that the image output from the Sink will also be linearly encoded. You will have to convert it to sRGB on the receiving software for the image to be displayed correctly on a sRGB display.
+
+
+-----------------------------------------------
+
+## Using with NDI network streams
+
+[NDI](https://ndi.tv/) stands for Network Device Interface, and is "a royalty-free software standard (...) to enable video-compatible products to communicate, deliver and receive high-definition video over a computer network (...)" (definition from [Wikipedia](https://en.wikipedia.org/wiki/Network_Device_Interface)). Despite being royalty-free, NDI is not compatible with the GPL license of Splash but it can be used with it nonetheless.
+
+A separate tool has been developed to convert NDI audio/video streams to and from shmdata, the shared memory protocol supported natively by Splash. Subtly named `ndi2shmdata`, this tool can be installed like this:
+```bash
+git clone https://gitlab.com/sat-metalab/ndi2shmdata
+cd ndi2shmdata
+mkdir build && cd build
+cmake -DACCEPT_NDI_LICENSE=ON ..
+make -j$(nproc) && sudo make install
+```
+
+Once built and installed, `ndi2shmdata` can list the streams available over the local network:
+```bash
+ndi2shmdata -l
+```
+
+If a stream is accessible, it should show something like this:
+```bash
+SATMETA-0096 (stream)
+```
+
+This is basically the computer name (in uppercase) and the stream name between parenthesis. The stream can be converted to shmdata like this:
+```bash
+ndi2shmdata -n 'SATMETA-0096 (stream)' -v /tmp/ndi_stream
+```
+
+The first parameter is the whole description of the stream as given by the previous command. The second argument is the path to the shmdata socket corresponding to the video stream. To read the video stream from Splash go to the `Medias` tabulation of the user interface, select the media source which should read the stream and replace its type with `video through memory shared with shmdata`. Then set the path to the previously chosen shmdata socket path, in our case `/tmp/ndi_stream`.
+
+![Read shmdata video stream](./images/splash_media_shmdata.jpg)
+
+You should now see the video stream in Splash!

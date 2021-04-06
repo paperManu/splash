@@ -2,14 +2,17 @@
 
 #include <chrono>
 #include <fstream>
-#include <getopt.h>
-#include <glm/gtc/matrix_transform.hpp>
 #include <regex>
 #include <set>
+#include <utility>
+
+#include <getopt.h>
 #include <spawn.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <utility>
+
+#include <glm/gtc/matrix_transform.hpp>
+#include <Tracy.hpp>
 
 #include "./core/buffer_object.h"
 #include "./core/link.h"
@@ -116,6 +119,8 @@ bool World::applyContext()
 /*************/
 void World::run()
 {
+    tracy::SetThreadName("World");
+
     if (!applyContext())
         return;
 
@@ -124,41 +129,54 @@ void World::run()
 
     while (true)
     {
+        FrameMarkStart("World");
+
         Timer::get() << "loop_world";
         Timer::get() << "loop_world_inner";
         lock_guard<mutex> lockConfiguration(_configurationMutex);
 
-        // Process tree updates
-        Timer::get() << "tree_process";
-        _tree.processQueue(true);
-        Timer::get() >> "tree_process";
+        {
+            // Process tree updates
+            ZoneScopedN("Process tree");
+            Timer::get() << "tree_process";
+            _tree.processQueue(true);
+            Timer::get() >> "tree_process";
 
-        // Execute waiting tasks
-        executeTreeCommands();
-        runTasks();
+            // Execute waiting tasks
+            executeTreeCommands();
+            runTasks();
+        }
 
         {
+            ZoneScopedN("Send buffers");
             lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
             // Read and serialize new buffers
             Timer::get() << "serialize";
             unordered_map<string, shared_ptr<SerializedObject>> serializedObjects;
-            for (auto& [name, object] : _objects)
+
             {
-                object->runTasks();
-                object->update();
-                if (auto bufferObject = dynamic_pointer_cast<BufferObject>(object); bufferObject)
+                ZoneScopedN("Serialize buffers");
+                for (auto& [name, object] : _objects)
                 {
-                    if (bufferObject->wasUpdated())
+                    ZoneScopedN("Serialize one buffer");
+                    ZoneName(name.c_str(), name.size());
+
+                    object->runTasks();
+                    object->update();
+                    if (auto bufferObject = dynamic_pointer_cast<BufferObject>(object); bufferObject)
                     {
-                        auto serializedObject = bufferObject->serialize();
-                        bufferObject->setNotUpdated();
-                        if (serializedObject)
-                            serializedObjects[bufferObject->getDistantName()] = serializedObject;
+                        if (bufferObject->wasUpdated())
+                        {
+                            auto serializedObject = bufferObject->serialize();
+                            bufferObject->setNotUpdated();
+                            if (serializedObject)
+                                serializedObjects[bufferObject->getDistantName()] = serializedObject;
+                        }
                     }
                 }
+                Timer::get() >> "serialize";
             }
-            Timer::get() >> "serialize";
 
             // Wait for previous buffers to be uploaded
             _link->waitForBufferSending(chrono::milliseconds(50)); // Maximum time to wait for frames to arrive
@@ -181,10 +199,13 @@ void World::run()
             break;
         }
 
-        Timer::get() << "tree_propagate";
-        updateTreeFromObjects();
-        propagateTree();
-        Timer::get() >> "tree_propagate";
+        {
+            ZoneScopedN("Propagate tree");
+            Timer::get() << "tree_propagate";
+            updateTreeFromObjects();
+            propagateTree();
+            Timer::get() >> "tree_propagate";
+        }
 
         // Sync with buffer object update
         Timer::get() >> "loop_world_inner";
@@ -193,6 +214,8 @@ void World::run()
 
         // Sync to world framerate
         Timer::get() >> "loop_world";
+
+        FrameMarkEnd("World")
     }
 }
 

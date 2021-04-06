@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(
     splash
-    VERSION 0.8.34
+    VERSION 0.8.36
     LANGUAGES C CXX
 )
 
@@ -45,6 +45,7 @@ set(PACKAGE_VERSION ${PROJECT_VERSION})
 set(BUILD_GENERIC_ARCH OFF CACHE BOOL "Enable building without architecture-specitif optimization")
 set(DATAPATH_SDK_PATH "" CACHE PATH "Path to the Datapath SDK")
 set(DEBUG_OPENGL OFF CACHE BOOL "Enable OpenGL debugging")
+set(PROFILE OFF CACHE BOOL "Enable profiling")
 set(PROFILE_OPENGL OFF CACHE BOOL "Enable OpenGL profiling")
 set(USE_SYSTEM_LIBS OFF CACHE BOOL "Enable using system libraries instead of bundle ones")
 set(TEST_COVERAGE OFF CACHE BOOL "Enable test coverage")
@@ -127,8 +128,12 @@ if (DEBUG_OPENGL)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUGGL")
 endif()
 
+if (PROFILE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTRACY_ENABLE")
+endif()
+
 if (PROFILE_OPENGL)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPROFILE")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPROFILE_GPU")
 endif()
 
 if (DATAPATH_SDK_PATH)
@@ -250,6 +255,7 @@ info_cfg_option(ZMQ_VERSION)
 info_cfg_option(DATAPATH_SDK_PATH)
 info_cfg_option(DOXYGEN_FOUND)
 info_cfg_option(DEBUG_OPENGL)
+info_cfg_option(PROFILE)
 info_cfg_option(PROFILE_OPENGL)
 info_cfg_option(WITH_LTO)
 
