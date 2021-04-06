@@ -1,6 +1,22 @@
 Splash release notes
 ====================
 
+Splash 0.8.36 (2021-04-06)
+-------------------------
+Improvements:
+* Added a Calibration panel dedicated to automatic calibration
+* Added automatic texture coordinates generation
+* Improved GUI information for LTC clock
+* Added GPU timings in the GUI
+* Added snap to borders to Window
+* Added profiling using the Tracy profiler
+
+Bugs fixed:
+* Fixed Queue not accepting a video with a start time different from 0 when added first
+
+Documentation:
+* Added documentation regarding using NDI with Splash
+
 Splash 0.8.34 (2021-03-22)
 -------------------------
 Improvements:
