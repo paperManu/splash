@@ -25,15 +25,16 @@ calimiro::Geometry TexCoordGenerator::generateTexCoordFromGeometry(calimiro::Geo
     {
     default:
     case calimiro::TexCoordUtils::texCoordMethod::ORTHOGRAPHIC:
-        generator =
-            std::make_unique<calimiro::TexCoordGenOrthographic>(&logger, geometry.vertices(), _eyePosition, _eyeOrientation, _horizonRotation, _flipHorizontal, _flipVertical);
+        generator = std::make_unique<calimiro::TexCoordGenOrthographic>(
+            &logger, geometry.vertices(), _eyePosition, glm::normalize(_eyeOrientation), _horizonRotation, _flipHorizontal, _flipVertical);
         break;
     case calimiro::TexCoordUtils::texCoordMethod::PLANAR:
-        generator = std::make_unique<calimiro::TexCoordGenPlanar>(&logger, geometry.vertices(), _eyePosition, _eyeOrientation, _horizonRotation, _flipHorizontal, _flipVertical);
+        generator = std::make_unique<calimiro::TexCoordGenPlanar>(
+            &logger, geometry.vertices(), _eyePosition, glm::normalize(_eyeOrientation), _horizonRotation, _flipHorizontal, _flipVertical);
         break;
     case calimiro::TexCoordUtils::texCoordMethod::SPHERIC:
         generator = std::make_unique<calimiro::TexCoordGenSpheric>(
-            &logger, geometry.vertices(), _eyePosition, _eyeOrientation, _horizonRotation, _flipHorizontal, _flipVertical, _sphericFov);
+            &logger, geometry.vertices(), _eyePosition, glm::normalize(_eyeOrientation), _horizonRotation, _flipHorizontal, _flipVertical, _sphericFov);
         break;
     }
 
@@ -125,6 +126,14 @@ void TexCoordGenerator::registerAttributes()
         },
         {'r', 'r', 'r'});
     setAttributeDescription("eyeOrientation", "Eye orientation for computing uv coordinates");
+
+    addAttribute("normalizeEyeOrientation",
+        [&](const Values&) {
+            _eyeOrientation = glm::normalize(_eyeOrientation);
+            return true;
+        },
+        {});
+    setAttributeDescription("normalizeEyeOrientation", "Normalize the vector for eye orientation");
 
     addAttribute(
         "replaceMesh",

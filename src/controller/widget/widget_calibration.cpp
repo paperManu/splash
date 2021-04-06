@@ -123,6 +123,9 @@ void GuiCalibration::renderTexCoordCalibration(ImVec2& availableSize)
     if (ImGui::InputFloat3("Eye orientation", tmpCameraOrientation.data(), 5, ImGuiInputTextFlags_None))
         setObjectAttribute("texCoordGenerator", "eyeOrientation", {tmpCameraOrientation[0], tmpCameraOrientation[1], tmpCameraOrientation[2]});
 
+    if (ImGui::Button("Normalize orientation", ImVec2(availableSize.x * 0.5f - 12.f, 24.f)))
+        setObjectAttribute("texCoordGenerator", "normalizeEyeOrientation", {});
+
     auto replaceMesh = getObjectAttribute("texCoordGenerator", "replaceMesh")[0].as<bool>();
     if (ImGui::Checkbox("Replace mesh", &replaceMesh))
         setObjectAttribute("texCoordGenerator", "replaceMesh", {replaceMesh});
