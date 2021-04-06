@@ -17,6 +17,6 @@ TEST_CASE("Testing creating a World and running it")
     World world(context);
     auto worldThread = std::thread([&]() { world.run(); });
     std::this_thread::sleep_for(2s);
-    world.setAttribute("quit", {1});
+    world.setAttribute("quit", {});
     worldThread.join();
 }

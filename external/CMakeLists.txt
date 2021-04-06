@@ -33,3 +33,14 @@ if (NOT USE_SYSTEM_LIBS)
   set(SNAPPY_BUILD_TESTS OFF CACHE BOOL "" FORCE)
   add_subdirectory(snappy EXCLUDE_FROM_ALL)
 endif()
+
+#
+# Tracy Profiler
+#
+if (PROFILE)
+    add_custom_command(OUTPUT run_tracy
+        COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/tracy/profiler/build/unix && make release
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tracy/profiler/build/unix/Tracy-release
+    )
+    add_custom_target(tracy-profiler DEPENDS run_tracy)
+endif()
