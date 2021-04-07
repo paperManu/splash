@@ -209,7 +209,9 @@ struct Value
             }
             else if constexpr (std::is_integral_v<T>)
             {
-                _data = 0l;
+                // Integer precision needs to be enforced, otherwise this
+                // might not compile on certain architectures.
+                _data = (int64_t)0;
                 _type = Type::integer;
                 return std::get<int64_t>(_data);
             }
