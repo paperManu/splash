@@ -17,6 +17,11 @@ This example shows how to project onto a known object for which we have a 3D mod
 - open the file in Splash, calibrate the projector,
 - load some contents to play onto the surface.
 
+To do this this tutorial, you will need:
+- Splash installed on a computer
+- a video-projector connected to the computer
+- a box-shaped object
+
 #### Create a 3D model of the object, as well as the draft scene
 To keep things simple, the projection surface will be a simple box, or a cube in our case. This makes the creation of the 3D model easy, which is good as it is a bit out of the scope of Splash. Indeed, Splash is dedicated to handling the video-projectors, not creating the 3D model. So creating the model from the dimensions of the real object is an option, [photogrammetry](https://en.wikipedia.org/wiki/Photogrammetry) is another.
 
@@ -83,6 +88,11 @@ This example explains step by step how to calibrate multiple projectors on a rel
 - create a high definition 3D model of the projection surface, used for projection,
 - replace the low definition 3D model with the high definition one,
 - load some contents to play onto the surface.
+
+To do this this tutorial, you will need:
+- Splash installed on a computer
+- at least two video-projectors connected to the computer
+- a non-planar projection surface, simple enough to be able to create a 3D model for it
 
 #### Create a low definition (calibration) 3D model of the object
 The reason why a low definition 3D model is needed comes from how Splash handles video-projectors calibration. Basically, the idea is to tell Splash where a point of the 3D model should be projected onto the projection surface. Splash needs at least six points to be specified for the calibration process to run.
@@ -240,6 +250,11 @@ This example shows an alternative use of Splash, sideways from its original targ
 - use Blender to create and update polygons in Splash in real-time,
 - adapt the UV mapping of these polygons to match the selected video.
 
+To do this this tutorial, you will need:
+- Splash installed on a computer
+- a video-projector connected to the computer
+- any projection surface, really
+
 ![The target](./images/tutorial_shapes/target.jpg)
 
 To be able to follow this guide, you need to install the shmdata addon for Blender: see [this page](../User_Interface/#blender-addons) to install it.
@@ -306,7 +321,7 @@ As with the previous example, the pipeline is as follows:
 - In the Blender configuration file, replace the Image by the probe setup
 - load the cubemap image to the projection surface
 
-Since the workflow repeats the same steps as the previous example, this example will continue where the previous demonstration left off, that is, after loading the high definition mesh into Splash. Save this configuration with Ctrl + s.
+Since the workflow repeats the same steps as the [multi-projector example](#multi-projector-example), this example will continue where the previous demonstration left off, that is, after loading the high definition mesh into Splash. Save this configuration with Ctrl + s.
 
 #### Create a 3D model of the cubemap and update the Node tree
 We will start from the previous Blender configuration file. The Image node is now replaced by a Probe node. An Object node is connected to the probe. This object receives as input an Image node (this image is rendered under a cubemap projection) and a Mesh node associated to a cube mesh. Below is the final node tree:
@@ -340,6 +355,12 @@ The cameras parameters, as well as the warp if any, are now transferred to the c
 ### (Almost) automatic calibration with Calimiro
 
 The automatic calibration is done by [Calimiro](https://gitlab.com/sat-metalab/calimiro). It is designed to work with different cameras, in particular with DSLR, webcams and industrial cameras. We advice to use a fast shutter speed camera with a wide field of view to make the process faster. Note that, as of now, the calibration is only partial, it is still being developped and improved.
+
+To do this this tutorial, you will need:
+- Splash installed on a computer
+- a video-projector connected to the computer
+- a non-planar projection surface
+- a webcam
 
 #### Prepare the configuration file
 For the calibration to work, first prepare the configuration file. Please refer to the [multi-projector example](#create-the-configuration-using-the-Blender-addon) to learn how to generate the file. Pay particular attention to make sure that Splash is configured such that each physical projector is represented by an object of type "camera" in Splash configuration.
