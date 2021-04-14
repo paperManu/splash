@@ -153,7 +153,8 @@ void GuiCalibration::renderTexCoordCalibration(ImVec2& availableSize)
 
     // Conditionnal options
     if (_stringToMethod[tmpCurrentMethod] == calimiro::TexCoordUtils::texCoordMethod::SPHERIC ||
-        _stringToMethod[tmpCurrentMethod] == calimiro::TexCoordUtils::texCoordMethod::EQUIRECTANGULAR)
+        _stringToMethod[tmpCurrentMethod] == calimiro::TexCoordUtils::texCoordMethod::EQUIRECTANGULAR ||
+        _stringToMethod[tmpCurrentMethod] == calimiro::TexCoordUtils::texCoordMethod::DOMEMASTER)
     {
         auto tmpFov = getObjectAttribute("texCoordGenerator", "fov")[0].as<float>();
         if (ImGui::InputFloat("Field of view (degrees)", &tmpFov, 5, ImGuiInputTextFlags_None))

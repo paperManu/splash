@@ -23,6 +23,14 @@ calimiro::Geometry TexCoordGenerator::generateTexCoordFromGeometry(calimiro::Geo
     std::unique_ptr<calimiro::TexCoordGen> generator;
     switch (_method)
     {
+    case calimiro::TexCoordUtils::texCoordMethod::DOMEMASTER:
+        generator = std::make_unique<calimiro::TexCoordGenDomeMaster>(
+            &logger, geometry.vertices(), _eyePosition, glm::normalize(_eyeOrientation), _horizonRotation, _flipHorizontal, _flipVertical, _fov);
+        break;
+    case calimiro::TexCoordUtils::texCoordMethod::EQUIRECTANGULAR:
+        generator = std::make_unique<calimiro::TexCoordGenEquirectangular>(
+            &logger, geometry.vertices(), _eyePosition, glm::normalize(_eyeOrientation), _horizonRotation, _flipHorizontal, _flipVertical, _fov);
+        break;
     default:
     case calimiro::TexCoordUtils::texCoordMethod::ORTHOGRAPHIC:
         generator = std::make_unique<calimiro::TexCoordGenOrthographic>(
@@ -34,10 +42,6 @@ calimiro::Geometry TexCoordGenerator::generateTexCoordFromGeometry(calimiro::Geo
         break;
     case calimiro::TexCoordUtils::texCoordMethod::SPHERIC:
         generator = std::make_unique<calimiro::TexCoordGenSpheric>(
-            &logger, geometry.vertices(), _eyePosition, glm::normalize(_eyeOrientation), _horizonRotation, _flipHorizontal, _flipVertical, _fov);
-        break;
-    case calimiro::TexCoordUtils::texCoordMethod::EQUIRECTANGULAR:
-        generator = std::make_unique<calimiro::TexCoordGenEquirectangular>(
             &logger, geometry.vertices(), _eyePosition, glm::normalize(_eyeOrientation), _horizonRotation, _flipHorizontal, _flipVertical, _fov);
         break;
     }
