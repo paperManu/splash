@@ -1,7 +1,6 @@
 #include "./controller/colorcalibrator.h"
 
-#define PIC_DISABLE_OPENGL
-#define PIC_DISABLE_QT
+#include <thread>
 
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_spline.h>
@@ -18,6 +17,8 @@
 #include "./utils/log.h"
 #include "./utils/scope_guard.h"
 #include "./utils/timer.h"
+
+using namespace std::chrono;
 
 namespace Splash
 {
@@ -393,7 +394,7 @@ cv::Mat3f ColorCalibrator::captureHDR(unsigned int nbrLDR, double step, bool com
         nextSpeed *= pow(2.0, step);
 
         std::string filename = "/tmp/splash_ldr_sample_" + std::to_string(i) + ".bmp";
-        _gcamera->update();
+        captureSynchronously();
         _gcamera->write(filename);
 
         ldr[i] = cv::imread(filename);
@@ -518,6 +519,20 @@ std::vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInv
 }
 
 /*************/
+void ColorCalibrator::captureSynchronously()
+{
+    assert(_gcamera != nullptr);
+
+    const auto updateTime = Timer::getTime();
+    _gcamera->setAttribute("capture", {});
+    while (updateTime > _gcamera->getTimestamp())
+    {
+        _gcamera->update();
+        std::this_thread::sleep_for(100ms);
+    }
+}
+
+/*************/
 float ColorCalibrator::findCorrectExposure()
 {
     Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Finding correct exposure time" << Log::endl;
@@ -526,7 +541,7 @@ float ColorCalibrator::findCorrectExposure()
     while (true)
     {
         _gcamera->getAttribute("shutterspeed", res);
-        _gcamera->update();
+        captureSynchronously();
         ImageBuffer img = _gcamera->get();
         ImageBufferSpec spec = _gcamera->getSpec();
 

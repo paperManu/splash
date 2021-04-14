@@ -47,23 +47,23 @@ class ColorCalibrator : public ControllerObject
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
     explicit ColorCalibrator(RootObject* root);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~ColorCalibrator() final = default;
 
     /**
-     * \brief Update the color calibration of all cameras
+     * Update the color calibration of all cameras
      */
     void update() final;
 
     /**
-     * \brief Update the color response function of the physical camera
+     * Update the color response function of the physical camera
      */
     void updateCRF();
 
@@ -107,7 +107,14 @@ class ColorCalibrator : public ControllerObject
     std::mutex _calibrationMutex{};
 
     /**
-     * \brief Capture an HDR image from the gcamera
+     * Capture an image synchronously
+     * This basically calls the "capture" attribute of the Image_GPhoto and waits
+     * for its timestamp to be updated
+     */
+    void captureSynchronously();
+
+    /**
+     * Capture an HDR image from the gcamera
      * \param nbrLDR Low dynamic ranger images count to use to create the HDR
      * \param step Stops between successive LDR images
      * \param computeResponseOnly If true, stop after the computation of the camera response function
@@ -116,33 +123,33 @@ class ColorCalibrator : public ControllerObject
     cv::Mat3f captureHDR(unsigned int nbrLDR = 3, double step = 1.0, bool computeResponseOnly = false);
 
     /**
-     * \brief Compute the inverse projection transformation function, typically correcting the projector non linearity for all three channels
+     * Compute the inverse projection transformation function, typically correcting the projector non linearity for all three channels
      * \param rgbCurves Projection transformation function as a vector of Curves
      * \return Return the inverted transformation function
      */
     std::vector<Curve> computeProjectorFunctionInverse(std::vector<Curve> rgbCurves);
 
     /**
-     * \brief Find the exposure which gives correctly exposed photos
+     * Find the exposure which gives correctly exposed photos
      * \return Return the found exposure duration
      */
     float findCorrectExposure();
 
     /**
-     * \brief Find the center of region with max values
+     * Find the center of region with max values
      * \return Return a vector<float> containing the coordinates (x, y) of the ROI as well as the side length
      */
     std::vector<int> getMaxRegionROI(const cv::Mat3f& image);
 
     /**
-     * \brief Get a mask of the projectors surface
+     * Get a mask of the projectors surface
      * \param image The image to compute the mask for
      * \return Return a vector<bool> the same size as image
      */
     std::vector<bool> getMaskROI(const cv::Mat3f& image);
 
     /**
-     * \brief Get the mean value of the area around the given coords
+     * Get the mean value of the area around the given coords
      * \param image Input image
      * \param coords Box center
      * \param boxSize Box size
@@ -151,7 +158,7 @@ class ColorCalibrator : public ControllerObject
     std::vector<float> getMeanValue(const cv::Mat3f& image, std::vector<int> coords = std::vector<int>(), int boxSize = 32);
 
     /*
-     * \brief Get the mean value of the area defined by the mask
+     * Get the mean value of the area defined by the mask
      * \param image Input image
      * \param mask Vector holding the coordinates (x, y) and the side length
      * \return Return the mean value for each channel
@@ -159,7 +166,7 @@ class ColorCalibrator : public ControllerObject
     std::vector<float> getMeanValue(const cv::Mat3f& image, std::vector<bool> mask);
 
     /**
-     * \brief White balance equalization strategies
+     * White balance equalization strategies
      */
     std::function<RgbValue()> equalizeWhiteBalances;
     RgbValue equalizeWhiteBalancesOnly();           //!< Only equalize WB without caring about luminance
@@ -167,7 +174,7 @@ class ColorCalibrator : public ControllerObject
     RgbValue equalizeWhiteBalancesMaximizeMinLum(); //!< Match WB so as to maximize minimum luminance
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 };
