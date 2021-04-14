@@ -59,7 +59,7 @@ class TexCoordGenerator : public ControllerObject
     calimiro::TexCoordUtils::texCoordMethod _method{calimiro::TexCoordUtils::texCoordMethod::ORTHOGRAPHIC};
     glm::vec3 _eyePosition = glm::vec3(0.f, 0.f, 0.f);
     glm::vec3 _eyeOrientation = glm::vec3(0.f, 0.f, 1.f);
-    float _sphericFov{180.f};
+    float _fov{180.f};
     bool _replaceMesh{true};
     float _horizonRotation{0.f};
     bool _flipHorizontal{false};
