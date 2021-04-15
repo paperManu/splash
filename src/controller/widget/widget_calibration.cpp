@@ -152,8 +152,7 @@ void GuiCalibration::renderTexCoordCalibration(ImVec2& availableSize)
         ImGui::SetTooltip("Mirror the texture coordinates on the vertical axis");
 
     // Conditionnal options
-    if (_stringToMethod[tmpCurrentMethod] == calimiro::TexCoordUtils::texCoordMethod::SPHERIC ||
-        _stringToMethod[tmpCurrentMethod] == calimiro::TexCoordUtils::texCoordMethod::EQUIRECTANGULAR ||
+    if (_stringToMethod[tmpCurrentMethod] == calimiro::TexCoordUtils::texCoordMethod::EQUIRECTANGULAR ||
         _stringToMethod[tmpCurrentMethod] == calimiro::TexCoordUtils::texCoordMethod::DOMEMASTER)
     {
         auto tmpFov = getObjectAttribute("texCoordGenerator", "fov")[0].as<float>();

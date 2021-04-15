@@ -42,7 +42,7 @@ calimiro::Geometry TexCoordGenerator::generateTexCoordFromGeometry(calimiro::Geo
         break;
     case calimiro::TexCoordUtils::texCoordMethod::SPHERIC:
         generator = std::make_unique<calimiro::TexCoordGenSpheric>(
-            &logger, geometry.vertices(), _eyePosition, glm::normalize(_eyeOrientation), _horizonRotation, _flipHorizontal, _flipVertical, _fov);
+            &logger, geometry.vertices(), _eyePosition, glm::normalize(_eyeOrientation), _horizonRotation, _flipHorizontal, _flipVertical);
         break;
     }
     return geometry.computeTextureCoordinates(generator.get());
