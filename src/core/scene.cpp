@@ -285,6 +285,19 @@ void Scene::render()
             std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
             for (auto obj = _objects.cbegin(); obj != _objects.cend(); ++obj)
             {
+                if (_isMaster)
+                {
+                    // If the object is a ghost from another scene, it should
+                    // not be rendered in the main rendering loop. For example ghost
+                    // Cameras are rendered by the GUI whenever they are shown
+                    Value isGhost;
+                    if (_tree.getValueForLeafAt("/" + _name + "/objects/" + obj->second->getName() + "/ghost", isGhost))
+                    {
+                        if (isGhost.as<bool>())
+                            continue;
+                    }
+                }
+
                 // We also run all pending tasks for every object
                 obj->second->runTasks();
 
