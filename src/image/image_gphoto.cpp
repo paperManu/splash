@@ -46,7 +46,7 @@ bool Image_GPhoto::read(const std::string& cameraName)
 
     if (_cameras.size() == 0)
     {
-        Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Cannot find any camera to read from" << Log::endl;
+        Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Cannot find any GPhoto-compatible camera" << Log::endl;
         return false;
     }
 
@@ -233,10 +233,7 @@ bool Image_GPhoto::doGetProperty(const std::string& name, std::string& value)
     std::lock_guard<std::recursive_mutex> lock(_gpMutex);
 
     if (_selectedCameraIndex == -1)
-    {
-        Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - A camera must be selected before trying to capture" << Log::endl;
         return false;
-    }
 
     GPhotoCamera& camera = _cameras[_selectedCameraIndex];
     CameraWidget* cameraConfig;
@@ -354,6 +351,8 @@ bool Image_GPhoto::initCamera(GPhotoCamera& camera)
         initCameraProperty(camera, "aperture", camera.apertures);
         initCameraProperty(camera, "iso", camera.isos);
 
+        _filepath = camera.model;
+
         return true;
     }
     else
@@ -463,6 +462,20 @@ void Image_GPhoto::registerAttributes()
                 return {true};
         });
     setAttributeDescription("ready", "Ask whether the camera is ready to shoot");
+
+    // The "camera model" attribute is more or less a copy of the "file" attribute,
+    // and is a work around to the fact that the "file" attribute from the Scene shadows
+    // the real value from the World.
+    addAttribute("camera model",
+        [&](const Values& args) {
+            _filepath = args[0].as<std::string>();
+            read(_filepath);
+            return true;
+        },
+        [&]() -> Values {
+            return {_filepath};
+        }, {'s'});
+    setAttributeDescription("camera model", "Camera model, as set or detected");
 }
 
 } // namespace Splash
