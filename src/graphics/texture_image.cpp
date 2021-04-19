@@ -307,17 +307,11 @@ GLenum Texture_Image::getChannelOrder(const ImageBufferSpec& spec)
 {
     GLenum glChannelOrder = GL_RGB;
 
-    if (spec.format == "BGR")
-        glChannelOrder = GL_BGR;
-    else if (spec.format == "RGB")
+    // We don't want to let the driver convert from BGR to RGB, as this can lead in
+    // some cases to mediocre performances.
+    if (spec.format == "RGB" || spec.format == "BGR" || spec.format == "RGB_DXT1")
         glChannelOrder = GL_RGB;
-    else if (spec.format == "BGRA")
-        glChannelOrder = GL_BGRA;
-    else if (spec.format == "RGBA")
-        glChannelOrder = GL_RGBA;
-    else if (spec.format == "RGB" || spec.format == "RGB_DXT1")
-        glChannelOrder = GL_RGB;
-    else if (spec.format == "RGBA" || spec.format == "RGBA_DXT5")
+    else if (spec.format == "RGBA" || spec.format == "BGRA" || spec.format == "RGBA_DXT5")
         glChannelOrder = GL_RGBA;
     else if (spec.format == "YUYV" || spec.format == "UYVY")
         glChannelOrder = GL_RG;
@@ -537,17 +531,19 @@ void Texture_Image::update()
 
     // If needed, specify some uniforms for the shader which will use this texture
     _shaderUniforms.clear();
-    if (spec.format == "YCoCg_DXT5")
-        _shaderUniforms["YCoCg"] = {1};
-    else
-        _shaderUniforms["YCoCg"] = {0};
-
-    if (spec.format == "UYVY")
-        _shaderUniforms["YUV"] = {1};
+    // Specify the color encoding
+    if (spec.format.find("RGB") != std::string::npos)
+        _shaderUniforms["encoding"] = {ColorEncoding::RGB};
+    else if (spec.format.find("BGR") != std::string::npos)
+        _shaderUniforms["encoding"] = {ColorEncoding::BGR};
+    else if (spec.format == "UYVY")
+        _shaderUniforms["encoding"] = {ColorEncoding::UYVY};
     else if (spec.format == "YUYV")
-        _shaderUniforms["YUV"] = {2};
+        _shaderUniforms["encoding"] = {ColorEncoding::YUYV};
+    else if (spec.format == "YCoCg_DXT5")
+        _shaderUniforms["encoding"] = {ColorEncoding::YCoCg};
     else
-        _shaderUniforms["YUV"] = {0};
+        _shaderUniforms["encoding"] = {ColorEncoding::RGB}; // Default case: RGB
 
     if (_filtering && !isCompressed)
         generateMipmap();

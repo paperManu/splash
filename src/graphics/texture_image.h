@@ -163,6 +163,15 @@ class Texture_Image : public Texture
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
   private:
+    enum ColorEncoding : int32_t
+    {
+        RGB=0,
+        BGR=1,
+        UYVY=2,
+        YUYV=3,
+        YCoCg=4
+    };
+
     GLuint _glTex{0};
     GLuint _pbos[2];
     GLubyte* _pbosPixels[2];
@@ -215,6 +224,6 @@ class Texture_Image : public Texture
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_TEXTURE_H
