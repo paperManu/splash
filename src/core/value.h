@@ -70,7 +70,7 @@ struct Value
             _type = Type::boolean;
             _data = static_cast<bool>(v);
         }
-        else if constexpr (std::is_integral_v<T>)
+        else if constexpr (std::is_integral_v<T> || std::is_enum_v<T>)
         {
             _type = Type::integer;
             _data = static_cast<int64_t>(v);
