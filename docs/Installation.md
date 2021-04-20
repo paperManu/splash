@@ -51,6 +51,12 @@ flatpak install com.gitlab.sat_metalab.Splash
 
 Splash should now be available from your application menu (this may require to logout / log back in). A known limitation of the Flatpak package is that it has no access to Jack, and cannot use multiple GPUs.
 
+It is possible to run the Flatpak version of Splash from the command line too:
+
+```bash
+flatpak run com.gitlab.sat_metalab.Splash
+```
+
 The current release of Splash is also packaged for Ubuntu (version 20.04) and derived. This is done through a Debian archive, the latest version can be download from the `Download` menu or [here](./splash.deb) and installs with :
 
 ```bash

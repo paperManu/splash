@@ -36,6 +36,15 @@ namespace Splash
 struct ShaderSources
 {
     const std::map<std::string, std::string> INCLUDES{//
+        // Color encoding IDs, must match the IDs defined in
+        // graphics/texture_image.h
+        {"colorEncoding", R"(
+            #define COLOR_RGB 0
+            #define COLOR_BGR 1
+            #define COLOR_UYVY 2
+            #define COLOR_YUYV 3
+            #define COLOR_YCoCg 4
+        )"},
         // Project a point wrt a mvp matrix, and check if it is in the view frustum.
         // Returns the distance on X and Y in the distToCenter parameter
         {"projectAndCheckVisibility", R"(
@@ -930,6 +939,7 @@ struct ShaderSources
      * also able to convert from YUYV to RGB
      */
     const std::string FRAGMENT_SHADER_IMAGE_FILTER{R"(
+        #include colorEncoding
         #include srgb
         #include hsv
         #include correctColor
@@ -951,8 +961,7 @@ struct ShaderSources
         uniform int _tex0_flip = 0;
         uniform int _tex0_flop = 0;
         // Format specific parameters
-        uniform int _tex0_YCoCg = 0;
-        uniform int _tex0_YUV = 0; // 1 = UYVY, 2 = YUYV
+        uniform int _tex0_encoding = COLOR_RGB;
 
         // Film uniforms
         uniform float _filmDuration = 0.f;
@@ -987,8 +996,13 @@ struct ShaderSources
             vec4 color = texture(_tex0, realCoords);
     #endif
 
+            // If the color encoding is BGR, we need to invert red and blue channels
+            if (_tex0_encoding == COLOR_BGR)
+            {
+                color.rgb = color.bgr;
+            }
             // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
-            if (_tex0_YCoCg == 1)
+            else if (_tex0_encoding == COLOR_YCoCg)
             {
                 float scale = (color.z * (255.0 / 8.0)) + 1.0;
                 float Co = (color.x - (0.5 * 256.0 / 255.0)) / scale;
@@ -997,9 +1011,8 @@ struct ShaderSources
                 color.rgba = vec4(Y + Co - Cg, Y + Cg, Y - Co - Cg, 1.0);
                 color.rgb = pow(color.rgb, vec3(2.2));
             }
-
             // If the color format is YUYV
-            if (_tex0_YUV > 0)
+            else if (_tex0_encoding == COLOR_UYVY || _tex0_encoding == COLOR_YUYV)
             {
                 // Texture coord rounded to the closer even pixel
                 ivec2 yuyvCoords = ivec2((int(realCoords.x * _tex0_size.x) / 2) * 2, int(realCoords.y * _tex0_size.y));
@@ -1007,7 +1020,7 @@ struct ShaderSources
                 yuyv.rg = texelFetch(_tex0, yuyvCoords, 0).rg;
                 yuyv.ba = texelFetch(_tex0, ivec2(yuyvCoords.x + 1, yuyvCoords.y), 0).rg;
 
-                if (_tex0_YUV == 1)
+                if (_tex0_encoding == COLOR_UYVY)
                     yuyv = yuyv.grab;
 
                 if (int(realCoords.x * _tex0_size.x) - (yuyvCoords.x / 2) * 2 == 0) // Even pixel
@@ -1161,8 +1174,6 @@ struct ShaderSources
         // Texture transformation
         uniform int _tex0_flip = 0;
         uniform int _tex0_flop = 0;
-        // HapQ specific parameters
-        uniform int _tex0_YCoCg = 0;
 
         void main(void)
         {
@@ -1182,17 +1193,6 @@ struct ShaderSources
     #else
             vec4 color = texture(_tex0, realCoords);
     #endif
-
-            // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
-            if (_tex0_YCoCg == 1)
-            {
-                float scale = (color.z * (255.0 / 8.0)) + 1.0;
-                float Co = (color.x - (0.5 * 256.0 / 255.0)) / scale;
-                float Cg = (color.y - (0.5 * 256.0 / 255.0)) / scale;
-                float Y = color.w;
-                color.rgba = vec4(Y + Co - Cg, Y + Cg, Y - Co - Cg, 1.0);
-                color.rgb = pow(color.rgb, vec3(2.2));
-            }
 
             fragColor = color;
         }

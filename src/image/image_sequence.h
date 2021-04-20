@@ -37,7 +37,11 @@ class Image_Sequence : public Image
      * Constructor
      * \param root Root object
      */
-    Image_Sequence(RootObject* root) : Image(root){ init(); };
+    Image_Sequence(RootObject* root)
+        : Image(root)
+    {
+        init();
+    };
 
     /**
      * No copy constructors
@@ -73,11 +77,14 @@ class Image_Sequence : public Image
     {
         Image::registerAttributes();
 
-        addAttribute("capture",
+        addAttribute(
+            "capture",
             [&](const Values&) {
                 runAsyncTask([=]() { capture(); });
                 return true;
             },
+            // Allows for showing a capture button in the GUI
+            [&]() -> Values { return {false}; },
             {});
         setAttributeDescription("capture", "Ask for the camera to obtain an image");
     }
