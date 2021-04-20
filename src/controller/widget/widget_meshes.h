@@ -46,7 +46,7 @@ class GuiMeshes : public GuiWidget
     Values _newMedia{"image", "", 0.f, 0.f};
     std::string _selectedMeshName;
 
-    std::list<std::shared_ptr<GraphObject>> getSceneMeshes();
+    const std::list<std::shared_ptr<Mesh>> getSceneMeshes();
     void replaceMesh(const std::string& previousMedia, const std::string& media, const std::string& type);
 };
 
