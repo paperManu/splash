@@ -1,6 +1,26 @@
 Splash release notes
 ====================
 
+Splash 0.8.38 (2021-04-20)
+-------------------------
+Improvements:
+* Improved BGR to RGB conversion
+* Added support for enums in Value
+* Added support for Calimiro dome master, equirectangular
+* Added camera model to UI for Image_Gphoto
+* Improved Medias and Meshes tabulation: if only one is present, it is selected by default
+
+Bugs fixed:
+* Fixed building on arm32v7
+* Fixed performance issue due to profiling imposing GPU/CPU sync
+* Fixed ghost objects which were being rendered as normal objects by the main Scene
+* Fixed capture through GPhoto for ColorCalibrator
+
+Documentation:
+* Added documentation regarding using a digital camera and color calibration
+* Added information regarding running the Flatpak package
+* Added list of materials needed for tutorials
+
 Splash 0.8.36 (2021-04-06)
 -------------------------
 Improvements:
