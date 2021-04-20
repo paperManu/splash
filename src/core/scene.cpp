@@ -252,7 +252,6 @@ void Scene::render()
     {
         TracyGpuZone("Upload textures");
         ZoneScopedN("Upload textures");
-        PROFILEGL(GL_TIMING_TEXTURES_UPLOAD);
 
         Timer::get() << "textureUpload";
         std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
@@ -274,8 +273,6 @@ void Scene::render()
     {
         TracyGpuZone("Scene rendering");
         ZoneScopedN("Scene rendering");
-
-        PROFILEGL(GL_TIMING_RENDERING)
 
         // Create lists of objects to update and to render
         std::map<GraphObject::Priority, std::vector<std::shared_ptr<GraphObject>>> objectList{};
@@ -364,8 +361,6 @@ void Scene::render()
     {
         TracyGpuZone("Swap");
         ZoneScopedN("Swap");
-
-        PROFILEGL(GL_TIMING_SWAP);
 
         // Swap all buffers at once
         Timer::get() << "swap";
