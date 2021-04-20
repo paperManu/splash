@@ -30,6 +30,12 @@ void GuiMedia::render()
 {
     auto mediaList = getSceneMedia();
 
+    if (mediaList.size() == 1)
+    {
+        assert(mediaList.front() != nullptr);
+        _selectedMediaName = mediaList.front()->getName();
+    }
+
     ImVec2 availableSize = ImGui::GetContentRegionAvail();
     ImGui::BeginChild("##medias", ImVec2(availableSize.x * 0.25, availableSize.y), true);
     ImGui::Text("Media list");
@@ -65,302 +71,306 @@ void GuiMedia::render()
     }
     ImGui::EndChild();
 
-    auto media = getObjectPtr(_selectedMediaName);
-    if (!media)
-        return;
-
-    auto mediaAlias = getObjectAlias(_selectedMediaName);
-
     ImGui::SameLine();
     ImGui::BeginChild("##mediaInfo", ImVec2(0, 0), true);
 
-    ImGui::Text("Change media type: ");
-    ImGui::SameLine();
-    if (_mediaTypeIndex.find(_selectedMediaName) == _mediaTypeIndex.end())
-        _mediaTypeIndex[_selectedMediaName] = 0;
-
-    std::vector<const char*> mediaTypes;
-    for (const auto& type : _mediaTypes)
-        mediaTypes.push_back(type.first.c_str());
-
-    if (ImGui::Combo("##mediaType", &_mediaTypeIndex[_selectedMediaName], mediaTypes.data(), mediaTypes.size()))
-        replaceMedia(_selectedMediaName, mediaAlias, mediaTypes[_mediaTypeIndex[_selectedMediaName]]);
-
-    ImGui::Text("Current media type: %s", _mediaTypesReversed[media->getRemoteType()].c_str());
-
-    ImGui::Text("Parameters:");
-    auto attributes = getObjectAttributes(media->getName());
-    drawAttributes(_selectedMediaName, attributes);
-
-    // Display the playlist if this is a queue
-    if (std::dynamic_pointer_cast<QueueSurrogate>(media))
+    auto media = getObjectPtr(_selectedMediaName);
+    if (!media)
     {
-        if (ImGui::TreeNode("Playlist"))
-        {
-            auto updated = false;
-            Values playlist;
-
-            auto playlistIt = attributes.find("playlist");
-            if (playlistIt != attributes.end())
-            {
-                playlist = playlistIt->second;
-
-                // Current sources
-                size_t index = 0;
-                int deleteIndex = -1;
-                int moveIndex = -1;
-
-                for (auto& source : playlist)
-                {
-                    auto values = source.as<Values>();
-                    auto idStack = std::to_string(index) + values[0].as<std::string>();
-
-                    ImGui::PushID((idStack + "up").c_str());
-                    if (ImGui::Button("<<"))
-                        moveIndex = index;
-                    ImGui::PopID();
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Move this media before the previous one");
-
-                    ImGui::SameLine();
-                    ImGui::PushID((idStack + "down").c_str());
-                    if (ImGui::Button(">>") && index < playlist.size() - 1)
-                        moveIndex = index + 1;
-                    ImGui::PopID();
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Move this media after the next one");
-
-                    ImGui::SameLine();
-                    ImGui::PushID((idStack + "delete").c_str());
-                    if (ImGui::Button("-"))
-                        deleteIndex = index;
-                    ImGui::PopID();
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Delete this media");
-
-                    ImGui::SameLine();
-                    ImGui::PushItemWidth(96);
-                    ImGui::PushID((idStack + "media_type").c_str());
-                    ImGui::Text("%s", _mediaTypesReversed[values[0].as<std::string>()].c_str());
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Media type");
-                    ImGui::PopID();
-                    ImGui::PopItemWidth();
-
-                    ImGui::SameLine();
-                    ImGui::PushItemWidth(96);
-                    auto tmpFloat = values[2].as<float>();
-                    ImGui::PushID((idStack + "start").c_str());
-                    if (ImGui::InputFloat("", &tmpFloat, 1.0f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
-                    {
-                        source[2] = tmpFloat;
-                        updated = true;
-                    }
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Start time (s)");
-                    ImGui::PopID();
-                    ImGui::PopItemWidth();
-
-                    ImGui::SameLine();
-                    ImGui::PushItemWidth(96);
-                    tmpFloat = values[3].as<float>();
-                    ImGui::PushID((idStack + "stop").c_str());
-                    if (ImGui::InputFloat("", &tmpFloat, 1.0f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
-                    {
-                        source[3] = tmpFloat;
-                        updated = true;
-                    }
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Stop time (s)");
-                    ImGui::PopID();
-                    ImGui::PopItemWidth();
-
-                    ImGui::SameLine();
-                    ImGui::PushItemWidth(32);
-                    auto tmpBool = values[4].as<bool>();
-                    ImGui::PushID((idStack + "freeRun").c_str());
-                    if (ImGui::Checkbox("", &tmpBool))
-                    {
-                        source[4] = static_cast<int>(tmpBool);
-                        updated = true;
-                    }
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Freerun: if true, play this media even when paused");
-                    ImGui::PopID();
-                    ImGui::PopItemWidth();
-
-                    ImGui::SameLine();
-                    ImGui::PushItemWidth(-0.01f);
-                    ImGui::PushID((idStack + "path").c_str());
-                    ImGui::Text("%s", values[1].as<std::string>().c_str());
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Media path");
-                    ImGui::PopID();
-                    ImGui::PopItemWidth();
-
-                    ++index;
-                }
-
-                if (deleteIndex >= 0)
-                {
-                    playlist.erase(playlist.begin() + deleteIndex);
-                    updated = true;
-                }
-
-                if (moveIndex > 0)
-                {
-                    auto delta = playlist[moveIndex][2].as<float>() - playlist[moveIndex - 1][2].as<float>();
-                    auto duration = playlist[moveIndex][3].as<float>() - playlist[moveIndex][2].as<float>();
-                    playlist[moveIndex][2] = playlist[moveIndex][2].as<float>() - delta;
-                    playlist[moveIndex][3] = playlist[moveIndex][3].as<float>() - delta;
-                    playlist[moveIndex - 1][2] = playlist[moveIndex - 1][2].as<float>() + duration;
-                    playlist[moveIndex - 1][3] = playlist[moveIndex - 1][3].as<float>() + duration;
-                    std::swap(playlist[moveIndex], playlist[moveIndex - 1]);
-                    updated = true;
-                }
-            }
-
-            // Adding a source
-            ImGui::Text("Add a media:");
-
-            ImGui::PushID("addNewMedia");
-            if (ImGui::Button("+"))
-            {
-                playlist.push_back(_newMedia);
-                updated = true;
-            }
-            ImGui::PopID();
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Add this media");
-
-            ImGui::SameLine();
-            ImGui::PushItemWidth(96); // Width for the media type combo selector
-            ImGui::PushID("newMediaType");
-            if (ImGui::Combo("", &_newMediaTypeIndex, mediaTypes.data(), mediaTypes.size()))
-                _newMedia[0] = _mediaTypes[mediaTypes[_newMediaTypeIndex]];
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Media type");
-            ImGui::PopID();
-            ImGui::PopItemWidth();
-
-            ImGui::SameLine();
-            ImGui::PushItemWidth(96); // Width for the media start time input box
-            ImGui::PushID("newMediaStart");
-            if (ImGui::InputFloat("", &_newMediaStart, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
-                _newMedia[2] = _newMediaStart;
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Start time (s)");
-            ImGui::PopID();
-            ImGui::PopItemWidth();
-
-            ImGui::SameLine();
-            ImGui::PushItemWidth(96); // Width for the media stop time input box
-            ImGui::PushID("newMediaStop");
-            if (ImGui::InputFloat("", &_newMediaStop, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
-                _newMedia[3] = _newMediaStop;
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Stop time (s)");
-            ImGui::PopID();
-            ImGui::PopItemWidth();
-
-            ImGui::SameLine();
-            ImGui::PushItemWidth(32); // Width for the freerun checkbox
-            ImGui::PushID("newMediaFreeRun");
-            if (ImGui::Checkbox("", &_newMediaFreeRun))
-                _newMedia[4] = static_cast<int>(_newMediaFreeRun);
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Freerun: if true, play this media even when paused");
-            ImGui::PopID();
-            ImGui::PopItemWidth();
-
-            ImGui::SameLine();
-            ImGui::PushItemWidth(-32.f); // Go up to the other edge, minus this value
-            ImGui::PushID("newMediaFile");
-            std::string filepath = _newMedia[1].as<std::string>();
-            if (SplashImGui::InputText("", filepath, ImGuiInputTextFlags_EnterReturnsTrue))
-                _newMedia[1] = filepath;
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Media path");
-            ImGui::PopItemWidth();
-
-            ImGui::SameLine();
-            if (ImGui::Button("..."))
-                _fileSelectorTarget = mediaAlias;
-
-            if (_fileSelectorTarget == mediaAlias)
-            {
-                static std::string path = _root->getMediaPath();
-                bool cancelled;
-                static const std::vector<std::string> extensions{{".bmp"}, {".jpg"}, {".png"}, {".tga"}, {".tif"}, {".avi"}, {".mov"}, {".mp4"}};
-                if (SplashImGui::FileSelector(mediaAlias, path, cancelled, extensions))
-                {
-                    if (!cancelled)
-                        _newMedia[1] = path;
-                    path = _root->getMediaPath();
-                    _fileSelectorTarget = "";
-                }
-            }
-            ImGui::PopID();
-
-            if (updated)
-                setObjectAttribute(_selectedMediaName, "playlist", playlist);
-
-            ImGui::TreePop();
-        }
-
-        // Display the filters associated with this queue
-        auto filter = std::dynamic_pointer_cast<QueueSurrogate>(media)->getFilter();
-        auto filterName = filter->getName();
-        if (ImGui::TreeNode(("Filter: " + filterName).c_str()))
-        {
-            auto filterAttributes = getObjectAttributes(filter->getName());
-            drawAttributes(filterName, filterAttributes);
-            ImGui::TreePop();
-        }
-
-        if (ImGui::TreeNode(("Filter preview: " + filterName).c_str()))
-        {
-            auto spec = filter->getSpec();
-            auto ratio = static_cast<float>(spec.height) / static_cast<float>(spec.width);
-
-            auto leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
-            int w = ImGui::GetWindowWidth() - 2 * leftMargin;
-            int h = w * ratio;
-
-            ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(filter->getTexId())), ImVec2(w, h));
-            ImGui::TreePop();
-        }
+        ImGui::Text("Select a media on the left");
     }
     else
     {
-        // Display the filters associated with this media
-        auto filters = getFiltersForImage(media);
-        for (const auto& filterAsObj : filters)
+        auto mediaAlias = getObjectAlias(_selectedMediaName);
+
+        ImGui::Text("Change media type: ");
+        ImGui::SameLine();
+        if (_mediaTypeIndex.find(_selectedMediaName) == _mediaTypeIndex.end())
+            _mediaTypeIndex[_selectedMediaName] = 0;
+
+        std::vector<const char*> mediaTypes;
+        for (const auto& type : _mediaTypes)
+            mediaTypes.push_back(type.first.c_str());
+
+        if (ImGui::Combo("##mediaType", &_mediaTypeIndex[_selectedMediaName], mediaTypes.data(), mediaTypes.size()))
+            replaceMedia(_selectedMediaName, mediaAlias, mediaTypes[_mediaTypeIndex[_selectedMediaName]]);
+
+        ImGui::Text("Current media type: %s", _mediaTypesReversed[media->getRemoteType()].c_str());
+
+        ImGui::Text("Parameters:");
+        const auto attributes = getObjectAttributes(media->getName());
+        drawAttributes(_selectedMediaName, attributes);
+
+        // Display the playlist if this is a queue
+        if (std::dynamic_pointer_cast<QueueSurrogate>(media))
         {
-            auto filterName = filterAsObj->getName();
+            if (ImGui::TreeNode("Playlist"))
+            {
+                auto updated = false;
+                Values playlist;
+
+                auto playlistIt = attributes.find("playlist");
+                if (playlistIt != attributes.end())
+                {
+                    playlist = playlistIt->second;
+
+                    // Current sources
+                    size_t index = 0;
+                    int deleteIndex = -1;
+                    int moveIndex = -1;
+
+                    for (auto& source : playlist)
+                    {
+                        auto values = source.as<Values>();
+                        auto idStack = std::to_string(index) + values[0].as<std::string>();
+
+                        ImGui::PushID((idStack + "up").c_str());
+                        if (ImGui::Button("<<"))
+                            moveIndex = index;
+                        ImGui::PopID();
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Move this media before the previous one");
+
+                        ImGui::SameLine();
+                        ImGui::PushID((idStack + "down").c_str());
+                        if (ImGui::Button(">>") && index < playlist.size() - 1)
+                            moveIndex = index + 1;
+                        ImGui::PopID();
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Move this media after the next one");
+
+                        ImGui::SameLine();
+                        ImGui::PushID((idStack + "delete").c_str());
+                        if (ImGui::Button("-"))
+                            deleteIndex = index;
+                        ImGui::PopID();
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Delete this media");
+
+                        ImGui::SameLine();
+                        ImGui::PushItemWidth(96);
+                        ImGui::PushID((idStack + "media_type").c_str());
+                        ImGui::Text("%s", _mediaTypesReversed[values[0].as<std::string>()].c_str());
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Media type");
+                        ImGui::PopID();
+                        ImGui::PopItemWidth();
+
+                        ImGui::SameLine();
+                        ImGui::PushItemWidth(96);
+                        auto tmpFloat = values[2].as<float>();
+                        ImGui::PushID((idStack + "start").c_str());
+                        if (ImGui::InputFloat("", &tmpFloat, 1.0f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                        {
+                            source[2] = tmpFloat;
+                            updated = true;
+                        }
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Start time (s)");
+                        ImGui::PopID();
+                        ImGui::PopItemWidth();
+
+                        ImGui::SameLine();
+                        ImGui::PushItemWidth(96);
+                        tmpFloat = values[3].as<float>();
+                        ImGui::PushID((idStack + "stop").c_str());
+                        if (ImGui::InputFloat("", &tmpFloat, 1.0f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                        {
+                            source[3] = tmpFloat;
+                            updated = true;
+                        }
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Stop time (s)");
+                        ImGui::PopID();
+                        ImGui::PopItemWidth();
+
+                        ImGui::SameLine();
+                        ImGui::PushItemWidth(32);
+                        auto tmpBool = values[4].as<bool>();
+                        ImGui::PushID((idStack + "freeRun").c_str());
+                        if (ImGui::Checkbox("", &tmpBool))
+                        {
+                            source[4] = static_cast<int>(tmpBool);
+                            updated = true;
+                        }
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Freerun: if true, play this media even when paused");
+                        ImGui::PopID();
+                        ImGui::PopItemWidth();
+
+                        ImGui::SameLine();
+                        ImGui::PushItemWidth(-0.01f);
+                        ImGui::PushID((idStack + "path").c_str());
+                        ImGui::Text("%s", values[1].as<std::string>().c_str());
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Media path");
+                        ImGui::PopID();
+                        ImGui::PopItemWidth();
+
+                        ++index;
+                    }
+
+                    if (deleteIndex >= 0)
+                    {
+                        playlist.erase(playlist.begin() + deleteIndex);
+                        updated = true;
+                    }
+
+                    if (moveIndex > 0)
+                    {
+                        auto delta = playlist[moveIndex][2].as<float>() - playlist[moveIndex - 1][2].as<float>();
+                        auto duration = playlist[moveIndex][3].as<float>() - playlist[moveIndex][2].as<float>();
+                        playlist[moveIndex][2] = playlist[moveIndex][2].as<float>() - delta;
+                        playlist[moveIndex][3] = playlist[moveIndex][3].as<float>() - delta;
+                        playlist[moveIndex - 1][2] = playlist[moveIndex - 1][2].as<float>() + duration;
+                        playlist[moveIndex - 1][3] = playlist[moveIndex - 1][3].as<float>() + duration;
+                        std::swap(playlist[moveIndex], playlist[moveIndex - 1]);
+                        updated = true;
+                    }
+                }
+
+                // Adding a source
+                ImGui::Text("Add a media:");
+
+                ImGui::PushID("addNewMedia");
+                if (ImGui::Button("+"))
+                {
+                    playlist.push_back(_newMedia);
+                    updated = true;
+                }
+                ImGui::PopID();
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Add this media");
+
+                ImGui::SameLine();
+                ImGui::PushItemWidth(96); // Width for the media type combo selector
+                ImGui::PushID("newMediaType");
+                if (ImGui::Combo("", &_newMediaTypeIndex, mediaTypes.data(), mediaTypes.size()))
+                    _newMedia[0] = _mediaTypes[mediaTypes[_newMediaTypeIndex]];
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Media type");
+                ImGui::PopID();
+                ImGui::PopItemWidth();
+
+                ImGui::SameLine();
+                ImGui::PushItemWidth(96); // Width for the media start time input box
+                ImGui::PushID("newMediaStart");
+                if (ImGui::InputFloat("", &_newMediaStart, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                    _newMedia[2] = _newMediaStart;
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Start time (s)");
+                ImGui::PopID();
+                ImGui::PopItemWidth();
+
+                ImGui::SameLine();
+                ImGui::PushItemWidth(96); // Width for the media stop time input box
+                ImGui::PushID("newMediaStop");
+                if (ImGui::InputFloat("", &_newMediaStop, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                    _newMedia[3] = _newMediaStop;
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Stop time (s)");
+                ImGui::PopID();
+                ImGui::PopItemWidth();
+
+                ImGui::SameLine();
+                ImGui::PushItemWidth(32); // Width for the freerun checkbox
+                ImGui::PushID("newMediaFreeRun");
+                if (ImGui::Checkbox("", &_newMediaFreeRun))
+                    _newMedia[4] = static_cast<int>(_newMediaFreeRun);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Freerun: if true, play this media even when paused");
+                ImGui::PopID();
+                ImGui::PopItemWidth();
+
+                ImGui::SameLine();
+                ImGui::PushItemWidth(-32.f); // Go up to the other edge, minus this value
+                ImGui::PushID("newMediaFile");
+                std::string filepath = _newMedia[1].as<std::string>();
+                if (SplashImGui::InputText("", filepath, ImGuiInputTextFlags_EnterReturnsTrue))
+                    _newMedia[1] = filepath;
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Media path");
+                ImGui::PopItemWidth();
+
+                ImGui::SameLine();
+                if (ImGui::Button("..."))
+                    _fileSelectorTarget = mediaAlias;
+
+                if (_fileSelectorTarget == mediaAlias)
+                {
+                    static std::string path = _root->getMediaPath();
+                    bool cancelled;
+                    static const std::vector<std::string> extensions{{".bmp"}, {".jpg"}, {".png"}, {".tga"}, {".tif"}, {".avi"}, {".mov"}, {".mp4"}};
+                    if (SplashImGui::FileSelector(mediaAlias, path, cancelled, extensions))
+                    {
+                        if (!cancelled)
+                            _newMedia[1] = path;
+                        path = _root->getMediaPath();
+                        _fileSelectorTarget = "";
+                    }
+                }
+                ImGui::PopID();
+
+                if (updated)
+                    setObjectAttribute(_selectedMediaName, "playlist", playlist);
+
+                ImGui::TreePop();
+            }
+
+            // Display the filters associated with this queue
+            auto filter = std::dynamic_pointer_cast<QueueSurrogate>(media)->getFilter();
+            auto filterName = filter->getName();
             if (ImGui::TreeNode(("Filter: " + filterName).c_str()))
             {
-                auto filterAttributes = getObjectAttributes(filterAsObj->getName());
+                auto filterAttributes = getObjectAttributes(filter->getName());
                 drawAttributes(filterName, filterAttributes);
                 ImGui::TreePop();
             }
-        }
 
-        for (auto& filterAsObj : filters)
-        {
-            auto filterName = filterAsObj->getName();
             if (ImGui::TreeNode(("Filter preview: " + filterName).c_str()))
             {
-                auto filter = std::dynamic_pointer_cast<Filter>(filterAsObj);
                 auto spec = filter->getSpec();
                 auto ratio = static_cast<float>(spec.height) / static_cast<float>(spec.width);
 
-                double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
+                auto leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
                 int w = ImGui::GetWindowWidth() - 2 * leftMargin;
                 int h = w * ratio;
 
                 ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(filter->getTexId())), ImVec2(w, h));
                 ImGui::TreePop();
+            }
+        }
+        else
+        {
+            // Display the filters associated with this media
+            auto filters = getFiltersForImage(media);
+            for (const auto& filterAsObj : filters)
+            {
+                auto filterName = filterAsObj->getName();
+                if (ImGui::TreeNode(("Filter: " + filterName).c_str()))
+                {
+                    auto filterAttributes = getObjectAttributes(filterAsObj->getName());
+                    drawAttributes(filterName, filterAttributes);
+                    ImGui::TreePop();
+                }
+            }
+
+            for (const auto& filterAsObj : filters)
+            {
+                auto filterName = filterAsObj->getName();
+                if (ImGui::TreeNode(("Filter preview: " + filterName).c_str()))
+                {
+                    auto filter = std::dynamic_pointer_cast<Filter>(filterAsObj);
+                    auto spec = filter->getSpec();
+                    auto ratio = static_cast<float>(spec.height) / static_cast<float>(spec.width);
+
+                    double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
+                    int w = ImGui::GetWindowWidth() - 2 * leftMargin;
+                    int h = w * ratio;
+
+                    ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(filter->getTexId())), ImVec2(w, h));
+                    ImGui::TreePop();
+                }
             }
         }
     }

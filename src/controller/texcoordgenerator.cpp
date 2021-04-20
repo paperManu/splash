@@ -23,6 +23,14 @@ calimiro::Geometry TexCoordGenerator::generateTexCoordFromGeometry(calimiro::Geo
     std::unique_ptr<calimiro::TexCoordGen> generator;
     switch (_method)
     {
+    case calimiro::TexCoordUtils::texCoordMethod::DOMEMASTER:
+        generator = std::make_unique<calimiro::TexCoordGenDomeMaster>(
+            &logger, geometry.vertices(), _eyePosition, glm::normalize(_eyeOrientation), _horizonRotation, _flipHorizontal, _flipVertical, _fov);
+        break;
+    case calimiro::TexCoordUtils::texCoordMethod::EQUIRECTANGULAR:
+        generator = std::make_unique<calimiro::TexCoordGenEquirectangular>(
+            &logger, geometry.vertices(), _eyePosition, glm::normalize(_eyeOrientation), _horizonRotation, _flipHorizontal, _flipVertical, _fov);
+        break;
     default:
     case calimiro::TexCoordUtils::texCoordMethod::ORTHOGRAPHIC:
         generator = std::make_unique<calimiro::TexCoordGenOrthographic>(
@@ -34,10 +42,9 @@ calimiro::Geometry TexCoordGenerator::generateTexCoordFromGeometry(calimiro::Geo
         break;
     case calimiro::TexCoordUtils::texCoordMethod::SPHERIC:
         generator = std::make_unique<calimiro::TexCoordGenSpheric>(
-            &logger, geometry.vertices(), _eyePosition, glm::normalize(_eyeOrientation), _horizonRotation, _flipHorizontal, _flipVertical, _sphericFov);
+            &logger, geometry.vertices(), _eyePosition, glm::normalize(_eyeOrientation), _horizonRotation, _flipHorizontal, _flipVertical);
         break;
     }
-
     return geometry.computeTextureCoordinates(generator.get());
 }
 
@@ -146,14 +153,14 @@ void TexCoordGenerator::registerAttributes()
     setAttributeDescription("replaceMesh", "Replace the selected mesh with the new one with computed texture coordinates");
 
     addAttribute(
-        "sphericFov",
+        "fov",
         [&](const Values& args) {
-            _sphericFov = std::clamp(args[0].as<float>(), 0.f, 360.f);
+            _fov = std::clamp(args[0].as<float>(), 0.f, 360.f);
             return true;
         },
-        [&]() -> Values { return {_sphericFov}; },
+        [&]() -> Values { return {_fov}; },
         {'r'});
-    setAttributeDescription("sphericFov", "Range of modelisation of a sphere for Spheric method, in degrees");
+    setAttributeDescription("fov", "Range of modelisation of a spheric object, in degrees");
 
     addAttribute(
         "horizonRotation",

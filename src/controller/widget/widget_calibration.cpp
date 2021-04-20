@@ -151,14 +151,15 @@ void GuiCalibration::renderTexCoordCalibration(ImVec2& availableSize)
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Mirror the texture coordinates on the vertical axis");
 
-    // Spheric options
-    if (_stringToMethod[tmpCurrentMethod] == calimiro::TexCoordUtils::texCoordMethod::SPHERIC)
+    // Conditionnal options
+    if (_stringToMethod[tmpCurrentMethod] == calimiro::TexCoordUtils::texCoordMethod::EQUIRECTANGULAR ||
+        _stringToMethod[tmpCurrentMethod] == calimiro::TexCoordUtils::texCoordMethod::DOMEMASTER)
     {
-        auto tmpSphericFov = getObjectAttribute("texCoordGenerator", "sphericFov")[0].as<float>();
-        if (ImGui::InputFloat("Field of view (degrees)", &tmpSphericFov, 5, ImGuiInputTextFlags_None))
-            setObjectAttribute("texCoordGenerator", "sphericFov", {tmpSphericFov});
+        auto tmpFov = getObjectAttribute("texCoordGenerator", "fov")[0].as<float>();
+        if (ImGui::InputFloat("Field of view (degrees)", &tmpFov, 5, ImGuiInputTextFlags_None))
+            setObjectAttribute("texCoordGenerator", "fov", {tmpFov});
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Range of modelisation of a sphere for Spheric method, in degrees");
+            ImGui::SetTooltip("Range of modelisation of a spheric object, in degrees");
     }
 
     // Actions

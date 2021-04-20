@@ -9,6 +9,7 @@ This section provides information about more advanced usages of Splash, which go
 - [Piping video into Splash](#piping-video-through-v4l2loopback-or-shmdata)
 - [Grabbing rendered images out of Splash](#grabbing-rendered-images-out-of-Splash)
 - [Using with NDI network streams](#using-with-ndi-render-streams)
+- [Using digital cameras as image source](#using-a-digital-camera-as-image-source)
 
 
 -----------------------------------------------
@@ -264,3 +265,34 @@ The first parameter is the whole description of the stream as given by the previ
 ![Read shmdata video stream](./images/splash_media_shmdata.jpg)
 
 You should now see the video stream in Splash!
+
+
+-----------------------------------------------
+
+## Using digital cameras as image source
+
+Splash can make use of a digital camera, as long as it is compatible with [gPhoto](http://gphoto.org/). It can be used with the `digital camera` media type or for calibrating the videoprojectors color curves.
+
+First of all, Splash needs to have total control over the digital camera, otherwise it might fail getting and setting parameters, as well as shooting photos. Be sure to set the camera to `manual` mode. It is also advised to set the focus to manual as this will prevent the digital camera to change its focus between shot, which would be deterrent for HDR image capture.
+
+### Use as an image source
+
+To use a digital camera as a media source, just replace the media type in the `Medias` tabulation to `digital camera`. If a camera is connected and not already allocated by another software (this might be the case with some desktop environment which automatically mount cameras), Splash should be able to connect to it and get information from it such as its selected aperture, exposure time, ISO and model name.
+
+![Select 'digital camera' media type and capture a new frame](./images/gphoto_media.jpg)
+
+As this media type is not live, you will not see anything at first. Click on the `capture` checkbox to trigger a shot which should happen within seconds. Splash should then show the captured image.
+
+### Use for color calibration
+
+Splash makes use of digital cameras for color calibration. The process is as follow:
+* calibrate the digital camera to use it as a reliable measurement tool
+* calibrate each projector one by one, by displaying successive colors and capturing the resulting projection with the digital camera.
+
+All projectors are calibrated at once so all projections must be in the field of view of the camera. A fisheye lense might be useful when calibrating fully immersive setups.
+
+![Color calibration user interface](./images/color_calibration.jpg)
+
+To calibrate the digital camera, position it towards a well lit scene, preferably static. Then press `Calibrate camera response` in the `Main` tabulation of Splash. It will connect to the first digital camera available and start the calibration.
+
+Once the camera is calibrated, move it so that its field of view encompasses all the projections, and press `Calibrate displays / projectors`. The process can take a long time. Once finished, press `Activate correction` to enable the color correction.

@@ -11,18 +11,7 @@
 #include <glm/gtx/euler_angles.hpp>
 
 #include "./image/image.h"
-#include "./image/image_list.h"
-#include "./image/image_opencv.h"
-
-#if HAVE_LINUX
-#include "./image/image_v4l2.h"
-#endif
-
-#if HAVE_GPHOTO
-#include "./image/image_gphoto.h"
-#endif
-
-#include "./texcoordgenerator.h"
+#include "./controller/texcoordgenerator.h"
 
 using namespace std::chrono;
 
