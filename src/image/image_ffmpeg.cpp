@@ -79,6 +79,9 @@ float Image_FFmpeg::getMediaDuration() const
 /*************/
 bool Image_FFmpeg::read(const std::string& filename)
 {
+    if (!_root)
+        return false;
+
     const auto filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
 
     // First: cleanup

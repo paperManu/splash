@@ -216,6 +216,9 @@ bool Image::deserialize(const std::shared_ptr<SerializedObject>& obj)
 /*************/
 bool Image::read(const std::string& filename)
 {
+    if (!_root)
+        return false;
+
     const auto filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
     if (!_isConnectedToRemote)
         return readFile(filepath);
@@ -423,6 +426,15 @@ void Image::registerAttributes()
         [&]() -> Values { return {_filepath}; },
         {'s'});
     setAttributeDescription("file", "Image file to load");
+
+    addAttribute("reload",
+        [&](const Values&) {
+            read(_filepath);
+            return true;
+        },
+        [&]() -> Values { return {false}; },
+        {});
+    setAttributeDescription("reload", "Reload the file");
 
     addAttribute("srgb",
         [&](const Values& args) {
