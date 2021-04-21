@@ -91,7 +91,7 @@ void TexCoordGenerator::generateTexCoordOnMesh()
 
     // Load new file
     if (_replaceMesh)
-        setObjectAttribute(mesh->getName(), "file", {file});
+        runAsyncTask([this]() {setObjectAttribute(_meshName, "reload", {}); });
 }
 
 /*************/
