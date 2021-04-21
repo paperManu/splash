@@ -1244,7 +1244,7 @@ void PythonEmbedded::loop()
             auto returnValue = PyObject_CallObject(pFuncLoop, nullptr);
             if (returnValue != nullptr)
             {
-                if (!PyObject_IsTrue(returnValue))
+                if (returnValue == Py_False)
                     _doLoop = false;
                 Py_DECREF(returnValue);
             }
