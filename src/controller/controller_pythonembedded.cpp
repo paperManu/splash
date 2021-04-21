@@ -1359,6 +1359,19 @@ PyObject* PythonEmbedded::convertFromValue(const Value& value, bool toDict)
         {
             pyValue = Py_BuildValue("s", v.as<std::string>().c_str());
         }
+        else if (v.getType() == Value::Type::boolean)
+        {
+            if (v.as<bool>())
+            {
+                Py_INCREF(Py_True);
+                pyValue = Py_True;
+            }
+            else
+            {
+                Py_INCREF(Py_False);
+                pyValue = Py_False;
+            }
+        }
         else if (v.getType() == Value::Type::buffer)
         {
             auto buffer = v.as<Value::Buffer>();
