@@ -321,6 +321,7 @@ bool Window::snapWindow(int distance)
         {
             memcpy(_windowRect, sizeAndPos, 4 * sizeof(int));
             updateWindowShape();
+            _resized = true;
             return true;
         }
     }
