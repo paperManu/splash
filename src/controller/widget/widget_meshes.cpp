@@ -134,7 +134,7 @@ const std::list<std::shared_ptr<Mesh>> GuiMeshes::getSceneMeshes()
     {
         const auto objects = getObjectsPtr(getObjectsOfType(type));
         for (const auto& object : objects)
-            if (object->getSavable() && object->getType() != "mesh_shmdata")
+            if (object->getSavable())
                 meshList.push_back(std::dynamic_pointer_cast<Mesh>(object));
     }
 
