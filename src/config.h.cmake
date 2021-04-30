@@ -22,9 +22,6 @@
 /* Defined to 1 if python3.x is detected */
 #cmakedefine01 HAVE_PYTHON
 
-/* Defined to 1 if the Datapath SDK is detected */
-#cmakedefine01 HAVE_DATAPATH
-
 /* Defined to 1 if the CALIMIRO is detected */
 #cmakedefine01 HAVE_CALIMIRO
 
