@@ -7,9 +7,9 @@ This section provides information about more advanced usages of Splash, which go
 - [SMPTE master clock](#smpte-master-clock)
 - [GLSL filter shaders](#glsl-filter-shaders)
 - [Piping video into Splash](#piping-video-through-v4l2loopback-or-shmdata)
-- [Grabbing rendered images out of Splash](#grabbing-rendered-images-out-of-Splash)
-- [Using with NDI network streams](#using-with-ndi-render-streams)
-- [Using digital cameras as image source](#using-a-digital-camera-as-image-source)
+- [Grabbing rendered images out of Splash](#grabbing-rendered-images-out-of-splash)
+- [Using with NDI network streams](#using-with-ndi-network-streams)
+- [Using digital cameras as image source](#using-digital-cameras-as-image-source)
 
 
 -----------------------------------------------

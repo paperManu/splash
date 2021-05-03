@@ -1,0 +1,119 @@
+
+IMPORTANT NOTICE: PLEASE READ CAREFULLY BEFORE ORDERING/ DOWNLOADING / OPENING ANY SOFTWARE FROM THIS WEBSITE or CD-ROM: 
+This licence agreement (Licence) is a legal agreement between you (Licensee or you) and Datapath Limited of our contact address shown on http://www.datapath.co.uk/ (Licensor or we) for this software product (Software), which includes computer software, the data supplied with it, the associated media, and online or electronic documentation (Documentation). 
+BY CLICKING ON THE "ACCEPT" BUTTON BELOW OR BY USING THE SOFTWARE IF NO “ACCEPT” BUTTON YOU AGREE TO THE TERMS OF THIS LICENCE WHICH WILL BIND YOU AND YOUR EMPLOYEES.  IF YOU DO NOT AGREE TO THE TERMS OF THIS LICENCE, WE ARE UNWILLING TO LICENSE THE SOFTWARE TO YOU AND YOU MUST DISCONTINUE THE DOWNLOADING/LOADING PROCESS NOW BY CLICKING ON THE "REJECT" BUTTON BELOW.  IN THIS CASE  YOU MAY NOT DOWNLOAD OR ORDER THIS SOFTWARE AND YOU MUST RETURN ALL ACCOMPANYING DOCUMENTATION TO THE DISTRIBUTOR WHERE YOU PURCHASED THEM, TOGETHER WITH PROOF OF PAYMENT WITHIN 28 DAYS OF PURCHASE.  IF YOU DO THIS YOUR LICENCE FEE WILL BE REFUNDED.  IF YOU ARE ACCEPTING THIS AGREEMENT ON BEHALF OF A CORPORATE LICENSEE, YOU REPRESENT THAT YOU ARE AUTHORISED TO DO SO.  IF YOU ARE NOT SO AUTHORISED, NOR DEEMED IN LAW TO HAVE SUCH AUTHORITY, YOU ASSUME SOLE PERSONAL LIABILITY FOR THE OBLIGATIONS SET OUT IN THIS LICENCE.
+
+
+
+1.	GRANT AND SCOPE OF LICENCE
+1.1.	In consideration of payment by you of the agreed licence fee, if applicable, and you agreeing to abide by the terms of this Licence, the Licensor hereby grants to you a non-exclusive, non-transferable licence to use the Software and the Documentation on the terms of this Licence.
+1.2.	You may:
+1.2.1.	download, install and use the Software for your internal business purposes only either (as agreed between the parties): 
+1.2.1.1.	on one CPU if the Licence is a single-user licence or the Software is for single use; or
+1.2.1.2.	if the Licence is a multi-user or network licence, by the number of concurrent users agreed between you and us;
+1.2.2.	make up to 1 copy of the Software for back-up purposes only, provided that this is necessary for the activities permitted under condition 2.1;
+1.2.3.	receive and use any free supplementary software code or update of the Software incorporating "patches" and corrections of errors as may be provided by the Licensor from time to time on the same basis as and part of the software;
+1.2.4.	use any Documentation in support of the use permitted under condition 1.1 and make up to 2 copies of the Documentation as are reasonably necessary for its lawful use.
+1.3.	Notwithstanding the other provisions of this Licence, that part of the Software (OSS Software) in source code or binary code form that comprises software exclusively created for use on or with the Linux operating system or other operating systems derived from the source code of the Linux operating system, may to that extent be used, displayed, modified, copied, distributed or redistributed provided that:
+1.3.1.	the binary files of the OSS Software are not modified in any way (other than to the extent of unzipping of compressed files);
+1.3.2.	no terms are offered or imposed that alter or restrict this Licence;
+1.3.3.	code that you are permitted to and do modify is then licensed publically within the terms applicable to us in respect of the OSS Software; and
+1.3.4.	you accept that we provide the OSS Software 'as is' without warranty or support.
+Please note for the avoidance of doubt that the part of the Software designated 'Platform Independent Driver Core' or similar is (as well as other parts of the Software) NOT OSS Software.
+
+2.	LICENSEE'S UNDERTAKINGS
+2.1.	Except as expressly set out in this Licence or as permitted by any local law, you undertake:
+2.1.1.	not to copy the Software or Documentation except where such copying is incidental to normal use of the Software, or where it is necessary for the purpose of back-up or operational security;
+2.1.2.	not to rent, lease, sub-license, loan, translate, merge, adapt, vary or modify the Software or Documentation;
+2.1.3.	not to make alterations to, or modifications of, the whole or any part of the Software, nor permit the Software or any part of it to be combined with, or become incorporated in, any other programs;
+2.1.4.	not to disassemble, decompile, reverse engineer or create derivative works based on, the whole or any part of the Software nor attempt to do any such thing except to the extent that (by virtue of section 296A of the Copyright, Designs and Patents Act 1988) such actions cannot be prohibited because they are essential for the purpose of achieving inter-operability of the Software with another software program, and provided that the information obtained by you during such activities: 
+2.1.4.1.	is used only for the purpose of achieving inter-operability of the Software with another software program; and
+2.1.4.2.	is not unnecessarily disclosed or communicated without the Licensor's prior written consent to any third party; and
+2.1.4.3.	is not used to create any software which is substantially similar to the Software;
+2.1.5.	to keep all copies of the Software secure and to maintain accurate and up-to-date records of the number and locations of all copies of the Software;
+2.1.6.	to supervise and control use of the Software and ensure that the Software is used by your employees and representatives in accordance with the terms of this Licence;
+2.1.7.	to replace the current version of the Software with any updated or upgraded version or new release provided by the Licensor under the terms of this Licence immediately on receipt;
+2.1.8.	to include the copyright notice of the Licensor on all entire and partial copies you make of the Software on any medium;
+2.1.9.	not to provide or otherwise make available the Software in whole or in part (including but not limited to program listings, object and source program listings, object code and source code), in any form to any person other than your employees without prior written consent from the Licensor;
+
+3.	INTELLECTUAL PROPERTY RIGHTS
+3.1.	You acknowledge that all intellectual property rights in the Software and the Documentation anywhere in the world belong to the Licensor (except as expressly stated otherwise in this Licence as to the OSS Software), that rights in the Software are licensed (not sold) to you, and that you have no rights in, or to, the Software or the Documentation other than the right to use them in accordance with the terms of this Licence.
+3.2.	Save as expressly stated otherwise as to OSS Software, you acknowledge that you have no right to have access to the Software in source code form or in unlocked coding or similar.
+3.3.	The integrity of this Software is protected by technical protection measures (TPM) so that the intellectual property rights, including copyright, in the Software of the Licensor are not misappropriated.  You must not attempt in any way to remove or circumvent any such TPM, nor apply or manufacture for sale or hire, import, distribute, sell or let for hire, offer or expose for sale or hire, advertise for sale or hire or have in your possession for private or commercial purposes any means the sole intended purpose of which is to facilitate the unauthorised removal or circumvention of such TPM.
+
+4.	WARRANTY
+4.1.	The Licensor warrants that:
+4.1.1.	for a period of 90 days from the date of installation (Warranty Period) the Software (other than the OSS Software) will, when properly used, perform substantially in accordance with the functions described in the Documentation, and that the Documentation correctly describes the operation of the Software in all material respects;
+4.1.2.	it has tested the Software for viruses using commercially available virus-checking software, consistent with current industry practice.
+4.2.	You acknowledge that the Software has not been developed to meet your individual requirements, and that it is therefore your responsibility to ensure that the facilities and functions of the Software as described in the Documentation meet your requirements.
+4.3.	You acknowledge that the Software may not be free of bugs or errors, and agree that the existence of minor errors shall not constitute a breach of this Licence.
+4.4.	If, within the Warranty Period, you notify the Licensor in writing of any defect or fault in the Software (other than the OSS Software) in consequence of which it fails to perform substantially in accordance with the Documentation, and such defect or fault does not result from you having amended the Software or used it in contravention of the terms of this Licence, the Licensor will, at its sole option, either repair or replace the Software, provided that you make available all the information that may be necessary to help the Licensor to remedy the defect or fault, including sufficient information to enable the Licensor to recreate the defect or fault.
+
+5.	LICENSOR'S LIABILITY
+5.1.	Nothing in this Licence shall exclude or in any way limit the Licensor's liability for fraud, or for death or personal injury caused by its negligence, or any other liability to the extent that it may not be excluded or limited as a matter of law.
+5.2.	Subject to condition 5.1 the Licensor shall not be liable under, or in connection with, this Licence or any collateral contract for: 
+5.2.1.	loss of business profits or contracts;
+5.2.2.	business interruption;
+5.2.3.	loss of the use of money or anticipated savings;
+5.2.4.	loss of information;
+5.2.5.	loss of opportunity, goodwill or reputation;
+5.2.6.	loss of, damage to or corruption of data; or
+5.2.7.	any indirect or consequential loss or damage of any kind howsoever arising and whether caused by tort (including without limitation negligence), breach of contract or otherwise.
+5.3.	Subject to conditions 5.1,  5.2 and as to the OSS Software condition 1.3.4, the Licensor's maximum aggregate liability under or in connection with this Licence, or any collateral contract, whether in contract, tort (including without limitations negligence) or otherwise, shall be limited to a sum that is the greater of (1) net price paid by you to us under the Licence and (2) £10,000. If it is found that to limit our liability to this amount is unfair then we shall only be liable to you for the matter described in this Condition for up to the amount of relevant insurance cover that we have from time to time .
+5.4.	Subject to condition 5.1, condition 5.2 and condition 5.3, the Licensor's liability for infringement of third-party intellectual property rights shall be limited to breaches of rights subsisting in the UK.
+5.5.	THIS LICENCE SETS OUT THE FULL EXTENT OF THE LICENSOR'S OBLIGATIONS AND LIABILITIES IN RESPECT OF THE SUPPLY OF THE SOFTWARE AND DOCUMENTATION.  IN PARTICULAR, THERE ARE NO CONDITIONS, WARRANTIES, REPRESENTATIONS OR OTHER TERMS, EXPRESS OR IMPLIED, THAT ARE BINDING ON THE LICENSOR EXCEPT AS SPECIFICALLY STATED IN THIS LICENCE.  ANY CONDITION, WARRANTY, REPRESENTATION OR OTHER TERM CONCERNING THE SUPPLY OF THE SOFTWARE AND DOCUMENTATION WHICH MIGHT OTHERWISE BE IMPLIED INTO, OR INCORPORATED IN, THIS LICENCE, OR ANY COLLATERAL CONTRACT, WHETHER BY STATUTE, COMMON LAW OR OTHERWISE, IS HEREBY EXCLUDED TO THE FULLEST EXTENT PERMITTED BY LAW.
+
+6.	TERMINATION
+6.1.	The Licensor may terminate this Licence immediately by written notice to you if:
+6.1.1.	You commit a material or persistent breach of this Licence and which (if remediable) you fail to remedy within 14 days after the service of written notice requiring you to do so; or
+6.1.2.	a petition for a bankruptcy order to be made against you has been presented to the court; or
+6.1.3.	the Licensee (where it is a company) becomes insolvent or unable to pay its debts (within the meaning of section 123 of the Insolvency Act 1986), enters into liquidation, whether voluntary or compulsory (other than for reasons of bona fide amalgamation or reconstruction), passes a resolution for its winding-up, has a receiver or administrator, manager, trustee, liquidator or similar officer appointed over the whole or any part of its assets, makes any composition or arrangement with its creditors or takes or suffers any similar action in consequence of its debts; or
+6.1.4.	anything analogous to anything in 6.1.2 or 6.1.3 above occurs or applies in any other jurisdiction.
+6.2.	Upon termination for any reason:
+6.2.1.	all rights granted to you under this Licence shall cease;
+6.2.2.	you must cease all activities authorised by this Licence;
+6.2.3.	you must immediately pay to the Licensor any sums due to the Licensor under this Licence; and
+6.2.4.	you must immediately delete or remove the Software from all computer equipment in your possession, and immediately destroy or return to the Licensor (at the Licensor's option) all copies of the Software then in your possession, custody or control and, in the case of destruction, certify to the Licensor that you have done so.
+
+7.	TRANSFER OF RIGHTS AND OBLIGATIONS
+
+7.1.	This Licence is binding on you and us, and on our respective successors and assigns. 
+7.2.	Save as expressly stated as to OSS Software only, You may not transfer, assign, charge or otherwise dispose of this Licence, or any of your rights or obligations arising under it, without our prior written consent.
+7.3.	We may transfer, assign, charge, sub-contract or otherwise dispose of this Licence, or any of our rights or obligations arising under it, at any time during the term of the Licence.
+
+8.	NOTICES
+8.1.	All notices given by you to us must be given to us at the address referred to above. We may give notice to you at either the e-mail or postal address you provided to us or our distributor when purchasing the Software. Notice will be deemed received and properly served immediately when posted on our website, 24 hours after an e-mail is sent, or three days after the date of posting of any letter. In proving the service of any notice, it will be sufficient to prove, in the case of a letter, that such letter was properly addressed, stamped and placed in the post and, in the case of an e-mail, that such e-mail was sent to the specified e-mail address of the addressee.
+
+9.	EVENTS OUTSIDE OUR CONTROL
+9.1.	We will not be liable or responsible for any failure to perform, or delay in performance of, any of our obligations under this Licence that is caused by events outside our reasonable control (Force Majeure Event). 
+9.2.	A Force Majeure Event includes any act, event, non-happening, omission or accident beyond our reasonable control and includes in particular (without limitation) the following:
+9.2.1.	strikes, lock-outs or other industrial action;
+9.2.2.	civil commotion, riot, invasion, terrorist attack or threat of terrorist attack, war (whether declared or not) or threat or preparation for war;
+9.2.3.	fire, explosion, storm, flood, earthquake, subsidence, epidemic or other natural disaster;
+9.2.4.	impossibility of the use of railways, shipping, aircraft, motor transport or other means of public or private transport;
+9.2.5.	impossibility of the use of public or private telecommunications networks;
+9.2.6.	the acts, decrees, legislation, regulations or restrictions of any government.
+9.3.	Our performance under this Licence is deemed to be suspended for the period that the Force Majeure Event continues, and we will have an extension of time for performance for the duration of that period. We will use our reasonable endeavours to bring the Force Majeure Event to a close or to find a solution by which our obligations under this Licence may be performed despite the Force Majeure Event.
+
+10.	WAIVER
+10.1.	If we fail, at any time during the term of this Licence, to insist upon strict performance of any of your obligations under this Licence, or if we fail to exercise any of the rights or remedies to which we are entitled under this Licence, this shall not constitute a waiver of such rights or remedies and shall not relieve you from compliance with such obligations.
+10.2.	A waiver by us of any default shall not constitute a waiver of any subsequent default.
+10.3.	No waiver by us of any of these terms and conditions shall be effective unless it is expressly stated to be a waiver and is communicated to you in writing.
+
+11.	SEVERABILITY
+11.1.	If any of the terms of this Licence are determined by any competent authority to be invalid, unlawful or unenforceable to any extent, such term, condition or provision will to that extent be severed from the remaining terms, conditions and provisions which will continue to be valid to the fullest extent permitted by law.
+
+12.	ENTIRE AGREEMENT
+12.1.	This Licence and any document expressly referred to in it represents the entire agreement between us in relation to the licensing of the Software and Documentation and supersedes any prior agreement, understanding or arrangement between us, whether oral or in writing.
+12.2.	We each acknowledge that, in entering into this Licence, neither of us has relied on any representation, undertaking or promise given by the other or being implied from anything said or written in negotiations between us prior to entering into this Licence except as expressly stated in this Licence.
+12.3.	Neither of us or the Licensor’s distributor shall have any remedy in respect of any untrue statement made by the other, whether orally or in writing, prior to the date we entered into this Licence (unless such untrue statement was made fraudulently) and the other party's only remedy shall be for breach of contract as provided in these terms and conditions.
+
+13.	LAW AND JURISDICTION
+13.1.	This Licence is governed by English law. Any dispute arising from, or related to, any term of this Licence shall be subject to the exclusive jurisdiction of the courts of England and Wales. 
+
+14.	EXPORT – USE AND CONTROL
+
+14.1.	The Software must not be used, wholly or in part, in connection with the development, identification or dissemination of chemical, biological or nuclear weapons or the development, production, maintenance or storage of missiles capable of delivering such weapons or in any application or system where the failure of the Software to perform can reasonably be expected to result in personal injury or loss of life.
+14.2.	This Licence is expressly made subject to any regulations, orders, or other restrictions on the export from the UK of the Software or information about such Software, which may be, imposed from time to time by the UK government.  
+
+Version - 4 February 2010

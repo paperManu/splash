@@ -61,19 +61,14 @@ if (NOT USE_SYSTEM_LIBS)
     include_directories(../external/glm)
 endif()
 
+include_directories(../external/datapath/include)
+include_directories(../external/glad/core/include)
 include_directories(../external/hap/source)
 include_directories(../external/imgui)
 include_directories(../external/libltc/src)
 include_directories(../external/stb)
 include_directories(../external/syphon/build/Release/Syphon.framework/Headers)
 include_directories(../external/tracy)
-
-if (HAVE_DATAPATH)
-    include_directories(${DATAPATH_SDK_PATH}/include)
-    include_directories(${DATAPATH_SDK_PATH}/utils/include)
-endif()
-
-    include_directories(../external/glad/core/include)
 
 include_directories(${GLFW_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIRS})

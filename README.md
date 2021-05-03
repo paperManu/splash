@@ -32,8 +32,10 @@ Splash can read videos from various sources amoung which video files (most commo
 - automatic calibration of the blending between them,
 - experimental automatic colorimetric calibration (with a gPhoto compatible camera)
 
-### License
+### Licenses
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
+
+This program uses external libraries, some of them being bundled in the source code repository (directly or as submodules). They are located in `external`, and are not necessarily licensed under GPLv3. Please refer to the respective licenses for details.
 
 ### Authors
 See [AUTHORS.md](docs/Authors.md)

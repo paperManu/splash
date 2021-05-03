@@ -5,10 +5,8 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#if HAVE_DATAPATH
 #include "rgb133control.h"
 #include "rgb133v4l2.h"
-#endif
 
 #include "./utils/osutils.h"
 
@@ -30,9 +28,7 @@ Image_V4L2::Image_V4L2(RootObject* root)
 Image_V4L2::~Image_V4L2()
 {
     stopCapture();
-#if HAVE_DATAPATH
-    closeControlDevice();
-#endif
+    closeDatapathControlDevice();
 }
 
 /*************/
@@ -45,9 +41,7 @@ void Image_V4L2::init()
     if (!_root)
         return;
 
-#if HAVE_DATAPATH
-    openControlDevice();
-#endif
+    openDatapathControlDevice();
 }
 
 /*************/
@@ -204,7 +198,6 @@ void Image_V4L2::captureThreadFunc()
                 }
             }
 
-#if HAVE_DATAPATH
             // Get the source video format, for information
             if (_isDatapath)
             {
@@ -234,7 +227,6 @@ void Image_V4L2::captureThreadFunc()
                     _sourceFormatAsString = sourceFormatAsString;
                 }
             }
-#endif
         }
 
         bufferType = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -322,7 +314,6 @@ bool Image_V4L2::initializeCapture()
     if (!_hasStreamingIO)
         return true;
 
-#if HAVE_DATAPATH
     if (_isDatapath)
     {
         struct v4l2_queryctrl queryCtrl;
@@ -372,7 +363,6 @@ bool Image_V4L2::initializeCapture()
 
         Log::get() << Log::MESSAGE << "Image_V4L2::" << __FUNCTION__ << " - RGB133_V4L2_CID_LIVESTREAM current value: " << control.value << Log::endl;
     }
-#endif
 
     // Initialize the buffers
     _imageBuffers.clear();
@@ -450,8 +440,7 @@ bool Image_V4L2::initializeCapture()
 }
 
 /*************/
-#if HAVE_DATAPATH
-bool Image_V4L2::openControlDevice()
+bool Image_V4L2::openDatapathControlDevice()
 {
     if ((_controlFd = open(_controlDevicePath.c_str(), O_RDWR | O_NONBLOCK)) < 0)
     {
@@ -465,7 +454,7 @@ bool Image_V4L2::openControlDevice()
 }
 
 /*************/
-void Image_V4L2::closeControlDevice()
+void Image_V4L2::closeDatapathControlDevice()
 {
     if (_controlFd >= 0)
     {
@@ -473,7 +462,6 @@ void Image_V4L2::closeControlDevice()
         _controlFd = -1;
     }
 }
-#endif
 
 /*************/
 bool Image_V4L2::openCaptureDevice(const std::string& devicePath)
