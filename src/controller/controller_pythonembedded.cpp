@@ -1244,7 +1244,7 @@ void PythonEmbedded::loop()
             auto returnValue = PyObject_CallObject(pFuncLoop, nullptr);
             if (returnValue != nullptr)
             {
-                if (!PyObject_IsTrue(returnValue))
+                if (returnValue == Py_False)
                     _doLoop = false;
                 Py_DECREF(returnValue);
             }
@@ -1358,6 +1358,19 @@ PyObject* PythonEmbedded::convertFromValue(const Value& value, bool toDict)
         else if (v.getType() == Value::Type::string)
         {
             pyValue = Py_BuildValue("s", v.as<std::string>().c_str());
+        }
+        else if (v.getType() == Value::Type::boolean)
+        {
+            if (v.as<bool>())
+            {
+                Py_INCREF(Py_True);
+                pyValue = Py_True;
+            }
+            else
+            {
+                Py_INCREF(Py_False);
+                pyValue = Py_False;
+            }
         }
         else if (v.getType() == Value::Type::buffer)
         {

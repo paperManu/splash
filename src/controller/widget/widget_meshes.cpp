@@ -125,17 +125,17 @@ int GuiMeshes::updateWindowFlags()
 }
 
 /*************/
-std::list<std::shared_ptr<GraphObject>> GuiMeshes::getSceneMeshes()
+const std::list<std::shared_ptr<Mesh>> GuiMeshes::getSceneMeshes()
 {
-    auto meshList = std::list<std::shared_ptr<GraphObject>>();
-    auto meshTypes = std::list<std::string>({"mesh"});
+    auto meshList = std::list<std::shared_ptr<Mesh>>();
+    const auto meshTypes = getTypesFromCategory(GraphObject::Category::MESH);
 
-    for (auto& type : meshTypes)
+    for (const auto& type : meshTypes)
     {
-        auto objects = getObjectsPtr(getObjectsOfType(type));
-        for (auto& object : objects)
+        const auto objects = getObjectsPtr(getObjectsOfType(type));
+        for (const auto& object : objects)
             if (object->getSavable())
-                meshList.push_back(object);
+                meshList.push_back(std::dynamic_pointer_cast<Mesh>(object));
     }
 
     return meshList;

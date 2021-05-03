@@ -84,11 +84,9 @@ class Image_V4L2 : public Image
     struct v4l2_format _v4l2Format;
 
     // Datapath specific variables
-#if HAVE_DATAPATH
     bool _isDatapath{false};
     int _controlFd{-1};
     struct v4l2_format _v4l2SourceFormat;
-#endif
 
     // Capture parameters
     int _v4l2Index{0};
@@ -147,18 +145,16 @@ class Image_V4L2 : public Image
      */
     bool initializeCapture();
 
-#if HAVE_DATAPATH
     /**
      * Open the control device
      * \return Return true if everything is OK
      */
-    bool openControlDevice();
+    bool openDatapathControlDevice();
 
     /**
      * Close the control device
      */
-    void closeControlDevice();
-#endif
+    void closeDatapathControlDevice();
 
     /**
      * Open the capture device

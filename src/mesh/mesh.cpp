@@ -93,7 +93,7 @@ std::vector<float> Mesh::getNormalsFlat() const
     std::lock_guard<Spinlock> lock(_readMutex);
     const auto normalsPtr = reinterpret_cast<const float*>(_mesh.normals.data());
     const auto normalsCount = _mesh.normals.size() * 4;
-    std::vector<float> normals(normalsPtr,  normalsPtr + normalsCount);
+    std::vector<float> normals(normalsPtr, normalsPtr + normalsCount);
     return normals;
 }
 
@@ -356,6 +356,18 @@ void Mesh::registerAttributes()
         [&]() -> Values { return {_filepath}; },
         {'s'});
     setAttributeDescription("file", "Mesh file to load");
+
+    addAttribute(
+        "reload",
+        [&](const Values&) {
+            if (_root)
+                return read(Utils::getFullPathFromFilePath(_filepath, _root->getConfigurationPath()));
+            else
+                return true;
+        },
+        [&]() -> Values { return {false}; },
+        {});
+    setAttributeDescription("reload", "Reload the file");
 
     addAttribute("benchmark",
         [&](const Values& args) {

@@ -80,7 +80,7 @@ class Image_Sequence : public Image
         addAttribute(
             "capture",
             [&](const Values&) {
-                runAsyncTask([=]() { capture(); });
+                runAsyncTask([this]() { capture(); });
                 return true;
             },
             // Allows for showing a capture button in the GUI

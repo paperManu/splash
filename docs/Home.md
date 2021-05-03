@@ -30,5 +30,10 @@ Don't hesitate to report any issues with the [Gitlab issue tracker](https://gitl
 ## Projet URL
 This project can be found either on [its official website](https://sat-metalab.gitlab.io/splash), on the [SAT Metalab repository](https://gitlab.com/sat-metalab/splash) or on [Github](https://github.com/paperManu/splash).
 
+### Licenses
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
+
+This program uses external libraries, some of them being bundled in the source code repository (directly or as submodules). They are located in `external`, and are not necessarily licensed under GPLv3. Please refer to the respective licenses for details.
+
 ## Sponsors
 This project is made possible thanks to the [Society for Arts and Technologies](http://www.sat.qc.ca) (also known as SAT).
