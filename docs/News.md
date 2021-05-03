@@ -1,6 +1,18 @@
 Splash release notes
 ====================
 
+Splash 0.8.40 (2021-05-03)
+-------------------------
+Improvements:
+* Added Datapath headers, and activated Datapath suppport by default
+* Added a reload attribute to Image and Mesh
+
+Bugs fixed:
+* Fixed window snapping not updating FBO systematically
+* Fixed deadlock when calling texture generation from a script
+* Fixed embedded Python interpreter loop exiting when nothing is returned by splash_loop
+* Fixed boolean attributes showing as NULL in the Python interpreter
+
 Splash 0.8.38 (2021-04-20)
 -------------------------
 Improvements:
