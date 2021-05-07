@@ -3,7 +3,7 @@ Contributing
 
 Welcome! We'd love for you to contribute to Splash's code and make it an even more incredible tool for immersive visual experience!
 
-Splash is currently being maintained by a small team of developers working for the [Société des Arts Technologiques (SAT)](https://sat.qc.ca/), a non-profit arts centre based in Montréal, Canada for which this software was originally developed. This core team adds features and bug fixes according to the SAT's interests and needs; however, community contributions on this project are more than welcome! There are many ways to contribute, including submitting bug reports, improving documentation, adding unit tests, adding support for a new language, submitting feature requests, reviewing new submissions, or contributing code that can be incorporated into the project.
+Splash is currently being maintained by a small team of developers working for the [Société des arts technologiques (SAT)](https://sat.qc.ca/), a non-profit art centre based in Montréal, Canada for which this software was originally developed. This core team adds features and bug fixes according to the SAT's interests and needs; however, community contributions on this project are more than welcome! There are many ways to contribute, including submitting bug reports, improving documentation, adding unit tests, adding support for a new language, submitting feature requests, reviewing new submissions, or contributing code that can be incorporated into the project.
 
 This document describes this project's development process. Please do your best to follow these guidelines, as doing so will ensure a better contributing experience for you, and for other contributors and maintainers of this project.
 
@@ -19,27 +19,24 @@ By participating in this project, you agree to abide by the Splash [Code of Cond
 * [Issue tracker](https://gitlab.com/sat-metalab/splash/-/issues)
 
 
-## Questions
+## Contributing
 
-The preferred way of asking question to us is through sending an email at metalab-dev@sat.qc.ca. We'll get back to you as soon as possible!
+Contributing to Splash is achieved through Gitlab's Merge Request (MR) system. This include contribution by the core team. We also welcome external contributions through the contribution process described here.
 
-
-## Feature Requests
-
-Please create a new Gitlab issue for any major changes and enhancements that you wish to make. Please provide the feature you would like to see, why it is important to you, and how it will work. Discuss your ideas transparently and get developer feedback before proceeding. Such major changes should be discussed first in a Gitlab issue.
-
-Small changes can directly be crafted and submitted to the repository as a Merge Request. See the section about the [Merge Request Process](#merge-request-process).
-
-
-## Reporting Bugs
-
-**If you find a security vulnerability, do NOT open an issue. Email metalab-dev@sat.qc.ca instead.**
+Please send your merge request to [Splash repository](https://gitlab.com/sat-metalab/splash/-/merge_requests). Merge requests must refer to a gitlab issue in the [Splash issues list](https://gitlab.com/sat-metalab/splash/-/issues). If your merge request does not refer to a gitlab issue, you may be asked to fill an issue before a decision is made. For more technical details regarding MRs, see the section about the [Merge Request Process](#merge-request-process).
 
 Before you submit your issue, please [search the issue tracker](https://gitlab.com/sat-metalab/splash/-/issues) - maybe your question or issue has already been identified or addressed.
 
-If you find a bug in the source code, you can help us by [submitting an issue to the GitLab issue tracker](https://gitlab.com/sat-metalab/splash/-/issues). Even better, you can submit a Merge Request with a fix.
+Splash has several issue types:
 
-Please include as much information as possible in your issue: branch name and version, OS version, expected and observed behavior, system information, log files, etc. Most importantly, provide a step-by-step procedure on how to reproduce your bug.
+- Default issue: for all issues that do not match with following issue types.
+- Bug report: inform of a newly discovered bug.
+- Feature request: ask for a new feature.
+- Request For Comment: propose a significant change , such as code refactoring, CI deployment, or any change in the repository that impacts the Splash community. See a more detailled description of the [RFC process](./RFC.md).
+
+The preferred way of asking question to us is through opening a default issue on [Splash repository](https://gitlab.com/sat-metalab/splash/~/issues). We'll get back to you as soon as possible!
+
+**If you find a security vulnerability, do NOT open an issue. Email metalab-dev@sat.qc.ca instead.**
 
 
 ## Tests
@@ -170,11 +167,9 @@ With `SCENE_NAME` being the name as shown in the user interface, in the performa
 The resulting file can be opened the svg with your browser. As of now, there is no way to view the profiling information in the Splash GUI.
 
 
-## Contributing
+## Code
 
-Please send your pull request at the [SAT-Metalab's Gitlab repository](https://gitlab.com/sat-metalab/splash). If you do not know how to make a pull request, Gitlab provides some [help about collaborating on projects using issues and pull requests](https://docs.gitlab.com/ee/gitlab-basics/add-merge-request.html).
-
-### Finding an Issue
+### Fixing an Issue
 
 The list of outstanding feature requests and bugs can be found on the [GitLab issue tracker](https://gitlab.com/sat-metalab/splash/-/issues). Pick an unassigned issue that you think you can accomplish and add a comment that you are attempting to do it.
 
