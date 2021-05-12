@@ -50,11 +50,11 @@ class ProfilerGL
         {
           public:
             /**
-             * \brief No default constructor
+             * No default constructor
              */
             Content() = delete;
             /**
-             * \brief Constructor
+             * Constructor
              * \param scope Name given to the currently profiled scope
              */
             explicit Content(const std::string& scope)
@@ -66,24 +66,24 @@ class ProfilerGL
 
             // Getters/setters
             /**
-             * \brief Get the name of the scope of the current section
+             * Get the name of the scope of the current section
              * \return Return the scope name as a string.
              */
             std::string getScope() const { return _scope; }
             /**
-             * \brief Get the duration of OpenGL execution of the current section in nanoseconds
+             * Get the duration of OpenGL execution of the current section in nanoseconds
              * \return Return the total duration including the sum of all the profiled children sections
              */
             uint64_t getDuration() const { return _duration; }
             void setDuration(const uint64_t& duration) { _duration = duration; }
             /**
-             * \brief Get the duration of OpenGL execution of the direct profiled children sections in nanoseconds
+             * Get the duration of OpenGL execution of the direct profiled children sections in nanoseconds
              * \return Return the cumulated duration of the execution of all the profiled children sections.
              */
             uint64_t getChildrenDuration() const { return _children_duration; }
             void setChildrenDuration(const uint64_t& children_duration) { _children_duration = children_duration; }
             /**
-             * \brief Get the code depth from the highest scope profiled section
+             * Get the code depth from the highest scope profiled section
              * \return Return relative depth of the section
              */
             int getDepth() const { return _depth; }
@@ -139,24 +139,24 @@ class ProfilerGL
     using UnprocessedGLTimings = std::unordered_map<std::thread::id, std::vector<Section::SectionData>>;
 
     /**
-     * \brief Default destructor
+     * Default destructor
      */
     ~ProfilerGL() = default;
     /**
-     * \brief No copy constructor
+     * No copy constructor
      */
     ProfilerGL(const ProfilerGL&) = delete;
     /**
-     * \brief No move constructor
+     * No move constructor
      */
     ProfilerGL(ProfilerGL&&) = delete;
     /**
-     * \brief No copy assignment constructor
+     * No copy assignment constructor
      */
     ProfilerGL& operator=(const ProfilerGL&) = delete;
 
     /**
-    * \brief Get the singleton
+    * Get the singleton
     * \return Return the ProfilerGL singleton
     */
     static ProfilerGL& get()
@@ -169,7 +169,7 @@ class ProfilerGL
     }
 
     /**
-     * \brief Get the preprocessed timings of the currently profiled code sections
+     * Get the preprocessed timings of the currently profiled code sections
      * \return A copy of the map of profiling content for each profiled thread. We do a copy to keep the original
      * untouched in case we want to use it for multiple display methods.
      */
@@ -180,7 +180,7 @@ class ProfilerGL
     }
 
     /**
-     * \brief Record the depth of the opening profiled section relatively to the highest scope one
+     * Record the depth of the opening profiled section relatively to the highest scope one
      * \param content Reference to the section content that will be updated
      * \param thread_id Id of the running thread
      */
@@ -198,7 +198,7 @@ class ProfilerGL
     }
 
     /**
-     * \brief Record the depth of the closing profiled section relatively to the highest scope one
+     * Record the depth of the closing profiled section relatively to the highest scope one
      * \param content Reference to the section content that will be updated
      * \param thread_id Id of the running thread
      */
@@ -223,7 +223,7 @@ class ProfilerGL
     }
 
     /**
-     * \brief Copies a section data for later preprocessing through gatherTimings() call.
+     * Copies a section data for later preprocessing through gatherTimings() call.
      * \param data Section data to be saved for later use.
      */
     void saveSectionData(Section::SectionData& data)
@@ -246,7 +246,9 @@ class ProfilerGL
     }
 
     /**
-     * \brief Fetches the timings of all the profiled sections data saved with saveSectionData() calls.
+     * Fetches the timings of all the profiled sections data saved with saveSectionData() calls.
+     * This shall be called after buffer swapping to be sure that all
+     * commands have been completed, especially counter queries
      */
     void gatherTimings()
     {
@@ -262,10 +264,12 @@ class ProfilerGL
 
         for (auto& timing : timings->second)
         {
-            // Wait until the query counters are available
+            // If the counter is not available (which should not happen if buffer swapping was
+            // called beforehand), we skip this counter and do not wait for it to be updated
             unsigned int timerAvailable = 0;
-            while (!timerAvailable)
-                glGetQueryObjectuiv(timing._queries[1], GL_QUERY_RESULT_AVAILABLE, &timerAvailable);
+            glGetQueryObjectuiv(timing._queries[1], GL_QUERY_RESULT_AVAILABLE, &timerAvailable);
+            if (!timerAvailable)
+                continue;
 
             // Compute the elapsed time and store it in the section content
             GLuint64 startTime, endTime;
@@ -284,7 +288,7 @@ class ProfilerGL
     }
 
     /**
-     * \brief Record the closing scope for later postprocessing
+     * Record the closing scope for later postprocessing
      * \param content Data regarding the closing profiled code section
      */
     void commitSection(Section::Content& content)
@@ -306,7 +310,7 @@ class ProfilerGL
     }
 
     /**
-     * \brief Process the recorded profiled sections to output in multiple formats (flamegraph, splash built-in UI)
+     * Process the recorded profiled sections to output in multiple formats (flamegraph, splash built-in UI)
      */
     void processTimings()
     {
@@ -352,7 +356,7 @@ class ProfilerGL
     }
 
     /**
-     * \brief Use the timings information from the profiler and process them to print in a flamegraph (https://github.com/brendangregg/FlameGraph)
+     * Use the timing information from the profiler and process them to print in a flamegraph (https://github.com/brendangregg/FlameGraph)
      * \param path Output file path
      */
     void processFlamegraph(const std::string& path)
