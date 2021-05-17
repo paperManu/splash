@@ -30,9 +30,9 @@ nav:
     - Code of conduct: Code_of_conduct.md
     - Live chat: http://webchat.freenode.net/?randomnick=1&channels=%23%23splash&uio=d4
   - Download:
-    - Ubuntu 20.04 package: splash.deb
+    - Ubuntu 20.04 package: ../splash.deb
     - Flatpak package: https://flathub.org/apps/details/com.gitlab.sat_metalab.Splash
-    - Blender addon: blender_splash_addon.tar.bz2
+    - Blender addon: ../blender_splash_addon.tar.bz2
   - About:
     - Authors: Authors.md
     - License: License.md
