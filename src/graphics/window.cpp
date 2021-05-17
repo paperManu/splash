@@ -293,24 +293,30 @@ bool Window::snapWindow(int distance)
             const auto mode = glfwGetVideoMode(monitors[i]);
 
             // Check whether the upper right corner is close to the top or left borders of a monitor
-            if (abs(xpos - sizeAndPos[0]) < distance)
+            const auto distToLeft = abs(xpos - sizeAndPos[0]);
+            if (distToLeft < distance && distToLeft != 0)
             {
                 sizeAndPos[0] = xpos;
                 windowShapeUpdated = true;
             }
-            if (abs(ypos - sizeAndPos[1]) < distance)
+
+            const auto distToTop = abs(ypos - sizeAndPos[1]);
+            if (distToTop < distance && distToTop != 0)
             {
                 sizeAndPos[1] = ypos;
                 windowShapeUpdated = true;
             }
 
             // Check whether the lower right corner is close to bottom or right borders of a monitor
-            if (abs(xpos + mode->width - sizeAndPos[0] - sizeAndPos[2]) < distance)
+            const auto distToRight = abs(xpos + mode->width - sizeAndPos[0] - sizeAndPos[2]);
+            if (distToRight < distance && distToRight != 0)
             {
                 sizeAndPos[2] = xpos + mode->width - sizeAndPos[0];
                 windowShapeUpdated = true;
             }
-            if (abs(ypos + mode->height - sizeAndPos[1] - sizeAndPos[3]) < distance)
+
+            const auto distToBottom = abs(ypos + mode->height - sizeAndPos[1] - sizeAndPos[3]);
+            if (distToBottom < distance && distToBottom != 0)
             {
                 sizeAndPos[3] = ypos + mode->height - sizeAndPos[1];
                 windowShapeUpdated = true;

@@ -1,6 +1,17 @@
 Splash release notes
 ====================
 
+Splash 0.8.42 (2021-05-17)
+-------------------------
+Improvements:
+* Added Gitlab issue templates, updated contributing guide
+
+Bugs fixed:
+* Fixed stall in ProfilerGL when no GL object is rendered
+
+Documentation:
+* Updated the website with the new version
+
 Splash 0.8.40 (2021-05-03)
 -------------------------
 Improvements:

@@ -50,6 +50,8 @@ test:20.04:
     - make -j$(nproc)
     - make test
     - ./src/splash ../data/share/splash/splash.json
+  except:
+    - website
 
 test:archlinux:
   stage: test
@@ -91,6 +93,8 @@ coverage:
     name: "splash_coverage_${CI_BUILD_REF_NAME}"
     paths:
     - "coverage.zip"
+  except:
+    - website
 
 #
 # Package
@@ -148,30 +152,51 @@ static_analysis:
 pages:
   stage: deploy
   image: ubuntu:20.04
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
   script:
-    # Build the website
+    # Build the dependencies.
+    # Needed for CMake to succeed and build API doc
+    - ./make_deps.sh
+
+    # Build the current website
     - DEBIAN_FRONTEND=noninteractive apt install -y python3-pip doxygen graphviz
     - pip3 install mkdocs markdown-include mkdocs-bootswatch
     - export LC_ALL=C.UTF-8
     - export LANG=C.UTF-8
     - mkdocs build -f docs/mkdocs.yml
-    - ./make_deps.sh
-    - mkdir build && cd build
+    - mkdir -p build && pushd build
     - cmake .. && make doc && cp -r docs/html ../static/doxygen
-    - cd ..
-    - mv static public
+    - popd
+
+    # Build the new website
+    - git clone https://gitlab.com/sat-metalab/documentations/splash splash-doc
+    - pushd splash-doc
+    - git pull origin master # Make sure to be up-to-date
+    - pip install -U sphinx
+    - pip install -r requirements.txt
+    - make doc
+    - popd
+
+    # Build the API doc
+    - mkdir -p build && pushd build
+    - cmake .. && make doc && cp -r docs/html ../splash-doc/doxygen
+    - popd
+
+    # Gather documentation togeter
+    - mv splash-doc/public public
+    - mv static public/mkdocs
 
     # Build the packages
-    - ./make_deps.sh
-    - rm -rf build && mkdir build && cd build
+    - pushd build
     - cmake -DBUILD_GENERIC_ARCH=ON -DWITH_LTO=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make package
     - mv *.deb ../public/splash.deb
     - mv addons/blender/*.tar.bz2 ../public/blender_splash_addon.tar.bz2
+    - popd
   artifacts:
     paths:
       - public
   only:
-    - tags
     - website
