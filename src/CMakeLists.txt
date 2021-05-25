@@ -232,6 +232,7 @@ endif()
 
 if (HAVE_SHMDATA)
     target_sources(splash-${API_VERSION} PRIVATE
+        image/image_ndi.cpp
         image/image_shmdata.cpp
         mesh/mesh_shmdata.cpp
         sink/sink_shmdata.cpp
