@@ -160,9 +160,9 @@ def increase_version_number(version: List[int], version_increase: VersionIncreas
 
 def update_changelog(project: str, version: List[int]) -> None:
     print("Generating release notes")
-    orig_file_name = "docs/News.md"
-    new_file_name = "docs/News.md.new"
-    authors_file_name = "docs/Authors.md"
+    orig_file_name = "News.md"
+    new_file_name = "News.md.new"
+    authors_file_name = "Authors.md"
 
     latest_tag = subprocess.check_output(f"git log --all --format=format:%H --grep=\"Merge branch\" | head -n 1 | tr -d '\n'", shell=True, encoding="utf-8")
     tag_date = subprocess.check_output(f"git log -1 --format=%ai {latest_tag} | tr -d '\n'", shell=True, encoding="utf-8")
