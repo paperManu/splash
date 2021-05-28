@@ -79,13 +79,14 @@ class Image_Sequence : public Image
 
         addAttribute(
             "capture",
-            [&](const Values&) {
-                runAsyncTask([this]() { capture(); });
+            [&](const Values& args) {
+                if (args[0].as<bool>())
+                    runAsyncTask([this]() { capture(); });
                 return true;
             },
             // Allows for showing a capture button in the GUI
             [&]() -> Values { return {false}; },
-            {});
+            {'b'});
         setAttributeDescription("capture", "Ask for the camera to obtain an image");
     }
 };

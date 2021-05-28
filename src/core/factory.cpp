@@ -34,6 +34,7 @@
 #endif
 
 #if HAVE_SHMDATA
+#include "./image/image_ndi.h"
 #include "./image/image_shmdata.h"
 #include "./mesh/mesh_shmdata.h"
 #include "./sink/sink_shmdata.h"
@@ -295,6 +296,20 @@ void Factory::registerObjects()
 #endif
 
 #if HAVE_SHMDATA
+    _objectBook["image_ndi"] = Page(
+        [&](RootObject* root) {
+            std::shared_ptr<GraphObject> object;
+            if (!_scene)
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image_NDI>(root));
+            else
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image>(root));
+            return object;
+        },
+        GraphObject::Category::IMAGE,
+        "video through NDI",
+        "Image object reading frames from a NDI server.",
+        true);
+
     _objectBook["image_shmdata"] = Page(
         [&](RootObject* root) {
             std::shared_ptr<GraphObject> object;
