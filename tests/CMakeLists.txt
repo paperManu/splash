@@ -84,10 +84,11 @@ target_sources(unitTests PRIVATE
     unit_tests/utils/dense_deque.cpp
     unit_tests/utils/dense_map.cpp
     unit_tests/utils/dense_set.cpp
+    unit_tests/utils/file_access.cpp
     unit_tests/utils/jsonutils.cpp
     unit_tests/utils/resizable_array.cpp
     unit_tests/utils/scope_guard.cpp
-    unit_tests/utils/file_access.cpp
+    unit_tests/utils/subprocess.cpp
 )
 
 if (HAVE_CALIMIRO)

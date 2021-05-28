@@ -176,6 +176,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     userinput/userinput_mouse.cpp
     utils/cgutils.cpp
     utils/jsonutils.cpp
+    utils/subprocess.cpp
     ../external/imgui/imgui_demo.cpp
     ../external/imgui/imgui_draw.cpp
     ../external/imgui/imgui_widgets.cpp
@@ -231,6 +232,7 @@ endif()
 
 if (HAVE_SHMDATA)
     target_sources(splash-${API_VERSION} PRIVATE
+        image/image_ndi.cpp
         image/image_shmdata.cpp
         mesh/mesh_shmdata.cpp
         sink/sink_shmdata.cpp

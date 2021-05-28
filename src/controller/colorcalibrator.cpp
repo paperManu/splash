@@ -524,7 +524,7 @@ void ColorCalibrator::captureSynchronously()
     assert(_gcamera != nullptr);
 
     const auto updateTime = Timer::getTime();
-    _gcamera->setAttribute("capture", {});
+    _gcamera->setAttribute("capture", {true});
     while (updateTime > _gcamera->getTimestamp())
     {
         _gcamera->update();
