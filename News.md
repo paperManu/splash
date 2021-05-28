@@ -1,6 +1,17 @@
 Splash release notes
 ====================
 
+Splash 0.8.44 (2021-05-28)
+-------------------------
+Improvements:
+* Added Image_NDI, a wrapper around ndi2shmdata
+
+Bugs fixed:
+* Fixed random segfault in CI when testing Image_Sequence~~capture attribute
+
+Documentation:
+* Moved News, License, Contributing and Authors files back to the root
+
 Splash 0.8.42 (2021-05-17)
 -------------------------
 Improvements:
