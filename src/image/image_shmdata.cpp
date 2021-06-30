@@ -250,7 +250,7 @@ void Image_Shmdata::readHapFrame(void* data, int data_size)
         return;
 
     {
-        std::lock_guard<std::shared_mutex> lock(_writeMutex);
+        std::lock_guard<Spinlock> updateLock(_updateMutex);
         if (!_bufferImage)
             _bufferImage = std::make_unique<ImageBuffer>();
         std::swap(*(_bufferImage), _readerBuffer);
@@ -331,7 +331,7 @@ void Image_Shmdata::readUncompressedFrame(void* data, int /*data_size*/)
         return;
 
     {
-        std::lock_guard<std::shared_mutex> lock(_writeMutex);
+        std::lock_guard<Spinlock> updateLock(_updateMutex);
         if (!_bufferImage)
             _bufferImage = std::make_unique<ImageBuffer>();
         std::swap(*(_bufferImage), _readerBuffer);

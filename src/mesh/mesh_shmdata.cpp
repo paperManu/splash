@@ -112,7 +112,7 @@ void Mesh_Shmdata::onData(void* data, int /*data_size*/)
         intPtr += size;
     }
 
-    std::lock_guard<std::shared_mutex> lock(_writeMutex);
+    std::lock_guard<Spinlock> updateLock(_updateMutex);
     if (Timer::get().isDebug())
         Timer::get() << "mesh_shmdata " + _name;
 

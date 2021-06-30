@@ -51,8 +51,8 @@ void Image::init()
 /*************/
 Image::~Image()
 {
-    std::lock_guard<std::shared_mutex> writeLock(_writeMutex);
-    std::lock_guard<Spinlock> readlock(_readMutex);
+    std::lock_guard<std::shared_mutex> readLock(_readMutex);
+    std::lock_guard<Spinlock> updateLock(_updateMutex);
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Image::~Image - Destructor" << Log::endl;
 #endif
@@ -71,7 +71,7 @@ const void* Image::data() const
 ImageBuffer Image::get() const
 {
     ImageBuffer img;
-    std::lock_guard<Spinlock> lock(_readMutex);
+    std::shared_lock<std::shared_mutex> readLock(_readMutex);
     if (_image)
         img = *_image;
     return img;
@@ -80,7 +80,7 @@ ImageBuffer Image::get() const
 /*************/
 ImageBufferSpec Image::getSpec() const
 {
-    std::lock_guard<Spinlock> lock(_readMutex);
+    std::shared_lock<std::shared_mutex> readLock(_readMutex);
     if (_image)
         return _image->getSpec();
     else
@@ -90,7 +90,7 @@ ImageBufferSpec Image::getSpec() const
 /*************/
 void Image::set(const ImageBuffer& img)
 {
-    std::lock_guard<std::shared_mutex> lockRead(_writeMutex);
+    std::lock_guard<Spinlock> updateLock(_updateMutex);
     if (!_bufferImage)
         _bufferImage = std::make_unique<ImageBuffer>();
     *_bufferImage = img;
@@ -104,7 +104,7 @@ void Image::set(unsigned int w, unsigned int h, unsigned int channels, ImageBuff
     ImageBufferSpec spec(w, h, channels, 8 * sizeof(channels) * (int)type, type);
     ImageBuffer img(spec);
 
-    std::lock_guard<std::shared_mutex> lock(_writeMutex);
+    std::lock_guard<Spinlock> updateLock(_updateMutex);
     if (!_bufferImage)
         _bufferImage = std::make_unique<ImageBuffer>();
     std::swap(*_bufferImage, img);
@@ -115,7 +115,7 @@ void Image::set(unsigned int w, unsigned int h, unsigned int channels, ImageBuff
 /*************/
 std::shared_ptr<SerializedObject> Image::serialize() const
 {
-    std::lock_guard<Spinlock> lock(_readMutex);
+    std::shared_lock<std::shared_mutex> readLock(_readMutex);
 
     if (Timer::get().isDebug())
         Timer::get() << "serialize " + _name;
@@ -253,7 +253,7 @@ bool Image::readFile(const std::string& filename)
     stbi_image_free(rawImage);
 
     {
-        std::lock_guard<Spinlock> lock(_readMutex);
+        std::lock_guard<Spinlock> updateLock(_updateMutex);
         if (!_bufferImage)
             _bufferImage = std::make_unique<ImageBuffer>();
         std::swap(*_bufferImage, img);
@@ -270,7 +270,7 @@ bool Image::readFile(const std::string& filename)
 /*************/
 void Image::zero()
 {
-    std::lock_guard<Spinlock> lock(_readMutex);
+    std::lock_guard<Spinlock> updateLock(_updateMutex);
     if (!_image)
         return;
 
@@ -282,8 +282,8 @@ void Image::update()
 {
     if (_imageUpdated)
     {
-        std::lock_guard<Spinlock> lockRead(_readMutex);
-        std::shared_lock<std::shared_mutex> lockWrite(_writeMutex);
+        std::lock_guard<Spinlock> updateLock(_updateMutex);
+        std::lock_guard<std::shared_mutex> readLock(_readMutex);
         _image.swap(_bufferImage);
         _imageUpdated = false;
 
@@ -333,7 +333,7 @@ bool Image::write(const std::string& filename)
 
     auto spec = _image->getSpec();
 
-    std::lock_guard<Spinlock> lock(_readMutex);
+    std::shared_lock<std::shared_mutex> readLock(_readMutex);
     if (filename.substr(strSize - 3, strSize) == "png")
     {
         auto result = stbi_write_png(filename.c_str(), spec.width, spec.height, spec.channels, _image->data(), spec.width * spec.channels);
@@ -360,7 +360,7 @@ void Image::createDefaultImage()
     ImageBuffer img(spec);
     img.zero();
 
-    std::lock_guard<Spinlock> lock(_readMutex);
+    std::lock_guard<Spinlock> updateLock(_updateMutex);
     if (!_image)
         _image = std::make_unique<ImageBuffer>();
     std::swap(*_image, img);
@@ -386,7 +386,7 @@ void Image::createPattern()
                     p[(x + y * 512) * 4 + c] = 0;
         }
 
-    std::lock_guard<Spinlock> lock(_readMutex);
+    std::lock_guard<Spinlock> updateLock(_updateMutex);
     if (!_image)
         _image = std::make_unique<ImageBuffer>();
     std::swap(*_image, img);

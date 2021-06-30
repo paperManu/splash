@@ -344,8 +344,8 @@ void Texture_Image::update()
         return;
     }
 
-    const auto imgLock = img->getWriteLock();
     img->update();
+    const auto imgLock = img->getReadLock();
 
     auto spec = img->getSpec();
     Values srgb, flip, flop;

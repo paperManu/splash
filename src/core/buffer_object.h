@@ -45,31 +45,31 @@ namespace Splash
 class BufferObject : public GraphObject
 {
     /*************/
-    class BufferObjectLockWrite
+    class BufferObjectLockRead
     {
-      friend BufferObject;
+        friend BufferObject;
 
       public:
-        ~BufferObjectLockWrite()
+        ~BufferObjectLockRead()
         {
             if (_bufferObject == nullptr)
                 return;
-            _bufferObject->_writeMutex.unlock_shared();
+            _bufferObject->_readMutex.unlock_shared();
         }
 
       private:
         const BufferObject* _bufferObject;
 
-        BufferObjectLockWrite(const BufferObject* bufferObject)
+        BufferObjectLockRead(const BufferObject* bufferObject)
             : _bufferObject(bufferObject)
         {
             if (_bufferObject == nullptr)
                 return;
-            _bufferObject->_writeMutex.lock_shared();
+            _bufferObject->_readMutex.lock_shared();
         }
     };
 
-    friend BufferObjectLockWrite;
+    friend BufferObjectLockRead;
 
   public:
     /**
@@ -83,23 +83,11 @@ class BufferObject : public GraphObject
     }
 
     /**
-     * Lock the buffer, useful while reading. Use with care
-     * Note that only write mutex is needed, as it also disables reading
-     * Can be locked multiple times, must then be unlocked as many times
-     */
-    void lockWrite() { _writeMutex.lock_shared(); }
-
-    /**
-     * Unlock the buffer
-     */
-    void unlockWrite() { _writeMutex.unlock_shared(); }
-
-    /**
-     * Get a shared write lock over this object,
+     * Get a shared read lock over this object,
      * which unlocks it upon destruction
-     * \return Returns a shared write lock
+     * \return Returns a shared read lock
      */
-    BufferObjectLockWrite getWriteLock() { return BufferObjectLockWrite(this); }
+    BufferObjectLockRead getReadLock() { return BufferObjectLockRead(this); }
 
     /**
      * Set the object as dirty to force update
@@ -175,8 +163,19 @@ class BufferObject : public GraphObject
     bool hasSerializedObjectWaiting() const { return _newSerializedObject; };
 
   protected:
-    mutable Spinlock _readMutex;                //!< Read mutex locked when the object is read from
-    mutable std::shared_mutex _writeMutex;      //!< Write mutex locked when the object is written to
+    /**
+     * Update mutex, used internally to prevent
+     * the buffer to be updated from multiple places
+     * at the same time
+     */
+    mutable Spinlock _updateMutex;              //!< Update mutex, which prevents content buffer switcher
+
+    /**
+     * Read mutex, used to prevent the buffer content to
+     * be modified while it is being read
+     */
+    mutable std::shared_mutex _readMutex;
+
     std::mutex _serializedObjectWaitingMutex{}; //!< Mutex is locked if a serialized object has been set and waits for processing
     std::future<void> _deserializeFuture{};     //!< Holds the deserialization thread
     mutable Spinlock _timestampMutex;
