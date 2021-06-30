@@ -44,9 +44,36 @@ namespace Splash
 /*************/
 class BufferObject : public GraphObject
 {
+    /*************/
+    class BufferObjectLockWrite
+    {
+      friend BufferObject;
+
+      public:
+        ~BufferObjectLockWrite()
+        {
+            if (_bufferObject == nullptr)
+                return;
+            _bufferObject->_writeMutex.unlock_shared();
+        }
+
+      private:
+        const BufferObject* _bufferObject;
+
+        BufferObjectLockWrite(const BufferObject* bufferObject)
+            : _bufferObject(bufferObject)
+        {
+            if (_bufferObject == nullptr)
+                return;
+            _bufferObject->_writeMutex.lock_shared();
+        }
+    };
+
+    friend BufferObjectLockWrite;
+
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
     BufferObject(RootObject* root)
@@ -63,9 +90,16 @@ class BufferObject : public GraphObject
     void lockWrite() { _writeMutex.lock_shared(); }
 
     /**
-     * \brief Unlock the buffer
+     * Unlock the buffer
      */
     void unlockWrite() { _writeMutex.unlock_shared(); }
+
+    /**
+     * Get a shared write lock over this object,
+     * which unlocks it upon destruction
+     * \return Returns a shared write lock
+     */
+    BufferObjectLockWrite getWriteLock() { return BufferObjectLockWrite(this); }
 
     /**
      * Set the object as dirty to force update
@@ -73,31 +107,31 @@ class BufferObject : public GraphObject
     void setDirty() { updateTimestamp(); }
 
     /**
-     * \brief Check whether the object has been updated
+     * Check whether the object has been updated
      * \return Return true if the object has been updated
      */
     bool wasUpdated() const override { return _updatedBuffer | GraphObject::wasUpdated(); }
 
     /**
-     * \brief Set the updated buffer flag to false.
+     * Set the updated buffer flag to false.
      */
     void setNotUpdated() override;
 
     /**
-     * \brief Update the BufferObject from a serialized representation.
+     * Update the BufferObject from a serialized representation.
      * \param obj Serialized object to use as source
      * \return Return true if everything went well
      */
     virtual bool deserialize(const std::shared_ptr<SerializedObject>& /*obj*/) = 0;
 
     /**
-     * \brief Update the BufferObject from the inner serialized object, set with setSerializedObject
+     * Update the BufferObject from the inner serialized object, set with setSerializedObject
      * \return Return true if everything went well
      */
     bool deserialize();
 
     /**
-     * \brief Get the name of the distant buffer object, for those which have a different name between World and Scene (happens with Queues)
+     * Get the name of the distant buffer object, for those which have a different name between World and Scene (happens with Queues)
      * \return Return the distant name
      */
     virtual std::string getDistantName() const { return _name; }
@@ -123,13 +157,13 @@ class BufferObject : public GraphObject
     }
 
     /**
-     * \brief Serialize the object
+     * Serialize the object
      * \return Return a serialized representation of the object
      */
     virtual std::shared_ptr<SerializedObject> serialize() const = 0;
 
     /**
-     * \brief Set the next serialized object to deserialize to buffer
+     * Set the next serialized object to deserialize to buffer
      * \param obj Serialized object
      */
     void setSerializedObject(const std::shared_ptr<SerializedObject>& obj);
@@ -159,7 +193,7 @@ class BufferObject : public GraphObject
     virtual void updateTimestamp(int64_t timestamp = -1);
 
     /**
-     * \brief Register new attributes
+     * Register new attributes
      */
     void registerAttributes();
 };
