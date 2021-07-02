@@ -1102,7 +1102,6 @@ PythonEmbedded::PythonEmbedded(RootObject* root)
     {
         PyImport_AppendInittab("splash", &pythonInitSplash);
         Py_Initialize();
-        PyEval_InitThreads();
 
         _pythonGlobalThreadState = PyThreadState_Get();
         PyEval_ReleaseThread(_pythonGlobalThreadState);
