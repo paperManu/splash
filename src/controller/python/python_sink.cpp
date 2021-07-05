@@ -524,7 +524,7 @@ PyObject* PythonSink::pythonSinkOpen(PythonSinkObject* self)
         return Py_False;
     }
 
-    that->setObjectAttribute(*self->sinkName, "opened", {1});
+    that->setObjectAttribute(*self->sinkName, "opened", {true});
     self->opened = true;
 
     Py_INCREF(Py_True);
@@ -559,7 +559,7 @@ PyObject* PythonSink::pythonSinkClose(PythonSinkObject* self)
         return Py_False;
     }
 
-    that->setObjectAttribute(*self->sinkName, "opened", {0});
+    that->setObjectAttribute(*self->sinkName, "opened", {false});
     self->opened = false;
 
     PyObject* tmp = nullptr;
