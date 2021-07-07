@@ -207,6 +207,8 @@ class Image : public BufferObject
     void registerAttributes();
 
   private:
+    static const uint32_t _imageCopyThreads = 2;
+    static const uint32_t _serializedImageHeaderSize = 4096;
     // Deserialization is done in this buffer, to avoid realloc
     ImageBuffer _bufferDeserialize;
 

@@ -74,6 +74,9 @@ class PythonSink
 
     static PyMethodDef SinkMethods[];
     static PyTypeObject pythonSinkType;
+
+  private:
+    static const uint32_t _maxSinkCreationTries = 200;
 };
 
 }

@@ -2,8 +2,6 @@
 
 #include "./controller/controller_pythonembedded.h"
 
-#define SPLASH_PYTHON_MAX_TRIES 200
-
 namespace chrono = std::chrono;
 
 namespace Splash
@@ -80,7 +78,7 @@ int PythonSink::pythonSinkInit(PythonSinkObject* self, PyObject* args, PyObject*
     that->setInScene("addObject", {"sink", *self->sinkName, root->getName()});
 
     // Wait until the sink is created
-    int triesLeft = SPLASH_PYTHON_MAX_TRIES;
+    int triesLeft = _maxSinkCreationTries;
     while (!self->sink && --triesLeft)
     {
         self->sink = std::dynamic_pointer_cast<Sink>(root->getObject(*self->sinkName));
@@ -308,7 +306,7 @@ PyObject* PythonSink::pythonSinkGrab(PythonSinkObject* self)
     // Due to the asynchronicity of passing messages to Splash, the frame may still
     // be at a wrong resolution if set_size was called. We test for this case.
     PyObject* buffer = nullptr;
-    int triesLeft = SPLASH_PYTHON_MAX_TRIES;
+    int triesLeft = _maxSinkCreationTries;
     while (triesLeft)
     {
         auto frame = self->sink->getBuffer();

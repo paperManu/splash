@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "./core/constants.h"
+
 namespace Splash
 {
 namespace Utils
@@ -40,7 +42,7 @@ bool checkAndUpgradeConfiguration(Json::Value& configuration)
     {
         Json::Value newConfig;
 
-        newConfig["description"] = SPLASH_FILE_CONFIGURATION;
+        newConfig["description"] = Constants::FILE_CONFIGURATION;
         newConfig["world"] = configuration["world"];
 
         std::vector<std::string> sceneNames = {};

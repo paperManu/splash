@@ -15,6 +15,7 @@
 #include <Tracy.hpp>
 
 #include "./core/buffer_object.h"
+#include "./core/constants.h"
 #include "./core/link.h"
 #include "./core/scene.h"
 #include "./core/serializer.h"
@@ -90,7 +91,7 @@ bool World::applyContext()
             if (!_nameRegistry.registerName(pythonObjectName))
                 pythonObjectName = _nameRegistry.generateName("_pythonArgScript");
 
-            sendMessage(SPLASH_ALL_PEERS, "addObject", {"python", pythonObjectName, _masterSceneName});
+            sendMessage(Constants::ALL_PEERS, "addObject", {"python", pythonObjectName, _masterSceneName});
             sendMessage(pythonObjectName, "savable", {false});
             sendMessage(pythonObjectName, "args", {pythonArgs});
             sendMessage(pythonObjectName, "file", {pythonScriptPath});
@@ -180,7 +181,7 @@ void World::run()
 
             // Wait for previous buffers to be uploaded
             _link->waitForBufferSending(chrono::milliseconds(50)); // Maximum time to wait for frames to arrive
-            sendMessage(SPLASH_ALL_PEERS, "uploadTextures", {});
+            sendMessage(Constants::ALL_PEERS, "uploadTextures", {});
             Timer::get() >> "upload";
 
             // Ask for the upload of the new buffers, during the next world loop
@@ -297,7 +298,7 @@ bool World::applyConfig()
                 setAttribute("addObject", {objects[objectName]["type"].asString(), objectName, scene.first, false});
             }
 
-            sendMessage(SPLASH_ALL_PEERS, "runInBackground", {_context.hide});
+            sendMessage(Constants::ALL_PEERS, "runInBackground", {_context.hide});
         }
 
         // Make sure all objects have been created in every Scene, by sending a sync
@@ -318,7 +319,7 @@ bool World::applyConfig()
             {
                 if (link.size() < 2)
                     continue;
-                addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), link[1].asString()}); });
+                addTask([=]() { sendMessage(Constants::ALL_PEERS, "link", {link[0].asString(), link[1].asString()}); });
             }
         }
 
@@ -625,7 +626,7 @@ void World::saveConfig()
     }
 
     // Configuration from the world
-    _config["description"] = SPLASH_FILE_CONFIGURATION;
+    _config["description"] = Constants::FILE_CONFIGURATION;
     _config["version"] = string(PACKAGE_VERSION);
     auto worldConfiguration = getRootConfigurationAsJson("world");
     for (const auto& attr : worldConfiguration.getMemberNames())
@@ -649,7 +650,7 @@ void World::saveProject(const string& filename)
             "C"); // Needed to make sure numbers are written with commas
 
         auto root = Json::Value(); // Haha, auto root...
-        root["description"] = SPLASH_FILE_PROJECT;
+        root["description"] = Constants::FILE_PROJECT;
         root["version"] = string(PACKAGE_VERSION);
         root["links"] = Json::Value();
 
@@ -669,7 +670,7 @@ void World::saveProject(const string& filename)
                 bool isLinkedToCam = (config["objects"][v[1].asString()]["type"].asString() == "camera");
 
                 if (isLinkedToCam)
-                    v[1] = SPLASH_CAMERA_LINK;
+                    v[1] = Constants::CAMERA_LINK;
 
                 auto link = make_pair<string, string>(v[0].asString(), v[1].asString());
                 if (existingLinks.find(link) == existingLinks.end())
@@ -808,7 +809,7 @@ bool World::loadProject(const string& filename)
         if (!Utils::loadJsonFile(filename, partialConfig))
             return false;
 
-        if (!partialConfig.isMember("description") || partialConfig["description"].asString() != SPLASH_FILE_PROJECT)
+        if (!partialConfig.isMember("description") || partialConfig["description"].asString() != Constants::FILE_PROJECT)
             return false;
 
         _projectFilename = filename;
@@ -850,15 +851,15 @@ bool World::loadProject(const string& filename)
             auto sink = link[1].asString();
 
             addTask([=]() {
-                if (sink != SPLASH_CAMERA_LINK)
+                if (sink != Constants::CAMERA_LINK)
                 {
-                    sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), link[1].asString()});
+                    sendMessage(Constants::ALL_PEERS, "link", {link[0].asString(), link[1].asString()});
                 }
                 else
                 {
                     auto cameraNames = getObjectsOfType("camera");
                     for (const auto& camera : cameraNames)
-                        sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), camera});
+                        sendMessage(Constants::ALL_PEERS, "link", {link[0].asString(), camera});
                 }
             });
         }
@@ -965,7 +966,7 @@ void World::registerAttributes()
                     _objects.erase(objectIt);
 
                 // Ask for Scenes to delete the object
-                sendMessage(SPLASH_ALL_PEERS, "deleteObject", args);
+                sendMessage(Constants::ALL_PEERS, "deleteObject", args);
 
                 for (const auto& s : _scenes)
                     sendMessageWithAnswer(s.first, "sync");
@@ -978,7 +979,7 @@ void World::registerAttributes()
 
     addAttribute("link",
         [&](const Values& args) {
-            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "link", args); });
+            addTask([=]() { sendMessage(Constants::ALL_PEERS, "link", args); });
             return true;
         },
         {'s', 's'});
@@ -986,7 +987,7 @@ void World::registerAttributes()
 
     addAttribute("unlink",
         [&](const Values& args) {
-            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "unlink", args); });
+            addTask([=]() { sendMessage(Constants::ALL_PEERS, "unlink", args); });
             return true;
         },
         {'s', 's'});
@@ -1205,7 +1206,7 @@ void World::registerAttributes()
             if (_swapSynchronizationTesting)
             {
                 addPeriodicTask("swapTest", [&]() {
-                    sendMessage(SPLASH_ALL_PEERS, "swapTest", {1});
+                    sendMessage(Constants::ALL_PEERS, "swapTest", {1});
                     static auto frameNbr = 0;
                     static auto frameStatus = 0;
                     auto color = glm::vec4(0.0);
@@ -1222,7 +1223,7 @@ void World::registerAttributes()
                     }
 
                     if (frameNbr == 0)
-                        sendMessage(SPLASH_ALL_PEERS, "swapTestColor", {color[0], color[1], color[2], color[3]});
+                        sendMessage(Constants::ALL_PEERS, "swapTestColor", {color[0], color[1], color[2], color[3]});
 
                     frameNbr = (frameNbr + 1) % _swapSynchronizationTesting;
                 });
@@ -1230,7 +1231,7 @@ void World::registerAttributes()
             else
             {
                 removePeriodicTask("swapTest");
-                addTask([&]() { sendMessage(SPLASH_ALL_PEERS, "swapTest", {0}); });
+                addTask([&]() { sendMessage(Constants::ALL_PEERS, "swapTest", {0}); });
             }
             return true;
         },
@@ -1239,7 +1240,7 @@ void World::registerAttributes()
 
     addAttribute("wireframe",
         [&](const Values& args) {
-            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "wireframe", args); });
+            addTask([=]() { sendMessage(Constants::ALL_PEERS, "wireframe", args); });
 
             return true;
         },

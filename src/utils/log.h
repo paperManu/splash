@@ -42,8 +42,6 @@
 #include "./core/spinlock.h"
 #include "./core/value.h"
 
-#define SPLASH_LOG_FILE "/var/log/splash.log"
-
 namespace Splash
 {
 
@@ -233,6 +231,8 @@ class Log
     const Log& operator=(const Log&) = delete;
 
   private:
+    static constexpr char _logFilePath[]{"/var/log/splash.log"};
+
     mutable Spinlock _mutex;
     std::deque<std::tuple<uint64_t, std::string, Priority>> _logs;
     bool _logToFile{false};
@@ -280,7 +280,7 @@ class Log
         // Write to log file, if we may
         if (_logToFile)
         {
-            std::ofstream logFile(SPLASH_LOG_FILE, std::ostream::out | std::ostream::app);
+            std::ofstream logFile(_logFilePath, std::ostream::out | std::ostream::app);
             if (logFile.good())
             {
                 logFile << formatMessage(now, message, p) << "\n";

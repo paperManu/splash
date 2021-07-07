@@ -13,9 +13,6 @@
 #include "./utils/osutils.h"
 #include "./utils/timer.h"
 
-#define SPLASH_IMAGE_COPY_THREADS 2
-#define SPLASH_IMAGE_SERIALIZED_HEADER_SIZE 4096
-
 namespace Splash
 {
 
@@ -126,7 +123,7 @@ std::shared_ptr<SerializedObject> Image::serialize() const
     std::string xmlSpec = _image->getSpec().to_string();
     int nbrChar = xmlSpec.size();
     int imgSize = _image->getSpec().rawSize();
-    int totalSize = SPLASH_IMAGE_SERIALIZED_HEADER_SIZE + imgSize;
+    int totalSize = _serializedImageHeaderSize + imgSize;
 
     auto obj = std::make_shared<SerializedObject>(totalSize);
 
@@ -137,7 +134,7 @@ std::shared_ptr<SerializedObject> Image::serialize() const
 
     const char* charPtr = reinterpret_cast<const char*>(xmlSpec.c_str());
     std::copy(charPtr, charPtr + nbrChar, currentObjPtr);
-    currentObjPtr = obj->data() + SPLASH_IMAGE_SERIALIZED_HEADER_SIZE;
+    currentObjPtr = obj->data() + _serializedImageHeaderSize;
 
     // And then, the image
     const char* imgPtr = reinterpret_cast<const char*>(_image->data());
@@ -146,7 +143,7 @@ std::shared_ptr<SerializedObject> Image::serialize() const
 
     {
         std::vector<std::future<void>> threads;
-        int stride = SPLASH_IMAGE_COPY_THREADS;
+        int stride = _imageCopyThreads;
         for (int i = 0; i < stride - 1; ++i)
             threads.push_back(std::async(std::launch::async, ([=]() { std::copy(imgPtr + imgSize / stride * i, imgPtr + imgSize / stride * (i + 1), currentObjPtr + imgSize / stride * i); })));
         std::copy(imgPtr + imgSize / stride * (stride - 1), imgPtr + imgSize, currentObjPtr + imgSize / stride * (stride - 1));
@@ -191,7 +188,7 @@ bool Image::deserialize(const std::shared_ptr<SerializedObject>& obj)
         _bufferDeserialize.getSpec().timestamp = spec.timestamp;
 
         auto rawBuffer = obj->grabData();
-        rawBuffer.shift(SPLASH_IMAGE_SERIALIZED_HEADER_SIZE);
+        rawBuffer.shift(_serializedImageHeaderSize);
         _bufferDeserialize.setRawBuffer(std::move(rawBuffer));
 
         if (!_bufferImage)
