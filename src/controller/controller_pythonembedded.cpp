@@ -1414,6 +1414,10 @@ Value PythonEmbedded::convertToValue(PyObject* pyObject)
                 values.push_back(parsePyObject(PyList_GetItem(obj, i)));
             value = values;
         }
+        else if (PyBool_Check(obj))
+        {
+            value = (obj == Py_True) ? true : false;
+        }
         else if (PyLong_Check(obj))
         {
             value = static_cast<int64_t>(PyLong_AsLong(obj));
