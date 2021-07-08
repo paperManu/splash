@@ -2,6 +2,7 @@
 
 #include <fstream>
 
+#include "./core/constants.h"
 #include "./controller/controller.h"
 #include "./controller/widget/widget_calibration.h"
 #include "./controller/widget/widget_camera.h"
@@ -1349,7 +1350,7 @@ void Gui::initImWidgets()
             stats[branchName + "_warp"] = runningAverage(stats[branchName + "_warp"], getLeafValue(durationPath + "/warp"));
             stats[branchName + "_window"] = runningAverage(stats[branchName + "_window"], getLeafValue(durationPath + "/window"));
             stats[branchName + "_swap"] = runningAverage(stats[branchName + "_swap"], getLeafValue(durationPath + "/swap"));
-            stats[branchName + "_gl_time_per_frame"] = runningAverage(stats[branchName + "_gl_time_per_frame"], getLeafValue(durationPath + "/" + GL_TIMING_PREFIX + GL_TIMING_TIME_PER_FRAME));
+            stats[branchName + "_gl_time_per_frame"] = runningAverage(stats[branchName + "_gl_time_per_frame"], getLeafValue(durationPath + "/" + Constants::GL_TIMING_PREFIX + Constants::GL_TIMING_TIME_PER_FRAME));
 
             stream << "- " + branchName + ":\n";
             stream << "    GPU:\n";

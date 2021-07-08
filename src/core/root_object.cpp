@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include "./core/buffer_object.h"
+#include "./core/constants.h"
 #include "./core/serialize/serialize_uuid.h"
 #include "./core/serialize/serialize_value.h"
 #include "./core/serializer.h"
@@ -156,7 +157,7 @@ std::shared_ptr<GraphObject> RootObject::getObject(const std::string& name)
 /*************/
 bool RootObject::set(const std::string& name, const std::string& attrib, const Values& args, bool async)
 {
-    if (name == _name || name == SPLASH_ALL_PEERS)
+    if (name == _name || name == Constants::ALL_PEERS)
         return setAttribute(attrib, args) != BaseObject::SetAttrStatus::failure;
 
     auto object = getObject(name);

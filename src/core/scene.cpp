@@ -8,6 +8,7 @@
 
 #include "./controller/controller_blender.h"
 #include "./controller/controller_gui.h"
+#include "./core/constants.h"
 #include "./core/link.h"
 #include "./graphics/camera.h"
 #include "./graphics/filter.h"
@@ -244,7 +245,7 @@ void Scene::remove(const std::string& name)
 /*************/
 void Scene::render()
 {
-    PROFILEGL(GL_TIMING_TIME_PER_FRAME);
+    PROFILEGL(Constants::GL_TIMING_TIME_PER_FRAME);
     // We want to have as much time as possible for uploading the textures,
     // so we start it right now.
     bool expectedAtomicValue = false;
@@ -377,7 +378,7 @@ void Scene::render()
     const auto glTimings = ProfilerGL::get().getTimings();
     for (const auto& threadTimings : glTimings)
         for (const auto& glTiming : threadTimings.second)
-            Timer::get().setDuration(GL_TIMING_PREFIX + glTiming.getScope(), glTiming.getDuration() / 1000.0);
+            Timer::get().setDuration(Constants::GL_TIMING_PREFIX + glTiming.getScope(), glTiming.getDuration() / 1000.0);
 #ifndef PROFILE_GPU
     ProfilerGL::get().clearTimings();
 #endif

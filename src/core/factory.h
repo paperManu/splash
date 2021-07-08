@@ -142,7 +142,7 @@ class Factory
     std::unordered_map<std::string, std::unordered_map<std::string, Values>> _defaults{}; //!< Default values
 
     /**
-     * Load default values from the file set in envvar SPLASH_DEFAULTS_FILE_ENV (set in constants.h)
+     * Load default values from the file set in envvar Constants::DEFAULT_FILE_ENV (set in constants.h)
      */
     void loadDefaults();
 

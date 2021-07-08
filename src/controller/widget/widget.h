@@ -25,10 +25,6 @@
 #ifndef SPLASH_WIDGETS_H
 #define SPLASH_WIDGETS_H
 
-#define SPLASH_GLV_TEXTCOLOR 1.0, 1.0, 1.0
-#define SPLASH_GLV_FONTSIZE 8.0
-#define SPLASH_GLV_FONTWIDTH 2.0
-
 #include <deque>
 #include <functional>
 #include <imgui.h>

@@ -16,9 +16,9 @@ class BufferObjectMock : public BufferObject
     {
     }
 
-    bool tryLockWrite()
+    bool tryLockRead()
     {
-        if (_writeMutex.try_lock())
+        if (_readMutex.try_lock())
             return true;
         return false;
     }
@@ -36,10 +36,11 @@ class BufferObjectMock : public BufferObject
 TEST_CASE("Testing BufferObject locking")
 {
     auto buffer = BufferObjectMock();
-    buffer.lockWrite();
-    CHECK(!buffer.tryLockWrite());
-    buffer.unlockWrite();
-    CHECK(buffer.tryLockWrite());
+    {
+        const auto readLock = buffer.getReadLock();
+        CHECK(!buffer.tryLockRead());
+    }
+    CHECK(buffer.tryLockRead());
 }
 
 /*************/

@@ -137,7 +137,7 @@ void Image_OpenCV::readLoop()
         std::copy(capture.data, capture.data + imageSize, pixels);
 
         {
-            std::lock_guard<std::shared_mutex> lockWrite(_writeMutex);
+            std::lock_guard<Spinlock> updateLock(_updateMutex);
             if (!_bufferImage)
                 _bufferImage = std::make_unique<ImageBuffer>();
             std::swap(*_bufferImage, _readBuffer);

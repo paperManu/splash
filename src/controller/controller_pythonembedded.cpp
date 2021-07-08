@@ -1102,7 +1102,6 @@ PythonEmbedded::PythonEmbedded(RootObject* root)
     {
         PyImport_AppendInittab("splash", &pythonInitSplash);
         Py_Initialize();
-        PyEval_InitThreads();
 
         _pythonGlobalThreadState = PyThreadState_Get();
         PyEval_ReleaseThread(_pythonGlobalThreadState);
@@ -1414,6 +1413,10 @@ Value PythonEmbedded::convertToValue(PyObject* pyObject)
             for (auto i = 0; i < length; ++i)
                 values.push_back(parsePyObject(PyList_GetItem(obj, i)));
             value = values;
+        }
+        else if (PyBool_Check(obj))
+        {
+            value = (obj == Py_True) ? true : false;
         }
         else if (PyLong_Check(obj))
         {

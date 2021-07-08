@@ -764,7 +764,7 @@ void Image_FFmpeg::videoDisplayLoop()
                 _elapsedTime = timedFrame.timing;
 
                 {
-                    std::lock_guard<std::shared_mutex> lock(_writeMutex);
+                    std::lock_guard<Spinlock> updateLock(_updateMutex);
                     if (!_bufferImage)
                         _bufferImage = std::make_unique<ImageBuffer>();
                     std::swap(_bufferImage, timedFrame.frame);

@@ -333,7 +333,19 @@ void Texture_Image::update()
     // If _img is nullptr, this texture is not set from an Image
     if (_img.expired())
         return;
-    auto img = _img.lock();
+    const auto img = _img.lock();
+
+    if (img->getTimestamp() == _spec.timestamp)
+        return;
+
+    if (_multisample > 1)
+    {
+        Log::get() << Log::ERROR << "Texture_Image::" << __FUNCTION__ << " - Texture " << _name << " is multisampled, and can not be set from an image" << Log::endl;
+        return;
+    }
+
+    img->update();
+    const auto imgLock = img->getReadLock();
 
     auto spec = img->getSpec();
     Values srgb, flip, flop;
@@ -344,19 +356,8 @@ void Texture_Image::update()
     _shaderUniforms["flip"] = flip;
     _shaderUniforms["flop"] = flop;
 
-    if (img->getTimestamp() == _spec.timestamp)
-        return;
-
-    img->update();
-
-    if (_multisample > 1)
-    {
-        Log::get() << Log::ERROR << "Texture_Image::" << __FUNCTION__ << " - Texture " << _name << " is multisampled, and can not be set from an image" << Log::endl;
-        return;
-    }
-
     // Store the image data size
-    int imageDataSize = spec.rawSize();
+    const int imageDataSize = spec.rawSize();
     GLenum glChannelOrder = getChannelOrder(spec);
 
     // If the texture is compressed, we need to modify a few values
@@ -471,10 +472,8 @@ void Texture_Image::update()
 #ifdef DEBUG
             Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Creating a new texture" << Log::endl;
 #endif
-            img->lockWrite();
             glTextureStorage2D(_glTex, _texLevels, internalFormat, spec.width, spec.height);
             glTextureSubImage2D(_glTex, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, img->data());
-            img->unlockWrite();
         }
         else if (isCompressed)
         {
@@ -482,10 +481,8 @@ void Texture_Image::update()
             Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Creating a new compressed texture" << Log::endl;
 #endif
 
-            img->lockWrite();
             glTextureStorage2D(_glTex, _texLevels, internalFormat, spec.width, spec.height);
             glCompressedTextureSubImage2D(_glTex, 0, 0, 0, spec.width, spec.height, internalFormat, imageDataSize, img->data());
-            img->unlockWrite();
         }
 
         if (!updatePbos(spec.width, spec.height, spec.pixelBytes()))
@@ -493,11 +490,9 @@ void Texture_Image::update()
 
         // Fill one of the PBOs right now
         auto pixels = _pbosPixels[0];
-        if (pixels != NULL)
+        if (pixels != nullptr)
         {
-            img->lockWrite();
             memcpy((void*)pixels, img->data(), imageDataSize);
-            img->unlockWrite();
         }
 
         // And copy it to the second PBO
@@ -520,11 +515,7 @@ void Texture_Image::update()
         // Fill the next PBO with the image pixels
         auto pixels = _pbosPixels[_pboUploadIndex];
         if (pixels != nullptr)
-        {
-            img->lockWrite();
             memcpy(pixels, img->data(), imageDataSize);
-            img->unlockWrite();
-        }
     }
 
     _spec.timestamp = spec.timestamp;

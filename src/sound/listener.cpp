@@ -75,13 +75,13 @@ int Listener::portAudioCallback(
     if (readPosition > writePosition)
         delta = readPosition - writePosition;
     else
-        delta = SPLASH_LISTENER_RINGBUFFER_SIZE - writePosition + readPosition;
+        delta = _ringbufferSize - writePosition + readPosition;
 
     int step = framesPerBuffer * that->_channels * that->_sampleSize;
     if (delta < step)
         return paContinue;
 
-    int spaceLeft = SPLASH_LISTENER_RINGBUFFER_SIZE - writePosition;
+    int spaceLeft = _ringbufferSize - writePosition;
 
     if (spaceLeft < step)
         writePosition = 0;

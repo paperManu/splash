@@ -6,6 +6,7 @@
 
 #include "./core/attribute.h"
 #include "./core/buffer_object.h"
+#include "./core/constants.h"
 #include "./core/root_object.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
@@ -305,7 +306,7 @@ bool Link::sendMessage(const std::string& name, const std::string& attribute, co
 
 // We don't display broadcast messages, for visibility
 #ifdef DEBUG
-    if (name != SPLASH_ALL_PEERS)
+    if (name != Constants::ALL_PEERS)
         Log::get() << Log::DEBUGGING << "Link::" << __FUNCTION__ << " - Sending message to " << name << "::" << attribute << Log::endl;
 #endif
 
@@ -407,7 +408,7 @@ void Link::handleInputMessages()
                 _rootObject->set(name, attribute, values);
 // We don't display broadcast messages, for visibility
 #ifdef DEBUG
-            if (name != SPLASH_ALL_PEERS)
+            if (name != Constants::ALL_PEERS)
                 Log::get() << Log::DEBUGGING << "Link::" << __FUNCTION__ << " (" << _rootObject->getName() << ")"
                            << " - Receiving message for " << name << "::" << attribute << Log::endl;
 #endif

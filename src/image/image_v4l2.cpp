@@ -105,7 +105,7 @@ void Image_V4L2::captureThreadFunc()
                 _bufferImage = std::make_unique<ImageBuffer>(_spec);
 
             {
-                std::unique_lock<std::shared_mutex> lockWrite(_writeMutex);
+                std::lock_guard<Spinlock> updateLock(_updateMutex);
                 result = ::read(_deviceFd, _bufferImage->data(), _spec.rawSize());
                 _imageUpdated = true;
             }
@@ -171,13 +171,13 @@ void Image_V4L2::captureThreadFunc()
                     if (_ioMethod == V4L2_MEMORY_MMAP)
                     {
                         auto& imageBuffer = _imageBuffers[buffer.index];
-                        std::unique_lock<std::shared_mutex> lockWrite(_writeMutex);
+                        std::lock_guard<Spinlock> updateLock(_updateMutex);
                         _bufferImage = std::make_unique<ImageBuffer>(imageBuffer->getSpec(), imageBuffer->data());
                         _imageUpdated = true;
                     }
                     else if (_ioMethod == V4L2_MEMORY_USERPTR)
                     {
-                        std::unique_lock<std::shared_mutex> lockWrite(_writeMutex);
+                        std::lock_guard<Spinlock> updateLock(_updateMutex);
                         _bufferImage.swap(_imageBuffers[buffer.index]);
                         _imageUpdated = true;
                     }
@@ -246,7 +246,7 @@ void Image_V4L2::captureThreadFunc()
     }
 
     // Reset to a default image
-    std::unique_lock<std::shared_mutex> lockWrite(_writeMutex);
+    std::lock_guard<Spinlock> updateLock(_updateMutex);
     _bufferImage = std::make_unique<ImageBuffer>(ImageBufferSpec(512, 512, 4, 32));
     _bufferImage->zero();
     _imageUpdated = true;

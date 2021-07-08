@@ -25,8 +25,6 @@
 #ifndef SPLASH_SPEAKER_H
 #define SPLASH_SPEAKER_H
 
-#define SPLASH_SPEAKER_RINGBUFFER_SIZE (4 * 1024 * 1024)
-
 #include <array>
 #include <atomic>
 #include <memory>
@@ -89,6 +87,8 @@ class Speaker : public GraphObject
     void setParameters(uint32_t channels, uint32_t sampleRate, Sound_Engine::SampleFormat format, const std::string& deviceName = "");
 
   private:
+    static constexpr uint32_t _ringbufferSize{4 * 1024 * 1024};
+
     Sound_Engine _engine;
     bool _ready{false};
     unsigned int _channels{2};
@@ -100,7 +100,7 @@ class Speaker : public GraphObject
 
     bool _abortCallback{false};
 
-    std::array<uint8_t, SPLASH_SPEAKER_RINGBUFFER_SIZE> _ringBuffer;
+    std::array<uint8_t, _ringbufferSize> _ringBuffer;
     std::atomic_int _ringWritePosition{0};
     std::atomic_int _ringReadPosition{0};
     std::atomic_int _ringUnusedSpace{0};
@@ -162,12 +162,12 @@ bool Speaker::addToQueue(const ResizableArray<T>& buffer)
     if (readPosition > writePosition)
         delta = readPosition - writePosition;
     else
-        delta = SPLASH_SPEAKER_RINGBUFFER_SIZE - writePosition + readPosition;
+        delta = _ringbufferSize - writePosition + readPosition;
 
     if (delta < static_cast<int>(buffer.size() * bufferSampleSize))
         return false;
 
-    int spaceLeft = SPLASH_SPEAKER_RINGBUFFER_SIZE - writePosition;
+    int spaceLeft = _ringbufferSize - writePosition;
 
     const uint8_t* bufferPtr;
     if (_planar)

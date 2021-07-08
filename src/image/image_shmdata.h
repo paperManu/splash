@@ -61,6 +61,7 @@ class Image_Shmdata : public Image
     bool read(const std::string& filename) final;
 
   private:
+    static const uint32_t _shmdataCopyThreads = 2;
     Utils::ShmdataLogger _logger;
     std::unique_ptr<shmdata::Follower> _reader{nullptr};
 

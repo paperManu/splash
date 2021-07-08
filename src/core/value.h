@@ -349,7 +349,7 @@ struct Value
             {
                 auto& data = std::get<Buffer>(_data);
                 std::string out = "(";
-                static constexpr size_t maxBufferPrinted = 16;
+                static const size_t maxBufferPrinted = 16;
                 for (uint32_t i = 0; i < std::min(static_cast<size_t>(maxBufferPrinted), data.size()); ++i)
                     out += std::to_string(data[i]);
                 if (data.size() > maxBufferPrinted)

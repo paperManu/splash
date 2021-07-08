@@ -182,7 +182,7 @@ class Texture_Image : public Texture
     int64_t _lastDrawnTimestamp{0};
 
     // Store some texture parameters
-    static constexpr int _texLevels{4};
+    static const int _texLevels = 4;
     bool _filtering{false};
     GLenum _texFormat{GL_RGB}, _texType{GL_UNSIGNED_BYTE};
     std::string _pixelFormat{"RGBA"};

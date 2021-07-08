@@ -96,7 +96,7 @@ class Image : public BufferObject
      */
     virtual int64_t getTimestamp() const final
     {
-        std::lock_guard<Spinlock> lock(_readMutex);
+        std::shared_lock<std::shared_mutex> readLock(_readMutex);
         return _image ? _image->getSpec().timestamp : 0;
     }
 
@@ -106,7 +106,7 @@ class Image : public BufferObject
      */
     void setTimestamp(int64_t timestamp) override
     {
-        std::lock_guard<std::shared_mutex> lock(_writeMutex);
+        std::lock_guard<std::shared_mutex> readLock(_readMutex);
         _image->getSpec().timestamp = timestamp;
     }
 
@@ -207,6 +207,8 @@ class Image : public BufferObject
     void registerAttributes();
 
   private:
+    static const uint32_t _imageCopyThreads = 2;
+    static const uint32_t _serializedImageHeaderSize = 4096;
     // Deserialization is done in this buffer, to avoid realloc
     ImageBuffer _bufferDeserialize;
 

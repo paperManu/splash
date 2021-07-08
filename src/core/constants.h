@@ -27,27 +27,6 @@
 
 #include "./config.h"
 
-#define SPLASH
-#define SPLASH_GL_DEBUG true
-
-#define SPLASH_ALL_PEERS "__ALL__"
-#define SPLASH_DEFAULTS_FILE_ENV "SPLASH_DEFAULTS"
-
-#define SPLASH_FILE_CONFIGURATION "splashConfiguration"
-#define SPLASH_FILE_PROJECT "splashProject"
-
-#define SPLASH_CAMERA_LINK "__camera_link"
-
-#define GL_VENDOR_NVIDIA "NVIDIA Corporation"
-#define GL_VENDOR_AMD "X.Org"
-#define GL_VENDOR_INTEL "Intel"
-
-#define GL_TIMING_PREFIX "__gl_timing_"
-#define GL_TIMING_TIME_PER_FRAME "time_per_frame"
-#define GL_TIMING_TEXTURES_UPLOAD "texture_upload"
-#define GL_TIMING_RENDERING "rendering"
-#define GL_TIMING_SWAP "swap"
-
 #include <execinfo.h>
 #include <iostream>
 
@@ -55,6 +34,27 @@
 #include "./glad/glad.h"
 #include <GLFW/glfw3.h>
 // clang-format on
+
+namespace Splash::Constants
+{
+    static const char ALL_PEERS[] = "__ALL__";
+    static const char DEFAULT_FILE_ENV[] = "SPLASH_DEFAULTS";
+
+    static const char FILE_CONFIGURATION[] = "splashConfiguration";
+    static const char FILE_PROJECT[] = "splashProject";
+
+    static const char CAMERA_LINK[] = "__camera_link";
+
+    static const char GL_VENDOR_NVIDIA[] = "NVIDIA Corporation";
+    static const char GL_VENDOR_AMD[] = "X.Org";
+    static const char GL_VENDOR_INTEL[] = "Intel";
+
+    static const char GL_TIMING_PREFIX[] = "__gl_timing_";
+    static const char GL_TIMING_TIME_PER_FRAME[] = "time_per_frame";
+    static const char GL_TIMING_TEXTURES_UPLOAD[] = "texture_upload";
+    static const char GL_TIMING_RENDERING[] = "rendering";
+    static const char GL_TIMING_SWAP[] = "swap";
+}
 
 #define PRINT_FUNCTION_LINE std::cout << "------> " << __PRETTY_FUNCTION__ << "::" << __LINE__ << std::endl;
 

@@ -89,7 +89,7 @@ int Speaker::portAudioCallback(
     if (writePosition >= readPosition)
         delta = writePosition - readPosition;
     else
-        delta = SPLASH_SPEAKER_RINGBUFFER_SIZE - readPosition + writePosition;
+        delta = _ringbufferSize - readPosition + writePosition;
     int step = framesPerBuffer * that->_channels * that->_sampleSize;
 
     if (delta < step)
@@ -100,7 +100,7 @@ int Speaker::portAudioCallback(
     // Else, we copy the values and move the read position
     else
     {
-        int effectiveSpace = SPLASH_SPEAKER_RINGBUFFER_SIZE - that->_ringUnusedSpace;
+        int effectiveSpace = _ringbufferSize - that->_ringUnusedSpace;
 
         int ringBufferEndLength = effectiveSpace - readPosition;
 
