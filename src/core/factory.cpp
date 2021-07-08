@@ -1,6 +1,7 @@
 #include "./core/factory.h"
 
 #include "./controller/controller_blender.h"
+#include "./core/constants.h"
 #include "./core/link.h"
 #include "./core/scene.h"
 #include "./graphics/camera.h"
@@ -73,7 +74,7 @@ Factory::Factory(RootObject* root)
 /*************/
 void Factory::loadDefaults()
 {
-    auto defaultEnv = getenv(SPLASH_DEFAULTS_FILE_ENV);
+    auto defaultEnv = getenv(Constants::DEFAULT_FILE_ENV);
     if (!defaultEnv)
         return;
 

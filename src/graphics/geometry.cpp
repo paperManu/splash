@@ -291,7 +291,7 @@ void Geometry::update()
     // If a serialized geometry is present, we use it as the alternative buffer
     if (!_onMasterScene && _serializedMesh.size() != 0)
     {
-        std::lock_guard<std::shared_mutex> lock(_writeMutex);
+        std::lock_guard<Spinlock> updateLock(_updateMutex);
 
         _temporaryVerticesNumber = *(reinterpret_cast<int*>(_serializedMesh.data()));
         _temporaryBufferSize = _temporaryVerticesNumber;

@@ -49,14 +49,14 @@ bool Mesh::operator==(Mesh& otherMesh) const
 /*************/
 std::vector<glm::vec4> Mesh::getVertCoords() const
 {
-    std::lock_guard<Spinlock> lock(_readMutex);
+    std::shared_lock<std::shared_mutex> readLock(_readMutex);
     return _mesh.vertices;
 }
 
 /*************/
 std::vector<float> Mesh::getVertCoordsFlat() const
 {
-    std::lock_guard<Spinlock> lock(_readMutex);
+    std::shared_lock<std::shared_mutex> readLock(_readMutex);
     const auto vertPtr = reinterpret_cast<const float*>(_mesh.vertices.data());
     const auto vertCount = _mesh.vertices.size() * 4;
     std::vector<float> coords(vertPtr, vertPtr + vertCount);
@@ -66,14 +66,14 @@ std::vector<float> Mesh::getVertCoordsFlat() const
 /*************/
 std::vector<glm::vec2> Mesh::getUVCoords() const
 {
-    std::lock_guard<Spinlock> lock(_readMutex);
+    std::shared_lock<std::shared_mutex> readLock(_readMutex);
     return _mesh.uvs;
 }
 
 /*************/
 std::vector<float> Mesh::getUVCoordsFlat() const
 {
-    std::lock_guard<Spinlock> lock(_readMutex);
+    std::shared_lock<std::shared_mutex> readLock(_readMutex);
     const auto uvPtr = reinterpret_cast<const float*>(_mesh.uvs.data());
     const auto uvCount = _mesh.uvs.size() * 2;
     std::vector<float> coords(uvPtr, uvPtr + uvCount);
@@ -83,14 +83,14 @@ std::vector<float> Mesh::getUVCoordsFlat() const
 /*************/
 std::vector<glm::vec4> Mesh::getNormals() const
 {
-    std::lock_guard<Spinlock> lock(_readMutex);
+    std::shared_lock<std::shared_mutex> readLock(_readMutex);
     return _mesh.normals;
 }
 
 /*************/
 std::vector<float> Mesh::getNormalsFlat() const
 {
-    std::lock_guard<Spinlock> lock(_readMutex);
+    std::shared_lock<std::shared_mutex> readLock(_readMutex);
     const auto normalsPtr = reinterpret_cast<const float*>(_mesh.normals.data());
     const auto normalsCount = _mesh.normals.size() * 4;
     std::vector<float> normals(normalsPtr, normalsPtr + normalsCount);
@@ -100,14 +100,14 @@ std::vector<float> Mesh::getNormalsFlat() const
 /*************/
 std::vector<glm::vec4> Mesh::getAnnexe() const
 {
-    std::lock_guard<Spinlock> lock(_readMutex);
+    std::shared_lock<std::shared_mutex> readLock(_readMutex);
     return _mesh.annexe;
 }
 
 /*************/
 std::vector<float> Mesh::getAnnexeFlat() const
 {
-    std::lock_guard<Spinlock> lock(_readMutex);
+    std::shared_lock<std::shared_mutex> readLock(_readMutex);
     const auto annexePtr = reinterpret_cast<const float*>(_mesh.annexe.data());
     const auto annexeCount = _mesh.annexe.size() * 2;
     std::vector<float> annexe(annexePtr, annexePtr + annexeCount);
@@ -131,7 +131,7 @@ bool Mesh::read(const std::string& filename)
         mesh.uvs = objLoader.getUVs();
         mesh.normals = objLoader.getNormals();
 
-        std::lock_guard<std::shared_mutex> lock(_writeMutex);
+        std::lock_guard<std::shared_mutex> readLock(_readMutex);
         _mesh = mesh;
         updateTimestamp();
     }
@@ -154,7 +154,7 @@ std::shared_ptr<SerializedObject> Mesh::serialize() const
     data.push_back(getNormalsFlat());
     data.push_back(getAnnexeFlat());
 
-    std::lock_guard<Spinlock> lock(_readMutex);
+    std::shared_lock<std::shared_mutex> readLock(_readMutex);
     const int nbrVertices = data[0].size() / 4;
     int totalSize = sizeof(nbrVertices); // We add to all this the total number of vertices
     for (auto& d : data)
@@ -269,8 +269,8 @@ void Mesh::update()
 {
     if (_meshUpdated)
     {
-        std::lock_guard<Spinlock> lock(_readMutex);
-        std::shared_lock<std::shared_mutex> lockWrite(_writeMutex);
+        std::lock_guard<Spinlock> updateLock(_updateMutex);
+        std::lock_guard<std::shared_mutex> readLock(_readMutex);
         _mesh = _bufferMesh;
         _meshUpdated = false;
     }
@@ -333,7 +333,7 @@ void Mesh::createDefaultMesh(int subdiv)
         }
     }
 
-    std::lock_guard<std::shared_mutex> lock(_writeMutex);
+    std::lock_guard<std::shared_mutex> readLock(_readMutex);
     _mesh = std::move(mesh);
 
     updateTimestamp();

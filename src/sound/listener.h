@@ -25,8 +25,6 @@
 #ifndef SPLASH_LISTENER_H
 #define SPLASH_LISTENER_H
 
-#define SPLASH_LISTENER_RINGBUFFER_SIZE (4 * 1024 * 1024) // use a 4MB ring buffer
-
 #include <array>
 #include <atomic>
 #include <memory>
@@ -82,6 +80,7 @@ class Listener : public GraphObject
     void setParameters(uint32_t channels, uint32_t sampleRate, Sound_Engine::SampleFormat format, const std::string& deviceName = "");
 
   private:
+    static constexpr uint32_t _ringbufferSize{4 * 1024 * 1024};
     Sound_Engine _engine;
     bool _ready{false};
     unsigned int _channels{2};
@@ -92,7 +91,7 @@ class Listener : public GraphObject
     size_t _sampleSize{2};
     bool _abortCallback{false};
 
-    std::array<uint8_t, SPLASH_LISTENER_RINGBUFFER_SIZE> _ringBuffer;
+    std::array<uint8_t, _ringbufferSize> _ringBuffer;
     std::atomic_int _ringWritePosition{0};
     std::atomic_int _ringReadPosition{0};
     std::atomic_int _ringUnusedSpace{0};
@@ -135,7 +134,7 @@ bool Listener::readFromQueue(std::vector<T>& buffer)
     if (writePosition >= readPosition)
         delta = writePosition - readPosition;
     else
-        delta = SPLASH_LISTENER_RINGBUFFER_SIZE - unusedSpace - readPosition + writePosition;
+        delta = _ringbufferSize - unusedSpace - readPosition + writePosition;
 
     int step = buffer.size() * sizeof(T);
     if (delta < step)
@@ -145,7 +144,7 @@ bool Listener::readFromQueue(std::vector<T>& buffer)
     // Else, we copy the values and move the read position
     else
     {
-        int effectiveSpace = SPLASH_LISTENER_RINGBUFFER_SIZE - unusedSpace;
+        int effectiveSpace = _ringbufferSize - unusedSpace;
         int ringBufferEndLength = effectiveSpace - readPosition;
 
         if (step <= ringBufferEndLength)

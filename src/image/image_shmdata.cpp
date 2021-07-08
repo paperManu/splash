@@ -18,8 +18,6 @@
 #include "./utils/osutils.h"
 #include "./utils/timer.h"
 
-#define SPLASH_SHMDATA_THREADS 2
-
 namespace Splash
 {
 
@@ -250,7 +248,7 @@ void Image_Shmdata::readHapFrame(void* data, int data_size)
         return;
 
     {
-        std::lock_guard<std::shared_mutex> lock(_writeMutex);
+        std::lock_guard<Spinlock> updateLock(_updateMutex);
         if (!_bufferImage)
             _bufferImage = std::make_unique<ImageBuffer>();
         std::swap(*(_bufferImage), _readerBuffer);
@@ -289,17 +287,17 @@ void Image_Shmdata::readUncompressedFrame(void* data, int /*data_size*/)
     {
         char* pixels = (char*)(_readerBuffer).data();
         std::vector<std::future<void>> threads;
-        for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
+        for (uint32_t block = 0; block < _shmdataCopyThreads; ++block)
         {
             int size = _width * _height * _channels * sizeof(char);
             threads.push_back(std::async(std::launch::async, [=]() {
-                int sizeOfBlock; // We compute the size of the block, to handle image size non divisible by SPLASH_SHMDATA_THREADS
-                if (size - size / SPLASH_SHMDATA_THREADS * block < 2 * size / SPLASH_SHMDATA_THREADS)
-                    sizeOfBlock = size - size / SPLASH_SHMDATA_THREADS * block;
+                int sizeOfBlock; // We compute the size of the block, to handle image size non divisible by _shmdataCopyThreads
+                if (size - size / _shmdataCopyThreads * block < 2 * size / _shmdataCopyThreads)
+                    sizeOfBlock = size - size / _shmdataCopyThreads * block;
                 else
-                    sizeOfBlock = size / SPLASH_SHMDATA_THREADS;
+                    sizeOfBlock = size / _shmdataCopyThreads;
 
-                memcpy(pixels + size / SPLASH_SHMDATA_THREADS * block, (const char*)data + size / SPLASH_SHMDATA_THREADS * block, sizeOfBlock);
+                memcpy(pixels + size / _shmdataCopyThreads * block, (const char*)data + size / _shmdataCopyThreads * block, sizeOfBlock);
             }));
         }
     }
@@ -331,7 +329,7 @@ void Image_Shmdata::readUncompressedFrame(void* data, int /*data_size*/)
         return;
 
     {
-        std::lock_guard<std::shared_mutex> lock(_writeMutex);
+        std::lock_guard<Spinlock> updateLock(_updateMutex);
         if (!_bufferImage)
             _bufferImage = std::make_unique<ImageBuffer>();
         std::swap(*(_bufferImage), _readerBuffer);

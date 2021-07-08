@@ -3,6 +3,7 @@
 
 #include <doctest.h>
 
+#include "./core/constants.h"
 #include "./core/factory.h"
 #include "./image/image.h"
 #include "./image/image_ffmpeg.h"
@@ -22,10 +23,10 @@ TEST_CASE("Testing Factory default values")
     const std::string defaultFile = "./data/splashrc.json";
 
     std::string previousDefaultFile;
-    if (getenv(SPLASH_DEFAULTS_FILE_ENV) != nullptr)
-        previousDefaultFile = getenv(SPLASH_DEFAULTS_FILE_ENV);
+    if (getenv(Constants::DEFAULT_FILE_ENV) != nullptr)
+        previousDefaultFile = getenv(Constants::DEFAULT_FILE_ENV);
 
-    auto retValue = setenv(SPLASH_DEFAULTS_FILE_ENV, defaultFile.c_str(), 1);
+    auto retValue = setenv(Constants::DEFAULT_FILE_ENV, defaultFile.c_str(), 1);
     CHECK_EQ(retValue, 0);
 
     auto factory = Factory();
@@ -35,7 +36,7 @@ TEST_CASE("Testing Factory default values")
     CHECK_NE(imageDefaultsIt->second.find("flip"), imageDefaultsIt->second.end());
 
     if (!previousDefaultFile.empty())
-        setenv(SPLASH_DEFAULTS_FILE_ENV, previousDefaultFile.c_str(), 1);
+        setenv(Constants::DEFAULT_FILE_ENV, previousDefaultFile.c_str(), 1);
 }
 
 /*************/
