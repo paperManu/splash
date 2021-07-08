@@ -1,6 +1,18 @@
 Splash release notes
 ====================
 
+Splash 0.8.46 (2021-07-08)
+-------------------------
+Improvements:
+* Improved mutex handling in BufferObjects
+* Replaced #defines with static const/constexpr
+
+Bugs fixed:
+* Fixed integration tests
+* Fixed boolean values not being converted correctly in the Python interpreter
+* Fixed PyEval_InitThreads being now deprecated and unecessary
+* Fixed issue in Texture_Image, with specs being captured before updating the underlying Image
+
 Splash 0.8.44 (2021-05-28)
 -------------------------
 Improvements:

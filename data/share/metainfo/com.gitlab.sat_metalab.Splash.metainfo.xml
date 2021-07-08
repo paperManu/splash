@@ -19,6 +19,7 @@ Splash is a free (as in GPL) modular mapping software. Provided that the user cr
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.8.46" date="2021-07-08" />
     <release version="0.8.44" date="2021-05-28" />
     <release version="0.8.42" date="2021-05-17" />
     <release version="0.8.40" date="2021-05-03" />
