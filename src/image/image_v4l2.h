@@ -53,7 +53,7 @@ class Image_V4L2 : public Image
     ~Image_V4L2() final;
 
     /**
-     * No copy constructor, but a copy operator
+     * No copy constructor, but a move operator
      */
     Image_V4L2(const Image_V4L2&) = delete;
     Image_V4L2& operator=(const Image_V4L2&) = delete;
@@ -61,7 +61,7 @@ class Image_V4L2 : public Image
 
   private:
     std::string _devicePath{"/dev/video0"};
-    std::string _controlDevicePath{"/dev/video63"};
+    const std::string _controlDevicePath{"/dev/video63"};
 
     // Parameters to send to the shader
     std::unordered_map<std::string, Values> _shaderUniforms;
@@ -114,11 +114,6 @@ class Image_V4L2 : public Image
      * Capture thread function
      */
     void captureThreadFunc();
-
-    /**
-     * \brief As the name suggests
-     */
-    void init();
 
     /**
      * Initialize V4L2 capture mode
