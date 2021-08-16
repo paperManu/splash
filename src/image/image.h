@@ -42,20 +42,20 @@ class Image : public BufferObject
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
     Image(RootObject* root);
 
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      * \param spec Image specifications
      */
     Image(RootObject* root, const ImageBufferSpec& spec);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     virtual ~Image() override;
 
@@ -67,25 +67,25 @@ class Image : public BufferObject
     Image& operator=(Image&&) = default;
 
     /**
-     * \brief Get a pointer to the data
+     * Get a pointer to the data
      * \return Return a pointer to the data
      */
     const void* data() const;
 
     /**
-     * \brief Get the image buffer
+     * Get the image buffer
      * \return Return the image buffer
      */
     ImageBuffer get() const;
 
     /**
-     * \brief Get the file path
+     * Get the file path
      * \return Return the file path
      */
     std::string getFilepath() const { return _filepath; }
 
     /**
-     * \brief Get the image buffer specs
+     * Get the image buffer specs
      * \return Return the image buffer specs
      */
     ImageBufferSpec getSpec() const;
@@ -111,13 +111,13 @@ class Image : public BufferObject
     }
 
     /**
-     * \brief Set the image from an ImageBuffer
+     * Set the image from an ImageBuffer
      * \param img Image buffer
      */
     void set(const ImageBuffer& img);
 
     /**
-     * \brief Set the image as a empty with the given size / channels / typedesc
+     * Set the image as a empty with the given size / channels / typedesc
      * \param w Width
      * \param h Height
      * \param channels Channel count
@@ -126,20 +126,20 @@ class Image : public BufferObject
     void set(unsigned int w, unsigned int h, unsigned int channels, ImageBufferSpec::Type type);
 
     /**
-     * \brief Serialize the image
+     * Serialize the image
      * \return Return the serialized image
      */
     std::shared_ptr<SerializedObject> serialize() const override;
 
     /**
-     * \brief Update the Image from a serialized representation
+     * Update the Image from a serialized representation
      * \param obj Serialized image
      * \return Return true if all went well
      */
     bool deserialize(const std::shared_ptr<SerializedObject>& obj) override;
 
     /**
-     * \brief Set the path to read from
+     * Set the path to read from
      * \param filename File path
      * \return Return true if all went well
      */
@@ -158,14 +158,7 @@ class Image : public BufferObject
     virtual void update() override;
 
     /**
-     * Update the timestamp of the object. Also, set the update flag to true.
-     * \param timestamp Value to set the timestamp to, -1 to set to the current
-     * time
-     */
-    virtual void updateTimestamp(int64_t timestamp = -1) final;
-
-    /**
-     * \brief Write the current buffer to the specified file
+     * Write the current buffer to the specified file
      * \param filename File path to write to
      * \return Return true if all went well
      */
@@ -181,7 +174,7 @@ class Image : public BufferObject
 
     bool _flip{false};
     bool _flop{false};
-    bool _imageUpdated{false};
+    bool _bufferImageUpdated{false};
     bool _showPattern{false};
     bool _srgb{true};
     bool _benchmark{false};
@@ -195,16 +188,23 @@ class Image : public BufferObject
     void updateMediaInfo();
 
     /**
-     * \brief Read the specified image file
+     * Read the specified image file
      * \param filename File path
      * \return Return true if all went well
      */
     bool readFile(const std::string& filename);
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
+
+    /**
+     * Update the timestamp of the object. Also, set the update flag to true.
+     * \param timestamp Value to set the timestamp to, -1 to set to the current
+     * time
+     */
+    virtual void updateTimestamp(int64_t timestamp = -1) final;
 
   private:
     static const uint32_t _imageCopyThreads = 2;
@@ -218,7 +218,7 @@ class Image : public BufferObject
     virtual void updateMoreMediaInfo(Values& /*mediaInfo*/) {}
 
     /**
-     * \brief Base init for the class
+     * Base init for the class
      */
     void init();
 };

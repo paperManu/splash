@@ -102,7 +102,7 @@ void Image_V4L2::captureThreadFunc()
             {
                 std::lock_guard<Spinlock> updateLock(_updateMutex);
                 result = ::read(_deviceFd, _bufferImage->data(), _spec.rawSize());
-                _imageUpdated = true;
+                _bufferImageUpdated = true;
             }
 
             if (result < 0)
@@ -112,8 +112,6 @@ void Image_V4L2::captureThreadFunc()
             }
 
             updateTimestamp();
-            if (!_isConnectedToRemote)
-                update();
         }
     }
     else
@@ -168,13 +166,13 @@ void Image_V4L2::captureThreadFunc()
                         auto& imageBuffer = _imageBuffers[buffer.index];
                         std::lock_guard<Spinlock> updateLock(_updateMutex);
                         _bufferImage = std::make_unique<ImageBuffer>(imageBuffer->getSpec(), imageBuffer->data());
-                        _imageUpdated = true;
+                        _bufferImageUpdated = true;
                     }
                     else if (_ioMethod == V4L2_MEMORY_USERPTR)
                     {
                         std::lock_guard<Spinlock> updateLock(_updateMutex);
                         _bufferImage.swap(_imageBuffers[buffer.index]);
-                        _imageUpdated = true;
+                        _bufferImageUpdated = true;
                     }
 
                     buffer.m.userptr = reinterpret_cast<unsigned long>(_imageBuffers[buffer.index]->data());
@@ -188,8 +186,6 @@ void Image_V4L2::captureThreadFunc()
                     }
 
                     updateTimestamp();
-                    if (!_isConnectedToRemote)
-                        update();
                 }
             }
 
@@ -244,7 +240,7 @@ void Image_V4L2::captureThreadFunc()
     std::lock_guard<Spinlock> updateLock(_updateMutex);
     _bufferImage = std::make_unique<ImageBuffer>(ImageBufferSpec(512, 512, 4, 32));
     _bufferImage->zero();
-    _imageUpdated = true;
+    _bufferImageUpdated = true;
     updateTimestamp();
 }
 

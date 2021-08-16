@@ -768,12 +768,10 @@ void Image_FFmpeg::videoDisplayLoop()
                     if (!_bufferImage)
                         _bufferImage = std::make_unique<ImageBuffer>();
                     std::swap(_bufferImage, timedFrame.frame);
-                    _imageUpdated = true;
+                    _bufferImageUpdated = true;
                 }
 
                 updateTimestamp(_bufferImage->getSpec().timestamp);
-                if (!_isConnectedToRemote)
-                    update();
             }
 
             localQueue.pop_front();

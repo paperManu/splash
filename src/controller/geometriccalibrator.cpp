@@ -309,11 +309,12 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
                 const auto updateTime = Timer::getTime();
                 // Some grabber need to be asked to capture a frame
                 setObjectAttribute(_grabber->getName(), "capture", {true});
-                while (updateTime > imageBuffer.getSpec().timestamp)
+                while (updateTime > _grabber->getTimestamp())
                 {
-                    imageBuffer = _grabber->get();
+                    _grabber->update();
                     std::this_thread::sleep_for(100ms);
                 }
+                imageBuffer = _grabber->get();
 
                 if (imageBuffer.empty())
                     return {};
