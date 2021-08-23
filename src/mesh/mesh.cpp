@@ -275,7 +275,9 @@ void Mesh::update()
         _meshUpdated = false;
     }
     else if (_benchmark)
+    {
         updateTimestamp();
+    }
 }
 
 /*************/

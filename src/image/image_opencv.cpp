@@ -141,11 +141,9 @@ void Image_OpenCV::readLoop()
             if (!_bufferImage)
                 _bufferImage = std::make_unique<ImageBuffer>();
             std::swap(*_bufferImage, _readBuffer);
-            _imageUpdated = true;
+            _bufferImageUpdated = true;
         }
         updateTimestamp();
-        if (!_isConnectedToRemote)
-            update();
 
         if (Timer::get().isDebug())
             Timer::get() >> ("read " + _name);

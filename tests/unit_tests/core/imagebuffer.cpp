@@ -61,11 +61,22 @@ TEST_CASE("Testing ImageBufferSpec serialization")
 /*************/
 TEST_CASE("Testing ImageBuffer")
 {
-    int width = 512;
-    int height = 512;
-    int bpp = 24;
+    int width = 128;
+    int height = 128;
+    int bpp = 32;
 
-    auto spec = ImageBufferSpec(width, height, 3, bpp, ImageBufferSpec::Type::UINT8, "RGB");
+    auto spec = ImageBufferSpec(width, height, 4, bpp, ImageBufferSpec::Type::UINT8);
     auto imageBuffer = ImageBuffer(spec);
-    CHECK_EQ(imageBuffer.getSize(), width * height * bpp / 8);
+
+    SUBCASE("Verifying buffer size")
+    {
+        CHECK_EQ(imageBuffer.getSize(), width * height * bpp / 8);
+    }
+
+    SUBCASE("Verifying buffer after zero-ed")
+    {
+        auto previousBufferPtr = imageBuffer.data();
+        imageBuffer.zero();
+        CHECK_EQ(imageBuffer.data(), previousBufferPtr);
+    }
 }

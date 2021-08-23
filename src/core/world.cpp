@@ -28,7 +28,6 @@
 #include "./utils/timer.h"
 
 using namespace glm;
-using namespace std;
 
 namespace Splash
 {
@@ -48,8 +47,8 @@ World::World(Context context)
     sigaction(SIGTERM, &_signals, nullptr);
 
     if (_context.socketPrefix.empty())
-        _context.socketPrefix = to_string(static_cast<int>(getpid()));
-    _link = make_unique<Link>(this, _name);
+        _context.socketPrefix = std::to_string(static_cast<int>(getpid()));
+    _link = std::make_unique<Link>(this, _name);
 
     registerAttributes();
     initializeTree();
@@ -71,7 +70,7 @@ bool World::applyContext()
     if (_context.info)
     {
         auto descriptions = getObjectsAttributesDescriptions();
-        cout << descriptions << endl;
+        std::cout << descriptions << "\n";
         return false;
     }
 
@@ -87,7 +86,7 @@ bool World::applyContext()
                           "line argument: "
                        << pythonScriptPath << Log::endl;
 
-            auto pythonObjectName = string("_pythonArgScript");
+            auto pythonObjectName = std::string("_pythonArgScript");
             if (!_nameRegistry.registerName(pythonObjectName))
                 pythonObjectName = _nameRegistry.generateName("_pythonArgScript");
 
@@ -134,7 +133,7 @@ void World::run()
 
         Timer::get() << "loop_world";
         Timer::get() << "loop_world_inner";
-        lock_guard<mutex> lockConfiguration(_configurationMutex);
+        std::lock_guard<std::mutex> lockConfiguration(_configurationMutex);
 
         {
             // Process tree updates
@@ -150,11 +149,11 @@ void World::run()
 
         {
             ZoneScopedN("Send buffers");
-            lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+            std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
 
             // Read and serialize new buffers
             Timer::get() << "serialize";
-            unordered_map<string, shared_ptr<SerializedObject>> serializedObjects;
+            std::unordered_map<std::string, std::shared_ptr<SerializedObject>> serializedObjects;
 
             {
                 ZoneScopedN("Serialize buffers");
@@ -165,7 +164,7 @@ void World::run()
 
                     object->runTasks();
                     object->update();
-                    if (auto bufferObject = dynamic_pointer_cast<BufferObject>(object); bufferObject)
+                    if (auto bufferObject = std::dynamic_pointer_cast<BufferObject>(object); bufferObject)
                     {
                         if (bufferObject->wasUpdated())
                         {
@@ -180,7 +179,7 @@ void World::run()
             }
 
             // Wait for previous buffers to be uploaded
-            _link->waitForBufferSending(chrono::milliseconds(50)); // Maximum time to wait for frames to arrive
+            _link->waitForBufferSending(std::chrono::milliseconds(50)); // Maximum time to wait for frames to arrive
             sendMessage(Constants::ALL_PEERS, "uploadTextures", {});
             Timer::get() >> "upload";
 
@@ -221,7 +220,7 @@ void World::run()
 }
 
 /*************/
-void World::addToWorld(const string& type, const string& name)
+void World::addToWorld(const std::string& type, const std::string& name)
 {
     // BufferObject derived types have a counterpart on this side
     if (!_factory->isSubtype<BufferObject>(type))
@@ -239,7 +238,7 @@ void World::addToWorld(const string& type, const string& name)
 /*************/
 bool World::applyConfig()
 {
-    lock_guard<mutex> lockConfiguration(_configurationMutex);
+    std::lock_guard<std::mutex> lockConfiguration(_configurationMutex);
 
     // We first destroy all scene and objects
     _scenes.clear();
@@ -258,8 +257,8 @@ bool World::applyConfig()
         const Json::Value& scenes = _config["scenes"];
         for (const auto& sceneName : scenes.getMemberNames())
         {
-            string sceneAddress = scenes[sceneName].isMember("address") ? scenes[sceneName]["address"].asString() : "localhost";
-            string sceneDisplay = scenes[sceneName].isMember("display") ? scenes[sceneName]["display"].asString() : "";
+            std::string sceneAddress = scenes[sceneName].isMember("address") ? scenes[sceneName]["address"].asString() : "localhost";
+            std::string sceneDisplay = scenes[sceneName].isMember("display") ? scenes[sceneName]["display"].asString() : "";
             bool spawn = scenes[sceneName].isMember("spawn") ? scenes[sceneName]["spawn"].asBool() : true;
 
             if (!addScene(sceneName, sceneDisplay, sceneAddress, spawn && _context.spawnSubprocesses))
@@ -369,7 +368,7 @@ bool World::applyConfig()
             for (const auto& attr : jsWorld)
             {
                 auto values = Utils::jsonToValues(attr);
-                string paramName = worldMember[idx];
+                std::string paramName = worldMember[idx];
                 setAttribute(paramName, values);
                 idx++;
             }
@@ -385,7 +384,7 @@ bool World::applyConfig()
 #if HAVE_PORTAUDIO
     addTask([&]() {
         if (!_clock)
-            _clock = unique_ptr<LtcClock>(new LtcClock(true));
+            _clock = std::make_unique<LtcClock>(true);
     });
 #endif
 
@@ -409,34 +408,34 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
 {
     if (sceneAddress == "localhost")
     {
-        string display{""};
-        string worldDisplay{"none"};
+        std::string display{""};
+        std::string worldDisplay{"none"};
 #if HAVE_LINUX
-        auto regDisplayFull = regex("(:[0-9]\\.[0-9])", regex_constants::extended);
-        auto regDisplayInt = regex("[0-9]", regex_constants::extended);
-        smatch match;
+        auto regDisplayFull = std::regex("(:[0-9]\\.[0-9])", std::regex_constants::extended);
+        auto regDisplayInt = std::regex("[0-9]", std::regex_constants::extended);
+        std::smatch match;
 
         if (getenv("DISPLAY") != nullptr)
         {
             worldDisplay = getenv("DISPLAY");
-            if (!worldDisplay.empty() && worldDisplay.find(".") == string::npos)
+            if (!worldDisplay.empty() && worldDisplay.find(".") == std::string::npos)
                 worldDisplay += ".0";
         }
 
         display = "DISPLAY=" + worldDisplay;
         if (!sceneDisplay.empty())
         {
-            if (regex_match(sceneDisplay, match, regDisplayFull))
+            if (std::regex_match(sceneDisplay, match, regDisplayFull))
                 display = "DISPLAY=" + sceneDisplay;
-            else if (regex_match(sceneDisplay, match, regDisplayInt))
+            else if (std::regex_match(sceneDisplay, match, regDisplayInt))
                 display = "DISPLAY=:" + _context.displayServer + "." + sceneDisplay;
         }
 
         if (_context.forcedDisplay)
         {
-            if (regex_match(*_context.forcedDisplay, match, regDisplayFull))
+            if (std::regex_match(*_context.forcedDisplay, match, regDisplayFull))
                 display = "DISPLAY=" + *_context.forcedDisplay;
-            else if (regex_match(*_context.forcedDisplay, match, regDisplayInt))
+            else if (std::regex_match(*_context.forcedDisplay, match, regDisplayInt))
                 display = "DISPLAY=:" + _context.displayServer + "." + *_context.forcedDisplay;
         }
 #endif
@@ -452,21 +451,21 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
                 Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an inner Scene" << Log::endl;
                 auto sceneContext = _context;
                 sceneContext.childSceneName = sceneName;
-                _innerScene = make_shared<Scene>(sceneContext);
-                _innerSceneThread = thread([&]() { _innerScene->run(); });
+                _innerScene = std::make_shared<Scene>(sceneContext);
+                _innerSceneThread = std::thread([&]() { _innerScene->run(); });
             }
             else
             {
                 // Spawn a new process containing this Scene
                 Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting a Scene in another process" << Log::endl;
 
-                string cmd = _context.executablePath;
-                string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
-                string timer = Timer::get().isDebug() ? "-t" : "";
-                string slave = "--child";
-                string xauth = "XAUTHORITY=" + Utils::getHomePath() + "/.Xauthority";
+                std::string cmd = _context.executablePath;
+                std::string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
+                std::string timer = Timer::get().isDebug() ? "-t" : "";
+                std::string slave = "--child";
+                std::string xauth = "XAUTHORITY=" + Utils::getHomePath() + "/.Xauthority";
 
-                vector<char*> argv = {const_cast<char*>(cmd.c_str()), const_cast<char*>(slave.c_str())};
+                std::vector<char*> argv = {const_cast<char*>(cmd.c_str()), const_cast<char*>(slave.c_str())};
                 if (!_context.socketPrefix.empty())
                 {
                     argv.push_back((char*)"--prefix");
@@ -478,7 +477,7 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
                     argv.push_back(const_cast<char*>(timer.c_str()));
                 argv.push_back(const_cast<char*>(sceneName.c_str()));
                 argv.push_back(nullptr);
-                vector<char*> env = {const_cast<char*>(display.c_str()), const_cast<char*>(xauth.c_str()), nullptr};
+                std::vector<char*> env = {const_cast<char*>(display.c_str()), const_cast<char*>(xauth.c_str()), nullptr};
 
                 int status = posix_spawn(&pid, cmd.c_str(), nullptr, nullptr, argv.data(), env.data());
                 if (status != 0)
@@ -486,10 +485,10 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
             }
 
             // We wait for the child process to be launched
-            unique_lock<mutex> lockChildProcess(_childProcessMutex);
+            std::unique_lock<std::mutex> lockChildProcess(_childProcessMutex);
             while (!_sceneLaunched)
             {
-                if (cv_status::timeout == _childProcessConditionVariable.wait_for(lockChildProcess, chrono::seconds(5)))
+                if (std::cv_status::timeout == _childProcessConditionVariable.wait_for(lockChildProcess, std::chrono::seconds(5)))
                 {
                     Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to connect to newly spawned scene \"" << sceneName << "\". Exiting."
                                << Log::endl;
@@ -519,15 +518,15 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
 }
 
 /*************/
-string World::getObjectsAttributesDescriptions()
+std::string World::getObjectsAttributesDescriptions()
 {
     Json::Value root;
 
-    auto formatDescription = [](const string desc, const Values& argTypes) -> string {
-        string descriptionStr = "[";
+    auto formatDescription = [](const std::string desc, const Values& argTypes) -> std::string {
+        std::string descriptionStr = "[";
         for (uint32_t i = 0; i < argTypes.size(); ++i)
         {
-            descriptionStr += argTypes[i].as<string>();
+            descriptionStr += argTypes[i].as<std::string>();
             if (i < argTypes.size() - 1)
                 descriptionStr += ", ";
         }
@@ -555,14 +554,14 @@ string World::getObjectsAttributesDescriptions()
         {
             // We only keep attributes with a valid documentation
             // The other ones are inner attributes
-            if (d[1].as<string>().size() == 0)
+            if (d[1].as<std::string>().size() == 0)
                 continue;
 
             // We also don't keep attributes with no argument types
             if (d[2].as<Values>().size() == 0)
                 continue;
 
-            root[obj->getType()][d[0].as<string>()] = formatDescription(d[1].as<string>(), d[2].as<Values>());
+            root[obj->getType()][d[0].as<std::string>()] = formatDescription(d[1].as<std::string>(), d[2].as<Values>());
 
             addedAttribute++;
         }
@@ -579,12 +578,12 @@ string World::getObjectsAttributesDescriptions()
         if (d[1].size() == 0)
             continue;
 
-        root["world"][d[0].as<string>()] = formatDescription(d[1].as<string>(), d[2].as<Values>());
+        root["world"][d[0].as<std::string>()] = formatDescription(d[1].as<std::string>(), d[2].as<Values>());
     }
 
     setlocale(LC_NUMERIC,
         "C"); // Needed to make sure numbers are written with commas
-    string jsonString;
+    std::string jsonString;
     jsonString = root.toStyledString();
 
     return jsonString;
@@ -627,7 +626,7 @@ void World::saveConfig()
 
     // Configuration from the world
     _config["description"] = Constants::FILE_CONFIGURATION;
-    _config["version"] = string(PACKAGE_VERSION);
+    _config["version"] = std::string(PACKAGE_VERSION);
     auto worldConfiguration = getRootConfigurationAsJson("world");
     for (const auto& attr : worldConfiguration.getMemberNames())
     {
@@ -636,13 +635,13 @@ void World::saveConfig()
 
     setlocale(LC_NUMERIC,
         "C"); // Needed to make sure numbers are written with commas
-    ofstream out(_configFilename, ios::binary);
+    std::ofstream out(_configFilename, std::ios::binary);
     out << _config.toStyledString();
     out.close();
 }
 
 /*************/
-void World::saveProject(const string& filename)
+void World::saveProject(const std::string& filename)
 {
     try
     {
@@ -651,12 +650,12 @@ void World::saveProject(const string& filename)
 
         auto root = Json::Value(); // Haha, auto root...
         root["description"] = Constants::FILE_PROJECT;
-        root["version"] = string(PACKAGE_VERSION);
+        root["version"] = std::string(PACKAGE_VERSION);
         root["links"] = Json::Value();
 
         // Here, we don't care about which Scene holds which object, as objects with
         // the same name in different Scenes are necessarily clones
-        std::set<std::pair<string, string>> existingLinks{}; // We keep a list of already existing links
+        std::set<std::pair<std::string, std::string>> existingLinks{}; // We keep a list of already existing links
         for (auto& s : _scenes)
         {
             auto config = getRootConfigurationAsJson(s.first);
@@ -672,7 +671,7 @@ void World::saveProject(const string& filename)
                 if (isLinkedToCam)
                     v[1] = Constants::CAMERA_LINK;
 
-                auto link = make_pair<string, string>(v[0].asString(), v[1].asString());
+                auto link = std::make_pair<std::string, std::string>(v[0].asString(), v[1].asString());
                 if (existingLinks.find(link) == existingLinks.end())
                     existingLinks.insert(link);
                 else
@@ -694,7 +693,7 @@ void World::saveProject(const string& filename)
             }
         }
 
-        ofstream out(filename, ios::binary);
+        std::ofstream out(filename, std::ios::binary);
         out << root.toStyledString();
         out.close();
     }
@@ -705,9 +704,9 @@ void World::saveProject(const string& filename)
 }
 
 /*************/
-vector<string> World::getObjectsOfType(const string& type) const
+std::vector<std::string> World::getObjectsOfType(const std::string& type) const
 {
-    vector<string> objectList;
+    std::vector<std::string> objectList;
 
     for (const auto& rootName : _tree.getBranchList())
     {
@@ -721,7 +720,7 @@ vector<string> World::getObjectsOfType(const string& type) const
             assert(_tree.hasLeafAt(typePath));
             Value typeValue;
             _tree.getValueForLeafAt(typePath, typeValue);
-            if (typeValue[0].as<string>() == type)
+            if (typeValue[0].as<std::string>() == type)
                 objectList.push_back(objectName);
         }
     }
@@ -733,7 +732,7 @@ vector<string> World::getObjectsOfType(const string& type) const
 }
 
 /*************/
-bool World::handleSerializedObject(const string& name, const shared_ptr<SerializedObject>& obj)
+bool World::handleSerializedObject(const std::string& name, const std::shared_ptr<SerializedObject>& obj)
 {
     if (!RootObject::handleSerializedObject(name, obj))
         _link->sendBuffer(name, obj);
@@ -751,7 +750,7 @@ void World::leave(int /*signal_value*/)
 bool World::copyCameraParameters(const std::string& filename)
 {
     // List of copyable types
-    static vector<string> copyableTypes{"camera", "warp"};
+    static std::vector<std::string> copyableTypes{"camera", "warp"};
 
     Json::Value config;
     if (!Utils::loadJsonFile(filename, config))
@@ -764,7 +763,7 @@ bool World::copyCameraParameters(const std::string& filename)
         for (const auto& name : config["scenes"][s]["objects"].getMemberNames())
         {
             Json::Value& obj = config["scenes"][s]["objects"][name];
-            if (find(copyableTypes.begin(), copyableTypes.end(), obj["type"].asString()) == copyableTypes.end())
+            if (std::find(copyableTypes.begin(), copyableTypes.end(), obj["type"].asString()) == copyableTypes.end())
                 continue;
 
             // Go through the camera attributes
@@ -786,7 +785,7 @@ bool World::copyCameraParameters(const std::string& filename)
 }
 
 /*************/
-bool World::loadConfig(const string& filename, Json::Value& configuration)
+bool World::loadConfig(const std::string& filename, Json::Value& configuration)
 {
     if (!Utils::loadJsonFile(filename, configuration))
         return false;
@@ -801,7 +800,7 @@ bool World::loadConfig(const string& filename, Json::Value& configuration)
 }
 
 /*************/
-bool World::loadProject(const string& filename)
+bool World::loadProject(const std::string& filename)
 {
     try
     {
@@ -907,12 +906,12 @@ void World::registerAttributes()
     addAttribute("addObject",
         [&](const Values& args) {
             addTask([=]() {
-                auto type = args[0].as<string>();
-                auto name = args.size() < 2 ? "" : args[1].as<string>();
-                auto scene = args.size() < 3 ? "" : args[2].as<string>();
+                auto type = args[0].as<std::string>();
+                auto name = args.size() < 2 ? "" : args[1].as<std::string>();
+                auto scene = args.size() < 3 ? "" : args[2].as<std::string>();
                 auto checkName = args.size() < 4 ? true : args[3].as<bool>();
 
-                lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+                std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
 
                 if (checkName && (name.empty() || !_nameRegistry.registerName(name)))
                     name = _nameRegistry.generateName(type);
@@ -945,7 +944,7 @@ void World::registerAttributes()
 
     addAttribute("sceneLaunched",
         [&](const Values&) {
-            lock_guard<mutex> lockChildProcess(_childProcessMutex);
+            std::lock_guard<std::mutex> lockChildProcess(_childProcessMutex);
             _sceneLaunched = true;
             _childProcessConditionVariable.notify_all();
             return true;
@@ -956,8 +955,8 @@ void World::registerAttributes()
     addAttribute("deleteObject",
         [&](const Values& args) {
             addTask([=]() {
-                lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-                auto objectName = args[0].as<string>();
+                std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
+                auto objectName = args[0].as<std::string>();
 
                 // Delete the object here
                 _nameRegistry.unregisterName(objectName);
@@ -995,7 +994,7 @@ void World::registerAttributes()
 
     addAttribute("loadConfig",
         [&](const Values& args) {
-            string filename = args[0].as<string>();
+            auto filename = args[0].as<std::string>();
             runAsyncTask([=]() {
                 Json::Value config;
                 if (loadConfig(filename, config))
@@ -1029,7 +1028,7 @@ void World::registerAttributes()
 
     addAttribute("copyCameraParameters",
         [&](const Values& args) {
-            string filename = args[0].as<string>();
+            auto filename = args[0].as<std::string>();
             addTask([=]() { copyCameraParameters(filename); });
             return true;
         },
@@ -1040,7 +1039,7 @@ void World::registerAttributes()
 
     addAttribute("pong",
         [&](const Values& args) {
-            Timer::get() >> ("pingScene " + args[0].as<string>());
+            Timer::get() >> ("pingScene " + args[0].as<std::string>());
             return true;
         },
         {'s'});
@@ -1055,12 +1054,12 @@ void World::registerAttributes()
 
     addAttribute("replaceObject",
         [&](const Values& args) {
-            auto objName = args[0].as<string>();
-            auto objType = args[1].as<string>();
-            auto objAlias = args[2].as<string>();
-            vector<string> targets;
+            auto objName = args[0].as<std::string>();
+            auto objType = args[1].as<std::string>();
+            auto objAlias = args[2].as<std::string>();
+            std::vector<std::string> targets;
             for (uint32_t i = 3; i < args.size(); ++i)
-                targets.push_back(args[i].as<string>());
+                targets.push_back(args[i].as<std::string>());
 
             if (!_factory->isCreatable(objType))
                 return false;
@@ -1080,7 +1079,7 @@ void World::registerAttributes()
     addAttribute("save",
         [&](const Values& args) {
             if (args.size() != 0)
-                _configFilename = args[0].as<string>();
+                _configFilename = args[0].as<std::string>();
 
             addTask([=]() {
                 Log::get() << "Saving configuration to " << _configFilename << Log::endl;
@@ -1093,7 +1092,7 @@ void World::registerAttributes()
 
     addAttribute("saveProject",
         [&](const Values& args) {
-            auto filename = args[0].as<string>();
+            auto filename = args[0].as<std::string>();
             addTask([this, filename]() {
                 Log::get() << "Saving project to " << filename << Log::endl;
                 saveProject(filename);
@@ -1105,7 +1104,7 @@ void World::registerAttributes()
 
     addAttribute("loadProject",
         [&](const Values& args) {
-            auto filename = args[0].as<string>();
+            auto filename = args[0].as<std::string>();
             addTask([this, filename]() {
                 Log::get() << "Loading partial configuration from " << filename << Log::endl;
                 loadProject(filename);
@@ -1127,8 +1126,8 @@ void World::registerAttributes()
     addAttribute("sendAll",
         [&](const Values& args) {
             addTask([=]() {
-                string name = args[0].as<string>();
-                string attr = args[1].as<string>();
+                auto name = args[0].as<std::string>();
+                auto attr = args[1].as<std::string>();
                 auto values = args;
 
                 // Send the updated values to all scenes
@@ -1148,7 +1147,7 @@ void World::registerAttributes()
 
     addAttribute("sendAllScenes",
         [&](const Values& args) {
-            string attr = args[0].as<string>();
+            auto attr = args[0].as<std::string>();
             Values values = args;
             values.erase(values.begin());
             for (auto& scene : _scenes)
@@ -1162,7 +1161,7 @@ void World::registerAttributes()
     addAttribute("sendToMasterScene",
         [&](const Values& args) {
             addTask([=]() {
-                auto attr = args[0].as<string>();
+                auto attr = args[0].as<std::string>();
                 Values values = args;
                 values.erase(values.begin());
                 sendMessage(_masterSceneName, attr, values);
@@ -1282,11 +1281,11 @@ void World::registerAttributes()
     addAttribute("clockDeviceName",
         [&](const Values& args) {
             addTask([=]() {
-                auto clockDeviceName = args[0].as<string>();
+                auto clockDeviceName = args[0].as<std::string>();
                 if (clockDeviceName != _clockDeviceName)
                 {
                     _clockDeviceName = clockDeviceName;
-                    _clock = make_unique<LtcClock>(true, _clockDeviceName);
+                    _clock = std::make_unique<LtcClock>(true, _clockDeviceName);
                 }
             });
 
@@ -1302,9 +1301,9 @@ void World::registerAttributes()
 
     addAttribute("mediaPath",
         [&](const Values& args) {
-            auto path = args[0].as<string>();
+            auto path = args[0].as<std::string>();
             if (Utils::isDir(path))
-                _mediaPath = args[0].as<string>();
+                _mediaPath = args[0].as<std::string>();
             return true;
         },
         [&]() -> Values { return {_mediaPath}; },

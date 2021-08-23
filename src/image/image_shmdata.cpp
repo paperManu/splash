@@ -252,11 +252,9 @@ void Image_Shmdata::readHapFrame(void* data, int data_size)
         if (!_bufferImage)
             _bufferImage = std::make_unique<ImageBuffer>();
         std::swap(*(_bufferImage), _readerBuffer);
-        _imageUpdated = true;
+        _bufferImageUpdated = true;
     }
     updateTimestamp();
-    if (!_isConnectedToRemote)
-        update();
 }
 
 /*************/
@@ -333,11 +331,9 @@ void Image_Shmdata::readUncompressedFrame(void* data, int /*data_size*/)
         if (!_bufferImage)
             _bufferImage = std::make_unique<ImageBuffer>();
         std::swap(*(_bufferImage), _readerBuffer);
-        _imageUpdated = true;
+        _bufferImageUpdated = true;
     }
     updateTimestamp();
-    if (!_isConnectedToRemote)
-        update();
 }
 
 /*************/

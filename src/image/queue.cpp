@@ -109,12 +109,14 @@ void Queue::update()
 
         _currentSourceIndex = sourceIndex;
 
+        // If we are past the last index, we create a blank image
         if (sourceIndex >= _playlist.size())
         {
             _currentSource = std::dynamic_pointer_cast<BufferObject>(_factory->create("image"));
             _currentSource->setName(_name + DISTANT_NAME_SUFFIX);
             _root->sendMessage(_name, "source", {"image"});
         }
+        // Otherwise we create the new source
         else
         {
             const auto& sourceParameters = _playlist[_currentSourceIndex];
@@ -124,9 +126,9 @@ void Queue::update()
                 _playing = true;
             else
                 _currentSource = std::dynamic_pointer_cast<BufferObject>(_factory->create("image"));
+
             std::dynamic_pointer_cast<Image>(_currentSource)->zero();
             _currentSource->setName(_name + DISTANT_NAME_SUFFIX);
-
             _currentSource->setAttribute("file", {sourceParameters.filename});
 
             if (_useClock && !sourceParameters.freeRun)
@@ -151,7 +153,7 @@ void Queue::update()
                 _currentSource->setAttribute(arg.getName(), arg.as<Values>());
             }
 
-            Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Playing file: " << sourceParameters.filename << Log::endl;
+            Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Playing source: " << sourceParameters.filename << Log::endl;
         }
     }
 
@@ -269,6 +271,14 @@ void Queue::cleanPlaylist(std::vector<Source>& playlist)
     }
 
     playlist = cleanList;
+}
+
+/*************/
+void Queue::runTasks()
+{
+    BaseObject::runTasks();
+    if (_currentSource != nullptr)
+        _currentSource->runTasks();
 }
 
 /*************/
