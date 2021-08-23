@@ -21,19 +21,6 @@ namespace Splash
 Image_V4L2::Image_V4L2(RootObject* root)
     : Image(root)
 {
-    init();
-}
-
-/*************/
-Image_V4L2::~Image_V4L2()
-{
-    stopCapture();
-    closeDatapathControlDevice();
-}
-
-/*************/
-void Image_V4L2::init()
-{
     _type = "image_v4l2";
     registerAttributes();
 
@@ -42,6 +29,14 @@ void Image_V4L2::init()
         return;
 
     openDatapathControlDevice();
+    scheduleCapture();
+}
+
+/*************/
+Image_V4L2::~Image_V4L2()
+{
+    stopCapture();
+    closeDatapathControlDevice();
 }
 
 /*************/
@@ -107,7 +102,7 @@ void Image_V4L2::captureThreadFunc()
             {
                 std::lock_guard<Spinlock> updateLock(_updateMutex);
                 result = ::read(_deviceFd, _bufferImage->data(), _spec.rawSize());
-                _imageUpdated = true;
+                _bufferImageUpdated = true;
             }
 
             if (result < 0)
@@ -117,8 +112,6 @@ void Image_V4L2::captureThreadFunc()
             }
 
             updateTimestamp();
-            if (!_isConnectedToRemote)
-                update();
         }
     }
     else
@@ -173,13 +166,13 @@ void Image_V4L2::captureThreadFunc()
                         auto& imageBuffer = _imageBuffers[buffer.index];
                         std::lock_guard<Spinlock> updateLock(_updateMutex);
                         _bufferImage = std::make_unique<ImageBuffer>(imageBuffer->getSpec(), imageBuffer->data());
-                        _imageUpdated = true;
+                        _bufferImageUpdated = true;
                     }
                     else if (_ioMethod == V4L2_MEMORY_USERPTR)
                     {
                         std::lock_guard<Spinlock> updateLock(_updateMutex);
                         _bufferImage.swap(_imageBuffers[buffer.index]);
-                        _imageUpdated = true;
+                        _bufferImageUpdated = true;
                     }
 
                     buffer.m.userptr = reinterpret_cast<unsigned long>(_imageBuffers[buffer.index]->data());
@@ -193,8 +186,6 @@ void Image_V4L2::captureThreadFunc()
                     }
 
                     updateTimestamp();
-                    if (!_isConnectedToRemote)
-                        update();
                 }
             }
 
@@ -249,7 +240,7 @@ void Image_V4L2::captureThreadFunc()
     std::lock_guard<Spinlock> updateLock(_updateMutex);
     _bufferImage = std::make_unique<ImageBuffer>(ImageBufferSpec(512, 512, 4, 32));
     _bufferImage->zero();
-    _imageUpdated = true;
+    _bufferImageUpdated = true;
     updateTimestamp();
 }
 
@@ -445,7 +436,7 @@ bool Image_V4L2::openDatapathControlDevice()
     if ((_controlFd = open(_controlDevicePath.c_str(), O_RDWR | O_NONBLOCK)) < 0)
     {
         _isDatapath = false;
-        Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - Unable to open control device." << Log::endl;
+        Log::get() << Log::DEBUGGING << "Image_V4L2::" << __FUNCTION__ << " - Unable to open control device." << Log::endl;
         return false;
     }
 
@@ -563,7 +554,8 @@ bool Image_V4L2::openCaptureDevice(const std::string& devicePath)
     switch (_outputPixelFormat)
     {
     default:
-        Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - Input format not supported: " << std::string(reinterpret_cast<char*>(&_outputPixelFormat), 4) << Log::endl;
+        Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - Input format not supported: " << std::string(reinterpret_cast<char*>(&_outputPixelFormat), 4)
+                   << Log::endl;
         return false;
     case V4L2_PIX_FMT_RGB24:
         _spec = ImageBufferSpec(_outputWidth, _outputHeight, 3, 24, ImageBufferSpec::Type::UINT8, "RGB");
@@ -738,7 +730,8 @@ void Image_V4L2::registerAttributes()
 {
     Image::registerAttributes();
 
-    addAttribute("doCapture",
+    addAttribute(
+        "doCapture",
         [&](const Values& args) {
             if (args[0].as<bool>() and !_capturing)
                 scheduleCapture();
@@ -750,7 +743,8 @@ void Image_V4L2::registerAttributes()
         [&]() -> Values { return {_capturing}; },
         {'b'});
 
-    addAttribute("captureSize",
+    addAttribute(
+        "captureSize",
         [&](const Values& args) {
             auto isCapturing = _capturing;
             stopCapture();
@@ -766,7 +760,8 @@ void Image_V4L2::registerAttributes()
         },
         {'i', 'i'});
 
-    addAttribute("device",
+    addAttribute(
+        "device",
         [&](const Values& args) {
             auto path = args[0].as<std::string>();
             auto index = -1;
@@ -804,8 +799,22 @@ void Image_V4L2::registerAttributes()
         },
         [&]() -> Values { return {_devicePath}; },
         {'s'});
+    setAttributeDescription("device", "Video4Linux2 device path");
 
-    addAttribute("index",
+    removeAttribute("file");
+    addAttribute(
+        "file",
+        [&](const Values& args) {
+            const auto path = args[0].as<std::string>();
+            addTask([=] { setAttribute("device", {path}); });
+            return true;
+        },
+        [&]() -> Values { return {_devicePath}; },
+        {'s'});
+    setAttributeDescription("file", "Video4Linux2 device path");
+
+    addAttribute(
+        "index",
         [&](const Values& args) {
             auto isCapturing = _capturing;
             stopCapture();
@@ -819,9 +828,11 @@ void Image_V4L2::registerAttributes()
         {'i'});
     setAttributeDescription("index", "Set the input index for the selected V4L2 capture device");
 
-    addAttribute("sourceFormat", [&](const Values&) { return true; }, [&]() -> Values { return {_sourceFormatAsString}; }, {});
+    addAttribute(
+        "sourceFormat", [&](const Values&) { return true; }, [&]() -> Values { return {_sourceFormatAsString}; }, {});
 
-    addAttribute("pixelFormat",
+    addAttribute(
+        "pixelFormat",
         [&](const Values& args) {
             auto isCapturing = _capturing;
             stopCapture();

@@ -19,6 +19,8 @@ namespace Splash
 /*************/
 Image::Image(RootObject* root)
     : BufferObject(root)
+    , _image(std::make_unique<ImageBuffer>())
+    , _bufferImage(std::make_unique<ImageBuffer>())
 {
     init();
     _renderingPriority = Priority::MEDIA;
@@ -27,6 +29,8 @@ Image::Image(RootObject* root)
 /*************/
 Image::Image(RootObject* root, const ImageBufferSpec& spec)
     : BufferObject(root)
+    , _image(std::make_unique<ImageBuffer>())
+    , _bufferImage(std::make_unique<ImageBuffer>())
 {
     init();
     set(spec.width, spec.height, spec.channels, spec.type);
@@ -43,6 +47,7 @@ void Image::init()
         return;
 
     createDefaultImage();
+    update();
 }
 
 /*************/
@@ -88,10 +93,8 @@ ImageBufferSpec Image::getSpec() const
 void Image::set(const ImageBuffer& img)
 {
     std::lock_guard<Spinlock> updateLock(_updateMutex);
-    if (!_bufferImage)
-        _bufferImage = std::make_unique<ImageBuffer>();
     *_bufferImage = img;
-    _imageUpdated = true;
+    _bufferImageUpdated = true;
     updateTimestamp();
 }
 
@@ -102,10 +105,8 @@ void Image::set(unsigned int w, unsigned int h, unsigned int channels, ImageBuff
     ImageBuffer img(spec);
 
     std::lock_guard<Spinlock> updateLock(_updateMutex);
-    if (!_bufferImage)
-        _bufferImage = std::make_unique<ImageBuffer>();
     std::swap(*_bufferImage, img);
-    _imageUpdated = true;
+    _bufferImageUpdated = true;
     updateTimestamp();
 }
 
@@ -191,10 +192,8 @@ bool Image::deserialize(const std::shared_ptr<SerializedObject>& obj)
         rawBuffer.shift(_serializedImageHeaderSize);
         _bufferDeserialize.setRawBuffer(std::move(rawBuffer));
 
-        if (!_bufferImage)
-            _bufferImage = std::make_unique<ImageBuffer>();
         std::swap(*_bufferImage, _bufferDeserialize);
-        _imageUpdated = true;
+        _bufferImageUpdated = true;
 
         updateTimestamp(_bufferImage->getSpec().timestamp);
     }
@@ -251,16 +250,11 @@ bool Image::readFile(const std::string& filename)
 
     {
         std::lock_guard<Spinlock> updateLock(_updateMutex);
-        if (!_bufferImage)
-            _bufferImage = std::make_unique<ImageBuffer>();
         std::swap(*_bufferImage, img);
-        _imageUpdated = true;
+        _bufferImageUpdated = true;
     }
 
     updateTimestamp();
-    if (!_isConnectedToRemote)
-        update();
-
     return true;
 }
 
@@ -268,21 +262,20 @@ bool Image::readFile(const std::string& filename)
 void Image::zero()
 {
     std::lock_guard<Spinlock> updateLock(_updateMutex);
-    if (!_image)
-        return;
-
-    _image->zero();
+    _bufferImage->zero();
+    _bufferImageUpdated = true;
+    updateTimestamp();
 }
 
 /*************/
 void Image::update()
 {
-    if (_imageUpdated)
+    if (_bufferImageUpdated)
     {
         std::lock_guard<Spinlock> updateLock(_updateMutex);
         std::lock_guard<std::shared_mutex> readLock(_readMutex);
         _image.swap(_bufferImage);
-        _imageUpdated = false;
+        _bufferImageUpdated = false;
 
         if (_remoteType.empty() || _type == _remoteType)
             updateMediaInfo();
@@ -325,7 +318,7 @@ bool Image::write(const std::string& filename)
     if (strSize < 5)
         return false;
 
-    if (!_image)
+    if (!_image or !_image->data())
         return false;
 
     auto spec = _image->getSpec();
@@ -358,9 +351,8 @@ void Image::createDefaultImage()
     img.zero();
 
     std::lock_guard<Spinlock> updateLock(_updateMutex);
-    if (!_image)
-        _image = std::make_unique<ImageBuffer>();
-    std::swap(*_image, img);
+    std::swap(*_bufferImage, img);
+    _bufferImageUpdated = true;
     updateTimestamp();
 }
 
@@ -384,8 +376,6 @@ void Image::createPattern()
         }
 
     std::lock_guard<Spinlock> updateLock(_updateMutex);
-    if (!_image)
-        _image = std::make_unique<ImageBuffer>();
     std::swap(*_image, img);
     updateTimestamp();
 }

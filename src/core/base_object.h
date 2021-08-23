@@ -145,7 +145,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     /**
      * Run the tasks waiting in the object's queue
      */
-    void runTasks();
+    virtual void runTasks();
 
   protected:
     std::string _name{""};                               //!< Object name

@@ -58,7 +58,7 @@ void Image_NDI::update()
     if (_bufferImage == nullptr)
         _bufferImage = std::make_unique<ImageBuffer>();
     *_bufferImage = _shmdata.get();
-    _imageUpdated = true;
+    _bufferImageUpdated = true;
     updateTimestamp(_bufferImage->getSpec().timestamp);
 
     Image::update();

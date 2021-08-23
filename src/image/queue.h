@@ -132,6 +132,13 @@ class Queue : public BufferObject
      * Regist\brief er new functors to modify attributes
      */
     void registerAttributes();
+
+    /**
+     * Run the tasks waiting in the object's queue.
+     * Also runs tasks for objects created by this queue,
+     * namely _currentSource, if it is valid.
+     */
+    void runTasks() override;
 };
 
 /*************/

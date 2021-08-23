@@ -1,6 +1,15 @@
 Splash release notes
 ====================
 
+Splash 0.8.48 (2021-08-23)
+-------------------------
+Improvements:
+* Fixed use of Image::update throughout the basecode
+* Removed a dangling 'using namespace std;' from World
+
+Bugs fixed:
+* Fixed Queue not playing Image_v4l2 sources correctly
+
 Splash 0.8.46 (2021-07-08)
 -------------------------
 Improvements:
