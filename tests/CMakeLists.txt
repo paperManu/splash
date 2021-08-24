@@ -98,6 +98,12 @@ target_sources(unitTests PRIVATE
 )
 endif()
 
+if(${WITH_LTO})
+    set_property(TARGET unitTests
+        PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE
+    )
+endif()
+
 if (NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
     add_custom_command(OUTPUT update_assets
         COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/data
