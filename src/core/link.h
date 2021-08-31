@@ -71,13 +71,6 @@ class Link
     void connectTo(const std::string& name);
 
     /**
-     * \brief Connect to a pair given its name and a shared_ptr, useful when the peer is an object of _root
-     * \param name Peer name
-     * \param peer Pointer to an inner peer
-     */
-    void connectTo(const std::string& name, RootObject* peer);
-
-    /**
      * \brief Disconnect from a pair given its name
      * \param name Peer name
      */
@@ -135,10 +128,7 @@ class Link
     std::unique_ptr<zmq::socket_t> _socketMessageOut;
 
     std::vector<std::string> _connectedTargets;
-    std::map<std::string, RootObject*> _connectedTargetPointers;
 
-    bool _connectedToInner{false};
-    bool _connectedToOuter{false};
     bool _running{false};
 
     Spinlock _msgSendMutex;

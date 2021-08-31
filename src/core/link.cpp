@@ -62,7 +62,7 @@ Link::~Link()
         _socketMessageOut->set(zmq::sockopt::linger, lingerValue);
         _socketBufferOut->set(zmq::sockopt::linger, lingerValue);
     }
-    catch (zmq::error_t &e)
+    catch (zmq::error_t& e)
     {
         Log::get() << Log::ERROR << "Link::" << __FUNCTION__ << " - Error while closing socket: " << e.what() << Log::endl;
     }
@@ -71,10 +71,10 @@ Link::~Link()
 /*************/
 void Link::connectTo(const std::string& name)
 {
-    if (find(_connectedTargets.begin(), _connectedTargets.end(), name) == _connectedTargets.end())
-        _connectedTargets.push_back(name);
-    else
+    if (find(_connectedTargets.begin(), _connectedTargets.end(), name) != _connectedTargets.end())
         return;
+
+    _connectedTargets.push_back(name);
 
     try
     {
@@ -90,24 +90,6 @@ void Link::connectTo(const std::string& name)
 
     // Wait a bit for the connection to be up
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    _connectedToOuter = true;
-}
-
-/*************/
-void Link::connectTo(const std::string& name, RootObject* peer)
-{
-    if (!peer)
-        return;
-
-    auto rootObjectIt = _connectedTargetPointers.find(name);
-    if (rootObjectIt == _connectedTargetPointers.end())
-        _connectedTargetPointers[name] = peer;
-    else
-        return;
-
-    // Wait a bit for the connection to be up
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    _connectedToInner = true;
 }
 
 /*************/
@@ -127,12 +109,6 @@ void Link::disconnectFrom(const std::string& name)
             if (errno != ETERM)
                 Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception while disconnecting from " << name << ": " << e.what() << Log::endl;
         }
-    }
-
-    auto targetPointerIt = _connectedTargetPointers.find(name);
-    if (targetPointerIt != _connectedTargetPointers.end())
-    {
-        _connectedTargetPointers.erase(targetPointerIt);
     }
 }
 
@@ -163,51 +139,28 @@ bool Link::waitForBufferSending(std::chrono::milliseconds maximumWait)
 /*************/
 bool Link::sendBuffer(const std::string& name, std::shared_ptr<SerializedObject> buffer)
 {
-    if (_connectedToInner)
+    try
     {
-        for (auto& rootObjectIt : _connectedTargetPointers)
-        {
-            auto rootObject = rootObjectIt.second;
-            // If there is also a connection to another process,
-            // we make a copy of the buffer right now
-            if (rootObject && _connectedToOuter)
-            {
-                auto copiedBuffer = std::make_shared<SerializedObject>();
-                *copiedBuffer = *buffer;
-                rootObject->setFromSerializedObject(name, copiedBuffer);
-            }
-            else if (rootObject)
-            {
-                rootObject->setFromSerializedObject(name, buffer);
-            }
-        }
+        std::lock_guard<Spinlock> lock(_bufferSendMutex);
+        auto bufferPtr = buffer.get();
+
+        _otgMutex.lock();
+        _otgBuffers.push_back(buffer);
+        _otgMutex.unlock();
+
+        _otgBufferCount++;
+
+        zmq::message_t msg(name.size() + 1);
+        memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
+        _socketBufferOut->send(msg, zmq::send_flags::sndmore);
+
+        msg.rebuild(bufferPtr->data(), bufferPtr->size(), Link::freeSerializedBuffer, this);
+        _socketBufferOut->send(msg, zmq::send_flags::none);
     }
-
-    if (_connectedToOuter)
+    catch (const zmq::error_t& e)
     {
-        try
-        {
-            std::lock_guard<Spinlock> lock(_bufferSendMutex);
-            auto bufferPtr = buffer.get();
-
-            _otgMutex.lock();
-            _otgBuffers.push_back(buffer);
-            _otgMutex.unlock();
-
-            _otgBufferCount++;
-
-            zmq::message_t msg(name.size() + 1);
-            memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
-            _socketBufferOut->send(msg, zmq::send_flags::sndmore);
-
-            msg.rebuild(bufferPtr->data(), bufferPtr->size(), Link::freeSerializedBuffer, this);
-            _socketBufferOut->send(msg, zmq::send_flags::none);
-        }
-        catch (const zmq::error_t& e)
-        {
-            if (errno != ETERM)
-                Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
-        }
+        if (errno != ETERM)
+            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
 
     return true;
@@ -223,84 +176,71 @@ bool Link::sendBuffer(const std::string& name, const std::shared_ptr<BufferObjec
 /*************/
 bool Link::sendMessage(const std::string& name, const std::string& attribute, const Values& message)
 {
-    if (_connectedToInner)
+    try
     {
-        for (auto& rootObjectIt : _connectedTargetPointers)
-        {
-            auto rootObject = rootObjectIt.second;
-            if (rootObject)
-                rootObject->set(name, attribute, message);
-        }
-    }
+        std::lock_guard<Spinlock> lock(_msgSendMutex);
 
-    if (_connectedToOuter)
-    {
-        try
-        {
-            std::lock_guard<Spinlock> lock(_msgSendMutex);
+        // First we send the name of the target
+        zmq::message_t msg(name.size() + 1);
+        memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
+        _socketMessageOut->send(msg, zmq::send_flags::sndmore);
 
-            // First we send the name of the target
-            zmq::message_t msg(name.size() + 1);
-            memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
-            _socketMessageOut->send(msg, zmq::send_flags::sndmore);
+        // And the target's attribute
+        msg.rebuild(attribute.size() + 1);
+        memcpy(msg.data(), (void*)attribute.c_str(), attribute.size() + 1);
+        _socketMessageOut->send(msg, zmq::send_flags::sndmore);
 
-            // And the target's attribute
-            msg.rebuild(attribute.size() + 1);
-            memcpy(msg.data(), (void*)attribute.c_str(), attribute.size() + 1);
-            _socketMessageOut->send(msg, zmq::send_flags::sndmore);
+        // Helper function to send messages
+        std::function<void(const Values& message)> sendMessage;
+        sendMessage = [&](const Values& message) {
+            // Size of the message
+            int size = message.size();
+            msg.rebuild(sizeof(size));
+            memcpy(msg.data(), (void*)&size, sizeof(size));
 
-            // Helper function to send messages
-            std::function<void(const Values& message)> sendMessage;
-            sendMessage = [&](const Values& message) {
-                // Size of the message
-                int size = message.size();
-                msg.rebuild(sizeof(size));
-                memcpy(msg.data(), (void*)&size, sizeof(size));
+            if (message.size() == 0)
+                _socketMessageOut->send(msg, zmq::send_flags::none);
+            else
+                _socketMessageOut->send(msg, zmq::send_flags::sndmore);
 
-                if (message.size() == 0)
-                    _socketMessageOut->send(msg, zmq::send_flags::none);
+            for (uint32_t i = 0; i < message.size(); ++i)
+            {
+                auto v = message[i];
+                Value::Type valueType = v.getType();
+
+                msg.rebuild(sizeof(valueType));
+                memcpy(msg.data(), (void*)&valueType, sizeof(valueType));
+                _socketMessageOut->send(msg, zmq::send_flags::sndmore);
+
+                std::string valueName = v.getName();
+                msg.rebuild(valueName.size() + 1);
+                memcpy(msg.data(), valueName.data(), valueName.size() + 1);
+                _socketMessageOut->send(msg, zmq::send_flags::sndmore);
+
+                if (valueType == Value::Type::values)
+                    sendMessage(v.as<Values>());
                 else
-                    _socketMessageOut->send(msg, zmq::send_flags::sndmore);
-
-                for (uint32_t i = 0; i < message.size(); ++i)
                 {
-                    auto v = message[i];
-                    Value::Type valueType = v.getType();
+                    int valueSize = (valueType == Value::Type::string) ? v.byte_size() + 1 : v.byte_size();
+                    void* value = v.data();
+                    msg.rebuild(valueSize);
+                    memcpy(msg.data(), value, valueSize);
 
-                    msg.rebuild(sizeof(valueType));
-                    memcpy(msg.data(), (void*)&valueType, sizeof(valueType));
-                    _socketMessageOut->send(msg, zmq::send_flags::sndmore);
-
-                    std::string valueName = v.getName();
-                    msg.rebuild(valueName.size() + 1);
-                    memcpy(msg.data(), valueName.data(), valueName.size() + 1);
-                    _socketMessageOut->send(msg, zmq::send_flags::sndmore);
-
-                    if (valueType == Value::Type::values)
-                        sendMessage(v.as<Values>());
+                    if (i != message.size() - 1)
+                        _socketMessageOut->send(msg, zmq::send_flags::sndmore);
                     else
-                    {
-                        int valueSize = (valueType == Value::Type::string) ? v.byte_size() + 1 : v.byte_size();
-                        void* value = v.data();
-                        msg.rebuild(valueSize);
-                        memcpy(msg.data(), value, valueSize);
-
-                        if (i != message.size() - 1)
-                            _socketMessageOut->send(msg, zmq::send_flags::sndmore);
-                        else
-                            _socketMessageOut->send(msg, zmq::send_flags::none);
-                    }
+                        _socketMessageOut->send(msg, zmq::send_flags::none);
                 }
-            };
+            }
+        };
 
-            // Send the message
-            sendMessage(message);
-        }
-        catch (const zmq::error_t& e)
-        {
-            if (errno != ETERM)
-                Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
-        }
+        // Send the message
+        sendMessage(message);
+    }
+    catch (const zmq::error_t& e)
+    {
+        if (errno != ETERM)
+            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
 
 // We don't display broadcast messages, for visibility
@@ -462,4 +402,4 @@ void Link::handleInputBuffers()
     }
 }
 
-} // end of namespace
+} // namespace Splash
