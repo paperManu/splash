@@ -57,10 +57,10 @@ endif()
 include_directories(./)
 
 if (NOT USE_SYSTEM_LIBS)
-    include_directories(../external/cppzmq)
     include_directories(../external/glm)
 endif()
 
+include_directories(../external/cppzmq)
 include_directories(../external/datapath/include)
 include_directories(../external/glad/core/include)
 include_directories(../external/hap/source)

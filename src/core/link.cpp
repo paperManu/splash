@@ -30,8 +30,8 @@ Link::Link(RootObject* root, const std::string& name)
 
         // High water mark set to zero for the outputs
         int hwm = 0;
-        _socketMessageOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
-        _socketBufferOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
+        _socketMessageOut->set(zmq::sockopt::sndhwm, hwm);
+        _socketBufferOut->set(zmq::sockopt::sndhwm, hwm);
     }
     catch (const zmq::error_t& e)
     {
@@ -59,8 +59,8 @@ Link::~Link()
     int lingerValue = 0;
     try
     {
-        _socketMessageOut->setsockopt(ZMQ_LINGER, &lingerValue, sizeof(lingerValue));
-        _socketBufferOut->setsockopt(ZMQ_LINGER, &lingerValue, sizeof(lingerValue));
+        _socketMessageOut->set(zmq::sockopt::linger, lingerValue);
+        _socketBufferOut->set(zmq::sockopt::linger, lingerValue);
     }
     catch (zmq::error_t &e)
     {
@@ -339,10 +339,10 @@ void Link::handleInputMessages()
     {
         // We don't want to miss a message: set the high water mark to a high value
         int hwm = 1000;
-        _socketMessageIn->setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
+        _socketMessageIn->set(zmq::sockopt::rcvhwm, hwm);
 
         _socketMessageIn->bind((_basePath + "msg_" + _name).c_str());
-        _socketMessageIn->setsockopt(ZMQ_SUBSCRIBE, NULL, 0); // We subscribe to all incoming messages
+        _socketMessageIn->set(zmq::sockopt::subscribe, ""); // We subscribe to all incoming messages
 
         // Helper function to receive messages
         zmq::message_t msg;
@@ -428,10 +428,10 @@ void Link::handleInputBuffers()
     {
         // We only keep one buffer in memory while processing
         int hwm = 1;
-        _socketBufferIn->setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
+        _socketBufferIn->set(zmq::sockopt::rcvhwm, hwm);
 
         _socketBufferIn->bind((_basePath + "buf_" + _name).c_str());
-        _socketBufferIn->setsockopt(ZMQ_SUBSCRIBE, NULL, 0); // We subscribe to all incoming messages
+        _socketBufferIn->set(zmq::sockopt::subscribe, ""); // We subscribe to all incoming messages
 
         while (_running)
         {
