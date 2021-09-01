@@ -61,11 +61,6 @@ class World : public RootObject
     explicit World(Context context);
 
     /**
-     * Destructor
-     */
-    ~World() override;
-
-    /**
      * Get the status of the world after begin ran
      * \return Return true if all went well
      */
@@ -81,9 +76,6 @@ class World : public RootObject
     std::unique_ptr<LtcClock> _clock{nullptr}; //!< Master clock from a LTC signal
     std::string _clockDeviceName{""};          //!< Name of the input sound source for the master clock
 #endif
-
-    std::shared_ptr<Scene> _innerScene{}; //!< Inner Scene if the specified DISPLAY is available from this process
-    std::thread _innerSceneThread;        //!< Inner Scene thread
 
     bool _status{true};        //!< Exit status
     bool _quit{false};         //!< True if the World should quit

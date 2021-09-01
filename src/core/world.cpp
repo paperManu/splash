@@ -55,16 +55,6 @@ World::World(Context context)
 }
 
 /*************/
-World::~World()
-{
-#ifdef DEBUG
-    Log::get() << Log::DEBUGGING << "World::~World - Destructor" << Log::endl;
-#endif
-    if (_innerSceneThread.joinable())
-        _innerSceneThread.join();
-}
-
-/*************/
 bool World::applyContext()
 {
     if (_context.info)
@@ -409,7 +399,7 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
     if (sceneAddress == "localhost")
     {
         std::string display{""};
-        std::string worldDisplay{"none"};
+        std::string worldDisplay{""};
 #if HAVE_LINUX
         auto regDisplayFull = std::regex("(:[0-9]\\.[0-9])", std::regex_constants::extended);
         auto regDisplayInt = std::regex("[0-9]", std::regex_constants::extended);
@@ -421,7 +411,7 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
             if (!worldDisplay.empty() && worldDisplay.find(".") == std::string::npos)
                 worldDisplay += ".0";
         }
-
+                                                                                                                                       
         display = "DISPLAY=" + worldDisplay;
         if (!sceneDisplay.empty())
         {
@@ -445,44 +435,32 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
         {
             _sceneLaunched = false;
 
-            // If the current process is on the correct display, we use an inner Scene
-            if (worldDisplay.size() > 0 && display.find(worldDisplay) == display.size() - worldDisplay.size() && !_innerScene)
+            // Spawn a new process containing this Scene
+            Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting a Scene in another process" << Log::endl;
+
+            std::string cmd = _context.executablePath;
+            std::string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
+            std::string timer = Timer::get().isDebug() ? "-t" : "";
+            std::string slave = "--child";
+            std::string xauth = "XAUTHORITY=" + Utils::getHomePath() + "/.Xauthority";
+
+            std::vector<char*> argv = {const_cast<char*>(cmd.c_str()), const_cast<char*>(slave.c_str())};
+            if (!_context.socketPrefix.empty())
             {
-                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an inner Scene" << Log::endl;
-                auto sceneContext = _context;
-                sceneContext.childSceneName = sceneName;
-                _innerScene = std::make_shared<Scene>(sceneContext);
-                _innerSceneThread = std::thread([&]() { _innerScene->run(); });
+                argv.push_back((char*)"--prefix");
+                argv.push_back(const_cast<char*>(_context.socketPrefix.c_str()));
             }
-            else
-            {
-                // Spawn a new process containing this Scene
-                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting a Scene in another process" << Log::endl;
+            if (!debug.empty())
+                argv.push_back(const_cast<char*>(debug.c_str()));
+            if (!timer.empty())
+                argv.push_back(const_cast<char*>(timer.c_str()));
+            argv.push_back(const_cast<char*>(sceneName.c_str()));
+            argv.push_back(nullptr);
+            std::vector<char*> env = {const_cast<char*>(display.c_str()), const_cast<char*>(xauth.c_str()), nullptr};
 
-                std::string cmd = _context.executablePath;
-                std::string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
-                std::string timer = Timer::get().isDebug() ? "-t" : "";
-                std::string slave = "--child";
-                std::string xauth = "XAUTHORITY=" + Utils::getHomePath() + "/.Xauthority";
-
-                std::vector<char*> argv = {const_cast<char*>(cmd.c_str()), const_cast<char*>(slave.c_str())};
-                if (!_context.socketPrefix.empty())
-                {
-                    argv.push_back((char*)"--prefix");
-                    argv.push_back(const_cast<char*>(_context.socketPrefix.c_str()));
-                }
-                if (!debug.empty())
-                    argv.push_back(const_cast<char*>(debug.c_str()));
-                if (!timer.empty())
-                    argv.push_back(const_cast<char*>(timer.c_str()));
-                argv.push_back(const_cast<char*>(sceneName.c_str()));
-                argv.push_back(nullptr);
-                std::vector<char*> env = {const_cast<char*>(display.c_str()), const_cast<char*>(xauth.c_str()), nullptr};
-
-                int status = posix_spawn(&pid, cmd.c_str(), nullptr, nullptr, argv.data(), env.data());
-                if (status != 0)
-                    Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << sceneName << Log::endl;
-            }
+            int status = posix_spawn(&pid, cmd.c_str(), nullptr, nullptr, argv.data(), env.data());
+            if (status != 0)
+                Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << sceneName << Log::endl;
 
             // We wait for the child process to be launched
             std::unique_lock<std::mutex> lockChildProcess(_childProcessMutex);
@@ -996,20 +974,12 @@ void World::registerAttributes()
                 Json::Value config;
                 if (loadConfig(filename, config))
                 {
-                    for (auto& s : _scenes)
+                    for (auto& [sceneName, scenePid] : _scenes)
                     {
-                        sendMessage(s.first, "quit", {});
-                        _link->disconnectFrom(s.first);
-                        if (s.second != -1)
-                        {
-                            waitpid(s.second, nullptr, 0);
-                        }
-                        else
-                        {
-                            if (_innerSceneThread.joinable())
-                                _innerSceneThread.join();
-                            _innerScene.reset();
-                        }
+                        sendMessage(sceneName, "quit");
+                        _link->disconnectFrom(sceneName);
+                        if (scenePid != -1)
+                            waitpid(scenePid, nullptr, 0);
                     }
 
                     _masterSceneName = "";
