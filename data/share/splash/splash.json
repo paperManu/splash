@@ -212,7 +212,6 @@
       "clockDeviceName" : [ "" ],
       "configurationPath" : [ "" ],
       "forceRealtime" : [ false ],
-      "framerate" : [ 60 ],
       "looseClock" : [ false ],
       "mediaPath" : [ "" ]
    }
