@@ -143,7 +143,7 @@ void World::run()
 
             // Read and serialize new buffers
             Timer::get() << "serialize";
-            std::unordered_map<std::string, std::shared_ptr<SerializedObject>> serializedObjects;
+            std::unordered_map<std::string, SerializedObject> serializedObjects;
 
             {
                 ZoneScopedN("Serialize buffers");
@@ -160,8 +160,7 @@ void World::run()
                         {
                             auto serializedObject = bufferObject->serialize();
                             bufferObject->setNotUpdated();
-                            if (serializedObject)
-                                serializedObjects[bufferObject->getDistantName()] = serializedObject;
+                            serializedObjects[bufferObject->getDistantName()] = std::move(serializedObject);
                         }
                     }
                 }
@@ -169,16 +168,19 @@ void World::run()
             }
 
             // Wait for previous buffers to be uploaded
-            _link->waitForBufferSending(std::chrono::milliseconds(50)); // Maximum time to wait for frames to arrive
-            sendMessage(Constants::ALL_PEERS, "uploadTextures", {});
-            Timer::get() >> "upload";
+            {
+                ZoneScopedN("Wait for buffers to be sent");
+                _link->waitForBufferSending(std::chrono::milliseconds(50)); // Maximum time to wait for frames to arrive
+                sendMessage(Constants::ALL_PEERS, "uploadTextures", {});
+                Timer::get() >> "upload";
+            }
 
             // Ask for the upload of the new buffers, during the next world loop
-            Timer::get() << "upload";
-            for (auto& [name, serializedObject] : serializedObjects)
             {
-                assert(serializedObject);
-                _link->sendBuffer(name, serializedObject);
+                ZoneScopedN("Prepare sending next buffers");
+                Timer::get() << "upload";
+                for (auto& [name, serializedObject] : serializedObjects)
+                    _link->sendBuffer(name, std::move(serializedObject));
             }
         }
 
@@ -707,10 +709,10 @@ std::vector<std::string> World::getObjectsOfType(const std::string& type) const
 }
 
 /*************/
-bool World::handleSerializedObject(const std::string& name, const std::shared_ptr<SerializedObject>& obj)
+bool World::handleSerializedObject(const std::string& name, SerializedObject&& obj)
 {
-    if (!RootObject::handleSerializedObject(name, obj))
-        _link->sendBuffer(name, obj);
+    if (!RootObject::handleSerializedObject(name, std::move(obj)))
+        _link->sendBuffer(name, std::move(obj));
     return true;
 }
 

@@ -137,15 +137,15 @@ bool Link::waitForBufferSending(std::chrono::milliseconds maximumWait)
 }
 
 /*************/
-bool Link::sendBuffer(const std::string& name, std::shared_ptr<SerializedObject> buffer)
+bool Link::sendBuffer(const std::string& name, SerializedObject&& buffer)
 {
     try
     {
         std::lock_guard<Spinlock> lock(_bufferSendMutex);
-        auto bufferPtr = buffer.get();
 
         _otgMutex.lock();
-        _otgBuffers.push_back(buffer);
+        _otgBuffers.push_back(std::move(buffer));
+        auto& otgBuffer = _otgBuffers.back();
         _otgMutex.unlock();
 
         _otgBufferCount++;
@@ -154,7 +154,7 @@ bool Link::sendBuffer(const std::string& name, std::shared_ptr<SerializedObject>
         memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
         _socketBufferOut->send(msg, zmq::send_flags::sndmore);
 
-        msg.rebuild(bufferPtr->data(), bufferPtr->size(), Link::freeSerializedBuffer, this);
+        msg.rebuild(otgBuffer.data(), otgBuffer.size(), Link::freeSerializedBuffer, this);
         _socketBufferOut->send(msg, zmq::send_flags::none);
     }
     catch (const zmq::error_t& e)
@@ -261,7 +261,7 @@ void Link::freeSerializedBuffer(void* data, void* hint)
 
     uint32_t index = 0;
     for (; index < ctx->_otgBuffers.size(); ++index)
-        if (ctx->_otgBuffers[index]->data() == data)
+        if (ctx->_otgBuffers[index].data() == data)
             break;
 
     if (index >= ctx->_otgBuffers.size())
@@ -389,10 +389,12 @@ void Link::handleInputBuffers()
 
             if (!_socketBufferIn->recv(msg, zmq::recv_flags::none))
                 continue;
-            auto buffer = std::make_shared<SerializedObject>(static_cast<uint8_t*>(msg.data()), static_cast<uint8_t*>(msg.data()) + msg.size());
 
             if (_rootObject)
-                _rootObject->setFromSerializedObject(name, buffer);
+            {
+                auto buffer = SerializedObject(static_cast<uint8_t*>(msg.data()), static_cast<uint8_t*>(msg.data()) + msg.size());
+                _rootObject->setFromSerializedObject(name, std::move(buffer));
+            }
         }
     }
     catch (const zmq::error_t& e)

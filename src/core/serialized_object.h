@@ -34,18 +34,18 @@ namespace Splash
 struct SerializedObject
 {
     /**
-     * \brief Constructor
+     * Constructor
      */
     SerializedObject() = default;
 
     /**
-     * \brief Constructor with an initial size
+     * Constructor with an initial size
      * \param size Initial array size
      */
     explicit SerializedObject(int size) { _data.resize(size); }
 
     /**
-     * \brief Constructor from two iterators
+     * Constructor from two iterators
      * \param start Begin iterator
      * \param end End iterator
      */
@@ -55,25 +55,34 @@ struct SerializedObject
     }
 
     /**
-     * \brief Get the pointer to the data
+     * Prevent copy constructor and operator
+     * Allow for move constructor and operator
+     */
+    SerializedObject(const SerializedObject&) = delete;
+    SerializedObject(SerializedObject&&) = default;
+    SerializedObject& operator=(const SerializedObject&) = delete;
+    SerializedObject& operator=(SerializedObject&&) = default;
+
+    /**
+     * Get the pointer to the data
      * \return Return a pointer to the data
      */
     inline uint8_t* data() { return _data.data(); }
 
     /**
-     * \brief Get ownership over the inner buffer. Use with caution, as it invalidates the SerializedObject
+     * Get ownership over the inner buffer. Use with caution, as it invalidates the SerializedObject
      * \return Return the inner buffer as a rvalue
      */
     inline ResizableArray<uint8_t>&& grabData() { return std::move(_data); }
 
     /**
-     * \brief Get the size of the data
+     * Get the size of the data
      * \return Return the size
      */
     inline std::size_t size() { return _data.size(); }
 
     /**
-     * \brief Modify the size of the data
+     * Modify the size of the data
      * \param s New size
      */
     inline void resize(size_t s) { _data.resize(s); }

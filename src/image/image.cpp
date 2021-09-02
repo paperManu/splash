@@ -111,7 +111,7 @@ void Image::set(unsigned int w, unsigned int h, unsigned int channels, ImageBuff
 }
 
 /*************/
-std::shared_ptr<SerializedObject> Image::serialize() const
+SerializedObject Image::serialize() const
 {
     std::shared_lock<std::shared_mutex> readLock(_readMutex);
 
@@ -126,20 +126,20 @@ std::shared_ptr<SerializedObject> Image::serialize() const
     int imgSize = _image->getSpec().rawSize();
     int totalSize = _serializedImageHeaderSize + imgSize;
 
-    auto obj = std::make_shared<SerializedObject>(totalSize);
+    auto obj = SerializedObject(totalSize);
 
-    auto currentObjPtr = obj->data();
+    auto currentObjPtr = obj.data();
     const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&nbrChar);
     std::copy(ptr, ptr + sizeof(nbrChar), currentObjPtr);
     currentObjPtr += sizeof(nbrChar);
 
     const char* charPtr = reinterpret_cast<const char*>(xmlSpec.c_str());
     std::copy(charPtr, charPtr + nbrChar, currentObjPtr);
-    currentObjPtr = obj->data() + _serializedImageHeaderSize;
+    currentObjPtr = obj.data() + _serializedImageHeaderSize;
 
     // And then, the image
     const char* imgPtr = reinterpret_cast<const char*>(_image->data());
-    if (imgPtr == NULL)
+    if (imgPtr == nullptr)
         return {};
 
     {
@@ -157,9 +157,9 @@ std::shared_ptr<SerializedObject> Image::serialize() const
 }
 
 /*************/
-bool Image::deserialize(const std::shared_ptr<SerializedObject>& obj)
+bool Image::deserialize(SerializedObject&& obj)
 {
-    if (obj == nullptr || obj->size() == 0)
+    if (obj.size() == 0)
         return false;
 
     if (Timer::get().isDebug())
@@ -169,7 +169,7 @@ bool Image::deserialize(const std::shared_ptr<SerializedObject>& obj)
     int nbrChar;
     char* ptr = reinterpret_cast<char*>(&nbrChar);
 
-    auto currentObjPtr = obj->data();
+    auto currentObjPtr = obj.data();
     std::copy(currentObjPtr, currentObjPtr + sizeof(nbrChar), ptr);
     currentObjPtr += sizeof(nbrChar);
 
@@ -188,7 +188,7 @@ bool Image::deserialize(const std::shared_ptr<SerializedObject>& obj)
             _bufferDeserialize = ImageBuffer(spec);
         _bufferDeserialize.getSpec().timestamp = spec.timestamp;
 
-        auto rawBuffer = obj->grabData();
+        auto rawBuffer = obj.grabData();
         rawBuffer.shift(_serializedImageHeaderSize);
         _bufferDeserialize.setRawBuffer(std::move(rawBuffer));
 

@@ -191,14 +191,14 @@ class RootObject : public BaseObject
      * \param obj Serialized object
      * \return Return true if the object has been set
      */
-    bool setFromSerializedObject(const std::string& name, const std::shared_ptr<SerializedObject>& obj);
+    bool setFromSerializedObject(const std::string& name, SerializedObject&& obj);
 
     /**
      * \brief Send the given serialized buffer through the link
      * \param name Destination BufferObject name
      * \param buffer Serialized buffer
      */
-    void sendBuffer(const std::string& name, const std::shared_ptr<SerializedObject>& buffer) { _link->sendBuffer(name, buffer); }
+    void sendBuffer(const std::string& name, SerializedObject&& buffer) { _link->sendBuffer(name, std::move(buffer)); }
 
     /**
      * \brief Return a lock object list modifications (addition, deletion)
@@ -249,7 +249,7 @@ class RootObject : public BaseObject
      * \param obj Serialized object
      * \return Return true if the object has been handled
      */
-    virtual bool handleSerializedObject(const std::string& name, const std::shared_ptr<SerializedObject>& obj);
+    virtual bool handleSerializedObject(const std::string& name, SerializedObject&& obj);
 
     /**
      * Force the propagation of a specific path

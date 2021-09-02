@@ -178,7 +178,7 @@ class World : public RootObject
      * \param obj Serialized object
      * \return Return true if the object has been handled
      */
-    bool handleSerializedObject(const std::string& name, const std::shared_ptr<SerializedObject>& obj) override;
+    bool handleSerializedObject(const std::string& name, SerializedObject&& obj) override;
 
     /**
      * Handle the exit signal messages

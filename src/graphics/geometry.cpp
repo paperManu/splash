@@ -158,34 +158,34 @@ std::vector<char> Geometry::getGpuBufferAsVector(Geometry::BufferType type)
 }
 
 /*************/
-std::shared_ptr<SerializedObject> Geometry::serialize() const
+SerializedObject Geometry::serialize() const
 {
-    auto serializedObject = std::make_shared<SerializedObject>();
-    serializedObject->resize(sizeof(int));
-    *(reinterpret_cast<int*>(serializedObject->data())) = _alternativeVerticesNumber;
+    auto serializedObject = SerializedObject();
+    serializedObject.resize(sizeof(int));
+    *(reinterpret_cast<int*>(serializedObject.data())) = _alternativeVerticesNumber;
     for (auto& buffer : _glAlternativeBuffers)
     {
         auto newBuffer = buffer->getBufferAsVector(_alternativeVerticesNumber);
-        auto oldSize = serializedObject->size();
-        serializedObject->resize(serializedObject->size() + newBuffer.size());
-        std::copy(newBuffer.data(), newBuffer.data() + newBuffer.size(), serializedObject->data() + oldSize);
+        auto oldSize = serializedObject.size();
+        serializedObject.resize(serializedObject.size() + newBuffer.size());
+        std::copy(newBuffer.data(), newBuffer.data() + newBuffer.size(), serializedObject.data() + oldSize);
     }
 
     return serializedObject;
 }
 
 /*************/
-bool Geometry::deserialize(const std::shared_ptr<SerializedObject>& obj)
+bool Geometry::deserialize(SerializedObject&& obj)
 {
-    uint32_t verticesNumber = *reinterpret_cast<int*>(obj->data());
+    uint32_t verticesNumber = *reinterpret_cast<int*>(obj.data());
 
-    if (obj->size() != verticesNumber * 4 * 14 + 4)
+    if (obj.size() != verticesNumber * 4 * 14 + 4)
     {
         Log::get() << Log::WARNING << "Geometry::" << __FUNCTION__ << " - Received buffer size does not match its header. Dropping." << Log::endl;
         return false;
     }
 
-    _serializedMesh = std::move(*obj);
+    _serializedMesh = std::move(obj);
     return true;
 }
 

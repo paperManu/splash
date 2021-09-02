@@ -112,14 +112,14 @@ class Geometry : public BufferObject
      * Get the geometry as serialized
      * \return Return the serialized geometry
      */
-    std::shared_ptr<SerializedObject> serialize() const override;
+    SerializedObject serialize() const override;
 
     /**
      * Deserialize the geometry
      * \param obj Serialized object
      * \return Return true if all went well
      */
-    bool deserialize(const std::shared_ptr<SerializedObject>& obj) override;
+    bool deserialize(SerializedObject&& obj) override;
 
     /**
      * Get the timestamp

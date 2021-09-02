@@ -140,9 +140,9 @@ bool Mesh::read(const std::string& filename)
 }
 
 /*************/
-std::shared_ptr<SerializedObject> Mesh::serialize() const
+SerializedObject Mesh::serialize() const
 {
-    const auto obj = std::make_shared<SerializedObject>();
+    SerializedObject obj;
 
     if (Timer::get().isDebug())
         Timer::get() << "serialize " + _name;
@@ -159,9 +159,9 @@ std::shared_ptr<SerializedObject> Mesh::serialize() const
     int totalSize = sizeof(nbrVertices); // We add to all this the total number of vertices
     for (auto& d : data)
         totalSize += d.size() * sizeof(d[0]);
-    obj->resize(totalSize);
+    obj.resize(totalSize);
 
-    auto currentObjPtr = obj->data();
+    auto currentObjPtr = obj.data();
     const char* ptr = reinterpret_cast<const char*>(&nbrVertices);
     std::copy(ptr, ptr + sizeof(nbrVertices), currentObjPtr);
     currentObjPtr += sizeof(nbrVertices);
@@ -180,9 +180,9 @@ std::shared_ptr<SerializedObject> Mesh::serialize() const
 }
 
 /*************/
-bool Mesh::deserialize(const std::shared_ptr<SerializedObject>& obj)
+bool Mesh::deserialize(SerializedObject&& obj)
 {
-    if (obj.get() == nullptr || obj->size() == 0)
+    if (obj.size() == 0)
         return false;
 
     if (Timer::get().isDebug())
@@ -192,11 +192,11 @@ bool Mesh::deserialize(const std::shared_ptr<SerializedObject>& obj)
     int nbrVertices;
     char* ptr = reinterpret_cast<char*>(&nbrVertices);
 
-    auto currentObjPtr = obj->data();
+    auto currentObjPtr = obj.data();
     std::copy(currentObjPtr, currentObjPtr + sizeof(nbrVertices), ptr); // This will fail if float have different size between sender and receiver
     currentObjPtr += sizeof(nbrVertices);
 
-    if (nbrVertices < 0 || nbrVertices > static_cast<int>(obj->size()))
+    if (nbrVertices < 0 || nbrVertices > static_cast<int>(obj.size()))
     {
         Log::get() << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Bad buffer received, discarding" << Log::endl;
         return false;
@@ -208,7 +208,7 @@ bool Mesh::deserialize(const std::shared_ptr<SerializedObject>& obj)
     data.push_back(std::vector<float>(nbrVertices * 4));
 
     bool hasAnnexe = false;
-    if (obj->size() > static_cast<uint32_t>(nbrVertices) * 4 * 14) // Check whether there is an annexe buffer in all this
+    if (obj.size() > static_cast<uint32_t>(nbrVertices) * 4 * 14) // Check whether there is an annexe buffer in all this
     {
         hasAnnexe = true;
         data.push_back(std::vector<float>(nbrVertices * 4));

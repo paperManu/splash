@@ -53,45 +53,45 @@ class Link
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      * \param name Name of the link
      */
     Link(RootObject* root, const std::string& name);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~Link();
 
     /**
-     * \brief Connect to a pair given its name
+     * Connect to a pair given its name
      * \param name Peer name
      */
     void connectTo(const std::string& name);
 
     /**
-     * \brief Disconnect from a pair given its name
+     * Disconnect from a pair given its name
      * \param name Peer name
      */
     void disconnectFrom(const std::string& name);
 
     /**
-     * \brief Send a buffer to the connected peers
+     * Send a buffer to the connected peers
      * \param name Buffer name
      * \param buffer Serialized buffer
      */
-    bool sendBuffer(const std::string& name, std::shared_ptr<SerializedObject> buffer);
+    bool sendBuffer(const std::string& name, SerializedObject&& buffer);
 
     /**
-     * \brief Send a buffer to the connected peers
+     * Send a buffer to the connected peers
      * \param name Buffer name
      * \param object Object to get a serialized version from
      */
     bool sendBuffer(const std::string& name, const std::shared_ptr<BufferObject>& object);
 
     /**
-     * \brief Send a message to connected peers
+     * Send a message to connected peers
      * \param name Destination object name
      * \param attribute Attribute
      * \param message Message
@@ -100,7 +100,7 @@ class Link
     bool sendMessage(const std::string& name, const std::string& attribute, const Values& message);
 
     /**
-     * \brief Send a message to connected peers. Converts known base types to vector<Value> before sending.
+     * Send a message to connected peers. Converts known base types to vector<Value> before sending.
      * \param name Destination object name
      * \param attribute Attribute
      * \param message Message
@@ -110,7 +110,7 @@ class Link
     bool sendMessage(const std::string& name, const std::string& attribute, const std::vector<T>& message);
 
     /**
-     * \brief Check that all buffers were sent to the client
+     * Check that all buffers were sent to the client
      * \param maximumWait Maximum waiting time
      * \return Return true if all went well
      */
@@ -134,7 +134,7 @@ class Link
     Spinlock _msgSendMutex;
     Spinlock _bufferSendMutex;
 
-    std::deque<std::shared_ptr<SerializedObject>> _otgBuffers;
+    std::deque<SerializedObject> _otgBuffers;
     Spinlock _otgMutex;
     uint32_t _otgBufferCount{0};
     std::condition_variable _bufferTransmittedCondition{};
@@ -144,19 +144,19 @@ class Link
     std::thread _messageInThread;
 
     /**
-     * \brief Callback to remove the shared_ptr to a sent buffer
+     * Callback to remove the shared_ptr to a sent buffer
      * \param data Pointer to sent data
      * \param hint Pointer to the Link
      */
     static void freeSerializedBuffer(void* data, void* hint);
 
     /**
-     * \brief Message input thread function
+     * Message input thread function
      */
     void handleInputMessages();
 
     /**
-     * \brief Buffer input thread function
+     * Buffer input thread function
      */
     void handleInputBuffers();
 };
