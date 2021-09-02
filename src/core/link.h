@@ -27,6 +27,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <deque>
 #include <map>
 #include <mutex>
@@ -145,7 +146,9 @@ class Link
 
     std::deque<std::shared_ptr<SerializedObject>> _otgBuffers;
     Spinlock _otgMutex;
-    std::atomic_int _otgNumber{0};
+    uint32_t _otgBufferCount{0};
+    std::condition_variable _bufferTransmittedCondition{};
+    std::mutex _bufferTransmittedMutex{};
 
     std::thread _bufferInThread;
     std::thread _messageInThread;
@@ -155,7 +158,7 @@ class Link
      * \param data Pointer to sent data
      * \param hint Pointer to the Link
      */
-    static void freeOlderBuffer(void* data, void* hint);
+    static void freeSerializedBuffer(void* data, void* hint);
 
     /**
      * \brief Message input thread function

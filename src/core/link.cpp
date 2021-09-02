@@ -139,26 +139,25 @@ void Link::disconnectFrom(const std::string& name)
 /*************/
 bool Link::waitForBufferSending(std::chrono::milliseconds maximumWait)
 {
-    bool returnValue;
-    std::chrono::milliseconds totalWait{0};
+    std::unique_lock<std::mutex> lock(_bufferTransmittedMutex);
 
+    // If no buffer is currently being sent, return now
+    if (_otgBufferCount == 0)
+        return true;
+
+    const auto startTime = Timer::getTime() / 1000; // Time in ms
+    auto waitDurationLeft = maximumWait.count();
     while (true)
     {
-        if (_otgNumber == 0)
-        {
-            returnValue = true;
-            break;
-        }
-        if (totalWait > maximumWait)
-        {
-            returnValue = false;
-            break;
-        }
-        totalWait = totalWait + std::chrono::milliseconds(1);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        const auto status = _bufferTransmittedCondition.wait_for(lock, std::chrono::milliseconds(waitDurationLeft));
+        if (status == std::cv_status::timeout)
+            return false;
+        else if (_otgBufferCount == 0)
+            return true;
+        waitDurationLeft = Timer::getTime() / 1000 - startTime;
     }
 
-    return returnValue;
+    return false;
 }
 
 /*************/
@@ -195,13 +194,13 @@ bool Link::sendBuffer(const std::string& name, std::shared_ptr<SerializedObject>
             _otgBuffers.push_back(buffer);
             _otgMutex.unlock();
 
-            _otgNumber.fetch_add(1, std::memory_order_acq_rel);
+            _otgBufferCount++;
 
             zmq::message_t msg(name.size() + 1);
             memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
             _socketBufferOut->send(msg, zmq::send_flags::sndmore);
 
-            msg.rebuild(bufferPtr->data(), bufferPtr->size(), Link::freeOlderBuffer, this);
+            msg.rebuild(bufferPtr->data(), bufferPtr->size(), Link::freeSerializedBuffer, this);
             _socketBufferOut->send(msg, zmq::send_flags::none);
         }
         catch (const zmq::error_t& e)
@@ -314,10 +313,12 @@ bool Link::sendMessage(const std::string& name, const std::string& attribute, co
 }
 
 /*************/
-void Link::freeOlderBuffer(void* data, void* hint)
+void Link::freeSerializedBuffer(void* data, void* hint)
 {
     Link* ctx = (Link*)hint;
-    std::lock_guard<Spinlock> lock(ctx->_otgMutex);
+
+    std::unique_lock<std::mutex> lock(ctx->_bufferTransmittedMutex);
+
     uint32_t index = 0;
     for (; index < ctx->_otgBuffers.size(); ++index)
         if (ctx->_otgBuffers[index]->data() == data)
@@ -329,7 +330,9 @@ void Link::freeOlderBuffer(void* data, void* hint)
         return;
     }
     ctx->_otgBuffers.erase(ctx->_otgBuffers.begin() + index);
-    ctx->_otgNumber.fetch_sub(1, std::memory_order_acq_rel);
+    ctx->_otgBufferCount--;
+    
+    ctx->_bufferTransmittedCondition.notify_all();
 }
 
 /*************/
