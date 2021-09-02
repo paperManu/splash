@@ -210,12 +210,7 @@ void RootObject::signalBufferObjectUpdated()
     std::unique_lock<std::mutex> lockCondition(_bufferObjectUpdatedMutex);
 
     _bufferObjectUpdated = true;
-    // Only a single buffer has to wave for update at a time
-    if (!_bufferObjectSingleMutex.try_lock())
-        return;
-
     _bufferObjectUpdatedCondition.notify_all();
-    _bufferObjectSingleMutex.unlock();
 }
 
 /*************/
