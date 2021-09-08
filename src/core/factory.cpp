@@ -2,7 +2,7 @@
 
 #include "./controller/controller_blender.h"
 #include "./core/constants.h"
-#include "./core/link.h"
+#include "./network/link.h"
 #include "./core/scene.h"
 #include "./graphics/camera.h"
 #include "./graphics/filter.h"

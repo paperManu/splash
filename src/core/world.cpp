@@ -16,7 +16,7 @@
 
 #include "./core/buffer_object.h"
 #include "./core/constants.h"
-#include "./core/link.h"
+#include "./network/link.h"
 #include "./core/scene.h"
 #include "./core/serializer.h"
 #include "./image/image.h"

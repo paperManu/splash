@@ -41,6 +41,7 @@
 #include "./core/serialized_object.h"
 #include "./core/spinlock.h"
 #include "./core/value.h"
+#include "./network/channel.h"
 
 namespace Splash
 {
@@ -118,47 +119,25 @@ class Link
 
   private:
     RootObject* _rootObject;
-    std::string _basePath{""};
     std::string _name{""};
 
-    std::unique_ptr<zmq::context_t> _context;
-    std::unique_ptr<zmq::socket_t> _socketBufferIn;
-    std::unique_ptr<zmq::socket_t> _socketBufferOut;
-    std::unique_ptr<zmq::socket_t> _socketMessageIn;
-    std::unique_ptr<zmq::socket_t> _socketMessageOut;
-
-    std::vector<std::string> _connectedTargets;
-
-    bool _running{false};
-
-    Spinlock _msgSendMutex;
-    Spinlock _bufferSendMutex;
-
-    std::deque<SerializedObject> _otgBuffers;
-    Spinlock _otgMutex;
-    uint32_t _otgBufferCount{0};
-    std::condition_variable _bufferTransmittedCondition{};
-    std::mutex _bufferTransmittedMutex{};
-
-    std::thread _bufferInThread;
-    std::thread _messageInThread;
-
-    /**
-     * Callback to remove the shared_ptr to a sent buffer
-     * \param data Pointer to sent data
-     * \param hint Pointer to the Link
-     */
-    static void freeSerializedBuffer(void* data, void* hint);
+    std::unique_ptr<ChannelOutput> _channelOutput;
+    std::unique_ptr<ChannelInput> _channelInput;
 
     /**
      * Message input thread function
+     * \param name Object name to send message to
+     * \param attribute Object attribute for the message
+     * \param value Object value to update
      */
-    void handleInputMessages();
+    void handleInputMessages(const std::string& name, const std::string& attribute, const Values& value);
 
     /**
      * Buffer input thread function
+     * \param name Buffer name to send
+     * \param buffer Buffer to be sent
      */
-    void handleInputBuffers();
+    void handleInputBuffers(const std::string& name, SerializedObject&& buffer);
 };
 
 /*************/

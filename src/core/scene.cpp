@@ -9,7 +9,7 @@
 #include "./controller/controller_blender.h"
 #include "./controller/controller_gui.h"
 #include "./core/constants.h"
-#include "./core/link.h"
+#include "./network/link.h"
 #include "./graphics/camera.h"
 #include "./graphics/filter.h"
 #include "./graphics/geometry.h"

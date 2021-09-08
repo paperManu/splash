@@ -36,7 +36,7 @@
 #include "./core/base_object.h"
 #include "./core/factory.h"
 #include "./core/graph_object.h"
-#include "./core/link.h"
+#include "./network/link.h"
 #include "./core/name_registry.h"
 #include "./core/tree.h"
 #include "./utils/dense_map.h"
