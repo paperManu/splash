@@ -72,13 +72,11 @@ class ChannelOutput_ZMQ : public ChannelOutput
     bool disconnectFrom(const std::string& target) final;
 
     /**
-     * Send a message to the given object
-     * \param name Object name to send message to
-     * \param attribute Object attribute for the message
-     * \param value Object value to update
+     * Send a message
+     * \param message Message to be sent
      * \return Return true if the message was successfully sent
      */
-    bool sendMessageTo(const std::string& name, const std::string& attribute, const Values& value) final;
+    bool sendMessage(const std::vector<uint8_t>& message) final;
 
     /**
      * Send a buffer to the given object

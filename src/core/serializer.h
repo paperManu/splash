@@ -364,9 +364,9 @@ T deserializer(std::vector<uint8_t>::const_iterator& it)
  * \return Return the deserialized object
  */
 template <class T>
-inline T deserialize(const std::vector<uint8_t>& buffer)
+inline T deserialize(const std::vector<uint8_t>& buffer, size_t offset = 0)
 {
-    auto it = buffer.cbegin();
+    auto it = buffer.cbegin() + offset;
     return detail::deserializer<T>(it);
 }
 

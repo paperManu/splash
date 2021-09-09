@@ -8,6 +8,8 @@
 #include "./core/buffer_object.h"
 #include "./core/constants.h"
 #include "./core/root_object.h"
+#include "./core/serializer.h"
+#include "./core/serialize/serialize_value.h"
 #include "./network/channel_zmq.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
@@ -23,7 +25,7 @@ Link::Link(RootObject* root, const std::string& name)
     , _channelInput(std::make_unique<ChannelInput_ZMQ>(
           root,
           name,
-          [&](const std::string& name, const std::string& attribute, const Values& value) { handleInputMessages(name, attribute, value); },
+          [&](const std::vector<uint8_t>& message) { handleInputMessages(message); },
           [&](const std::string& name, SerializedObject&& buffer) { handleInputBuffers(name, std::move(buffer)); }))
 {
 }
@@ -67,7 +69,12 @@ bool Link::sendBuffer(const std::string& name, const std::shared_ptr<BufferObjec
 /*************/
 bool Link::sendMessage(const std::string& name, const std::string& attribute, const Values& message)
 {
-    auto result = _channelOutput->sendMessageTo(name, attribute, message);
+    std::vector<uint8_t> serializedMessage;
+    Serial::serialize(name, serializedMessage);
+    Serial::serialize(attribute, serializedMessage);
+    Serial::serialize(message, serializedMessage);
+
+    auto result = _channelOutput->sendMessage(serializedMessage);
 
 #ifdef DEBUG
     // We don't display broadcast messages, for visibility
@@ -79,8 +86,15 @@ bool Link::sendMessage(const std::string& name, const std::string& attribute, co
 }
 
 /*************/
-void Link::handleInputMessages(const std::string& name, const std::string& attribute, const Values& value)
+void Link::handleInputMessages(const std::vector<uint8_t>& message)
 {
+    size_t offset = 0;
+    auto name = Serial::deserialize<std::string>(message);
+    offset += Serial::getSize(name);
+    auto attribute = Serial::deserialize<std::string>(message, offset);
+    offset += Serial::getSize(attribute);
+    auto value = Serial::deserialize<Values>(message, offset);
+
     if (_rootObject)
         _rootObject->set(name, attribute, value);
 #ifdef DEBUG

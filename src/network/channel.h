@@ -29,6 +29,7 @@
 #include <chrono>
 #include <functional>
 #include <string>
+#include <vector>
 
 #include "./core/constants.h"
 
@@ -70,13 +71,11 @@ class ChannelOutput
     virtual bool disconnectFrom(const std::string& target) = 0;
 
     /**
-     * Send a message to the given object
-     * \param name Object name to send message to
-     * \param attribute Object attribute for the message
-     * \param value Object value to update
+     * Send a message
+     * \param message Message to be sent
      * \return Return true if the message was successfully sent
      */
-    virtual bool sendMessageTo(const std::string& name, const std::string& attribute, const Values& value) = 0;
+    virtual bool sendMessage(const std::vector<uint8_t>& message) = 0;
 
     /**
      * Send a buffer to the given object
@@ -102,7 +101,7 @@ class ChannelOutput
 class ChannelInput
 {
   public:
-    using MessageRecvCallback = std::function<void(const std::string&, const std::string&, const Values&)>;
+    using MessageRecvCallback = std::function<void(const std::vector<uint8_t>&)>;
     using BufferRecvCallback = std::function<void(const std::string&, SerializedObject&&)>;
 
   public:

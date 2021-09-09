@@ -130,7 +130,7 @@ class Link
      * \param attribute Object attribute for the message
      * \param value Object value to update
      */
-    void handleInputMessages(const std::string& name, const std::string& attribute, const Values& value);
+    void handleInputMessages(const std::vector<uint8_t>& message);
 
     /**
      * Buffer input thread function
