@@ -51,8 +51,8 @@ void nop(void*, void*)
 
 int main()
 {
-    zmqBufferOut.setsockopt(ZMQ_SNDHWM, &outHighWaterMark, sizeof(outHighWaterMark));
-    zmqBufferIn.setsockopt(ZMQ_SNDHWM, &inHighWaterMark, sizeof(inHighWaterMark));
+    zmqBufferOut.set(zmq::sockopt::sndhwm, outHighWaterMark);
+    zmqBufferIn.set(zmq::sockopt::sndhwm, inHighWaterMark);
 
     std::cout << "Connecting socket output to " << socketPath << "\n";
     zmqBufferOut.connect(socketPath);
@@ -62,7 +62,7 @@ int main()
     std::thread bufferInThread([&]() {
         std::cout << "Launching buffer input thread...\n";
         zmqBufferIn.bind(socketPath);
-        zmqBufferIn.setsockopt(ZMQ_SUBSCRIBE, nullptr, 0);
+        zmqBufferIn.set(zmq::sockopt::subscribe, "");
 
         threadRunning = true;
         while (continueThread)
