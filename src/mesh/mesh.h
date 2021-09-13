@@ -42,16 +42,23 @@ namespace Splash
 class Mesh : public BufferObject
 {
   public:
+    struct MeshContainer
+    {
+        std::string name;
+        std::vector<glm::vec4> vertices;
+        std::vector<glm::vec2> uvs;
+        std::vector<glm::vec4> normals;
+        std::vector<glm::vec4> annexe;
+    };
+
+  public:
+
     /**
      * Constructor
      * \param root Root object
+     * \param meshContainer Mesh container to initialize the Mesh from
      */
-    Mesh(RootObject* root);
-
-    /**
-     * Destructor
-     */
-    virtual ~Mesh() override;
+    Mesh(RootObject* root, MeshContainer meshContainer = MeshContainer());
 
     /**
      * No copy constructor, but a copy operator
@@ -141,14 +148,6 @@ class Mesh : public BufferObject
     virtual void update() override;
 
   protected:
-    struct MeshContainer
-    {
-        std::vector<glm::vec4> vertices;
-        std::vector<glm::vec2> uvs;
-        std::vector<glm::vec4> normals;
-        std::vector<glm::vec4> annexe;
-    };
-
     std::string _filepath{};
     MeshContainer _mesh;
     MeshContainer _bufferMesh;

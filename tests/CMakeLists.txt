@@ -81,6 +81,7 @@ target_sources(unitTests PRIVATE
     unit_tests/core/value.cpp
     unit_tests/core/world.cpp
     unit_tests/core/serialize/serialize_imagebuffer.cpp
+    unit_tests/core/serialize/serialize_mesh.cpp
     unit_tests/image/image.cpp
     unit_tests/image/image_list.cpp
     unit_tests/utils/dense_deque.cpp
@@ -109,6 +110,7 @@ if (NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
     add_custom_command(OUTPUT update_assets
         COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/data
         COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/data/*.json ${CMAKE_CURRENT_BINARY_DIR}/data/
+        COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/data/*.obj ${CMAKE_CURRENT_BINARY_DIR}/data/
         COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/../data/share/splash/color_map.png ${CMAKE_CURRENT_BINARY_DIR}/data/
 
         )

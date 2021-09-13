@@ -25,6 +25,8 @@
 #ifndef SPLASH_SERIALIZE_IMAGEBUFFER_H
 #define SPLASH_SERIALIZE_IMAGEBUFFER_H
 
+#include <iostream>
+
 #include "./core/serializer.h"
 #include "./core/imagebuffer.h"
 

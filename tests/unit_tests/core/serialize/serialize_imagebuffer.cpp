@@ -15,7 +15,6 @@
  * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <iostream>
 #include <vector>
 
 #include <doctest.h>
