@@ -9,6 +9,8 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 
+#include "./core/serializer.h"
+#include "./core/serialize/serialize_imagebuffer.h"
 #include "./utils/log.h"
 #include "./utils/osutils.h"
 #include "./utils/timer.h"
@@ -118,37 +120,13 @@ SerializedObject Image::serialize() const
     if (Timer::get().isDebug())
         Timer::get() << "serialize " + _name;
 
-    // We first get the xml version of the specs, and pack them into the obj
     if (!_image)
         return {};
-    std::string xmlSpec = _image->getSpec().to_string();
-    int nbrChar = xmlSpec.size();
-    int imgSize = _image->getSpec().rawSize();
-    int totalSize = _serializedImageHeaderSize + imgSize;
 
-    auto obj = SerializedObject(totalSize);
-
-    auto currentObjPtr = obj.data();
-    const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&nbrChar);
-    std::copy(ptr, ptr + sizeof(nbrChar), currentObjPtr);
-    currentObjPtr += sizeof(nbrChar);
-
-    const char* charPtr = reinterpret_cast<const char*>(xmlSpec.c_str());
-    std::copy(charPtr, charPtr + nbrChar, currentObjPtr);
-    currentObjPtr = obj.data() + _serializedImageHeaderSize;
-
-    // And then, the image
-    const char* imgPtr = reinterpret_cast<const char*>(_image->data());
-    if (imgPtr == nullptr)
-        return {};
-
-    {
-        std::vector<std::future<void>> threads;
-        int stride = _imageCopyThreads;
-        for (int i = 0; i < stride - 1; ++i)
-            threads.push_back(std::async(std::launch::async, ([=]() { std::copy(imgPtr + imgSize / stride * i, imgPtr + imgSize / stride * (i + 1), currentObjPtr + imgSize / stride * i); })));
-        std::copy(imgPtr + imgSize / stride * (stride - 1), imgPtr + imgSize, currentObjPtr + imgSize / stride * (stride - 1));
-    }
+    _image->setName(_name);
+    std::vector<uint8_t> data;
+    Serial::serialize(*_image, data);
+    SerializedObject obj(ResizableArray(std::move(data)));
 
     if (Timer::get().isDebug())
         Timer::get() >> ("serialize " + _name);
@@ -165,43 +143,28 @@ bool Image::deserialize(SerializedObject&& obj)
     if (Timer::get().isDebug())
         Timer::get() << "deserialize " + _name;
 
-    // First, we get the size of the metadata
-    int nbrChar;
-    char* ptr = reinterpret_cast<char*>(&nbrChar);
+    // After this, obj does not hold any more data
+    auto serializedImage = obj.grabData();
 
-    auto currentObjPtr = obj.data();
-    std::copy(currentObjPtr, currentObjPtr + sizeof(nbrChar), ptr);
-    currentObjPtr += sizeof(nbrChar);
+    // We only deserialize part of the serialized ImageBuffer,
+    // to prevent copying the content of the buffer another time
+    auto serializedImageIt = serializedImage.cbegin();
+    _name = Serial::detail::deserializer<std::string>(serializedImageIt);
+    const ImageBufferSpec spec(Serial::detail::deserializer<std::string>(serializedImageIt));
 
-    try
-    {
-        char xmlSpecChar[nbrChar];
-        ptr = reinterpret_cast<char*>(xmlSpecChar);
-        std::copy(currentObjPtr, currentObjPtr + nbrChar, ptr);
-        std::string xmlSpec(xmlSpecChar, nbrChar);
+    // If the specs did change, regenerate a buffer
+    // Otherwise make sure the timestamp is updated
+    if (spec != _bufferImage->getSpec())
+        _bufferImage = std::make_unique<ImageBuffer>(spec);
+    else
+        _bufferImage->getSpec().timestamp = spec.timestamp;
 
-        ImageBufferSpec spec;
-        spec.from_string(xmlSpec.c_str());
+    auto shift = std::distance(serializedImage.cbegin(), serializedImageIt);
+    serializedImage.shift(shift);
+    _bufferImage->setRawBuffer(std::move(serializedImage));
 
-        ImageBufferSpec curSpec = _bufferDeserialize.getSpec();
-        if (spec != curSpec)
-            _bufferDeserialize = ImageBuffer(spec);
-        _bufferDeserialize.getSpec().timestamp = spec.timestamp;
-
-        auto rawBuffer = obj.grabData();
-        rawBuffer.shift(_serializedImageHeaderSize);
-        _bufferDeserialize.setRawBuffer(std::move(rawBuffer));
-
-        std::swap(*_bufferImage, _bufferDeserialize);
-        _bufferImageUpdated = true;
-
-        updateTimestamp(_bufferImage->getSpec().timestamp);
-    }
-    catch (...)
-    {
-        Log::get() << Log::ERROR << "Image::" << __FUNCTION__ << " - Unable to deserialize the given object" << Log::endl;
-        return false;
-    }
+    _bufferImageUpdated = true;
+    updateTimestamp(_bufferImage->getSpec().timestamp);
 
     if (Timer::get().isDebug())
         Timer::get() >> ("deserialize " + _name);

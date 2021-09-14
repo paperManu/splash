@@ -55,6 +55,15 @@ struct SerializedObject
     }
 
     /**
+     * Constructor from existing data
+     * \param data Data to construct the serialized object from
+     */
+    SerializedObject(ResizableArray<uint8_t>&& data)
+        : _data(std::move(data))
+    {
+    }
+
+    /**
      * Prevent copy constructor and operator
      * Allow for move constructor and operator
      */

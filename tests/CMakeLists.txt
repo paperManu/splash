@@ -80,6 +80,7 @@ target_sources(unitTests PRIVATE
     unit_tests/core/tree.cpp
     unit_tests/core/value.cpp
     unit_tests/core/world.cpp
+    unit_tests/core/serialize/serialize_imagebuffer.cpp
     unit_tests/image/image.cpp
     unit_tests/image/image_list.cpp
     unit_tests/utils/dense_deque.cpp
