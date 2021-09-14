@@ -378,6 +378,10 @@ void Gui::mouseButton(int btn, int action, int mods)
     using namespace ImGui;
     ImGuiIO& io = GetIO();
 
+    io.KeyCtrl = (mods & GLFW_MOD_CONTROL) != 0;
+    io.KeyShift = (mods & GLFW_MOD_SHIFT) != 0;
+    io.KeyAlt = (mods & GLFW_MOD_ALT) != 0;
+
     bool isPressed = action == GLFW_PRESS ? true : false;
     switch (btn)
     {
@@ -387,15 +391,15 @@ void Gui::mouseButton(int btn, int action, int mods)
         io.MouseDown[0] = isPressed;
         break;
     case GLFW_MOUSE_BUTTON_RIGHT:
-        io.MouseDown[1] = isPressed;
+        if (io.KeyAlt)
+            io.MouseDown[2] = isPressed;
+        else
+            io.MouseDown[1] = isPressed;
         break;
     case GLFW_MOUSE_BUTTON_MIDDLE:
         io.MouseDown[2] = isPressed;
         break;
     }
-
-    io.KeyCtrl = (mods & GLFW_MOD_CONTROL) != 0;
-    io.KeyShift = (mods & GLFW_MOD_SHIFT) != 0;
 
     return;
 }
