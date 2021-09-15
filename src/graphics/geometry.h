@@ -179,6 +179,7 @@ class Geometry : public BufferObject
     bool _onMasterScene{false};
 
     std::shared_ptr<Mesh> _mesh;
+    std::unique_ptr<Mesh::MeshContainer> _deserializedMesh{nullptr};
 
     std::map<GLFWwindow*, GLuint> _vertexArray;
     std::array<std::shared_ptr<GpuBuffer>, 4> _glBuffers{};
@@ -187,8 +188,6 @@ class Geometry : public BufferObject
     bool _buffersDirty{false};
     bool _buffersResized{false}; // Holds whether the alternative buffers have been resized in the previous feedback
     bool _useAlternativeBuffers{false};
-
-    SerializedObject _serializedMesh{};
 
     int _verticesNumber{0};
     int _alternativeVerticesNumber{0};
