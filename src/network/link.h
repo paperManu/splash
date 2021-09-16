@@ -79,17 +79,20 @@ class Link
 
     /**
      * Send a buffer to the connected peers
-     * \param name Buffer name
+     *
+     * The name of the target has to be serialized at the beginning of the buffer,
+     * in order to be used to point it to the correct target
+     *
      * \param buffer Serialized buffer
      */
-    bool sendBuffer(const std::string& name, SerializedObject&& buffer);
+    bool sendBuffer(SerializedObject&& buffer);
 
     /**
      * Send a buffer to the connected peers
      * \param name Buffer name
      * \param object Object to get a serialized version from
      */
-    bool sendBuffer(const std::string& name, const std::shared_ptr<BufferObject>& object);
+    bool sendBuffer(const std::shared_ptr<BufferObject>& object);
 
     /**
      * Send a message to connected peers
@@ -134,10 +137,9 @@ class Link
 
     /**
      * Buffer input thread function
-     * \param name Buffer name to send
      * \param buffer Buffer to be sent
      */
-    void handleInputBuffers(const std::string& name, SerializedObject&& buffer);
+    void handleInputBuffers(SerializedObject&& buffer);
 };
 
 /*************/

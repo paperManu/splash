@@ -143,7 +143,7 @@ void World::run()
 
             // Read and serialize new buffers
             Timer::get() << "serialize";
-            std::unordered_map<std::string, SerializedObject> serializedObjects;
+            std::vector<SerializedObject> serializedObjects;
 
             {
                 ZoneScopedN("Serialize buffers");
@@ -160,7 +160,7 @@ void World::run()
                         {
                             auto serializedObject = bufferObject->serialize();
                             bufferObject->setNotUpdated();
-                            serializedObjects[bufferObject->getDistantName()] = std::move(serializedObject);
+                            serializedObjects.push_back(std::move(serializedObject));
                         }
                     }
                 }
@@ -179,8 +179,8 @@ void World::run()
             {
                 ZoneScopedN("Prepare sending next buffers");
                 Timer::get() << "upload";
-                for (auto& [name, serializedObject] : serializedObjects)
-                    _link->sendBuffer(name, std::move(serializedObject));
+                for (auto& serializedObject : serializedObjects)
+                    _link->sendBuffer(std::move(serializedObject));
             }
         }
 
@@ -709,10 +709,14 @@ std::vector<std::string> World::getObjectsOfType(const std::string& type) const
 }
 
 /*************/
-bool World::handleSerializedObject(const std::string& name, SerializedObject&& obj)
+bool World::handleSerializedObject(const std::string& name, SerializedObject& obj)
 {
-    if (!RootObject::handleSerializedObject(name, std::move(obj)))
-        _link->sendBuffer(name, std::move(obj));
+    if (!RootObject::handleSerializedObject(name, obj))
+    {
+        // At this point, the serialized object should already hold its target name
+        // as the first serialized member. Hence we do not need to add it.
+        _link->sendBuffer(std::move(obj));
+    }
     return true;
 }
 

@@ -78,12 +78,11 @@ class ChannelOutput
     virtual bool sendMessage(const std::vector<uint8_t>& message) = 0;
 
     /**
-     * Send a buffer to the given object
-     * \param name Buffer name to send
+     * Send a buffer
      * \param buffer Buffer to be sent
      * \return Return true if the buffer was successfully sent
      */
-    virtual bool sendBufferTo(const std::string& name, SerializedObject&& buffer) = 0;
+    virtual bool sendBuffer(SerializedObject&& buffer) = 0;
 
     /**
      * Check that all buffers were sent to the client
@@ -102,7 +101,7 @@ class ChannelInput
 {
   public:
     using MessageRecvCallback = std::function<void(const std::vector<uint8_t>&)>;
-    using BufferRecvCallback = std::function<void(const std::string&, SerializedObject&&)>;
+    using BufferRecvCallback = std::function<void(SerializedObject&&)>;
 
   public:
     /**
@@ -112,7 +111,7 @@ class ChannelInput
      * \param msgRecvCb Callback to call when receiving a message
      * \param bufferRecvCb Callback to call when receiving a buffer
      */
-    ChannelInput(const RootObject* root, const std::string& name, MessageRecvCallback msgRecvCb, BufferRecvCallback bufferRecvCb)
+    ChannelInput(const RootObject* root, const std::string& name, const MessageRecvCallback& msgRecvCb, const BufferRecvCallback& bufferRecvCb)
         : _root(root)
         , _name(name)
         , _msgRecvCb(msgRecvCb)

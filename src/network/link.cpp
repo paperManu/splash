@@ -23,10 +23,7 @@ Link::Link(RootObject* root, const std::string& name)
     , _name(name)
     , _channelOutput(std::make_unique<ChannelOutput_ZMQ>(root, name))
     , _channelInput(std::make_unique<ChannelInput_ZMQ>(
-          root,
-          name,
-          [&](const std::vector<uint8_t>& message) { handleInputMessages(message); },
-          [&](const std::string& name, SerializedObject&& buffer) { handleInputBuffers(name, std::move(buffer)); }))
+          root, name, [&](const std::vector<uint8_t>& message) { handleInputMessages(message); }, [&](SerializedObject&& buffer) { handleInputBuffers(std::move(buffer)); }))
 {
 }
 
@@ -54,16 +51,16 @@ bool Link::waitForBufferSending(std::chrono::milliseconds maximumWait)
 }
 
 /*************/
-bool Link::sendBuffer(const std::string& name, SerializedObject&& buffer)
+bool Link::sendBuffer(SerializedObject&& buffer)
 {
-    return _channelOutput->sendBufferTo(name, std::move(buffer));
+    return _channelOutput->sendBuffer(std::move(buffer));
 }
 
 /*************/
-bool Link::sendBuffer(const std::string& name, const std::shared_ptr<BufferObject>& object)
+bool Link::sendBuffer(const std::shared_ptr<BufferObject>& object)
 {
     auto buffer = object->serialize();
-    return sendBuffer(name, std::move(buffer));
+    return sendBuffer(std::move(buffer));
 }
 
 /*************/
@@ -106,8 +103,10 @@ void Link::handleInputMessages(const std::vector<uint8_t>& message)
 }
 
 /*************/
-void Link::handleInputBuffers(const std::string& name, SerializedObject&& buffer)
+void Link::handleInputBuffers(SerializedObject&& buffer)
 {
+    auto bufferDataIt = buffer._data.cbegin();
+    const auto name = Serial::detail::deserializer<std::string>(bufferDataIt);
     if (_rootObject)
         _rootObject->setFromSerializedObject(name, std::move(buffer));
 }

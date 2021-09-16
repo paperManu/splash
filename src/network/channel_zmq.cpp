@@ -122,7 +122,7 @@ bool ChannelOutput_ZMQ::sendMessage(const std::vector<uint8_t>& message)
 }
 
 /*************/
-bool ChannelOutput_ZMQ::sendBufferTo(const std::string& name, SerializedObject&& buffer)
+bool ChannelOutput_ZMQ::sendBuffer(SerializedObject&& buffer)
 {
     try
     {
@@ -135,11 +135,7 @@ bool ChannelOutput_ZMQ::sendBufferTo(const std::string& name, SerializedObject&&
 
         _sendQueueBufferCount++;
 
-        zmq::message_t msg(name.size() + 1);
-        memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
-        _socketBufferOut->send(msg, zmq::send_flags::sndmore);
-
-        msg.rebuild(queuedBuffer.data(), queuedBuffer.size(), ChannelOutput_ZMQ::freeSerializedBuffer, this);
+        zmq::message_t msg(queuedBuffer.data(), queuedBuffer.size(), ChannelOutput_ZMQ::freeSerializedBuffer, this);
         _socketBufferOut->send(msg, zmq::send_flags::none);
     }
     catch (const zmq::error_t& error)
@@ -202,7 +198,7 @@ bool ChannelOutput_ZMQ::waitForBufferSending(std::chrono::milliseconds maximumWa
 }
 
 /*************/
-ChannelInput_ZMQ::ChannelInput_ZMQ(const RootObject* root, const std::string& name, MessageRecvCallback msgRecvCb, BufferRecvCallback bufferRecvCb)
+ChannelInput_ZMQ::ChannelInput_ZMQ(const RootObject* root, const std::string& name, const MessageRecvCallback& msgRecvCb, const BufferRecvCallback& bufferRecvCb)
     : ChannelInput(root, name, msgRecvCb, bufferRecvCb)
 {
     try
@@ -280,17 +276,12 @@ void ChannelInput_ZMQ::handleInputBuffers()
         while (_continueListening)
         {
             zmq::message_t msg;
-
             if (!_socketBufferIn->recv(msg, zmq::recv_flags::none))
                 continue;
 
-            std::string name(reinterpret_cast<char*>(msg.data()));
-
-            if (!_socketBufferIn->recv(msg, zmq::recv_flags::none))
-                continue;
-
-            auto buffer = SerializedObject(static_cast<uint8_t*>(msg.data()), static_cast<uint8_t*>(msg.data()) + msg.size());
-            _bufferRecvCb(name, std::move(buffer));
+            const auto data = static_cast<uint8_t*>(msg.data());
+            auto buffer = SerializedObject(data, data + msg.size());
+            _bufferRecvCb(std::move(buffer));
         }
     }
     catch (const zmq::error_t& error)

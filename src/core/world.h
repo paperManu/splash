@@ -174,11 +174,16 @@ class World : public RootObject
 
     /**
      * Redefinition of a method from RootObject. Send the input buffers back to all pairs
+     *
+     * Note that depending on whether the object can be handled or not, it will be
+     * made invalid after calling this method. Check the return value to get whether
+     * the object is still valid.
+     *
      * \param name Object name
      * \param obj Serialized object
      * \return Return true if the object has been handled
      */
-    bool handleSerializedObject(const std::string& name, SerializedObject&& obj) override;
+    bool handleSerializedObject(const std::string& name, SerializedObject& obj) override;
 
     /**
      * Handle the exit signal messages

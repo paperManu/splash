@@ -198,7 +198,7 @@ bool RootObject::setFromSerializedObject(const std::string& name, SerializedObje
     }
     else
     {
-        return handleSerializedObject(name, std::move(obj));
+        return handleSerializedObject(name, obj);
     }
 
     return false;
@@ -239,13 +239,15 @@ bool RootObject::waitSignalBufferObjectUpdated(uint64_t timeout)
 }
 
 /*************/
-bool RootObject::handleSerializedObject(const std::string& name, SerializedObject&& obj)
+bool RootObject::handleSerializedObject(const std::string& name, SerializedObject& obj)
 {
     if (name == "_tree")
     {
-        auto dataPtr = reinterpret_cast<uint8_t*>(obj.data());
-        auto serializedSeeds = std::vector<uint8_t>(dataPtr, dataPtr + obj.size());
-        auto seeds = Serial::deserialize<std::list<Tree::Seed>>(serializedSeeds);
+        const auto data = obj.grabData();
+        auto dataIt = data.cbegin();
+        // We deserialize the buffer name, but we don't need to keep it
+        Serial::detail::deserializer<std::string>(dataIt);
+        auto seeds = Serial::detail::deserializer<std::list<Tree::Seed>>(dataIt);
         _tree.addSeedsToQueue(seeds);
 
         return true;
@@ -337,9 +339,9 @@ void RootObject::propagateTree()
     if (treeSeeds.empty())
         return;
     std::vector<uint8_t> serializedSeeds;
+    Serial::serialize(std::string("_tree"), serializedSeeds);
     Serial::serialize(treeSeeds, serializedSeeds);
-    auto dataPtr = reinterpret_cast<uint8_t*>(serializedSeeds.data());
-    _link->sendBuffer("_tree", SerializedObject(dataPtr, dataPtr + serializedSeeds.size()));
+    _link->sendBuffer(SerializedObject(ResizableArray(std::move(serializedSeeds))));
 }
 
 /*************/
@@ -352,9 +354,19 @@ void RootObject::propagatePath(const std::string& path)
         return;
 
     std::vector<uint8_t> serializedSeeds;
+    Serial::serialize(std::string("_tree"), serializedSeeds);
     Serial::serialize(seeds, serializedSeeds);
-    auto dataPtr = reinterpret_cast<uint8_t*>(serializedSeeds.data());
-    _link->sendBuffer("_tree", SerializedObject(dataPtr, dataPtr + serializedSeeds.size()));
+    _link->sendBuffer(SerializedObject(ResizableArray(std::move(serializedSeeds))));
+}
+
+/*************/
+void RootObject::sendBuffer(const std::string& name, SerializedObject&& buffer)
+{
+    const auto size = Serial::getSize(name);
+    std::vector<uint8_t> serialized(size + buffer.size());
+    Serial::serialize(name, serialized);
+    std::copy(buffer._data.cbegin(), buffer._data.cend(), serialized.begin() + size);
+    _link->sendBuffer(SerializedObject(ResizableArray(std::move(serialized))));
 }
 
 /*************/

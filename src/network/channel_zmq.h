@@ -79,12 +79,11 @@ class ChannelOutput_ZMQ : public ChannelOutput
     bool sendMessage(const std::vector<uint8_t>& message) final;
 
     /**
-     * Send a buffer to the given object
-     * \param name Buffer name to send
+     * Send a buffer
      * \param buffer Buffer to be sent
      * \return Return true if the buffer was successfully sent
      */
-    bool sendBufferTo(const std::string& name, SerializedObject&& buffer) final;
+    bool sendBuffer(SerializedObject&& buffer) final;
 
     /**
      * Check that all buffers were sent to the client
@@ -125,7 +124,7 @@ class ChannelInput_ZMQ : public ChannelInput
      * \param msgRecvCb Callback to call when receiving a message
      * \param bufferRecvCb Callback to call when receiving a buffer
      */
-    ChannelInput_ZMQ(const RootObject* root, const std::string& name, MessageRecvCallback msgRecvCb, BufferRecvCallback bufferRecvCb);
+    ChannelInput_ZMQ(const RootObject* root, const std::string& name, const MessageRecvCallback& msgRecvCb, const BufferRecvCallback& bufferRecvCb);
 
     /**
      * Destructor
