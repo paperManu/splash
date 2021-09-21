@@ -1,6 +1,28 @@
 Splash release notes
 ====================
 
+Splash 0.9.0 (2021-09-20)
+-------------------------
+Improvements:
+* Refactored Link and BufferObject to use Splash::serializer instead of the previous, clunky serialization
+* Added alt + right click to simulate middle click
+* Added a profiling script to generate flamegraphs
+* Moved SerializedObjects away from std::shared_ptr
+* Added ZMQ and shmdata performance tests
+* Removed inner Scene to allow for more consistant behavior when multiple Scenes are involved
+* Improved BufferObject update signal
+* Improved buffer sending signaling in Link
+* Added shmdata to CI building for Ubuntu
+* Changed default World framerate to 15
+
+Bugs fixed:
+* Updated ZMQ
+* Fixed ZMQ warnings in performance tests
+* Fixed ColorCalibrator sending the wrong colorMixMatrix attribute
+
+Documentation:
+* Updated the default configuration for better onboarding
+
 Splash 0.8.48 (2021-08-23)
 -------------------------
 Improvements:

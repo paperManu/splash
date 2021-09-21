@@ -306,7 +306,7 @@ void ColorCalibrator::update()
 
             attrParams = Values();
             attrParams.push_back(m);
-            setObjectAttribute(camName, "colorMixMatrix", attrParams);
+            setObjectAttribute(camName, "colorMixMatrix", {attrParams});
 
             // Also, we set some parameters to default as they interfer with the calibration
             setObjectAttribute(camName, "brightness", {1.0});

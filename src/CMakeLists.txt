@@ -40,7 +40,7 @@ set_source_files_properties(
 )
 
 set_source_files_properties(
-    core/link.cpp
+    network/channel_zmq.cpp
     PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized"
 )
 
@@ -57,10 +57,10 @@ endif()
 include_directories(./)
 
 if (NOT USE_SYSTEM_LIBS)
-    include_directories(../external/cppzmq)
     include_directories(../external/glm)
 endif()
 
+include_directories(../external/cppzmq)
 include_directories(../external/datapath/include)
 include_directories(../external/glad/core/include)
 include_directories(../external/hap/source)
@@ -123,7 +123,6 @@ target_sources(splash-${API_VERSION} PRIVATE
     core/factory.cpp
     core/graph_object.cpp
     core/imagebuffer.cpp
-    core/link.cpp
     core/name_registry.cpp
     core/root_object.cpp
     core/scene.cpp
@@ -168,6 +167,8 @@ target_sources(splash-${API_VERSION} PRIVATE
     image/queue.cpp
     mesh/mesh.cpp
     mesh/mesh_bezierpatch.cpp
+    network/channel_zmq.cpp
+    network/link.cpp
     sink/sink.cpp
     userinput/userinput.cpp
     userinput/userinput_dragndrop.cpp

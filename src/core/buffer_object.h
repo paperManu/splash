@@ -110,7 +110,7 @@ class BufferObject : public GraphObject
      * \param obj Serialized object to use as source
      * \return Return true if everything went well
      */
-    virtual bool deserialize(const std::shared_ptr<SerializedObject>& /*obj*/) = 0;
+    virtual bool deserialize(SerializedObject&& /*obj*/) = 0;
 
     /**
      * Update the BufferObject from the inner serialized object, set with setSerializedObject
@@ -148,13 +148,13 @@ class BufferObject : public GraphObject
      * Serialize the object
      * \return Return a serialized representation of the object
      */
-    virtual std::shared_ptr<SerializedObject> serialize() const = 0;
+    virtual SerializedObject serialize() const = 0;
 
     /**
      * Set the next serialized object to deserialize to buffer
      * \param obj Serialized object
      */
-    void setSerializedObject(const std::shared_ptr<SerializedObject>& obj);
+    void setSerializedObject(SerializedObject&& obj);
 
     /**
      * Check whether a serialized object is waiting for deserialization
@@ -182,7 +182,7 @@ class BufferObject : public GraphObject
     int64_t _timestamp{0};      //!< Timestamp
     bool _updatedBuffer{false}; //!< True if the BufferObject has been updated
 
-    std::shared_ptr<SerializedObject> _serializedObject{nullptr}; //!< Internal buffer object
+    SerializedObject _serializedObject; //!< Internal buffer object
     bool _newSerializedObject{false};                             //!< Set to true during serialized object processing
 
     /**

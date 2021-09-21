@@ -23,13 +23,13 @@ class BufferObjectMock : public BufferObject
         return false;
     }
 
-    bool deserialize(const std::shared_ptr<SerializedObject>& obj) final
+    bool deserialize(SerializedObject&& obj) final
     {
         updateTimestamp();
         return true;
     }
 
-    std::shared_ptr<SerializedObject> serialize() const final { return nullptr; }
+    SerializedObject serialize() const final { return {}; }
 };
 
 /*************/
@@ -67,7 +67,7 @@ TEST_CASE("Testing serialization")
     auto buffer = BufferObjectMock();
     auto timestamp = buffer.getTimestamp();
 
-    buffer.setSerializedObject({nullptr});
+    buffer.setSerializedObject({});
     while (buffer.hasSerializedObjectWaiting())
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
 

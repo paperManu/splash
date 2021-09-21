@@ -184,7 +184,7 @@ bool RootObject::set(const std::string& name, const std::string& attrib, const V
 }
 
 /*************/
-bool RootObject::setFromSerializedObject(const std::string& name, const std::shared_ptr<SerializedObject>& obj)
+bool RootObject::setFromSerializedObject(const std::string& name, SerializedObject&& obj)
 {
     auto object = getObject(name);
     if (object)
@@ -192,7 +192,7 @@ bool RootObject::setFromSerializedObject(const std::string& name, const std::sha
         auto objectAsBuffer = std::dynamic_pointer_cast<BufferObject>(object);
         if (objectAsBuffer)
         {
-            objectAsBuffer->setSerializedObject(obj);
+            objectAsBuffer->setSerializedObject(std::move(obj));
             return true;
         }
     }
@@ -210,12 +210,7 @@ void RootObject::signalBufferObjectUpdated()
     std::unique_lock<std::mutex> lockCondition(_bufferObjectUpdatedMutex);
 
     _bufferObjectUpdated = true;
-    // Only a single buffer has to wave for update at a time
-    if (!_bufferObjectSingleMutex.try_lock())
-        return;
-
     _bufferObjectUpdatedCondition.notify_all();
-    _bufferObjectSingleMutex.unlock();
 }
 
 /*************/
@@ -244,13 +239,15 @@ bool RootObject::waitSignalBufferObjectUpdated(uint64_t timeout)
 }
 
 /*************/
-bool RootObject::handleSerializedObject(const std::string& name, const std::shared_ptr<SerializedObject>& obj)
+bool RootObject::handleSerializedObject(const std::string& name, SerializedObject& obj)
 {
     if (name == "_tree")
     {
-        auto dataPtr = reinterpret_cast<uint8_t*>(obj->data());
-        auto serializedSeeds = std::vector<uint8_t>(dataPtr, dataPtr + obj->size());
-        auto seeds = Serial::deserialize<std::list<Tree::Seed>>(serializedSeeds);
+        const auto data = obj.grabData();
+        auto dataIt = data.cbegin();
+        // We deserialize the buffer name, but we don't need to keep it
+        Serial::detail::deserializer<std::string>(dataIt);
+        auto seeds = Serial::detail::deserializer<std::list<Tree::Seed>>(dataIt);
         _tree.addSeedsToQueue(seeds);
 
         return true;
@@ -342,9 +339,9 @@ void RootObject::propagateTree()
     if (treeSeeds.empty())
         return;
     std::vector<uint8_t> serializedSeeds;
+    Serial::serialize(std::string("_tree"), serializedSeeds);
     Serial::serialize(treeSeeds, serializedSeeds);
-    auto dataPtr = reinterpret_cast<uint8_t*>(serializedSeeds.data());
-    _link->sendBuffer("_tree", std::make_shared<SerializedObject>(dataPtr, dataPtr + serializedSeeds.size()));
+    _link->sendBuffer(SerializedObject(ResizableArray(std::move(serializedSeeds))));
 }
 
 /*************/
@@ -357,9 +354,19 @@ void RootObject::propagatePath(const std::string& path)
         return;
 
     std::vector<uint8_t> serializedSeeds;
+    Serial::serialize(std::string("_tree"), serializedSeeds);
     Serial::serialize(seeds, serializedSeeds);
-    auto dataPtr = reinterpret_cast<uint8_t*>(serializedSeeds.data());
-    _link->sendBuffer("_tree", std::make_shared<SerializedObject>(dataPtr, dataPtr + serializedSeeds.size()));
+    _link->sendBuffer(SerializedObject(ResizableArray(std::move(serializedSeeds))));
+}
+
+/*************/
+void RootObject::sendBuffer(const std::string& name, SerializedObject&& buffer)
+{
+    const auto size = Serial::getSize(name);
+    std::vector<uint8_t> serialized(size + buffer.size());
+    Serial::serialize(name, serialized);
+    std::copy(buffer._data.cbegin(), buffer._data.cend(), serialized.begin() + size);
+    _link->sendBuffer(SerializedObject(ResizableArray(std::move(serialized))));
 }
 
 /*************/

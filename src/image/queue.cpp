@@ -30,7 +30,7 @@ Queue::Queue(RootObject* root)
 Queue::~Queue() {}
 
 /*************/
-std::shared_ptr<SerializedObject> Queue::serialize() const
+SerializedObject Queue::serialize() const
 {
     if (_currentSource)
         return _currentSource->serialize();

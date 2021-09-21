@@ -18,18 +18,18 @@ bool BufferObject::deserialize()
     if (!_newSerializedObject)
         return false;
 
-    bool returnValue = deserialize(_serializedObject);
+    bool returnValue = deserialize(std::move(_serializedObject));
     _newSerializedObject = false;
 
     return returnValue;
 }
 
 /*************/
-void BufferObject::setSerializedObject(const std::shared_ptr<SerializedObject>& obj)
+void BufferObject::setSerializedObject(SerializedObject&& obj)
 {
     if (_serializedObjectWaitingMutex.try_lock())
     {
-        _serializedObject = obj;
+        _serializedObject = std::move(obj);
         _newSerializedObject = true;
 
         // Deserialize it right away, in a separate thread

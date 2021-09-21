@@ -36,7 +36,7 @@
 #include "./core/base_object.h"
 #include "./core/factory.h"
 #include "./core/graph_object.h"
-#include "./core/link.h"
+#include "./network/link.h"
 #include "./core/name_registry.h"
 #include "./core/tree.h"
 #include "./utils/dense_map.h"
@@ -144,7 +144,7 @@ class RootObject : public BaseObject
     std::string getSocketPrefix() const { return _context.socketPrefix; }
 
     /**
-     * \brief Get the configuration path
+     * Get the configuration path
      * \return Return the configuration path
      */
     std::string getConfigurationPath() const
@@ -157,7 +157,7 @@ class RootObject : public BaseObject
     }
 
     /**
-     * \brief Get the media path
+     * Get the media path
      * \return Return the media path
      */
     std::string getMediaPath() const
@@ -176,7 +176,7 @@ class RootObject : public BaseObject
     Tree::RootHandle getTree() { return _tree.getHandle(); }
 
     /**
-     * \brief Set the attribute of the named object with the given args
+     * Set the attribute of the named object with the given args
      * \param name Object name
      * \param attrib Attribute name
      * \param args Value to set the attribute to
@@ -186,28 +186,28 @@ class RootObject : public BaseObject
     bool set(const std::string& name, const std::string& attrib, const Values& args, bool async = true);
 
     /**
-     * \brief Set an object from its serialized form. If non existant, it is handled by the handleSerializedObject method.
+     * Set an object from its serialized form. If non existant, it is handled by the handleSerializedObject method.
      * \param name Object name
      * \param obj Serialized object
      * \return Return true if the object has been set
      */
-    bool setFromSerializedObject(const std::string& name, const std::shared_ptr<SerializedObject>& obj);
+    bool setFromSerializedObject(const std::string& name, SerializedObject&& obj);
 
     /**
-     * \brief Send the given serialized buffer through the link
+     * Send the given serialized buffer through the link
      * \param name Destination BufferObject name
      * \param buffer Serialized buffer
      */
-    void sendBuffer(const std::string& name, const std::shared_ptr<SerializedObject>& buffer) { _link->sendBuffer(name, buffer); }
+    void sendBuffer(const std::string& name, SerializedObject&& buffer);
 
     /**
-     * \brief Return a lock object list modifications (addition, deletion)
+     * Return a lock object list modifications (addition, deletion)
      * \return Return a lock object which unlocks the mutex upon deletion
      */
     std::unique_lock<std::recursive_mutex> getLockOnObjects() { return std::unique_lock<std::recursive_mutex>(_objectsMutex); }
 
     /**
-     * \brief Signals that a BufferObject has been updated
+     * Signals that a BufferObject has been updated
      */
     void signalBufferObjectUpdated();
 
@@ -230,7 +230,6 @@ class RootObject : public BaseObject
     // Condition variable for signaling a BufferObject update
     std::condition_variable _bufferObjectUpdatedCondition{};
     std::mutex _bufferObjectUpdatedMutex{};
-    Spinlock _bufferObjectSingleMutex{};
     bool _bufferObjectUpdated = ATOMIC_FLAG_INIT;
 
     mutable std::recursive_mutex _objectsMutex{};                   //!< Used in registration and unregistration of objects
@@ -238,19 +237,24 @@ class RootObject : public BaseObject
     DenseMap<std::string, std::shared_ptr<GraphObject>> _objects{}; //!< Map of all the objects
 
     /**
-     * \brief Wait for a BufferObject update. This does not prevent spurious wakeups.
+     * Wait for a BufferObject update. This does not prevent spurious wakeups.
      * \param timeout Timeout in us. If 0, wait indefinitely.
      * \return Return false is the timeout has been reached, true otherwise
      */
     bool waitSignalBufferObjectUpdated(uint64_t timeout = 0ull);
 
     /**
-     * \brief Method to process a serialized object
+     * Method to process a serialized object
+     *
+     * Note that depending on whether the object can be handled or not, it will be
+     * made invalid after calling this method. Check the return value to get whether
+     * the object is still valid.
+     *
      * \param name Object name to receive the serialized object
      * \param obj Serialized object
      * \return Return true if the object has been handled
      */
-    virtual bool handleSerializedObject(const std::string& name, const std::shared_ptr<SerializedObject>& obj);
+    virtual bool handleSerializedObject(const std::string& name, SerializedObject& obj);
 
     /**
      * Force the propagation of a specific path
@@ -264,7 +268,7 @@ class RootObject : public BaseObject
     void propagateTree();
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 
@@ -279,7 +283,7 @@ class RootObject : public BaseObject
     void initializeTree();
 
     /**
-     * \brief Converts a Value as a Json object
+     * Converts a Value as a Json object
      * \param values Value to convert
      * \param asObject If true, return a Json object
      * \return Returns a Json object
@@ -302,7 +306,7 @@ class RootObject : public BaseObject
     Json::Value getRootConfigurationAsJson(const std::string& rootName);
 
     /**
-     * \brief Send a message to another root object
+     * Send a message to another root object
      * \param name Root object name
      * \param attribute Attribute name
      * \param message Message
@@ -310,7 +314,7 @@ class RootObject : public BaseObject
     void sendMessage(const std::string& name, const std::string& attribute, const Values& message = {}) { _link->sendMessage(name, attribute, message); }
 
     /**
-     * \brief Send a message to another root object, and wait for an answer. Can specify a timeout for the answer, in microseconds.
+     * Send a message to another root object, and wait for an answer. Can specify a timeout for the answer, in microseconds.
      * \param name Root object name
      * \param attribute Attribute name
      * \param message Message

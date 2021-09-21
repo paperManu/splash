@@ -42,16 +42,23 @@ namespace Splash
 class Mesh : public BufferObject
 {
   public:
-    /**
-     * \brief Constructor
-     * \param root Root object
-     */
-    Mesh(RootObject* root);
+    struct MeshContainer
+    {
+        std::string name;
+        std::vector<glm::vec4> vertices;
+        std::vector<glm::vec2> uvs;
+        std::vector<glm::vec4> normals;
+        std::vector<glm::vec4> annexe;
+    };
+
+  public:
 
     /**
-     * \brief Destructor
+     * Constructor
+     * \param root Root object
+     * \param meshContainer Mesh container to initialize the Mesh from
      */
-    virtual ~Mesh() override;
+    Mesh(RootObject* root, MeshContainer meshContainer = MeshContainer());
 
     /**
      * No copy constructor, but a copy operator
@@ -61,94 +68,86 @@ class Mesh : public BufferObject
     Mesh& operator=(Mesh&&) = default;
 
     /**
-     * \brief Compare meshes based on their timestamps
+     * Compare meshes based on their timestamps
      * \param otherMesh Mesh to compare to
      * \return Return true if the meshes share the same timestamp
      */
     bool operator==(Mesh& otherMesh) const;
 
     /**
-     * \brief Get a vector of all points in the mesh, in normalized coordinates
+     * Get a vector of all points in the mesh, in normalized coordinates
      * \return Return a vector representing all points of the mesh
      */
     virtual std::vector<glm::vec4> getVertCoords() const;
 
     /**
-     * \brief Get a flattened vector of all points of the mesh, in normalized coordinates
+     * Get a flattened vector of all points of the mesh, in normalized coordinates
      * \return Return a flattened vector representing all points of the mesh
      */
     virtual std::vector<float> getVertCoordsFlat() const;
 
     /**
-     * \brief Get a vector of the UV coordinates for all points, same order as getVertCoords()
+     * Get a vector of the UV coordinates for all points, same order as getVertCoords()
      * \return Return a vector representing the UV coordinates
      */
     virtual std::vector<glm::vec2> getUVCoords() const;
 
     /**
-     * \brief Get a flattened vector of the UV coordinates for all points, same order as getVertCoordsFlat()
+     * Get a flattened vector of the UV coordinates for all points, same order as getVertCoordsFlat()
      * \return Return a flattened vector representing the UV coordinates
      */
     virtual std::vector<float> getUVCoordsFlat() const;
 
     /**
-     * \brief Get a vector of the normal at each vertex, same order as getVertCoords(), in normalized coordinates
+     * Get a vector of the normal at each vertex, same order as getVertCoords(), in normalized coordinates
      * \return Return a vector representing the normals
      */
     virtual std::vector<glm::vec4> getNormals() const;
 
     /**
-     * \brief Get a flattened vector of the normal at each vertex, same order as getVertCoordsFlat(), in normalized coordinates
+     * Get a flattened vector of the normal at each vertex, same order as getVertCoordsFlat(), in normalized coordinates
      * \return Return a flattened vector representing the normals
      */
     virtual std::vector<float> getNormalsFlat() const;
 
     /**
-     * \brief Get a vector of the annexe at each vertex, same order as getVertCoords()
+     * Get a vector of the annexe at each vertex, same order as getVertCoords()
      * \return Return a vector representing the annexes
      */
     virtual std::vector<glm::vec4> getAnnexe() const;
 
     /**
-     * \brief Get a flattened vector of the annexe at each vertex, same order as getVertCoords()
+     * Get a flattened vector of the annexe at each vertex, same order as getVertCoords()
      * \return Return a flattened vector representing the annexes
      */
     virtual std::vector<float> getAnnexeFlat() const;
 
     /**
-     * \brief Read / update the mesh
+     * Read / update the mesh
      * \param filename File to load from
      * \return Return true if all went well
      */
     virtual bool read(const std::string& filename);
 
     /**
-     * \brief Get a serialized representation of the mesh
+     * Get a serialized representation of the mesh
      * \return Return a serialized object
      */
-    std::shared_ptr<SerializedObject> serialize() const override;
+    SerializedObject serialize() const override;
 
     /**
-     * \brief Set the mesh from a serialized representation
+     * Set the mesh from a serialized representation
      * \param obj Serialized object
      * \return Return true if all went well
      */
-    bool deserialize(const std::shared_ptr<SerializedObject>& obj) override;
+    bool deserialize(SerializedObject&& obj) override;
 
     /**
-     * \brief Update the content of the mesh
+     * Update the content of the mesh
      */
     virtual void update() override;
 
   protected:
-    struct MeshContainer
-    {
-        std::vector<glm::vec4> vertices;
-        std::vector<glm::vec2> uvs;
-        std::vector<glm::vec4> normals;
-        std::vector<glm::vec4> annexe;
-    };
-
     std::string _filepath{};
     MeshContainer _mesh;
     MeshContainer _bufferMesh;
@@ -157,7 +156,7 @@ class Mesh : public BufferObject
     int _planeSubdivisions{0};
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 
@@ -165,7 +164,7 @@ class Mesh : public BufferObject
     void init();
 
     /**
-     * \brief Create a plane mesh, subdivided according to the parameter
+     * Create a plane mesh, subdivided according to the parameter
      * \param subdiv Number of subdivision for the plane
      */
     void createDefaultMesh(int subdiv = 0);

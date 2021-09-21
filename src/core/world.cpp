@@ -16,7 +16,7 @@
 
 #include "./core/buffer_object.h"
 #include "./core/constants.h"
-#include "./core/link.h"
+#include "./network/link.h"
 #include "./core/scene.h"
 #include "./core/serializer.h"
 #include "./image/image.h"
@@ -52,16 +52,6 @@ World::World(Context context)
 
     registerAttributes();
     initializeTree();
-}
-
-/*************/
-World::~World()
-{
-#ifdef DEBUG
-    Log::get() << Log::DEBUGGING << "World::~World - Destructor" << Log::endl;
-#endif
-    if (_innerSceneThread.joinable())
-        _innerSceneThread.join();
 }
 
 /*************/
@@ -153,7 +143,7 @@ void World::run()
 
             // Read and serialize new buffers
             Timer::get() << "serialize";
-            std::unordered_map<std::string, std::shared_ptr<SerializedObject>> serializedObjects;
+            std::vector<SerializedObject> serializedObjects;
 
             {
                 ZoneScopedN("Serialize buffers");
@@ -170,8 +160,7 @@ void World::run()
                         {
                             auto serializedObject = bufferObject->serialize();
                             bufferObject->setNotUpdated();
-                            if (serializedObject)
-                                serializedObjects[bufferObject->getDistantName()] = serializedObject;
+                            serializedObjects.push_back(std::move(serializedObject));
                         }
                     }
                 }
@@ -179,16 +168,19 @@ void World::run()
             }
 
             // Wait for previous buffers to be uploaded
-            _link->waitForBufferSending(std::chrono::milliseconds(50)); // Maximum time to wait for frames to arrive
-            sendMessage(Constants::ALL_PEERS, "uploadTextures", {});
-            Timer::get() >> "upload";
+            {
+                ZoneScopedN("Wait for buffers to be sent");
+                _link->waitForBufferSending(std::chrono::milliseconds(50)); // Maximum time to wait for frames to arrive
+                sendMessage(Constants::ALL_PEERS, "uploadTextures", {});
+                Timer::get() >> "upload";
+            }
 
             // Ask for the upload of the new buffers, during the next world loop
-            Timer::get() << "upload";
-            for (auto& [name, serializedObject] : serializedObjects)
             {
-                assert(serializedObject);
-                _link->sendBuffer(name, serializedObject);
+                ZoneScopedN("Prepare sending next buffers");
+                Timer::get() << "upload";
+                for (auto& serializedObject : serializedObjects)
+                    _link->sendBuffer(std::move(serializedObject));
             }
         }
 
@@ -409,7 +401,7 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
     if (sceneAddress == "localhost")
     {
         std::string display{""};
-        std::string worldDisplay{"none"};
+        std::string worldDisplay{""};
 #if HAVE_LINUX
         auto regDisplayFull = std::regex("(:[0-9]\\.[0-9])", std::regex_constants::extended);
         auto regDisplayInt = std::regex("[0-9]", std::regex_constants::extended);
@@ -421,7 +413,7 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
             if (!worldDisplay.empty() && worldDisplay.find(".") == std::string::npos)
                 worldDisplay += ".0";
         }
-
+                                                                                                                                       
         display = "DISPLAY=" + worldDisplay;
         if (!sceneDisplay.empty())
         {
@@ -445,44 +437,32 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
         {
             _sceneLaunched = false;
 
-            // If the current process is on the correct display, we use an inner Scene
-            if (worldDisplay.size() > 0 && display.find(worldDisplay) == display.size() - worldDisplay.size() && !_innerScene)
+            // Spawn a new process containing this Scene
+            Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting a Scene in another process" << Log::endl;
+
+            std::string cmd = _context.executablePath;
+            std::string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
+            std::string timer = Timer::get().isDebug() ? "-t" : "";
+            std::string slave = "--child";
+            std::string xauth = "XAUTHORITY=" + Utils::getHomePath() + "/.Xauthority";
+
+            std::vector<char*> argv = {const_cast<char*>(cmd.c_str()), const_cast<char*>(slave.c_str())};
+            if (!_context.socketPrefix.empty())
             {
-                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an inner Scene" << Log::endl;
-                auto sceneContext = _context;
-                sceneContext.childSceneName = sceneName;
-                _innerScene = std::make_shared<Scene>(sceneContext);
-                _innerSceneThread = std::thread([&]() { _innerScene->run(); });
+                argv.push_back((char*)"--prefix");
+                argv.push_back(const_cast<char*>(_context.socketPrefix.c_str()));
             }
-            else
-            {
-                // Spawn a new process containing this Scene
-                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting a Scene in another process" << Log::endl;
+            if (!debug.empty())
+                argv.push_back(const_cast<char*>(debug.c_str()));
+            if (!timer.empty())
+                argv.push_back(const_cast<char*>(timer.c_str()));
+            argv.push_back(const_cast<char*>(sceneName.c_str()));
+            argv.push_back(nullptr);
+            std::vector<char*> env = {const_cast<char*>(display.c_str()), const_cast<char*>(xauth.c_str()), nullptr};
 
-                std::string cmd = _context.executablePath;
-                std::string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
-                std::string timer = Timer::get().isDebug() ? "-t" : "";
-                std::string slave = "--child";
-                std::string xauth = "XAUTHORITY=" + Utils::getHomePath() + "/.Xauthority";
-
-                std::vector<char*> argv = {const_cast<char*>(cmd.c_str()), const_cast<char*>(slave.c_str())};
-                if (!_context.socketPrefix.empty())
-                {
-                    argv.push_back((char*)"--prefix");
-                    argv.push_back(const_cast<char*>(_context.socketPrefix.c_str()));
-                }
-                if (!debug.empty())
-                    argv.push_back(const_cast<char*>(debug.c_str()));
-                if (!timer.empty())
-                    argv.push_back(const_cast<char*>(timer.c_str()));
-                argv.push_back(const_cast<char*>(sceneName.c_str()));
-                argv.push_back(nullptr);
-                std::vector<char*> env = {const_cast<char*>(display.c_str()), const_cast<char*>(xauth.c_str()), nullptr};
-
-                int status = posix_spawn(&pid, cmd.c_str(), nullptr, nullptr, argv.data(), env.data());
-                if (status != 0)
-                    Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << sceneName << Log::endl;
-            }
+            int status = posix_spawn(&pid, cmd.c_str(), nullptr, nullptr, argv.data(), env.data());
+            if (status != 0)
+                Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << sceneName << Log::endl;
 
             // We wait for the child process to be launched
             std::unique_lock<std::mutex> lockChildProcess(_childProcessMutex);
@@ -503,10 +483,7 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
             _masterSceneName = sceneName;
 
         // Initialize the communication
-        if (pid == -1 && spawn)
-            _link->connectTo(sceneName, _innerScene.get());
-        else
-            _link->connectTo(sceneName);
+        _link->connectTo(sceneName);
 
         return true;
     }
@@ -732,10 +709,14 @@ std::vector<std::string> World::getObjectsOfType(const std::string& type) const
 }
 
 /*************/
-bool World::handleSerializedObject(const std::string& name, const std::shared_ptr<SerializedObject>& obj)
+bool World::handleSerializedObject(const std::string& name, SerializedObject& obj)
 {
     if (!RootObject::handleSerializedObject(name, obj))
-        _link->sendBuffer(name, obj);
+    {
+        // At this point, the serialized object should already hold its target name
+        // as the first serialized member. Hence we do not need to add it.
+        _link->sendBuffer(std::move(obj));
+    }
     return true;
 }
 
@@ -999,20 +980,12 @@ void World::registerAttributes()
                 Json::Value config;
                 if (loadConfig(filename, config))
                 {
-                    for (auto& s : _scenes)
+                    for (auto& [sceneName, scenePid] : _scenes)
                     {
-                        sendMessage(s.first, "quit", {});
-                        _link->disconnectFrom(s.first);
-                        if (s.second != -1)
-                        {
-                            waitpid(s.second, nullptr, 0);
-                        }
-                        else
-                        {
-                            if (_innerSceneThread.joinable())
-                                _innerSceneThread.join();
-                            _innerScene.reset();
-                        }
+                        sendMessage(sceneName, "quit");
+                        _link->disconnectFrom(sceneName);
+                        if (scenePid != -1)
+                            waitpid(scenePid, nullptr, 0);
                     }
 
                     _masterSceneName = "";

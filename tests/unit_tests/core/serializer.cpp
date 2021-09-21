@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <deque>
+#include <iostream>
 #include <tuple>
 #include <vector>
 
@@ -28,6 +29,16 @@ TEST_CASE("Testing serialized size computation")
     CHECK(Serial::getSize(someText) == someText.size() * sizeof(char) + sizeof(uint32_t));
 
     CHECK(Serial::getSize(chrono::system_clock::time_point(chrono::duration<int64_t, std::milli>(123456))) == sizeof(int64_t));
+}
+
+/*************/
+TEST_CASE("Testing serialization of std::string")
+{
+    const std::string someString = "Once upon a time...";
+    CHECK_EQ(Serial::getSize(someString), 23); // 4 (size as uint32_t) + 19 (char count)
+    std::vector<uint8_t> buffer;
+    Serial::serialize(someString, buffer);
+    CHECK_EQ(someString, Serial::deserialize<std::string>(buffer));
 }
 
 /*************/

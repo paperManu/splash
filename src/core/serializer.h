@@ -107,7 +107,7 @@ struct getSizeHelper<T, typename std::enable_if<std::is_arithmetic<T>::value || 
 template <class T>
 struct getSizeHelper<T, typename std::enable_if<std::is_same<T, std::string>::value>::type>
 {
-    static uint32_t value(const T& obj) { return sizeof(uint32_t) + obj.size() * sizeof(char); }
+    static uint32_t value(const T& obj) { return sizeof(uint32_t) + obj.size() * sizeof(typename T::value_type); }
 };
 
 template <class T>
@@ -185,6 +185,19 @@ struct serializeHelper<T, typename std::enable_if<std::is_arithmetic<T>::value |
 };
 
 template <class T>
+struct serializeHelper<T, typename std::enable_if<std::is_same<std::string, T>::value>::type>
+{
+    static void apply(const T& obj, std::vector<uint8_t>::iterator& it)
+    {
+        const auto size = static_cast<uint32_t>(obj.size());
+        serializer(size, it);
+        const auto data = reinterpret_cast<const uint8_t*>(obj.data());
+        std::copy(data, data + size * sizeof(typename T::value_type), it);
+        it += size * sizeof(typename T::value_type);
+    }
+};
+
+template <class T>
 struct serializeHelper<T, typename std::enable_if<is_specialisation_of<std::chrono::time_point, T>::value>::type>
 {
     static void apply(const T& obj, std::vector<uint8_t>::iterator& it)
@@ -198,7 +211,7 @@ struct serializeHelper<T, typename std::enable_if<is_specialisation_of<std::chro
 };
 
 template <class T>
-struct serializeHelper<T, typename std::enable_if<isIterable<T>::value>::type>
+struct serializeHelper<T, typename std::enable_if<isIterable<T>::value && !std::is_same<std::string, T>::value>::type>
 {
     static void apply(const T& obj, std::vector<uint8_t>::iterator& it)
     {
@@ -284,10 +297,11 @@ struct deserializeHelper<T, typename std::enable_if<std::is_same<T, std::string>
 {
     static T apply(std::vector<uint8_t>::const_iterator& it)
     {
-        auto size = deserializer<uint32_t>(it);
+        const auto size = deserializer<uint32_t>(it);
         auto obj = T(static_cast<size_t>(size), ' ');
-        for (uint32_t i = 0; i < size; ++i)
-            obj[i] = deserializer<typename T::value_type>(it);
+        auto data = reinterpret_cast<uint8_t*>(obj.data());
+        std::copy(it, it + size * sizeof(typename T::value_type), data);
+        it += size * sizeof(typename T::value_type);
         return obj;
     }
 };
@@ -364,9 +378,9 @@ T deserializer(std::vector<uint8_t>::const_iterator& it)
  * \return Return the deserialized object
  */
 template <class T>
-inline T deserialize(const std::vector<uint8_t>& buffer)
+inline T deserialize(const std::vector<uint8_t>& buffer, size_t offset = 0)
 {
-    auto it = buffer.cbegin();
+    auto it = buffer.cbegin() + offset;
     return detail::deserializer<T>(it);
 }
 

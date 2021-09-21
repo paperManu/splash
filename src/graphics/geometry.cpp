@@ -1,6 +1,7 @@
 #include "./graphics/geometry.h"
 
 #include "./core/scene.h"
+#include "./core/serialize/serialize_mesh.h"
 #include "./mesh/mesh.h"
 #include "./utils/log.h"
 
@@ -158,34 +159,52 @@ std::vector<char> Geometry::getGpuBufferAsVector(Geometry::BufferType type)
 }
 
 /*************/
-std::shared_ptr<SerializedObject> Geometry::serialize() const
+SerializedObject Geometry::serialize() const
 {
-    auto serializedObject = std::make_shared<SerializedObject>();
-    serializedObject->resize(sizeof(int));
-    *(reinterpret_cast<int*>(serializedObject->data())) = _alternativeVerticesNumber;
-    for (auto& buffer : _glAlternativeBuffers)
-    {
-        auto newBuffer = buffer->getBufferAsVector(_alternativeVerticesNumber);
-        auto oldSize = serializedObject->size();
-        serializedObject->resize(serializedObject->size() + newBuffer.size());
-        std::copy(newBuffer.data(), newBuffer.data() + newBuffer.size(), serializedObject->data() + oldSize);
-    }
+    const auto vertices = _glAlternativeBuffers[0]->getBufferAsVector(_alternativeVerticesNumber);
+    const auto uvs = _glAlternativeBuffers[1]->getBufferAsVector(_alternativeVerticesNumber);
+    const auto normals = _glAlternativeBuffers[2]->getBufferAsVector(_alternativeVerticesNumber);
+    const auto annexe = _glAlternativeBuffers[3]->getBufferAsVector(_alternativeVerticesNumber);
+
+    const auto verticesData = reinterpret_cast<const glm::vec4*>(vertices.data());
+    const auto uvsData = reinterpret_cast<const glm::vec2*>(uvs.data());
+    const auto normalsData = reinterpret_cast<const glm::vec4*>(normals.data());
+    const auto annexeData = reinterpret_cast<const glm::vec4*>(annexe.data());
+
+    const Mesh::MeshContainer mesh = {
+        .name = _name,
+        .vertices = std::vector<glm::vec4>(verticesData, verticesData + _alternativeVerticesNumber),
+        .uvs = std::vector<glm::vec2>(uvsData, uvsData + _alternativeVerticesNumber),
+        .normals = std::vector<glm::vec4>(normalsData, normalsData + _alternativeVerticesNumber),
+        .annexe = std::vector<glm::vec4>(annexeData, annexeData + _alternativeVerticesNumber),
+    };
+
+    std::vector<uint8_t> data;
+    Serial::serialize(mesh, data);
+    SerializedObject serializedObject(ResizableArray(std::move(data)));
 
     return serializedObject;
 }
 
 /*************/
-bool Geometry::deserialize(const std::shared_ptr<SerializedObject>& obj)
+bool Geometry::deserialize(SerializedObject&& obj)
 {
-    uint32_t verticesNumber = *reinterpret_cast<int*>(obj->data());
+    // After this, obj does not hold any more data
+    const auto serializedMesh = obj.grabData();
+    auto serializedMeshIt = serializedMesh.cbegin();
+    auto mesh = Serial::detail::deserializer<Mesh::MeshContainer>(serializedMeshIt);
 
-    if (obj->size() != verticesNumber * 4 * 14 + 4)
+    bool doMatch = (mesh.vertices.size() == mesh.uvs.size());
+    doMatch = (mesh.vertices.size() == mesh.normals.size());
+    doMatch = (mesh.vertices.size() == mesh.annexe.size());
+
+    if (!doMatch)
     {
-        Log::get() << Log::WARNING << "Geometry::" << __FUNCTION__ << " - Received buffer size does not match its header. Dropping." << Log::endl;
+        Log::get() << Log::WARNING << "Geometry::" << __FUNCTION__ << " - Received buffers size do not match. Dropping." << Log::endl;
         return false;
     }
 
-    _serializedMesh = std::move(*obj);
+    _deserializedMesh = std::make_unique<Mesh::MeshContainer>(std::move(mesh));
     return true;
 }
 
@@ -289,39 +308,58 @@ void Geometry::update()
         return;
 
     // If a serialized geometry is present, we use it as the alternative buffer
-    if (!_onMasterScene && _serializedMesh.size() != 0)
+    if (!_onMasterScene && _deserializedMesh != nullptr)
     {
         std::lock_guard<Spinlock> updateLock(_updateMutex);
 
-        _temporaryVerticesNumber = *(reinterpret_cast<int*>(_serializedMesh.data()));
+        _temporaryVerticesNumber = _deserializedMesh->vertices.size();
         _temporaryBufferSize = _temporaryVerticesNumber;
 
         if (!_glTemporaryBuffers[0])
-            _glTemporaryBuffers[0] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _serializedMesh.data() + 4);
+        {
+            _glTemporaryBuffers[0] =
+                std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, reinterpret_cast<GLvoid*>(_deserializedMesh->vertices.data()));
+        }
         else
-            _glTemporaryBuffers[0]->setBufferFromVector(std::vector<char>(_serializedMesh.data() + 4, _serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 4));
+        {
+            const auto data = reinterpret_cast<float*>(_deserializedMesh->vertices.data());
+            _glTemporaryBuffers[0]->setBufferFromVector({data, data + _temporaryVerticesNumber * sizeof(float) * 4});
+        }
 
         if (!_glTemporaryBuffers[1])
-            _glTemporaryBuffers[1] = std::make_shared<GpuBuffer>(2, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 4);
+        {
+            _glTemporaryBuffers[1] = std::make_shared<GpuBuffer>(2, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, reinterpret_cast<GLvoid*>(_deserializedMesh->uvs.data()));
+        }
         else
-            _glTemporaryBuffers[1]->setBufferFromVector(
-                std::vector<char>(_serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 4, _serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 6));
+        {
+            const auto data = reinterpret_cast<float*>(_deserializedMesh->uvs.data());
+            _glTemporaryBuffers[1]->setBufferFromVector({data, data + _temporaryVerticesNumber * sizeof(float) * 2});
+        }
 
         if (!_glTemporaryBuffers[2])
-            _glTemporaryBuffers[2] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 6);
+        {
+            _glTemporaryBuffers[2] =
+                std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, reinterpret_cast<GLvoid*>(_deserializedMesh->normals.data()));
+        }
         else
-            _glTemporaryBuffers[2]->setBufferFromVector(
-                std::vector<char>(_serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 6, _serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 10));
+        {
+            const auto data = reinterpret_cast<float*>(_deserializedMesh->normals.data());
+            _glTemporaryBuffers[2]->setBufferFromVector({data, data + _temporaryVerticesNumber * sizeof(float) * 4});
+        }
 
         if (!_glTemporaryBuffers[3])
-            _glTemporaryBuffers[3] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 10);
+        {
+            _glTemporaryBuffers[3] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _deserializedMesh->annexe.data());
+        }
         else
-            _glTemporaryBuffers[3]->setBufferFromVector(
-                std::vector<char>(_serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 10, _serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 14));
+        {
+            const auto data = reinterpret_cast<float*>(_deserializedMesh->annexe.data());
+            _glTemporaryBuffers[3]->setBufferFromVector({data, data + _temporaryVerticesNumber * sizeof(float) * 4});
+        }
 
         swapBuffers();
         _buffersDirty = true;
-        _serializedMesh.resize(0);
+        _deserializedMesh.reset();
     }
 
     GLFWwindow* context = glfwGetCurrentContext();
@@ -372,4 +410,4 @@ void Geometry::registerAttributes()
     BufferObject::registerAttributes();
 }
 
-} // end of namespace
+} // namespace Splash

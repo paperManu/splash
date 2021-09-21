@@ -61,11 +61,6 @@ class World : public RootObject
     explicit World(Context context);
 
     /**
-     * Destructor
-     */
-    ~World() override;
-
-    /**
      * Get the status of the world after begin ran
      * \return Return true if all went well
      */
@@ -82,9 +77,6 @@ class World : public RootObject
     std::string _clockDeviceName{""};          //!< Name of the input sound source for the master clock
 #endif
 
-    std::shared_ptr<Scene> _innerScene{}; //!< Inner Scene if the specified DISPLAY is available from this process
-    std::thread _innerSceneThread;        //!< Inner Scene thread
-
     bool _status{true};        //!< Exit status
     bool _quit{false};         //!< True if the World should quit
     static World* _that;       //!< Pointer to the World
@@ -94,7 +86,7 @@ class World : public RootObject
     bool _enforceRealtime{false};     //!< If true, realtime scheduling is asked to the system, if possible
 
     // World parameters
-    unsigned int _worldFramerate{60}; //!< World framerate, default 60, because synchronous tasks need the loop to run
+    unsigned int _worldFramerate{15}; //!< World framerate, default 60, because synchronous tasks need the loop to run
     std::string _blendingMode{};      //!< Blending mode: can be none, once or continuous
     bool _runInBackground{false};     //!< If true, no window will be created
 
@@ -182,11 +174,16 @@ class World : public RootObject
 
     /**
      * Redefinition of a method from RootObject. Send the input buffers back to all pairs
+     *
+     * Note that depending on whether the object can be handled or not, it will be
+     * made invalid after calling this method. Check the return value to get whether
+     * the object is still valid.
+     *
      * \param name Object name
      * \param obj Serialized object
      * \return Return true if the object has been handled
      */
-    bool handleSerializedObject(const std::string& name, const std::shared_ptr<SerializedObject>& obj) override;
+    bool handleSerializedObject(const std::string& name, SerializedObject& obj) override;
 
     /**
      * Handle the exit signal messages

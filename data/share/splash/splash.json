@@ -13,13 +13,14 @@
             [ "image", "object" ],
             [ "image", "object_image_filter" ],
             [ "gui", "win1" ],
-            [ "cam1", "win1" ],
-            [ "win1_cam1_warp", "win1" ],
-            [ "cam1", "win1_cam1_warp" ]
+            [ "cam1", "window_1" ],
+            [ "window_1_cam1_warp", "window_1" ],
+            [ "cam1", "window_1_cam1_warp" ]
          ],
          "objects" : {
             "blender" : {
                "alias" : [ "blender" ],
+               "depthAwareBlending" : [ false ],
                "mode" : [ "none" ],
                "priorityShift" : [ 0 ],
                "savable" : [ true ],
@@ -33,12 +34,13 @@
                "blendPrecision" : [ 0.10000000149011612 ],
                "blendWidth" : [ 0.05000000074505806 ],
                "brightness" : [ 1 ],
+               "buffer" : null,
                "colorMixMatrix" : [
                   [ 1, 0, 0, 0, 1, 0, 0, 0, 1 ]
                ],
                "colorTemperature" : [ 6500 ],
                "contrast" : [ 1 ],
-               "eye" : [ -0.74572044610977173, -2.0000450611114502, 1.9612512588500977 ],
+               "eye" : [ 2.31241774559021, 1.9932471513748169, 1.4240027666091919 ],
                "far" : [ 100 ],
                "fov" : [ 58 ],
                "getReprojectionError" : [ 0 ],
@@ -50,9 +52,9 @@
                "priorityShift" : [ 0 ],
                "saturation" : [ 1 ],
                "savable" : [ true ],
-               "size" : [ 1280, 1024 ],
-               "target" : [ 0.20872476696968079, 0.10215018689632416, 0.31510153412818909 ],
-               "timestamp" : [ 356070819 ],
+               "size" : [ 1280, 720 ],
+               "target" : [ 0.33982363343238831, 0.21721945703029633, 0.42670729756355286 ],
+               "timestamp" : [ 1853296687 ],
                "type" : "camera",
                "up" : [ 0, 0, 1 ],
                "weightedCalibrationPoints" : [ true ]
@@ -79,7 +81,7 @@
             },
             "gui" : {
                "alias" : [ "gui" ],
-               "fullscreen" : [ false ],
+               "fullscreen" : [ true ],
                "priorityShift" : [ 0 ],
                "savable" : [ true ],
                "timestamp" : [ 0 ],
@@ -90,12 +92,13 @@
                "file" : [ "color_map.png" ],
                "flip" : [ false ],
                "flop" : [ false ],
-               "mediaInfo" : [ 4096, 4096, 32, 4, "RGBA", 1 ],
+               "mediaInfo" : [ 4096, 4096, 32, 4, "RGBA", true ],
                "pattern" : [ false ],
                "priorityShift" : [ 0 ],
+               "reload" : [ false ],
                "savable" : [ true ],
                "srgb" : [ true ],
-               "timestamp" : [ 356070819 ],
+               "timestamp" : [ 1853296687 ],
                "type" : "image"
             },
             "keyboard" : {
@@ -108,10 +111,11 @@
             },
             "mesh" : {
                "alias" : [ "mesh" ],
-               "file" : [ "./cubes.obj" ],
+               "file" : [ "./wall_corner.obj" ],
                "priorityShift" : [ 0 ],
+               "reload" : [ false ],
                "savable" : [ true ],
-               "timestamp" : [ 356071875 ],
+               "timestamp" : [ 1853304039 ],
                "type" : "mesh"
             },
             "mouse" : {
@@ -133,12 +137,13 @@
                "savable" : [ true ],
                "scale" : [ 1, 1, 1 ],
                "sideness" : [ 0 ],
-               "timestamp" : [ 356070819 ],
+               "timestamp" : [ 1853296687 ],
                "type" : "object"
             },
             "object_image_filter" : {
                "alias" : [ "object_image_filter" ],
                "brightness" : [ 1 ],
+               "buffer" : null,
                "colorTemperature" : [ 6500 ],
                "contrast" : [ 1 ],
                "grabMipmapLevel" : [ -1 ],
@@ -150,27 +155,44 @@
                "scale" : [ 1, 1 ],
                "size" : [ 4096, 4096 ],
                "sizeOverride" : [ -1, -1 ],
-               "timestamp" : [ 356070819 ],
+               "timestamp" : [ 1853296687 ],
                "type" : "filter"
             },
             "win1" : {
                "alias" : [ "win1" ],
                "decorated" : [ true ],
                "gamma" : [ 2.2000000476837158 ],
-               "guiOnly" : [ false ],
+               "guiOnly" : [ true ],
                "layout" : [ 0, 1, 2, 3 ],
-               "position" : [ 611, 17 ],
-               "presentationDelay" : [ 1032650 ],
+               "position" : [ 28, 23 ],
+               "presentationDelay" : [ 1884895086 ],
                "priorityShift" : [ 0 ],
                "savable" : [ true ],
                "size" : [ 1280, 1024 ],
+               "snapDistance" : [ 16 ],
                "srgb" : [ true ],
-               "textureList" : [ "win1_cam1_warp" ],
-               "timestamp" : [ 356070819 ],
+               "timestamp" : [ 0 ],
                "type" : "window"
             },
-            "win1_cam1_warp" : {
-               "alias" : [ "win1_cam1_warp" ],
+            "window_1" : {
+               "alias" : [ "window_1" ],
+               "decorated" : [ false ],
+               "gamma" : [ 2.2000000476837158 ],
+               "guiOnly" : [ false ],
+               "layout" : [ 0, 1, 2, 3 ],
+               "position" : [ 604, 189 ],
+               "presentationDelay" : [ 31598619 ],
+               "priorityShift" : [ 0 ],
+               "savable" : [ true ],
+               "size" : [ 1280, 720 ],
+               "snapDistance" : [ 16 ],
+               "srgb" : [ true ],
+               "textureList" : [ "window_1_cam1_warp" ],
+               "timestamp" : [ 1853296687 ],
+               "type" : "window"
+            },
+            "window_1_cam1_warp" : {
+               "alias" : [ "window_1_cam1_warp" ],
                "buffer" : null,
                "grabMipmapLevel" : [ -1 ],
                "patchControl" : [
@@ -197,8 +219,8 @@
                "patchSize" : [ 4, 4 ],
                "priorityShift" : [ 0 ],
                "savable" : [ true ],
-               "size" : [ 1280, 1024 ],
-               "timestamp" : [ 356070819 ],
+               "size" : [ 1280, 720 ],
+               "timestamp" : [ 1853296687 ],
                "type" : "warp"
             }
          },
@@ -206,14 +228,14 @@
          "swapInterval" : [ 1 ]
       }
    },
-   "version" : "0.8.15",
+   "version" : "0.8.49",
    "world" : {
-      "clock" : [ 357094442 ],
+      "clock" : [ 1884832083 ],
       "clockDeviceName" : [ "" ],
-      "configurationPath" : [ "" ],
+      "configurationPath" : [ "/home/manu/src/splash/data/share/splash/" ],
       "forceRealtime" : [ false ],
-      "framerate" : [ 60 ],
+      "framerate" : [ 15 ],
       "looseClock" : [ false ],
-      "mediaPath" : [ "" ]
+      "mediaPath" : [ "/home/manu" ]
    }
 }

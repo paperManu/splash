@@ -129,7 +129,7 @@ void GuiNodeView::render()
 
     _clickedNode.clear();
 
-    ImGui::Text("Click: select ; Shift + click: link ; Ctrl + click: unlink");
+    ImGui::Text("Click: select ; Shift + click: link ; Ctrl + click: unlink ; Middle click or Alt + right click: pan");
 
     // Begin a subwindow to enclose nodes
     ImGui::BeginChild("NodeView", ImVec2(0, -26), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);

@@ -1,6 +1,7 @@
 #include "./core/imagebuffer.h"
 
 #include <assert.h>
+#include <cstring>
 #include <vector>
 
 namespace Splash
@@ -88,7 +89,7 @@ ImageBuffer::ImageBuffer(const ImageBufferSpec& spec, uint8_t* data, bool map)
     }
     else if (!map)
     {
-        auto size = spec.width * spec.height * spec.pixelBytes();
+        const auto size = spec.rawSize();
         if (data)
             _buffer = ResizableArray<uint8_t>(data, data + size);
         else

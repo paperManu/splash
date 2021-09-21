@@ -129,14 +129,14 @@ class Image : public BufferObject
      * Serialize the image
      * \return Return the serialized image
      */
-    std::shared_ptr<SerializedObject> serialize() const override;
+    SerializedObject serialize() const override;
 
     /**
      * Update the Image from a serialized representation
      * \param obj Serialized image
      * \return Return true if all went well
      */
-    bool deserialize(const std::shared_ptr<SerializedObject>& obj) override;
+    bool deserialize(SerializedObject&& obj) override;
 
     /**
      * Set the path to read from
