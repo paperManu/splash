@@ -325,10 +325,10 @@ std::vector<std::string> ControllerObject::getObjectsOfType(const std::string& t
 }
 
 /*************/
-void ControllerObject::sendBuffer(const std::string& name, const std::shared_ptr<SerializedObject>& buffer) const
+void ControllerObject::sendBuffer(const std::string& name, SerializedObject&& buffer) const
 {
     if (_root)
-        _root->sendBuffer(name, buffer);
+        _root->sendBuffer(name, std::move(buffer));
 }
 
 /*************/

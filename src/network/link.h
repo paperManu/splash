@@ -27,6 +27,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <deque>
 #include <map>
 #include <mutex>
@@ -40,6 +41,7 @@
 #include "./core/serialized_object.h"
 #include "./core/spinlock.h"
 #include "./core/value.h"
+#include "./network/channel.h"
 
 namespace Splash
 {
@@ -52,52 +54,48 @@ class Link
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      * \param name Name of the link
      */
     Link(RootObject* root, const std::string& name);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~Link();
 
     /**
-     * \brief Connect to a pair given its name
+     * Connect to a pair given its name
      * \param name Peer name
      */
     void connectTo(const std::string& name);
 
     /**
-     * \brief Connect to a pair given its name and a shared_ptr, useful when the peer is an object of _root
-     * \param name Peer name
-     * \param peer Pointer to an inner peer
-     */
-    void connectTo(const std::string& name, RootObject* peer);
-
-    /**
-     * \brief Disconnect from a pair given its name
+     * Disconnect from a pair given its name
      * \param name Peer name
      */
     void disconnectFrom(const std::string& name);
 
     /**
-     * \brief Send a buffer to the connected peers
-     * \param name Buffer name
+     * Send a buffer to the connected peers
+     *
+     * The name of the target has to be serialized at the beginning of the buffer,
+     * in order to be used to point it to the correct target
+     *
      * \param buffer Serialized buffer
      */
-    bool sendBuffer(const std::string& name, std::shared_ptr<SerializedObject> buffer);
+    bool sendBuffer(SerializedObject&& buffer);
 
     /**
-     * \brief Send a buffer to the connected peers
+     * Send a buffer to the connected peers
      * \param name Buffer name
      * \param object Object to get a serialized version from
      */
-    bool sendBuffer(const std::string& name, const std::shared_ptr<BufferObject>& object);
+    bool sendBuffer(const std::shared_ptr<BufferObject>& object);
 
     /**
-     * \brief Send a message to connected peers
+     * Send a message to connected peers
      * \param name Destination object name
      * \param attribute Attribute
      * \param message Message
@@ -106,7 +104,7 @@ class Link
     bool sendMessage(const std::string& name, const std::string& attribute, const Values& message);
 
     /**
-     * \brief Send a message to connected peers. Converts known base types to vector<Value> before sending.
+     * Send a message to connected peers. Converts known base types to vector<Value> before sending.
      * \param name Destination object name
      * \param attribute Attribute
      * \param message Message
@@ -116,7 +114,7 @@ class Link
     bool sendMessage(const std::string& name, const std::string& attribute, const std::vector<T>& message);
 
     /**
-     * \brief Check that all buffers were sent to the client
+     * Check that all buffers were sent to the client
      * \param maximumWait Maximum waiting time
      * \return Return true if all went well
      */
@@ -124,48 +122,24 @@ class Link
 
   private:
     RootObject* _rootObject;
-    std::string _basePath{""};
     std::string _name{""};
 
-    std::unique_ptr<zmq::context_t> _context;
-    std::unique_ptr<zmq::socket_t> _socketBufferIn;
-    std::unique_ptr<zmq::socket_t> _socketBufferOut;
-    std::unique_ptr<zmq::socket_t> _socketMessageIn;
-    std::unique_ptr<zmq::socket_t> _socketMessageOut;
-
-    std::vector<std::string> _connectedTargets;
-    std::map<std::string, RootObject*> _connectedTargetPointers;
-
-    bool _connectedToInner{false};
-    bool _connectedToOuter{false};
-    bool _running{false};
-
-    Spinlock _msgSendMutex;
-    Spinlock _bufferSendMutex;
-
-    std::deque<std::shared_ptr<SerializedObject>> _otgBuffers;
-    Spinlock _otgMutex;
-    std::atomic_int _otgNumber{0};
-
-    std::thread _bufferInThread;
-    std::thread _messageInThread;
+    std::unique_ptr<ChannelOutput> _channelOutput;
+    std::unique_ptr<ChannelInput> _channelInput;
 
     /**
-     * \brief Callback to remove the shared_ptr to a sent buffer
-     * \param data Pointer to sent data
-     * \param hint Pointer to the Link
+     * Message input thread function
+     * \param name Object name to send message to
+     * \param attribute Object attribute for the message
+     * \param value Object value to update
      */
-    static void freeOlderBuffer(void* data, void* hint);
+    void handleInputMessages(const std::vector<uint8_t>& message);
 
     /**
-     * \brief Message input thread function
+     * Buffer input thread function
+     * \param buffer Buffer to be sent
      */
-    void handleInputMessages();
-
-    /**
-     * \brief Buffer input thread function
-     */
-    void handleInputBuffers();
+    void handleInputBuffers(SerializedObject&& buffer);
 };
 
 /*************/

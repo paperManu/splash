@@ -28,11 +28,7 @@
 #include "./core/serializer.h"
 #include "./core/value.h"
 
-namespace Splash
-{
-namespace Serial
-{
-namespace detail
+namespace Splash::Serial::detail
 {
 
 // Specialisation of serialization for Splash::ResizableArray<uint8_t>, here known as Value::Buffer
@@ -161,8 +157,6 @@ struct deserializeHelper<T, typename std::enable_if<std::is_same<T, Value>::valu
     }
 };
 
-} // namespace detail
-} // namespace Serial
-} // namespace Splash
+} // namespace Splash::Serial::detail
 
 #endif // SPLASH_SERIALIZE_VALUE_H

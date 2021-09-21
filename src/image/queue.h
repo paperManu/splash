@@ -47,13 +47,13 @@ class Queue : public BufferObject
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
     Queue(RootObject* root);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~Queue() override;
 
@@ -65,31 +65,31 @@ class Queue : public BufferObject
     Queue& operator=(const Queue&) = delete;
 
     /**
-     * \brief The Queue does not exist on the Scene side, there is the QueueSurrogate for this. So deserialization has no meaning
+     * The Queue does not exist on the Scene side, there is the QueueSurrogate for this. So deserialization has no meaning
      * \return Return always false
      */
-    bool deserialize(const std::shared_ptr<SerializedObject>& /*obj*/) override { return false; }
+    bool deserialize(SerializedObject&& /*obj*/) override { return false; }
 
     /**
-     * \brief Return the name of the distant buffer object
+     * Return the name of the distant buffer object
      * \return Return the distant name
      */
     std::string getDistantName() const override;
 
     /**
-     * \brief Serialize the underlying source
+     * Serialize the underlying source
      * \return Return the serialized object
      */
-    std::shared_ptr<SerializedObject> serialize() const override;
+    SerializedObject serialize() const override;
 
     /**
-     * \brief Returns always true, the Queue object handles update itself
+     * Returns always true, the Queue object handles update itself
      * \return Return true if the queue was updated
      */
     bool wasUpdated() const override { return true; }
 
     /**
-     * \brief Update the current texture
+     * Update the current texture
      */
     void update() override;
 
@@ -123,13 +123,13 @@ class Queue : public BufferObject
     int64_t _currentTime{-1}; // Elapsed time since _startTime
 
     /**
-     * \brief Clean the playlist for holes and overlaps
+     * Clean the playlist for holes and overlaps
      * \param playlist Playlist to clean
      */
     void cleanPlaylist(std::vector<Source>& playlist);
 
     /**
-     * Regist\brief er new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 
@@ -146,7 +146,7 @@ class QueueSurrogate : public Texture
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
     QueueSurrogate(RootObject* root);
@@ -159,47 +159,47 @@ class QueueSurrogate : public Texture
     QueueSurrogate& operator=(const QueueSurrogate&) = delete;
 
     /**
-     * \brief Bind this texture of this filter
+     * Bind this texture of this filter
      */
     void bind() final;
 
     /**
-     * \brief Unbind this texture of this filter
+     * Unbind this texture of this filter
      */
     void unbind() final;
 
     /**
-     * \brief Get the shader parameters related to this texture. Texture should be locked first.
+     * Get the shader parameters related to this texture. Texture should be locked first.
      * \return Return the shader uniforms
      */
     std::unordered_map<std::string, Values> getShaderUniforms() const;
 
     /**
-     * \brief Get the filter created by the queue
+     * Get the filter created by the queue
      * \return Return the filter
      */
     std::shared_ptr<Filter> getFilter() const { return _filter; }
 
     /**
-     * \brief Get the id of the gl texture
+     * Get the id of the gl texture
      * \return Return the texture id
      */
     GLuint getTexId() const { return _filter->getTexId(); }
 
     /**
-     * \brief Get the current source created by the queue
+     * Get the current source created by the queue
      * \return Return the current source
      */
     std::shared_ptr<GraphObject> getSource() const { return _source; }
 
     /**
-     * \brief Get spec of the texture
+     * Get spec of the texture
      * \return Return the spec
      */
     ImageBufferSpec getSpec() const;
 
     /**
-     * \brief Update the texture according to the owned Image
+     * Update the texture according to the owned Image
      */
     void update() final{};
 
@@ -209,7 +209,7 @@ class QueueSurrogate : public Texture
     std::shared_ptr<GraphObject> _source;
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 };

@@ -187,7 +187,7 @@ class ControllerObject : public GraphObject
      * \param name Object name
      * \param buffer Serialized buffer
      */
-    void sendBuffer(const std::string& name, const std::shared_ptr<SerializedObject>& buffer) const;
+    void sendBuffer(const std::string& name, SerializedObject&& buffer) const;
 
     /**
      * \brief Set the given configuration-related attribute

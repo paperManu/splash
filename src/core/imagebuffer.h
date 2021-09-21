@@ -28,6 +28,7 @@
 #include <chrono>
 #include <memory>
 #include <mutex>
+#include <string>
 
 #include "./core/constants.h"
 
@@ -48,16 +49,23 @@ class ImageBufferSpec
     };
 
     /**
-     * \brief Constructor
+     * Constructor
      */
     ImageBufferSpec(){};
 
     /**
-     * \brief Constructor
+     * Constructor
+     * \param stringSpec Spec as string
+     */
+    ImageBufferSpec(const std::string& stringSpec) { from_string(stringSpec); }
+
+    /**
+     * Constructor
      * \param w Width
      * \param h Height
      * \param c Channel count
      * \param b Bit per pixej
+     * \param t Component type
      * \param f Format as a string
      */
     ImageBufferSpec(unsigned int w, unsigned int h, unsigned int c, uint8_t b, ImageBufferSpec::Type t = Type::UINT8, const std::string& f = "RGBA")
@@ -122,25 +130,25 @@ class ImageBufferSpec
     inline bool operator!=(const ImageBufferSpec& spec) const { return !operator==(spec); }
 
     /**
-     * \brief Convert the spec to a string
+     * Convert the spec to a string
      * \return Return a string representation of the spec
      */
     std::string to_string() const;
 
     /**
-     * \brief Update from a spec string
+     * Update from a spec string
      * \param spec Spec string
      */
     void from_string(const std::string& spec);
 
     /**
-     * \brief Get channel size in bytes
+     * Get channel size in bytes
      * \return Return channel size
      */
     int pixelBytes() const { return bpp / 8; }
 
     /**
-     * \brief Get image size in bytes
+     * Get image size in bytes
      * \return Return image size
      */
     int rawSize() const { return pixelBytes() * width * height; }
@@ -151,12 +159,12 @@ class ImageBuffer
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      */
     ImageBuffer() = default;
 
     /**
-     * \brief Constructor
+     * Constructor
      * \param spec Image spec
      * \param data Pointer to initial data
      * \param map Use the data pointer as the buffer for this ImageBuffer
@@ -164,7 +172,7 @@ class ImageBuffer
     ImageBuffer(const ImageBufferSpec& spec, uint8_t* data = nullptr, bool map = false);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~ImageBuffer() = default;
 
@@ -174,7 +182,7 @@ class ImageBuffer
     ImageBuffer& operator=(ImageBuffer&& i) = default;
 
     /**
-     * \brief Return a pointer to the image data
+     * Return a pointer to the image data
      * \return Return a pointer to the data
      */
     uint8_t* data() { return _mappedBuffer ? _mappedBuffer : _buffer.data(); }
@@ -187,7 +195,7 @@ class ImageBuffer
     const ResizableArray<uint8_t>& getRawBuffer() const { return _buffer; }
 
     /**
-     * \brief Get the image spec
+     * Get the image spec
      * \return Return image spec
      */
     ImageBufferSpec& getSpec() { return _spec; }
@@ -200,19 +208,31 @@ class ImageBuffer
     bool empty() const { return getSize() == 0; }
 
     /**
-     * \brief Get the image buffer size
+     * Get the name of the image buffer
+     * \return Return the name
+     */
+    std::string getName() const { return _name; }
+
+    /**
+     * Get the image buffer size
      * \return Return the size
      */
     size_t getSize() const { return _mappedBuffer ? _spec.width * _spec.height * _spec.pixelBytes() : _buffer.size(); }
 
     /**
-     * \brief Fill all channels with the given value
+     * Set the name of the image buffer
+     * \param name Name for the buffer
+     */
+    void setName(const std::string& name) { _name = name; }
+
+    /**
+     * Fill all channels with the given value
      * \param value Value to fill the image with
      */
     void zero();
 
     /**
-     * \brief Set the inner raw buffer, to use with caution, its size must match the spec
+     * Set the inner raw buffer, to use with caution, its size must match the spec
      * \param buffer Buffer to use as inner buffer
      */
     void setRawBuffer(ResizableArray<uint8_t>&& buffer)
@@ -222,6 +242,7 @@ class ImageBuffer
     }
 
   private:
+    std::string _name{};
     ImageBufferSpec _spec{};
     ResizableArray<uint8_t> _buffer;
     uint8_t* _mappedBuffer{nullptr};

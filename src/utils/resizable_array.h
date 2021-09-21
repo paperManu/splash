@@ -25,9 +25,8 @@
 #ifndef SPLASH_RESIZABLE_ARRAY_H
 #define SPLASH_RESIZABLE_ARRAY_H
 
-#include <cstdlib>
-#include <cstring>
 #include <memory>
+#include <vector>
 
 namespace Splash
 {
@@ -36,6 +35,11 @@ namespace Splash
 template <typename T>
 class ResizableArray
 {
+  public:
+    using value_type = T;
+    using iterator = typename std::vector<T>::iterator;
+    using const_iterator = typename std::vector<T>::const_iterator;
+
   public:
     /**
      * Constructor with an initial size
@@ -48,21 +52,20 @@ class ResizableArray
      * \param start Begin iterator
      * \param end End iterator
      */
-    ResizableArray(T* start, T* end)
+    ResizableArray(const T* start, const T* end)
     {
         if (end <= start)
         {
-            _size = 0;
             _shift = 0;
-            _buffer.reset(nullptr);
+            _buffer.clear();
 
             return;
         }
 
-        _size = static_cast<size_t>(end - start);
+        const auto size = static_cast<size_t>(end - start);
         _shift = 0;
-        _buffer = std::unique_ptr<T[]>(new T[_size]);
-        memcpy(data(), start, _size * sizeof(T));
+        _buffer.resize(size);
+        std::copy(start, end, data());
     }
 
     /**
@@ -71,10 +74,10 @@ class ResizableArray
      */
     ResizableArray(const ResizableArray& a)
     {
-        _size = a.size();
+        const auto size = a.size();
         _shift = 0;
-        _buffer = std::unique_ptr<T[]>(new T[_size]);
-        memcpy(data(), a.data(), _size);
+        _buffer.resize(size);
+        std::copy(a.data(), a.data() + size, data());
     }
 
     /**
@@ -82,10 +85,19 @@ class ResizableArray
      * \param a ResizableArray to move
      */
     ResizableArray(ResizableArray&& a)
-        : _size(a._size)
-        , _shift(a._shift)
+        : _shift(a._shift)
         , _buffer(std::move(a._buffer))
     {
+    }
+
+    /**
+     * Constructor from a std::vector<<T>
+     * \param data Vector to use, grabbed as a r-value
+     */
+    ResizableArray(std::vector<T>&& data)
+    {
+        _shift = 0;
+        _buffer = std::move(data);
     }
 
     /**
@@ -97,10 +109,10 @@ class ResizableArray
         if (this == &a)
             return *this;
 
-        _size = a.size();
+        const auto size = a.size();
         _shift = 0;
-        _buffer = std::unique_ptr<T[]>(new T[_size]);
-        memcpy(data(), a.data(), _size);
+        _buffer.resize(size);
+        std::copy(a.data(), a.data() + size, data());
 
         return *this;
     }
@@ -114,7 +126,6 @@ class ResizableArray
         if (this == &a)
             return *this;
 
-        _size = a._size;
         _shift = a._shift;
         _buffer = std::move(a._buffer);
 
@@ -130,11 +141,19 @@ class ResizableArray
     const T& operator[](unsigned int i) const { return *(data() + i); }
 
     /**
+     * Iterators
+     */
+    iterator begin() { return _buffer.begin() + _shift; }
+    iterator end() { return _buffer.end(); }
+    const_iterator cbegin() const { return _buffer.cbegin() + _shift; }
+    const_iterator cend() const { return _buffer.cend(); }
+
+    /**
      * Get a pointer to the data
      * \return Return a pointer to the data
      */
-    inline T* data() { return _buffer.get() + _shift; }
-    inline const T* data() const { return _buffer.get() + _shift; }
+    inline T* data() { return _buffer.data() + _shift; }
+    inline const T* data() const { return _buffer.data() + _shift; }
 
     /**
      * Shift the data, for example to get rid of a header without copying
@@ -142,18 +161,15 @@ class ResizableArray
      */
     inline void shift(size_t shift)
     {
-        if (shift < _size && _shift + shift > 0)
-        {
+        if (shift < _buffer.size() && _shift + shift > 0)
             _shift += shift;
-            _size -= shift;
-        }
     }
 
     /**
      * Get the size of the buffer
      * \return Return the size of the buffer
      */
-    inline size_t size() const { return _size; }
+    inline size_t size() const { return _buffer.size() - _shift; }
 
     /**
      * Resize the buffer
@@ -161,36 +177,29 @@ class ResizableArray
      */
     inline void resize(size_t size)
     {
-        if (size == _size)
+        if (size == _buffer.size())
         {
             return;
         }
         else if (size == 0)
         {
-            _size = 0;
             _shift = 0;
-            _buffer.reset(nullptr);
+            _buffer.clear();
         }
         else
         {
-            auto newBuffer = std::unique_ptr<T[]>(new T[size]);
-            if (_size != 0)
-            {
-                if (size > _size)
-                    memcpy(newBuffer.get(), _buffer.get(), _size);
-                else
-                    memcpy(newBuffer.get(), _buffer.get(), size);
-            }
+            const auto currentSize = _buffer.size();
+            std::vector<T> newBuffer(size);
+            if (currentSize != 0)
+                std::copy(_buffer.data(), _buffer.data() + std::min(size, currentSize), newBuffer.data());
             std::swap(_buffer, newBuffer);
-            _size = size;
             _shift = 0;
         }
     }
 
   private:
-    size_t _size{0};                       //!< Buffer size
-    size_t _shift{0};                      //!< Buffer shift
-    std::unique_ptr<T[]> _buffer{nullptr}; //!< Pointer to the buffer data
+    size_t _shift{0};         //!< Buffer shift
+    std::vector<T> _buffer{}; //!< Pointer to the buffer data
 };
 
 } // namespace Splash

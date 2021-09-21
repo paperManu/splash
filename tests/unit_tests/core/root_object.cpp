@@ -132,10 +132,9 @@ TEST_CASE("Testing RootObject serialized object set")
     auto root = RootObjectMock();
     auto imageName = "image";
     auto image = std::dynamic_pointer_cast<Image>(root.createObject("image", imageName).lock());
-    auto serializedObject = std::make_shared<SerializedObject>();
 
     auto timestamp = image->getTimestamp();
-    auto result = root.setFromSerializedObject(imageName, serializedObject);
+    auto result = root.setFromSerializedObject(imageName, SerializedObject());
     image->update();
     CHECK_EQ(result, true);
     CHECK_EQ(timestamp, image->getTimestamp());
@@ -144,19 +143,18 @@ TEST_CASE("Testing RootObject serialized object set")
     auto otherImage = std::dynamic_pointer_cast<Image>(root.createObject("image", otherName).lock());
     otherImage->set(512, 512, 3, ImageBufferSpec::Type::UINT8);
     otherImage->update();
-    serializedObject = otherImage->serialize();
-    result = root.setFromSerializedObject(imageName, serializedObject);
+    result = root.setFromSerializedObject(imageName, otherImage->serialize());
     while (image->hasSerializedObjectWaiting())
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     image->update();
     CHECK_EQ(result, true);
     CHECK_NE(timestamp, image->getTimestamp());
 
-    result = root.setFromSerializedObject("nonExistingObject", serializedObject);
+    result = root.setFromSerializedObject("nonExistingObject", SerializedObject());
     CHECK_EQ(result, false);
 
     auto blenderName = "geomName";
     root.createObject("blender", blenderName);
-    result = root.setFromSerializedObject(blenderName, serializedObject);
+    result = root.setFromSerializedObject(blenderName, SerializedObject());
     CHECK_EQ(result, false);
 }
