@@ -294,10 +294,10 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
 
                 imageObject.set(imageBuffer);
                 imageObject.update(); // We have to force the update, as Image is double-buffered
-                const auto serializedImage = imageObject.serialize();
+                auto serializedImage = imageObject.serialize();
 
                 // Send the buffer, and make sure it has been received and displayed
-                sendBuffer(_worldImageName, serializedImage);
+                sendBuffer(_worldImageName, std::move(serializedImage));
                 for (int64_t updatedTimestamp = 0; updatedTimestamp != imageObject.getTimestamp();
                      updatedTimestamp = getObjectAttribute(targetWindowName, "timestamp")[0].as<int64_t>())
                     std::this_thread::sleep_for(15ms);
