@@ -181,20 +181,20 @@ add_custom_target(static_analysis DEPENDS cppcheck_analysis)
 #
 add_executable(perf_dense_map performance_tests/perf_dense_map.cpp)
 target_link_libraries(perf_dense_map splash-${API_VERSION})
+add_custom_command(OUTPUT run_perf_dense_map COMMAND ./perf_dense_map DEPENDS perf_dense_map)
 
-add_executable(perf_shmdata performance_tests/perf_shmdata.cpp)
-target_link_libraries(perf_shmdata splash-${API_VERSION})
+if (HAVE_SHMDATA)
+    add_executable(perf_shmdata performance_tests/perf_shmdata.cpp)
+    target_link_libraries(perf_shmdata splash-${API_VERSION})
+    add_custom_command(OUTPUT run_perf_shmdata COMMAND ./perf_shmdata DEPENDS perf_shmdata)
+endif()
 
 add_executable(perf_zmq_inproc performance_tests/perf_zmq_inproc.cpp)
 target_link_libraries(perf_zmq_inproc splash-${API_VERSION})
+add_custom_command(OUTPUT run_perf_zmq_inproc COMMAND ./perf_zmq_inproc DEPENDS perf_zmq_inproc)
 
-
-add_custom_command(OUTPUT run_perf_tests
-    COMMAND ./perf_dense_map
-    COMMAND ./perf_shmdata
-    COMMAND ./perf_zmq_inproc
-    DEPENDS perf_dense_map
-    DEPENDS perf_shmdata
-    DEPENDS perf_zmq_inproc
+add_custom_target(check_perf DEPENDS
+    run_perf_dense_map
+    run_perf_shmdata
+    run_perf_zmq_inproc
 )
-add_custom_target(check_perf DEPENDS run_perf_tests)
