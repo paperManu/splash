@@ -26,8 +26,13 @@ ChannelOutput_ZMQ::ChannelOutput_ZMQ(const RootObject* root, const std::string& 
     catch (const zmq::error_t& error)
     {
         if (errno != ETERM)
-            Log::get() << Log::WARNING << "ChannelOutput_ZMQ::" << __FUNCTION__ << " - Exception: " << error.what() << Log::endl;
+        {
+            Log::get() << Log::ERROR << "ChannelOutput_ZMQ::" << __FUNCTION__ << " - Exception: " << error.what() << Log::endl;
+            return;
+        }
     }
+
+    _ready = true;
 
     assert(_root != nullptr);
     const auto socketPrefix = _root->getSocketPrefix();
@@ -39,6 +44,9 @@ ChannelOutput_ZMQ::ChannelOutput_ZMQ(const RootObject* root, const std::string& 
 /*************/
 ChannelOutput_ZMQ::~ChannelOutput_ZMQ()
 {
+    if (!_ready)
+        return;
+
     int lingerValue = 0;
     try
     {
@@ -54,6 +62,9 @@ ChannelOutput_ZMQ::~ChannelOutput_ZMQ()
 /*************/
 bool ChannelOutput_ZMQ::connectTo(const std::string& target)
 {
+    if (!_ready)
+        return false;
+
     if (std::find(_targets.begin(), _targets.end(), target) != _targets.end())
         return false;
 
@@ -80,6 +91,9 @@ bool ChannelOutput_ZMQ::connectTo(const std::string& target)
 /*************/
 bool ChannelOutput_ZMQ::disconnectFrom(const std::string& target)
 {
+    if (!_ready)
+        return false;
+
     if (std::find(_targets.begin(), _targets.end(), target) == _targets.end())
         return false;
 
@@ -103,6 +117,9 @@ bool ChannelOutput_ZMQ::disconnectFrom(const std::string& target)
 /*************/
 bool ChannelOutput_ZMQ::sendMessage(const std::vector<uint8_t>& message)
 {
+    if (!_ready)
+        return false;
+
     try
     {
         std::lock_guard<Spinlock> lock(_msgSendMutex);
@@ -124,6 +141,9 @@ bool ChannelOutput_ZMQ::sendMessage(const std::vector<uint8_t>& message)
 /*************/
 bool ChannelOutput_ZMQ::sendBuffer(SerializedObject&& buffer)
 {
+    if (!_ready)
+        return false;
+
     try
     {
         std::lock_guard<Spinlock> lock(_bufferSendMutex);
@@ -209,8 +229,13 @@ ChannelInput_ZMQ::ChannelInput_ZMQ(const RootObject* root, const std::string& na
     catch (const zmq::error_t& error)
     {
         if (errno != ETERM)
-            Log::get() << Log::WARNING << "ChannelInput_ZMQ::" << __FUNCTION__ << " - Exception: " << error.what() << Log::endl;
+        {
+            Log::get() << Log::ERROR << "ChannelInput_ZMQ::" << __FUNCTION__ << " - Exception: " << error.what() << Log::endl;
+            return;
+        }
     }
+
+    _ready = true;
 
     assert(_root != nullptr);
     const auto socketPrefix = _root->getSocketPrefix();
@@ -227,13 +252,20 @@ ChannelInput_ZMQ::ChannelInput_ZMQ(const RootObject* root, const std::string& na
 ChannelInput_ZMQ::~ChannelInput_ZMQ()
 {
     _continueListening = false;
-    _messageInThread.join();
-    _bufferInThread.join();
+
+    if (_messageInThread.joinable())
+        _messageInThread.join();
+
+    if (_bufferInThread.joinable())
+        _bufferInThread.join();
 }
 
 /*************/
 void ChannelInput_ZMQ::handleInputMessages()
 {
+    if (!_ready)
+        return;
+
     try
     {
         // We don't want to miss a message: set the high water mark to a high value
@@ -264,6 +296,9 @@ void ChannelInput_ZMQ::handleInputMessages()
 /*************/
 void ChannelInput_ZMQ::handleInputBuffers()
 {
+    if (!_ready)
+        return;
+
     try
     {
         // We only keep one buffer in memory while processing

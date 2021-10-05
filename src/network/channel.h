@@ -71,6 +71,12 @@ class ChannelOutput
     virtual bool disconnectFrom(const std::string& target) = 0;
 
     /**
+     * Check whether the channe is ready
+     * \return Return true if ready
+     */
+    bool isReady() const { return _ready; }
+
+    /**
      * Send a message
      * \param message Message to be sent
      * \return Return true if the message was successfully sent
@@ -94,6 +100,7 @@ class ChannelOutput
   protected:
     const RootObject* _root;
     const std::string _name;
+    bool _ready{false};
 };
 
 /*************/
@@ -133,9 +140,16 @@ class ChannelInput
      */
     virtual bool disconnectFrom(const std::string& target) = 0;
 
+    /**
+     * Check whether the channe is ready
+     * \return Return true if ready
+     */
+    bool isReady() const { return _ready; }
+
   protected:
     const RootObject* _root;
     const std::string _name;
+    bool _ready{false};
 
     MessageRecvCallback _msgRecvCb;
     BufferRecvCallback _bufferRecvCb;
