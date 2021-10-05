@@ -221,10 +221,27 @@ bool ChannelOutput_ZMQ::waitForBufferSending(std::chrono::milliseconds maximumWa
 ChannelInput_ZMQ::ChannelInput_ZMQ(const RootObject* root, const std::string& name, const MessageRecvCallback& msgRecvCb, const BufferRecvCallback& bufferRecvCb)
     : ChannelInput(root, name, msgRecvCb, bufferRecvCb)
 {
+    assert(_root != nullptr);
+    const auto socketPrefix = _root->getSocketPrefix();
+    _pathPrefix = "ipc:///tmp/splash_";
+    if (!socketPrefix.empty())
+        _pathPrefix += socketPrefix + std::string("_");
+
     try
     {
         _socketMessageIn = std::make_unique<zmq::socket_t>(_context, ZMQ_SUB);
+        // We don't want to miss a message: set the high water mark to a high value
+        _socketMessageIn->set(zmq::sockopt::rcvhwm, 1000);
+        // We subscribe to all incoming messages
+        _socketMessageIn->set(zmq::sockopt::subscribe, "");
+        _socketMessageIn->bind((_pathPrefix + "msg_" + _name).c_str());
+
         _socketBufferIn = std::make_unique<zmq::socket_t>(_context, ZMQ_SUB);
+        // We only keep one buffer in memory while processing
+        _socketBufferIn->set(zmq::sockopt::rcvhwm, 1);
+        // We subscribe to all incoming messages
+        _socketBufferIn->set(zmq::sockopt::subscribe, "");
+        _socketBufferIn->bind(_pathPrefix + "buf_" + _name);
     }
     catch (const zmq::error_t& error)
     {
@@ -236,12 +253,6 @@ ChannelInput_ZMQ::ChannelInput_ZMQ(const RootObject* root, const std::string& na
     }
 
     _ready = true;
-
-    assert(_root != nullptr);
-    const auto socketPrefix = _root->getSocketPrefix();
-    _pathPrefix = "ipc:///tmp/splash_";
-    if (!socketPrefix.empty())
-        _pathPrefix += socketPrefix + std::string("_");
 
     _continueListening = true;
     _bufferInThread = std::thread([&]() { handleInputBuffers(); });
@@ -268,17 +279,11 @@ void ChannelInput_ZMQ::handleInputMessages()
 
     try
     {
-        // We don't want to miss a message: set the high water mark to a high value
-        int hwm = 1000;
-        _socketMessageIn->set(zmq::sockopt::rcvhwm, hwm);
-
-        _socketMessageIn->bind((_pathPrefix + "msg_" + _name).c_str());
-        _socketMessageIn->set(zmq::sockopt::subscribe, ""); // We subscribe to all incoming messages
-
         while (_continueListening)
         {
             zmq::message_t msg;
-            if (!_socketMessageIn->recv(msg, zmq::recv_flags::none)) // name of the target
+            if (!_socketMessageIn->recv(msg,
+                    zmq::recv_flags::none)) // name of the target
                 continue;
 
             std::vector<uint8_t> message((size_t)msg.size());
@@ -301,13 +306,6 @@ void ChannelInput_ZMQ::handleInputBuffers()
 
     try
     {
-        // We only keep one buffer in memory while processing
-        int highWaterMark = 1;
-        _socketBufferIn->set(zmq::sockopt::rcvhwm, highWaterMark);
-
-        _socketBufferIn->bind(_pathPrefix + "buf_" + _name);
-        _socketBufferIn->set(zmq::sockopt::subscribe, ""); // We subscribe to all incoming messages
-
         while (_continueListening)
         {
             zmq::message_t msg;
