@@ -78,6 +78,12 @@ class Link
     void disconnectFrom(const std::string& name);
 
     /**
+     * Check whether the link, hence its channels, is ready
+     * \return Return truue if ready
+     */
+    bool isReady() const;
+
+    /**
      * Send a buffer to the connected peers
      *
      * The name of the target has to be serialized at the beginning of the buffer,

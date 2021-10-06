@@ -105,8 +105,8 @@ class ChannelOutput_ZMQ : public ChannelOutput
     std::string _pathPrefix;
 
     zmq::context_t _context{1};
-    std::unique_ptr<zmq::socket_t> _socketMessageOut;
-    std::unique_ptr<zmq::socket_t> _socketBufferOut;
+    std::unique_ptr<zmq::socket_t> _socketMessageOut{nullptr};
+    std::unique_ptr<zmq::socket_t> _socketBufferOut{nullptr};
 
     std::vector<std::string> _targets;
 
@@ -150,8 +150,8 @@ class ChannelInput_ZMQ : public ChannelInput
     std::string _pathPrefix;
 
     zmq::context_t _context{1};
-    std::unique_ptr<zmq::socket_t> _socketMessageIn;
-    std::unique_ptr<zmq::socket_t> _socketBufferIn;
+    std::unique_ptr<zmq::socket_t> _socketMessageIn{nullptr};
+    std::unique_ptr<zmq::socket_t> _socketBufferIn{nullptr};
 
     std::thread _messageInThread;
     std::thread _bufferInThread;

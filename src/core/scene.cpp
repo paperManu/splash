@@ -83,6 +83,10 @@ Scene::Scene(Context context)
     }
 
     init(_name);
+
+    // Create the link and connect to the World
+    _link = std::make_unique<Link>(this, _name);
+    _link->connectTo("world");
 }
 
 /*************/
@@ -396,6 +400,8 @@ void Scene::run()
     }
 
     _mainWindow->setAsCurrentContext();
+    sendMessageToWorld("sceneLaunched", {});
+
     TracyGpuContext;
 
     while (_isRunning)
@@ -719,11 +725,6 @@ void Scene::init(const std::string& name)
     }
 #endif
     _mainWindow->releaseContext();
-
-    // Create the link and connect to the World
-    _link = std::make_unique<Link>(this, name);
-    _link->connectTo("world");
-    sendMessageToWorld("sceneLaunched", {});
 }
 
 /*************/

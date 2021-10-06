@@ -334,6 +334,7 @@ void RootObject::updateTreeFromObjects()
 void RootObject::propagateTree()
 {
     assert(_link);
+    assert(_link->isReady());
 
     auto treeSeeds = _tree.getUpdateSeedList();
     if (treeSeeds.empty())
@@ -348,6 +349,7 @@ void RootObject::propagateTree()
 void RootObject::propagatePath(const std::string& path)
 {
     assert(_link);
+    assert(_link->isReady());
 
     auto seeds = _tree.getSeedsForPath(path);
     if (seeds.empty())
@@ -362,6 +364,9 @@ void RootObject::propagatePath(const std::string& path)
 /*************/
 void RootObject::sendBuffer(const std::string& name, SerializedObject&& buffer)
 {
+    assert(_link);
+    assert(_link->isReady());
+
     const auto size = Serial::getSize(name);
     std::vector<uint8_t> serialized(size + buffer.size());
     Serial::serialize(name, serialized);
@@ -614,6 +619,8 @@ Json::Value RootObject::getRootConfigurationAsJson(const std::string& rootName)
 Values RootObject::sendMessageWithAnswer(const std::string& name, const std::string& attribute, const Values& message, const unsigned long long timeout)
 {
     assert(_link);
+    assert(_link->isReady());
+
 
     std::lock_guard<std::mutex> lock(_answerMutex);
     _answerExpected = attribute;

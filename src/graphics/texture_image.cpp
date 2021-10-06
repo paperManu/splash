@@ -353,9 +353,6 @@ void Texture_Image::update()
     img->getAttribute("flip", flip);
     img->getAttribute("flop", flop);
 
-    _shaderUniforms["flip"] = flip;
-    _shaderUniforms["flop"] = flop;
-
     // Store the image data size
     const int imageDataSize = spec.rawSize();
     GLenum glChannelOrder = getChannelOrder(spec);
@@ -522,6 +519,11 @@ void Texture_Image::update()
 
     // If needed, specify some uniforms for the shader which will use this texture
     _shaderUniforms.clear();
+
+    // Presentation parameters
+    _shaderUniforms["flip"] = flip;
+    _shaderUniforms["flop"] = flop;
+
     // Specify the color encoding
     if (spec.format.find("RGB") != std::string::npos)
         _shaderUniforms["encoding"] = {ColorEncoding::RGB};
