@@ -1,6 +1,16 @@
 Splash release notes
 ====================
 
+Splash 0.9.2 (2021-10-06)
+-------------------------
+Bugs fixed:
+* Fixed flip/flop parameters
+* Fixed random crash in tests around Channel_ZMQ
+* Fixed compile issue with perf test when shmdata not available
+
+Documentation:
+* Changed the Splash CI so that it uses the new Makefile commands
+
 Splash 0.9.0 (2021-09-20)
 -------------------------
 Improvements:
