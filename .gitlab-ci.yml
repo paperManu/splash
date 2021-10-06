@@ -178,7 +178,7 @@ pages:
     - git pull origin master # Make sure to be up-to-date
     - pip install -U sphinx
     - pip install -r requirements.txt
-    - make doc
+    - make htmlgitlab
     - popd
 
     # Build the API doc

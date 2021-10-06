@@ -109,6 +109,9 @@ bool World::applyContext()
 /*************/
 void World::run()
 {
+    assert(_link);
+    assert(_link->isReady());
+
     tracy::SetThreadName("World");
 
     if (!applyContext())

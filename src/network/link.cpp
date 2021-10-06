@@ -45,6 +45,15 @@ void Link::disconnectFrom(const std::string& name)
 }
 
 /*************/
+bool Link::isReady() const
+{
+    if (!_channelOutput || !_channelInput)
+        return false;
+
+    return _channelOutput->isReady() && _channelInput->isReady();
+}
+
+/*************/
 bool Link::waitForBufferSending(std::chrono::milliseconds maximumWait)
 {
     return _channelOutput->waitForBufferSending(maximumWait);
