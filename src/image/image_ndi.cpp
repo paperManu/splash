@@ -12,7 +12,12 @@ Image_NDI::Image_NDI(RootObject* root)
     : Image(root)
     , _shmdata(root)
 {
+    _type = "image_ndi";
     registerAttributes();
+
+    // This is used for getting documentation "offline"
+    if (!_root)
+        return;
 }
 
 /*************/
