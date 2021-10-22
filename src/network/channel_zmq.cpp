@@ -286,7 +286,7 @@ void ChannelInput_ZMQ::handleInputMessages()
                     zmq::recv_flags::none)) // name of the target
                 continue;
 
-            std::vector<uint8_t> message((size_t)msg.size());
+            std::vector<uint8_t> message(static_cast<size_t>(msg.size()));
             std::copy(static_cast<uint8_t*>(msg.data()), static_cast<uint8_t*>(msg.data()) + msg.size(), message.data());
             _msgRecvCb(message);
         }

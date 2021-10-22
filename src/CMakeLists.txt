@@ -167,6 +167,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     image/queue.cpp
     mesh/mesh.cpp
     mesh/mesh_bezierpatch.cpp
+    network/channel_shmdata.cpp
     network/channel_zmq.cpp
     network/link.cpp
     sink/sink.cpp

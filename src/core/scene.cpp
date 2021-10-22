@@ -85,7 +85,7 @@ Scene::Scene(Context context)
     init(_name);
 
     // Create the link and connect to the World
-    _link = std::make_unique<Link>(this, _name);
+    _link = std::make_unique<Link>(this, _name, _context.channelType);
     _link->connectTo("world");
 }
 
@@ -919,7 +919,8 @@ void Scene::registerAttributes()
 
     addAttribute("sync",
         [&](const Values&) {
-            addTask([=]() { sendMessageToWorld("answerMessage", {"sync", _name}); });
+            addTask([=]() { 
+            sendMessageToWorld("answerMessage", {"sync", _name}); });
             return true;
         },
         {});

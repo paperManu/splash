@@ -54,6 +54,8 @@ namespace Splash::Constants
     static const char GL_TIMING_TEXTURES_UPLOAD[] = "texture_upload";
     static const char GL_TIMING_RENDERING[] = "rendering";
     static const char GL_TIMING_SWAP[] = "swap";
+
+    static const uint32_t CONNECTION_TIMEOUT = 5;
 }
 
 #define PRINT_FUNCTION_LINE std::cout << "------> " << __PRETTY_FUNCTION__ << "::" << __LINE__ << std::endl;

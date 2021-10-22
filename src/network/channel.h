@@ -57,6 +57,11 @@ class ChannelOutput
     }
 
     /**
+     * Destructor
+     */
+    virtual ~ChannelOutput() = default;
+
+    /**
      * Connect to a target
      * \param target Target name
      * \return Return true if connection was successful
@@ -125,6 +130,11 @@ class ChannelInput
         , _bufferRecvCb(bufferRecvCb)
     {
     }
+
+    /**
+     * Destructor
+     */
+    virtual ~ChannelInput() = default;
 
     /**
      * Connect to the given target

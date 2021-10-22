@@ -8,8 +8,9 @@
 #include "./core/buffer_object.h"
 #include "./core/constants.h"
 #include "./core/root_object.h"
-#include "./core/serializer.h"
 #include "./core/serialize/serialize_value.h"
+#include "./core/serializer.h"
+#include "./network/channel_shmdata.h"
 #include "./network/channel_zmq.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
@@ -18,30 +19,44 @@ namespace Splash
 {
 
 /*************/
-Link::Link(RootObject* root, const std::string& name)
+Link::Link(RootObject* root, const std::string& name, ChannelType channelType)
     : _rootObject(root)
     , _name(name)
-    , _channelOutput(std::make_unique<ChannelOutput_ZMQ>(root, name))
-    , _channelInput(std::make_unique<ChannelInput_ZMQ>(
-          root, name, [&](const std::vector<uint8_t>& message) { handleInputMessages(message); }, [&](SerializedObject&& buffer) { handleInputBuffers(std::move(buffer)); }))
 {
-}
-
-/*************/
-Link::~Link()
-{
+    switch (channelType)
+    {
+#if HAVE_SHMDATA
+    default:
+    case ChannelType::shmdata:
+        Log::get() << Log::MESSAGE << "Link::" << __FUNCTION__ << " - Setting up interprocess communication to shmdata" << Log::endl;
+        _channelOutput = std::make_unique<ChannelOutput_Shmdata>(root, name);
+        _channelInput = std::make_unique<ChannelInput_Shmdata>(
+            root, name, [&](const std::vector<uint8_t>& message) { handleInputMessages(message); }, [&](SerializedObject&& buffer) { handleInputBuffers(std::move(buffer)); });
+        break;
+#else
+    default:
+#endif
+    case ChannelType::zmq:
+        Log::get() << Log::MESSAGE << "Link::" << __FUNCTION__ << " - Setting up interprocess communication to ZMQ" << Log::endl;
+        _channelOutput = std::make_unique<ChannelOutput_ZMQ>(root, name);
+        _channelInput = std::make_unique<ChannelInput_Shmdata>(
+            root, name, [&](const std::vector<uint8_t>& message) { handleInputMessages(message); }, [&](SerializedObject&& buffer) { handleInputBuffers(std::move(buffer)); });
+        break;
+    }
 }
 
 /*************/
 void Link::connectTo(const std::string& name)
 {
     _channelOutput->connectTo(name);
+    _channelInput->connectTo(name);
 }
 
 /*************/
 void Link::disconnectFrom(const std::string& name)
 {
     _channelOutput->disconnectFrom(name);
+    _channelInput->disconnectFrom(name);
 }
 
 /*************/
