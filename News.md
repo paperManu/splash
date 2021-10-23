@@ -1,6 +1,17 @@
 Splash release notes
 ====================
 
+Splash 0.9.4 (2021-10-22)
+-------------------------
+Improvements:
+* Added shmdata for communication between Splash processes
+* Updated default 3D model to place the base PoV at a more interesting position
+
+Bugs fixed:
+* Fixed ResizableArray double free corruption
+* Fixed ImageNDI not having the correct type
+* Fixed TexCoordGenerator which could not recompute UVs when the source obj file was not writable
+
 Splash 0.9.2 (2021-10-06)
 -------------------------
 Bugs fixed:
