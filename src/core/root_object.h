@@ -77,6 +77,11 @@ class RootObject : public BaseObject
         std::optional<std::string> forcedDisplay{};
         std::string displayServer{"0"};
 #endif
+#if HAVE_SHMDATA
+        Link::ChannelType channelType{Link::ChannelType::shmdata};
+#else
+        Link::ChannelType channelType{Link::ChannelType::zmq};
+#endif
     };
 
     enum Command

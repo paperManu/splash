@@ -67,12 +67,13 @@ RootObject::Context parseArguments(int argc, char** argv)
             {"silent", no_argument, 0, 's'},
             {"timer", no_argument, 0, 't'},
             {"child", no_argument, 0, 'c'},
+            {"ipc", required_argument, 0, 'C'},
             {"doNotSpawn", no_argument, 0, 'x'},
             {0, 0, 0, 0}
         };
 
         int optionIndex = 0;
-        auto ret = getopt_long(argc, argv, "+cdD:S:hHilo:p:P:stx", longOptions, &optionIndex);
+        auto ret = getopt_long(argc, argv, "+cdD:S:hHilC:o:p:P:stx", longOptions, &optionIndex);
 
         if (ret == -1)
             break;
@@ -99,6 +100,7 @@ RootObject::Context parseArguments(int argc, char** argv)
             std::cout << "\t-l (--log2file) : write the logs to /var/log/splash.log, if possible\n";
             std::cout << "\t-p (--prefix) : set the shared memory socket paths prefix (defaults to the PID)\n";
             std::cout << "\t-c (--child): run as a child controlled by a master Splash process\n";
+            std::cout << "\t-C (--ipc): specify the interprocess communication channel (defaults to shmdata if active, otherwise ZMQ)\n";
             std::cout << "\t-x (--doNotSpawn): do not spawn subprocesses, which have to be ran manually\n";
             std::cout << "\n";
             exit(0);
@@ -212,6 +214,24 @@ RootObject::Context parseArguments(int argc, char** argv)
         case 'c':
         {
             context.childProcess = true;
+            break;
+        }
+        case 'C':
+        {
+            if (std::string(optarg) == "zmq")
+            {
+                context.channelType = Link::ChannelType::zmq;
+            }
+#if HAVE_SHMDATA
+            else if (std::string(optarg) == "shmdata")
+            {
+                context.channelType = Link::ChannelType::shmdata;
+            }
+#endif
+            else
+            {
+                Log::get() << Log::WARNING << "Splash::" << __FUNCTION__ << " - Wrong argument for --ipc, got " << std::string(optarg) << Log::endl;
+            }
             break;
         }
         case 'x':

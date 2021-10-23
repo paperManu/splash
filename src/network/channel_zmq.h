@@ -22,8 +22,8 @@
  * ZMQ implementation of ChannelOutput and ChannelInput
  */
 
-#ifndef SPLASH_CHANNEL_SHMDATA_H
-#define SPLASH_CHANNEL_SHMDATA_H
+#ifndef SPLASH_CHANNEL_ZMQ_H
+#define SPLASH_CHANNEL_ZMQ_H
 
 #include <condition_variable>
 #include <deque>
@@ -136,14 +136,14 @@ class ChannelInput_ZMQ : public ChannelInput
      * \param target Target name
      * \return Return true if connection was successful
      */
-    bool connectTo(const std::string&) final { return false; }
+    bool connectTo(const std::string&) final { return true; }
 
     /**
      * Disconnect from the given target
      * \param target name
      * \return Return true if disconnection was successful, false otherwise or if no connection existed
      */
-    bool disconnectFrom(const std::string&) final { return false; }
+    bool disconnectFrom(const std::string&) final { return true; }
 
   private:
     bool _continueListening;

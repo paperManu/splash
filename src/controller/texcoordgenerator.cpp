@@ -2,6 +2,8 @@
 
 #include <calimiro/calimiro.h>
 
+#include "./utils/osutils.h"
+
 namespace Splash
 {
 
@@ -67,7 +69,8 @@ void TexCoordGenerator::generateTexCoordOnMesh()
 
     // Read the file
     Utils::CalimiroLogger _logger;
-    const auto file = getObjectAttribute(mesh->getName(), "file")[0].as<std::string>();
+    const auto attrPath = getObjectAttribute(mesh->getName(), "file")[0].as<std::string>();
+    const auto file = Utils::getFullPathFromFilePath(attrPath, _root->getConfigurationPath());
 
     // Populate uv
     calimiro::Obj objFileRead(&_logger);
@@ -81,17 +84,27 @@ void TexCoordGenerator::generateTexCoordOnMesh()
 
     // Write new file
     calimiro::Obj objFile(&_logger, geometryWithTexCoord);
-    bool tmpWriteSuccess = objFile.writeMesh(file);
 
-    if (!tmpWriteSuccess)
+    if (objFile.writeMesh(file))
+    {
+        // Load new file
+        if (_replaceMesh)
+            runAsyncTask([this]() { setObjectAttribute(_meshName, "reload", {}); });
+    }
+    else
     {
         Log::get() << Log::WARNING << "TexCoordGenerator::" << __FUNCTION__ << " - failed writing file \"" << file << "\"" << Log::endl;
-        return;
-    }
 
-    // Load new file
-    if (_replaceMesh)
-        runAsyncTask([this]() {setObjectAttribute(_meshName, "reload", {}); });
+        const auto filename = Utils::getFilenameFromFilePath(attrPath);
+        const auto newFile = "/var/tmp/" + filename;
+        Log::get() << Log::WARNING << "TexCoordGenerator::" << __FUNCTION__ << " - Fall back to writing to \"" << newFile << "\"" << Log::endl;
+
+        if (objFile.writeMesh(newFile) && _replaceMesh)
+        {
+            PRINT_FUNCTION_LINE
+            runAsyncTask([=]() { setObjectAttribute(_meshName, "file", {newFile}); });
+        }
+    }
 }
 
 /*************/

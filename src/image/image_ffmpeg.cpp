@@ -24,24 +24,18 @@ namespace Splash
 Image_FFmpeg::Image_FFmpeg(RootObject* root)
     : Image(root)
 {
-    init();
-}
-
-/*************/
-Image_FFmpeg::~Image_FFmpeg()
-{
-    freeFFmpegObjects();
-}
-
-/*************/
-void Image_FFmpeg::init()
-{
     _type = "image_ffmpeg";
     registerAttributes();
 
     // This is used for getting documentation "offline"
     if (!_root)
         return;
+}
+
+/*************/
+Image_FFmpeg::~Image_FFmpeg()
+{
+    freeFFmpegObjects();
 }
 
 /*************/
