@@ -46,10 +46,6 @@ World::World(Context context)
     sigaction(SIGINT, &_signals, nullptr);
     sigaction(SIGTERM, &_signals, nullptr);
 
-    if (_context.socketPrefix.empty())
-        _context.socketPrefix = std::to_string(static_cast<int>(getpid()));
-    _link = std::make_unique<Link>(this, _name);
-
     registerAttributes();
     initializeTree();
 }
@@ -87,6 +83,10 @@ bool World::applyContext()
         });
     }
 
+    if (_context.socketPrefix.empty())
+        _context.socketPrefix = std::to_string(static_cast<int>(getpid()));
+    _link = std::make_unique<Link>(this, _name, _context.channelType);
+
     if (_context.log2file)
         addTask([=] { setAttribute("logToFile", {_context.log2file}); });
 
@@ -109,13 +109,13 @@ bool World::applyContext()
 /*************/
 void World::run()
 {
-    assert(_link);
-    assert(_link->isReady());
-
     tracy::SetThreadName("World");
 
     if (!applyContext())
         return;
+
+    assert(_link);
+    assert(_link->isReady());
 
     if (!applyConfig())
         return;
@@ -449,6 +449,7 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
             std::string slave = "--child";
             std::string xauth = "XAUTHORITY=" + Utils::getHomePath() + "/.Xauthority";
 
+            // Constructing arguments
             std::vector<char*> argv = {const_cast<char*>(cmd.c_str()), const_cast<char*>(slave.c_str())};
             if (!_context.socketPrefix.empty())
             {
@@ -460,18 +461,31 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
             if (!timer.empty())
                 argv.push_back(const_cast<char*>(timer.c_str()));
             argv.push_back(const_cast<char*>(sceneName.c_str()));
+
+            argv.push_back((char*)"--ipc");
+            if (_context.channelType == Link::ChannelType::zmq)
+                argv.push_back((char*)"zmq");
+#if HAVE_SHMDATA
+            else if (_context.channelType == Link::ChannelType::shmdata)
+                argv.push_back((char*)"shmdata");
+#endif
+
             argv.push_back(nullptr);
+
+            // Constructing environment variables
             std::vector<char*> env = {const_cast<char*>(display.c_str()), const_cast<char*>(xauth.c_str()), nullptr};
 
             int status = posix_spawn(&pid, cmd.c_str(), nullptr, nullptr, argv.data(), env.data());
             if (status != 0)
                 Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << sceneName << Log::endl;
 
+            _link->connectTo(sceneName);
+
             // We wait for the child process to be launched
             std::unique_lock<std::mutex> lockChildProcess(_childProcessMutex);
             while (!_sceneLaunched)
             {
-                if (std::cv_status::timeout == _childProcessConditionVariable.wait_for(lockChildProcess, std::chrono::seconds(5)))
+                if (std::cv_status::timeout == _childProcessConditionVariable.wait_for(lockChildProcess, std::chrono::seconds(Constants::CONNECTION_TIMEOUT)))
                 {
                     Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to connect to newly spawned scene \"" << sceneName << "\". Exiting."
                                << Log::endl;

@@ -53,17 +53,26 @@ class BufferObject;
 class Link
 {
   public:
+    enum class ChannelType : uint8_t
+    {
+        zmq = 0,
+#if HAVE_SHMDATA
+        shmdata = 1
+#endif
+    };
+
+  public:
     /**
      * Constructor
      * \param root Root object
      * \param name Name of the link
      */
-    Link(RootObject* root, const std::string& name);
+    Link(RootObject* root, const std::string& name, ChannelType channelType);
 
     /**
      * Destructor
      */
-    ~Link();
+    ~Link() = default;
 
     /**
      * Connect to a pair given its name
@@ -130,9 +139,6 @@ class Link
     RootObject* _rootObject;
     std::string _name{""};
 
-    std::unique_ptr<ChannelOutput> _channelOutput;
-    std::unique_ptr<ChannelInput> _channelInput;
-
     /**
      * Message input thread function
      * \param name Object name to send message to
@@ -146,6 +152,9 @@ class Link
      * \param buffer Buffer to be sent
      */
     void handleInputBuffers(SerializedObject&& buffer);
+
+    std::unique_ptr<ChannelOutput> _channelOutput;
+    std::unique_ptr<ChannelInput> _channelInput;
 };
 
 /*************/

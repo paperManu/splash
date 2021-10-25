@@ -128,7 +128,7 @@ class GeometricCalibrator : public ControllerObject
     bool _nextPosition{false};        //!< Set to true to capture from next camera position
     bool _finalizeCalibration{false}; //!< Set to true to finalize calibration
     bool _abortCalibration{false};
-    int _positionCount;
+    uint32_t _positionCount{0};
     bool _computeTexCoord{true};
 
     float _cameraFocal{5000.f};

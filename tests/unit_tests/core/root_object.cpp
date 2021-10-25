@@ -24,7 +24,7 @@ class RootObjectMock : public RootObject
         : RootObject()
     {
         registerAttributes();
-        _link = std::make_unique<Link>(this, "mock");
+        _link = std::make_unique<Link>(this, "mock", Link::ChannelType::zmq);
         _name = "world";
         _tree.setName(_name);
     }

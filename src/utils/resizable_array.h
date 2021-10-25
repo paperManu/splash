@@ -97,7 +97,7 @@ class ResizableArray
     ResizableArray(std::vector<T>&& data)
     {
         _shift = 0;
-        _buffer = std::move(data);
+        std::swap(_buffer, data);
     }
 
     /**
@@ -127,7 +127,7 @@ class ResizableArray
             return *this;
 
         _shift = a._shift;
-        _buffer = std::move(a._buffer);
+        std::swap(_buffer, a._buffer);
 
         return *this;
     }

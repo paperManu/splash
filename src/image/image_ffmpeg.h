@@ -159,11 +159,6 @@ class Image_FFmpeg : public Image
     float getMediaDuration() const;
 
     /**
-     * \brief Base init for the class
-     */
-    void init();
-
-    /**
      * \brief File read loop
      */
     void readLoop();
