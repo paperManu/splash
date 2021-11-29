@@ -100,7 +100,7 @@ RootObject::Context parseArguments(int argc, char** argv)
             std::cout << "\t-l (--log2file) : write the logs to /var/log/splash.log, if possible\n";
             std::cout << "\t-p (--prefix) : set the shared memory socket paths prefix (defaults to the PID)\n";
             std::cout << "\t-c (--child): run as a child controlled by a master Splash process\n";
-            std::cout << "\t-C (--ipc): specify the interprocess communication channel (defaults to shmdata if active, otherwise ZMQ)\n";
+            std::cout << "\t-C (--ipc): specify the interprocess communication channel (defaults to shmdata if active, otherwise zmq)\n";
             std::cout << "\t-x (--doNotSpawn): do not spawn subprocesses, which have to be ran manually\n";
             std::cout << "\n";
             exit(0);

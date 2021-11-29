@@ -460,7 +460,6 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
                 argv.push_back(const_cast<char*>(debug.c_str()));
             if (!timer.empty())
                 argv.push_back(const_cast<char*>(timer.c_str()));
-            argv.push_back(const_cast<char*>(sceneName.c_str()));
 
             argv.push_back((char*)"--ipc");
             if (_context.channelType == Link::ChannelType::zmq)
@@ -470,6 +469,7 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
                 argv.push_back((char*)"shmdata");
 #endif
 
+            argv.push_back(const_cast<char*>(sceneName.c_str()));
             argv.push_back(nullptr);
 
             // Constructing environment variables
