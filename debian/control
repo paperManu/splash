@@ -36,7 +36,7 @@ Standards-Version: 4.1.4
 Homepage: https://sat-metalab.gitlab.io/splash
 
 Package: splash-mapper
-Architecture: any
+Architecture: amd64 arm64
 Multi-Arch: foreign
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Modular video-mapping software
