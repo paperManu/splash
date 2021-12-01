@@ -10,7 +10,9 @@
 #include "./core/root_object.h"
 #include "./core/serialize/serialize_value.h"
 #include "./core/serializer.h"
+#if HAVE_SHMDATA
 #include "./network/channel_shmdata.h"
+#endif
 #include "./network/channel_zmq.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
@@ -39,7 +41,7 @@ Link::Link(RootObject* root, const std::string& name, ChannelType channelType)
     case ChannelType::zmq:
         Log::get() << Log::MESSAGE << "Link::" << __FUNCTION__ << " - Setting up interprocess communication to ZMQ" << Log::endl;
         _channelOutput = std::make_unique<ChannelOutput_ZMQ>(root, name);
-        _channelInput = std::make_unique<ChannelInput_Shmdata>(
+        _channelInput = std::make_unique<ChannelInput_ZMQ>(
             root, name, [&](const std::vector<uint8_t>& message) { handleInputMessages(message); }, [&](SerializedObject&& buffer) { handleInputBuffers(std::move(buffer)); });
         break;
     }

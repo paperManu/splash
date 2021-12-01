@@ -167,7 +167,6 @@ target_sources(splash-${API_VERSION} PRIVATE
     image/queue.cpp
     mesh/mesh.cpp
     mesh/mesh_bezierpatch.cpp
-    network/channel_shmdata.cpp
     network/channel_zmq.cpp
     network/link.cpp
     sink/sink.cpp
@@ -237,6 +236,7 @@ if (HAVE_SHMDATA)
         image/image_ndi.cpp
         image/image_shmdata.cpp
         mesh/mesh_shmdata.cpp
+        network/channel_shmdata.cpp
         sink/sink_shmdata.cpp
         sink/sink_shmdata_encoded.cpp
     )

@@ -162,17 +162,8 @@ pages:
     # Needed for CMake to succeed and build API doc
     - ./make_deps.sh
 
-    # Build the current website
+    # Build the website
     - DEBIAN_FRONTEND=noninteractive apt install -y python3-pip doxygen graphviz
-    - pip3 install mkdocs markdown-include mkdocs-bootswatch
-    - export LC_ALL=C.UTF-8
-    - export LANG=C.UTF-8
-    - mkdocs build -f docs/mkdocs.yml
-    - mkdir -p build && pushd build
-    - cmake .. && make doc && cp -r docs/html ../static/doxygen
-    - popd
-
-    # Build the new website
     - git clone https://gitlab.com/sat-metalab/documentations/splash splash-doc
     - pushd splash-doc
     - git pull origin master # Make sure to be up-to-date
@@ -183,12 +174,11 @@ pages:
 
     # Build the API doc
     - mkdir -p build && pushd build
-    - cmake .. && make doc && cp -r docs/html ../splash-doc/doxygen
+    - cmake .. && make doc && cp -r docs/html ../splash-doc/public/doxygen
     - popd
 
     # Gather documentation togeter
     - mv splash-doc/public public
-    - mv static public/mkdocs
 
     # Build the packages
     - pushd build

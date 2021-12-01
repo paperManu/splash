@@ -1,6 +1,13 @@
 Splash release notes
 ====================
 
+Splash 0.9.6 (2021-12-01)
+-------------------------
+Bugs fixed:
+* Fixed issue with clock parameters not being available immediately upon startup
+* Fixed link initialization failing sometimes due to an interprocess race condition
+* Fixed compilation issue when shmdata is not present
+
 Splash 0.9.4 (2021-10-22)
 -------------------------
 Improvements:
