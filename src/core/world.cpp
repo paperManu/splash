@@ -257,7 +257,7 @@ bool World::applyConfig()
             bool spawn = scenes[sceneName].isMember("spawn") ? scenes[sceneName]["spawn"].asBool() : true;
 
             if (!addScene(sceneName, sceneDisplay, sceneAddress, spawn && _context.spawnSubprocesses))
-                continue;
+                return false;
 
             // Set the remaining parameters
             for (const auto& paramName : scenes[sceneName].getMemberNames())
@@ -479,14 +479,19 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
             if (status != 0)
                 Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << sceneName << Log::endl;
 
+            // Initialize the communication
             _link->connectTo(sceneName);
 
             // We wait for the child process to be launched
             std::unique_lock<std::mutex> lockChildProcess(_childProcessMutex);
-            while (!_sceneLaunched)
+            for (auto startTime = Timer::get().getTime(); !_sceneLaunched;)
             {
-                if (std::cv_status::timeout == _childProcessConditionVariable.wait_for(lockChildProcess, std::chrono::seconds(Constants::CONNECTION_TIMEOUT)))
+                sendMessage(sceneName, "checkSceneRunning");
+                if (std::cv_status::timeout == _childProcessConditionVariable.wait_for(lockChildProcess, std::chrono::milliseconds(100)))
                 {
+                    if (Timer::get().getTime() - startTime < Constants::CONNECTION_TIMEOUT * 1e6)
+                        continue;
+
                     Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to connect to newly spawned scene \"" << sceneName << "\". Exiting."
                                << Log::endl;
                     _quit = true;
@@ -498,9 +503,6 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
         _scenes[sceneName] = pid;
         if (_masterSceneName.empty())
             _masterSceneName = sceneName;
-
-        // Initialize the communication
-        _link->connectTo(sceneName);
 
         return true;
     }
