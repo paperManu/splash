@@ -524,24 +524,28 @@ void Gui::drawMainTab()
     ImGui::Separator();
     ImGui::Text("Master/LTC clock");
     auto clockDeviceValue = getWorldAttribute("clockDeviceName");
-    assert(!clockDeviceValue.empty());
-    auto clockDeviceName = clockDeviceValue[0].as<std::string>();
-    if (SplashImGui::InputText("##clockDeviceName", clockDeviceName, ImGuiInputTextFlags_EnterReturnsTrue))
-        setWorldAttribute("clockDeviceName", {clockDeviceName});
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("If a JACK audio server is used, specify the input device name to read the LTC clock from.\nOtherwise the default Pulseaudio input is used.");
-    ImGui::SameLine();
-    ImGui::Text("JACK audio input device");
+    if (!clockDeviceValue.empty())
+    {
+        auto clockDeviceName = clockDeviceValue[0].as<std::string>();
+        if (SplashImGui::InputText("##clockDeviceName", clockDeviceName, ImGuiInputTextFlags_EnterReturnsTrue))
+            setWorldAttribute("clockDeviceName", {clockDeviceName});
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("If a JACK audio server is used, specify the input device name to read the LTC clock from.\nOtherwise the default Pulseaudio input is used.");
+        ImGui::SameLine();
+        ImGui::Text("JACK audio input device");
+    }
 
     static auto looseClock = false;
     auto looseClockValue = getWorldAttribute("looseClock");
-    assert(!looseClockValue.empty());
-    looseClock = looseClockValue[0].as<bool>();
-    if (ImGui::Checkbox("Loose master clock", &looseClock))
-        setWorldAttribute("looseClock", {looseClock});
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Loose clock: if activated, the master clock is only "
-                          "used as an indication, not a hard constraint");
+    if (!looseClockValue.empty())
+    {
+        looseClock = looseClockValue[0].as<bool>();
+        if (ImGui::Checkbox("Loose master clock", &looseClock))
+            setWorldAttribute("looseClock", {looseClock});
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Loose clock: if activated, the master clock is only "
+                              "used as an indication, not a hard constraint");
+    }
 #endif
 
     ImGui::Separator();
