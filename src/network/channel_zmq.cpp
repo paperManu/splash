@@ -84,7 +84,6 @@ bool ChannelOutput_ZMQ::connectTo(const std::string& target)
         }
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     return true;
 }
 
@@ -283,7 +282,7 @@ void ChannelInput_ZMQ::handleInputMessages()
         {
             zmq::message_t msg;
             if (!_socketMessageIn->recv(msg,
-                    zmq::recv_flags::none)) // name of the target
+                    zmq::recv_flags::dontwait)) // name of the target
                 continue;
 
             std::vector<uint8_t> message(static_cast<size_t>(msg.size()));
@@ -309,7 +308,7 @@ void ChannelInput_ZMQ::handleInputBuffers()
         while (_continueListening)
         {
             zmq::message_t msg;
-            if (!_socketBufferIn->recv(msg, zmq::recv_flags::none))
+            if (!_socketBufferIn->recv(msg, zmq::recv_flags::dontwait))
                 continue;
 
             const auto data = static_cast<uint8_t*>(msg.data());

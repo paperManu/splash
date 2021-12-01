@@ -400,8 +400,6 @@ void Scene::run()
     }
 
     _mainWindow->setAsCurrentContext();
-    sendMessageToWorld("sceneLaunched", {});
-
     TracyGpuContext;
 
     while (_isRunning)
@@ -827,6 +825,14 @@ void Scene::registerAttributes()
         },
         {'s', 's'});
     setAttributeDescription("addObject", "Add an object of the given name, type, and optionally the target scene");
+
+    addAttribute("checkSceneRunning",
+        [&](const Values&) {
+            sendMessageToWorld("sceneLaunched", {});
+            return true;
+        },
+        {});
+    setAttributeDescription("checkSceneLaunched", "Asks the scene to notify the World that it is running");
 
     addAttribute("deleteObject",
         [&](const Values& args) {
