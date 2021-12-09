@@ -507,6 +507,11 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
                 }
             }
         }
+        else
+        {
+            // Initialize the communication
+            _link->connectTo(sceneName);
+        }
 
         _scenes[sceneName] = pid;
         if (_masterSceneName.empty())
