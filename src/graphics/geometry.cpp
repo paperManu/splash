@@ -322,7 +322,7 @@ void Geometry::update()
         }
         else
         {
-            const auto data = reinterpret_cast<float*>(_deserializedMesh->vertices.data());
+            const auto data = reinterpret_cast<char*>(_deserializedMesh->vertices.data());
             _glTemporaryBuffers[0]->setBufferFromVector({data, data + _temporaryVerticesNumber * sizeof(float) * 4});
         }
 
@@ -332,7 +332,7 @@ void Geometry::update()
         }
         else
         {
-            const auto data = reinterpret_cast<float*>(_deserializedMesh->uvs.data());
+            const auto data = reinterpret_cast<char*>(_deserializedMesh->uvs.data());
             _glTemporaryBuffers[1]->setBufferFromVector({data, data + _temporaryVerticesNumber * sizeof(float) * 2});
         }
 
@@ -343,7 +343,7 @@ void Geometry::update()
         }
         else
         {
-            const auto data = reinterpret_cast<float*>(_deserializedMesh->normals.data());
+            const auto data = reinterpret_cast<char*>(_deserializedMesh->normals.data());
             _glTemporaryBuffers[2]->setBufferFromVector({data, data + _temporaryVerticesNumber * sizeof(float) * 4});
         }
 
@@ -353,7 +353,7 @@ void Geometry::update()
         }
         else
         {
-            const auto data = reinterpret_cast<float*>(_deserializedMesh->annexe.data());
+            const auto data = reinterpret_cast<char*>(_deserializedMesh->annexe.data());
             _glTemporaryBuffers[3]->setBufferFromVector({data, data + _temporaryVerticesNumber * sizeof(float) * 4});
         }
 
