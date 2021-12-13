@@ -6,4 +6,4 @@
 * Sergio Jiménez Herena
 * Pascal Huerst
 * Josh Beckwith
-* eviau
+* Edith Viau

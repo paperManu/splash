@@ -14,11 +14,12 @@ Splash is a free (as in GPL) modular mapping software. Provided that the user cr
   <url type="homepage">https://sat-metalab.gitlab.io/splash</url>
   <screenshots>
     <screenshot type="default">
-      <image>https://sat-metalab.gitlab.io/splash/mkdocs/images/splash_multiview_gui.jpg</image>
+      <image>https://sat-metalab.gitlab.io/splash/en/_images/splash_multiview_gui.jpg</image>
       <caption>Splash user interface showing a fulldome project</caption>
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.9.8" date="2021-12-13" />
     <release version="0.9.6" date="2021-12-01" />
     <release version="0.9.4" date="2021-10-22" />
     <release version="0.9.2" date="2021-10-06" />

@@ -325,10 +325,10 @@ std::vector<std::string> ControllerObject::getObjectsOfType(const std::string& t
 }
 
 /*************/
-void ControllerObject::sendBuffer(const std::string& name, SerializedObject&& buffer) const
+void ControllerObject::sendBuffer(SerializedObject&& buffer) const
 {
     if (_root)
-        _root->sendBuffer(name, std::move(buffer));
+        _root->sendBuffer(std::move(buffer));
 }
 
 /*************/
@@ -391,7 +391,8 @@ void ControllerObject::setObjectsOfType(const std::string& type, const std::stri
     for (const auto& branchName : branchList)
     {
         auto path = "/" + branchName + "/objects";
-        assert(tree->hasBranchAt(path));
+        if (!tree->hasBranchAt(path))
+            continue;
         auto objectList = tree->getBranchListAt(path);
         for (const auto& objectName : objectList)
         {

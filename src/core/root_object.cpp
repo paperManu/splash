@@ -362,16 +362,11 @@ void RootObject::propagatePath(const std::string& path)
 }
 
 /*************/
-void RootObject::sendBuffer(const std::string& name, SerializedObject&& buffer)
+void RootObject::sendBuffer(SerializedObject&& buffer)
 {
     assert(_link);
     assert(_link->isReady());
-
-    const auto size = Serial::getSize(name);
-    std::vector<uint8_t> serialized(size + buffer.size());
-    Serial::serialize(name, serialized);
-    std::copy(buffer._data.cbegin(), buffer._data.cend(), serialized.begin() + size);
-    _link->sendBuffer(SerializedObject(ResizableArray(std::move(serialized))));
+    _link->sendBuffer(std::move(buffer));
 }
 
 /*************/
