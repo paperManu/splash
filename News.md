@@ -1,6 +1,13 @@
 Splash release notes
 ====================
 
+Splash 0.9.8 (2021-12-13)
+-------------------------
+Bugs fixed:
+* Fixed link not being connected with Scene not spawned
+* Fixed CI random timeout
+* Fixed blending not applied on Scenes other than the main one
+
 Splash 0.9.6 (2021-12-01)
 -------------------------
 Bugs fixed:
