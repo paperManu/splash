@@ -200,10 +200,9 @@ class RootObject : public BaseObject
 
     /**
      * Send the given serialized buffer through the link
-     * \param name Destination BufferObject name
      * \param buffer Serialized buffer
      */
-    void sendBuffer(const std::string& name, SerializedObject&& buffer);
+    void sendBuffer(SerializedObject&& buffer);
 
     /**
      * Return a lock object list modifications (addition, deletion)

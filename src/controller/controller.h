@@ -184,10 +184,9 @@ class ControllerObject : public GraphObject
 
     /**
      * \brief Send a serialized buffer to the given BufferObject
-     * \param name Object name
      * \param buffer Serialized buffer
      */
-    void sendBuffer(const std::string& name, SerializedObject&& buffer) const;
+    void sendBuffer(SerializedObject&& buffer) const;
 
     /**
      * \brief Set the given configuration-related attribute

@@ -295,10 +295,18 @@ bool World::applyConfig()
             sendMessage(Constants::ALL_PEERS, "runInBackground", {_context.hide});
         }
 
-        // Make sure all objects have been created in every Scene, by sending a sync
-        // message
+        // Wait CONNECTION_TIMEOUT seconds maximum for scenes to start. Otherwise we consider
+        // it failed, and we quit
         for (const auto& s : _scenes)
-            sendMessageWithAnswer(s.first, "sync");
+        {
+            auto returnValue = sendMessageWithAnswer(s.first, "sync", {}, Constants::CONNECTION_TIMEOUT * 1'000'000);
+            if (returnValue.empty() || returnValue[1].as<std::string>() != s.first)
+            {
+                Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to sync with scene \"" << s.first << "\" before configuration. Exiting." << Log::endl;
+                _quit = true;
+                return false;
+            }
+        }
 
         // Then we link the objects together
         for (auto& s : _scenes)
@@ -386,10 +394,10 @@ bool World::applyConfig()
     // Send the start message for all scenes
     for (auto& s : _scenes)
     {
-        auto answer = sendMessageWithAnswer(s.first, "start", {}, 2e6);
+        auto answer = sendMessageWithAnswer(s.first, "start", {}, Constants::CONNECTION_TIMEOUT * 1'000'000);
         if (0 == answer.size())
         {
-            Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to connect to scene \"" << s.first << "\". Exiting." << Log::endl;
+            Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to start scene \"" << s.first << "\". Exiting." << Log::endl;
             _quit = true;
             break;
         }
@@ -489,7 +497,7 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
                 sendMessage(sceneName, "checkSceneRunning");
                 if (std::cv_status::timeout == _childProcessConditionVariable.wait_for(lockChildProcess, std::chrono::milliseconds(100)))
                 {
-                    if (Timer::get().getTime() - startTime < Constants::CONNECTION_TIMEOUT * 1e6)
+                    if (Timer::get().getTime() - startTime < Constants::CONNECTION_TIMEOUT * 1'000'000)
                         continue;
 
                     Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to connect to newly spawned scene \"" << sceneName << "\". Exiting."
@@ -498,6 +506,11 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
                     return false;
                 }
             }
+        }
+        else
+        {
+            // Initialize the communication
+            _link->connectTo(sceneName);
         }
 
         _scenes[sceneName] = pid;
