@@ -42,7 +42,7 @@ namespace Splash
 {
 
 /*************/
-class ChannelOutput_ZMQ : public ChannelOutput
+class ChannelOutput_ZMQ final : public ChannelOutput
 {
   public:
     /**
@@ -55,7 +55,14 @@ class ChannelOutput_ZMQ : public ChannelOutput
     /**
      * Destructor
      */
-    ~ChannelOutput_ZMQ();
+    ~ChannelOutput_ZMQ() final;
+    /**
+     * Constructors/operators
+     */
+    ChannelOutput_ZMQ(const ChannelOutput_ZMQ&) = delete;
+    ChannelOutput_ZMQ& operator=(const ChannelOutput_ZMQ&) = delete;
+    ChannelOutput_ZMQ(ChannelOutput_ZMQ&&) = delete;
+    ChannelOutput_ZMQ& operator=(ChannelOutput_ZMQ&&) = delete;
 
     /**
      * Connect to a target
@@ -114,7 +121,7 @@ class ChannelOutput_ZMQ : public ChannelOutput
 };
 
 /*************/
-class ChannelInput_ZMQ : public ChannelInput
+class ChannelInput_ZMQ final : public ChannelInput
 {
   public:
     /**
@@ -129,7 +136,15 @@ class ChannelInput_ZMQ : public ChannelInput
     /**
      * Destructor
      */
-    ~ChannelInput_ZMQ();
+    ~ChannelInput_ZMQ() final;
+
+    /**
+     * Constructors/operators
+     */
+    ChannelInput_ZMQ(const ChannelInput_ZMQ&) = delete;
+    ChannelInput_ZMQ& operator=(const ChannelInput_ZMQ&) = delete;
+    ChannelInput_ZMQ(ChannelInput_ZMQ&&) = delete;
+    ChannelInput_ZMQ& operator=(ChannelInput_ZMQ&&) = delete;
 
     /**
      * Connect to the given target

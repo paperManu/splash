@@ -44,7 +44,7 @@ class ControllerObject : public GraphObject
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root RootObject
      */
     explicit ControllerObject(RootObject* root)
@@ -54,9 +54,17 @@ class ControllerObject : public GraphObject
     }
 
     /**
-     * \brief Desctructor
+     * Destructor
      */
-    virtual ~ControllerObject() override {}
+    virtual ~ControllerObject() override = default;
+
+    /**
+     * Constructors/operators
+     */
+    ControllerObject(const ControllerObject&) = delete;
+    ControllerObject& operator=(const ControllerObject&) = delete;
+    ControllerObject(ControllerObject&&) = delete;
+    ControllerObject& operator=(ControllerObject&&) = delete;
 
     /**
      * Check whether an object of the given name exists
@@ -90,13 +98,13 @@ class ControllerObject : public GraphObject
     std::unordered_map<std::string, std::string> getObjectAliases() const;
 
     /**
-     * \brief Get a list of the object names
+     * Get a list of the object names
      * \return Return a vector of all the objects
      */
     std::vector<std::string> getObjectList() const;
 
     /**
-     * \brief Get the description for the given attribute
+     * Get the description for the given attribute
      * \param name Object name
      * \param attr Attribute name
      * \return Return the description of the given attribute
@@ -104,7 +112,7 @@ class ControllerObject : public GraphObject
     Values getObjectAttributeDescription(const std::string& name, const std::string& attr) const;
 
     /**
-     * \brief Get one specific attribute from the given object
+     * Get one specific attribute from the given object
      * \param name Object name
      * \param attr Attribute
      * \return Return the value of the given attribute
@@ -112,53 +120,53 @@ class ControllerObject : public GraphObject
     Values getObjectAttribute(const std::string& name, const std::string& attr) const;
 
     /**
-     * \brief Get all the attributes from the given object
+     * Get all the attributes from the given object
      * \param name Object name
      * \return Return a map of all of the object's attributes
      */
     std::unordered_map<std::string, Values> getObjectAttributes(const std::string& name) const;
 
     /**
-     * \brief Get the links between all objects, from parents to children
+     * Get the links between all objects, from parents to children
      * \return Return an unordered_map of the links, from one object to potentially many others
      */
     std::unordered_map<std::string, std::vector<std::string>> getObjectLinks() const;
 
     /**
-     * \brief Get the reversed links between all objects, from children to parents
+     * Get the reversed links between all objects, from children to parents
      * \return Return an unordered_map the links, from one object to potentially many others
      */
     std::unordered_map<std::string, std::vector<std::string>> getObjectReversedLinks() const;
 
     /**
-     * \brief Get a map of the object types
+     * Get a map of the object types
      * \return Return a map of all object types
      */
     std::map<std::string, std::string> getObjectTypes() const;
 
     /**
-     * \brief Get an object short description
+     * Get an object short description
      * \param type Object type
      * \return Return a short description
      */
     std::string getShortDescription(const std::string& type) const;
 
     /**
-     * \brief Get an object description
+     * Get an object description
      * \param type Object type
      * \return Return a description
      */
     std::string getDescription(const std::string& type) const;
 
     /**
-     * \brief Get all types of given category
+     * Get all types of given category
      * \param category Category to look for
      * \return Return a list of all types of the given category
      */
     std::vector<std::string> getTypesFromCategory(const GraphObject::Category& category) const;
 
     /**
-     * \brief Get all object of given type.
+     * Get all object of given type.
      * \param type Type to look for. If empty, get all objects.
      * \return Return a list of all objects of the given type
      */
@@ -183,13 +191,13 @@ class ControllerObject : public GraphObject
     }
 
     /**
-     * \brief Send a serialized buffer to the given BufferObject
+     * Send a serialized buffer to the given BufferObject
      * \param buffer Serialized buffer
      */
     void sendBuffer(SerializedObject&& buffer) const;
 
     /**
-     * \brief Set the given configuration-related attribute
+     * Set the given configuration-related attribute
      * \param name Attribute name
      * \param values Value to set the attribute to
      */
@@ -210,7 +218,7 @@ class ControllerObject : public GraphObject
     Values getWorldAttribute(const std::string& attr) const;
 
     /**
-     * \brief Set the given attribute for the given object
+     * Set the given attribute for the given object
      * \param name Object name
      * \param attr Attribute name
      * \param values Value to set the attribute to
@@ -218,7 +226,7 @@ class ControllerObject : public GraphObject
     void setObjectAttribute(const std::string& name, const std::string& attr, const Values& values = {}) const;
 
     /**
-     * \brief Set the given attribute for all objets of the given type
+     * Set the given attribute for all objets of the given type
      * \param type Object type
      * \param attr Attribute
      * \param values Value to set the attribute to
@@ -226,7 +234,7 @@ class ControllerObject : public GraphObject
     void setObjectsOfType(const std::string& type, const std::string& attr, const Values& values = {}) const;
 
     /**
-     * \brief Set a user input callback, to capture a user event
+     * Set a user input callback, to capture a user event
      * \param state State which should trigger the callback
      * \param cb Callback
      */
@@ -234,7 +242,7 @@ class ControllerObject : public GraphObject
 
   protected:
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes() { GraphObject::registerAttributes(); }
 };

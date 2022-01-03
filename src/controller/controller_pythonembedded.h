@@ -43,21 +43,29 @@ namespace Splash
 {
 
 /*************/
-class PythonEmbedded : public ControllerObject
+class PythonEmbedded final : public ControllerObject
 {
   public:
     static PyObject* SplashError;
 
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
     explicit PythonEmbedded(RootObject* root);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~PythonEmbedded() final;
+
+    /**
+     * Constructors/operators
+     */
+    PythonEmbedded(const PythonEmbedded&) = delete;
+    PythonEmbedded& operator=(const PythonEmbedded&) = delete;
+    PythonEmbedded(PythonEmbedded&&) = delete;
+    PythonEmbedded& operator=(PythonEmbedded&&) = delete;
 
     /**
      * Inside a Python method, get the PythonEmbedded instance
@@ -66,20 +74,20 @@ class PythonEmbedded : public ControllerObject
     static PythonEmbedded* getInstance();
 
     /**
-     * \brief Set the path to the source Python file
+     * Set the path to the source Python file
      * \param filepath Path to the source file
      * \return Return true if the file exists
      */
     bool setScriptFile(const std::string& filepath);
 
     /**
-     * \brief Run the script
+     * Run the script
      * \return Return true if the script launched successfully
      */
     bool run();
 
     /**
-     * \brief Stop the running script
+     * Stop the running script
      */
     void stop();
 
@@ -108,12 +116,12 @@ class PythonEmbedded : public ControllerObject
     static PyThreadState* _pythonGlobalThreadState; //!< Global Python thread state, shared by all PythonEmbedded instances
 
     /**
-     * \brief Python interpreter main loop
+     * Python interpreter main loop
      */
     void loop();
 
     /**
-     * \brief Get a Python function from the given module
+     * Get a Python function from the given module
      * \param module Python module
      * \param name Function name
      * \return Return a python function, or nullptr if it does not exist
@@ -121,7 +129,7 @@ class PythonEmbedded : public ControllerObject
     PyObject* getFuncFromModule(PyObject* module, const std::string& name);
 
     /**
-     * \brief Build a Python object from a Value
+     * Build a Python object from a Value
      * \param value Value to convert
      * \param toDict Convert Values to a dict if true
      * \return Return a PyObject* representation of the value
@@ -129,14 +137,14 @@ class PythonEmbedded : public ControllerObject
     static PyObject* convertFromValue(const Value& value, bool toDict = false);
 
     /**
-     * \brief Build a Value from a valid Python object
+     * Build a Value from a valid Python object
      * \param pyObject Python object to interpret
      * \return Return a Value
      */
     static Value convertToValue(PyObject* pyObject);
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 

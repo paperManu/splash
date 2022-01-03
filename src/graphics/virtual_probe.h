@@ -43,7 +43,7 @@ namespace Splash
 {
 
 /*************/
-class VirtualProbe : public Texture
+class VirtualProbe final : public Texture
 {
   public:
     /**
@@ -55,14 +55,15 @@ class VirtualProbe : public Texture
     /**
      * Destructor
      */
-    ~VirtualProbe() override;
+    ~VirtualProbe() final;
 
     /**
-     * No copy constructor or operator
+     * Constructors/operators
      */
     VirtualProbe(const VirtualProbe&) = delete;
-    VirtualProbe(VirtualProbe&&) = default;
     VirtualProbe& operator=(const VirtualProbe&) = delete;
+    VirtualProbe(VirtualProbe&&) = delete;
+    VirtualProbe& operator=(VirtualProbe&&) = delete;
 
     /**
      * \brief Compute the matrix corresponding to the virtual screen position

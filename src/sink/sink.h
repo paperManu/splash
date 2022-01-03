@@ -45,12 +45,20 @@ class Sink : public GraphObject
     /**
      * Constructor
      */
-    Sink(RootObject* root);
+    explicit Sink(RootObject* root);
 
     /**
      * Destructor
      */
     virtual ~Sink() override;
+
+    /**
+     * Constructors/operators
+     */
+    Sink(const Sink&) = delete;
+    Sink& operator=(const Sink&) = delete;
+    Sink(Sink&&) = delete;
+    Sink& operator=(Sink&&) = delete;
 
     /**
      * Get the current buffer as a resizable array

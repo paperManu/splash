@@ -30,19 +30,27 @@
 namespace Splash
 {
 
-class DragNDrop : public UserInput
+class DragNDrop final : public UserInput
 {
   public:
     /**
      * \brief Constructor
      * \param root Root object
      */
-    DragNDrop(RootObject* root);
+    explicit DragNDrop(RootObject* root);
 
     /**
      * \brief Destructor
      */
     ~DragNDrop() final;
+
+    /**
+     * Constructors/operators
+     */
+    DragNDrop(const DragNDrop&) = delete;
+    DragNDrop& operator=(const DragNDrop&) = delete;
+    DragNDrop(DragNDrop&&) = delete;
+    DragNDrop& operator=(DragNDrop&&) = delete;
 
   private:
     /**

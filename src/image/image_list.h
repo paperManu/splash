@@ -30,20 +30,27 @@
 namespace Splash
 {
 
-class Image_List : public Image_Sequence
+class Image_List final : public Image_Sequence
 {
   public:
     /**
      * Constructor
      * \param root Root object
      */
-    Image_List(RootObject* root);
+    explicit Image_List(RootObject* root);
 
     /**
-     * No copy constructor
+     * Destructor
+     */
+    ~Image_List() final = default;
+
+    /**
+     * Constructors/operators
      */
     Image_List(const Image_List&) = delete;
     Image_List& operator=(const Image_List&) = delete;
+    Image_List(Image_List&&) = delete;
+    Image_List& operator=(Image_List&&) = delete;
 
     /**
      * Set the path to read from. Must be a valid directory

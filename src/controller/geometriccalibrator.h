@@ -41,7 +41,7 @@
 namespace Splash
 {
 
-class GeometricCalibrator : public ControllerObject
+class GeometricCalibrator final : public ControllerObject
 {
   public:
     /**
@@ -53,6 +53,14 @@ class GeometricCalibrator : public ControllerObject
      * Destructor
      */
     ~GeometricCalibrator() final;
+
+    /**
+     * Constructors/operators
+     */
+    GeometricCalibrator(const GeometricCalibrator&) = delete;
+    GeometricCalibrator& operator=(const GeometricCalibrator&) = delete;
+    GeometricCalibrator(GeometricCalibrator&&) = delete;
+    GeometricCalibrator& operator=(GeometricCalibrator&&) = delete;
 
     /**
      * Run calibration

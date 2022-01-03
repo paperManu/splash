@@ -50,7 +50,7 @@ class Queue : public BufferObject
      * Constructor
      * \param root Root object
      */
-    Queue(RootObject* root);
+    explicit Queue(RootObject* root);
 
     /**
      * Destructor
@@ -58,11 +58,12 @@ class Queue : public BufferObject
     ~Queue() override;
 
     /**
-     * No copy constructor
+     * Constructors/operators
      */
     Queue(const Queue&) = delete;
-    Queue(Queue&&) = default;
     Queue& operator=(const Queue&) = delete;
+    Queue(Queue&&) = delete;
+    Queue& operator=(Queue&&) = delete;
 
     /**
      * The Queue does not exist on the Scene side, there is the QueueSurrogate for this. So deserialization has no meaning
@@ -142,21 +143,27 @@ class Queue : public BufferObject
 };
 
 /*************/
-class QueueSurrogate : public Texture
+class QueueSurrogate final : public Texture
 {
   public:
     /**
      * Constructor
      * \param root Root object
      */
-    QueueSurrogate(RootObject* root);
+    explicit QueueSurrogate(RootObject* root);
 
     /**
-     * No copy constructor, but a move one
+     * Destructor
+     */
+    ~QueueSurrogate() final = default;
+
+    /**
+     * Constructors/operators
      */
     QueueSurrogate(const QueueSurrogate&) = delete;
-    QueueSurrogate(QueueSurrogate&&) = default;
     QueueSurrogate& operator=(const QueueSurrogate&) = delete;
+    QueueSurrogate(QueueSurrogate&&) = delete;
+    QueueSurrogate& operator=(QueueSurrogate&&) = delete;
 
     /**
      * Bind this texture of this filter

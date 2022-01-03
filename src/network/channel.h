@@ -62,6 +62,14 @@ class ChannelOutput
     virtual ~ChannelOutput() = default;
 
     /**
+     * Constructors/operators
+     */
+    ChannelOutput(const ChannelOutput&) = delete;
+    ChannelOutput& operator=(const ChannelOutput&) = delete;
+    ChannelOutput(ChannelOutput&&) = delete;
+    ChannelOutput& operator=(ChannelOutput&&) = delete;
+
+    /**
      * Connect to a target
      * \param target Target name
      * \return Return true if connection was successful
@@ -135,6 +143,14 @@ class ChannelInput
      * Destructor
      */
     virtual ~ChannelInput() = default;
+
+    /**
+     * Constructors/operators
+     */
+    ChannelInput(const ChannelInput&) = delete;
+    ChannelInput& operator=(const ChannelInput&) = delete;
+    ChannelInput(ChannelInput&&) = delete;
+    ChannelInput& operator=(ChannelInput&&) = delete;
 
     /**
      * Connect to the given target

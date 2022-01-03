@@ -37,13 +37,13 @@
 namespace Splash
 {
 
-class Image_NDI : public Image
+class Image_NDI final : public Image
 {
   public:
     /**
      * Constructor
      */
-    Image_NDI(RootObject* root);
+    explicit Image_NDI(RootObject* root);
 
     /**
      * Destructor
@@ -51,7 +51,7 @@ class Image_NDI : public Image
     ~Image_NDI() final;
 
     /**
-     * No copy constructor
+     * Constructors/operators
      */
     Image_NDI(const Image_NDI&) = delete;
     Image_NDI& operator=(const Image_NDI&) = delete;
@@ -70,8 +70,7 @@ class Image_NDI : public Image
      * Image is double buffered, so this has to be called after
      * any new buffer is set for changes to be effective
      */
-    virtual void update() final;
-
+    void update() final;
 
   private:
     Image_Shmdata _shmdata;

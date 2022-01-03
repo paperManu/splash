@@ -32,17 +32,17 @@
 namespace Splash
 {
 
-class Blender : public ControllerObject
+class Blender final : public ControllerObject
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
     Blender(RootObject* root);
 
     /**
-     * \brief Update the blending
+     * Update the blending
      */
     void update() final;
 
@@ -64,7 +64,7 @@ class Blender : public ControllerObject
     std::atomic_bool _vertexBlendingReceptionStatus{false};
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 };

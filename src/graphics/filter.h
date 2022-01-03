@@ -48,25 +48,31 @@ class Filter : public Texture
 {
   public:
     /**
-     *  Constructor
+     * Constructor
      * \param root Root object
      */
-    Filter(RootObject* root);
+    explicit Filter(RootObject* root);
 
     /**
-     * No copy constructor, but a move one
+     * Destructor
+     */
+    ~Filter() override = default;
+
+    /**
+     * Constructors/operators
      */
     Filter(const Filter&) = delete;
-    Filter(Filter&&) = default;
     Filter& operator=(const Filter&) = delete;
+    Filter(Filter&&) = delete;
+    Filter& operator=(Filter&&) = delete;
 
     /**
-     *  Bind the filter
+     * Bind the filter
      */
     void bind() override;
 
     /**
-     *  Unbind the filter
+     * Unbind the filter
      */
     void unbind() override;
 
@@ -77,13 +83,13 @@ class Filter : public Texture
     std::unordered_map<std::string, Values> getShaderUniforms() const override;
 
     /**
-     *  Get specs of the texture
+     * Get specs of the texture
      * \return Return the texture specs
      */
     ImageBufferSpec getSpec() const override { return _fbo->getColorTexture()->getSpec(); }
 
     /**
-     *  Get the id of the gl texture
+     * Get the id of the gl texture
      * \return Return the texture id
      */
     GLuint getTexId() const override { return _fbo->getColorTexture()->getTexId(); }
@@ -101,7 +107,7 @@ class Filter : public Texture
     void setSixteenBpc(bool active);
 
     /**
-     *  Render the filter
+     * Render the filter
      */
     void render() override;
 
@@ -114,24 +120,24 @@ class Filter : public Texture
     std::unordered_map<std::string, Values> _filterUniforms; //!< Contains all filter uniforms
 
     /**
-     *  Try to link the given GraphObject to this object
+     * Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
     bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
 
     /**
-     *  Try to unlink the given GraphObject from this object
+     * Try to unlink the given GraphObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
     /**
-     *  Updates the shader uniforms according to the textures and images the filter is connected to.
+     * Updates the shader uniforms according to the textures and images the filter is connected to.
      */
     virtual void updateUniforms();
 
     /**
-     *  Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     virtual void registerAttributes();
 

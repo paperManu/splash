@@ -39,10 +39,12 @@ set_source_files_properties(
     PROPERTIES COMPILE_FLAGS "-Wno-error -Wno-all -Wno-extra -Wno-unused-parameter"
 )
 
-set_source_files_properties(
-    network/channel_zmq.cpp
-    PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized"
-)
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set_source_files_properties(
+        network/channel_zmq.cpp
+        PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized"
+    )
+endif()
 
 if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
   set_source_files_properties(

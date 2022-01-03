@@ -43,18 +43,26 @@ extern "C" {
 namespace Splash
 {
 
-class Sink_Shmdata_Encoded : public Sink
+class Sink_Shmdata_Encoded final : public Sink
 {
   public:
     /**
      * Constructor
      */
-    Sink_Shmdata_Encoded(RootObject* root);
+    explicit Sink_Shmdata_Encoded(RootObject* root);
 
     /**
      * Destructor
      */
     ~Sink_Shmdata_Encoded() final;
+
+    /**
+     * Constructors/operators
+     */
+    Sink_Shmdata_Encoded(const Sink_Shmdata_Encoded&) = delete;
+    Sink_Shmdata_Encoded& operator=(const Sink_Shmdata_Encoded&) = delete;
+    Sink_Shmdata_Encoded(Sink_Shmdata_Encoded&&) = delete;
+    Sink_Shmdata_Encoded& operator=(Sink_Shmdata_Encoded&&) = delete;
 
   private:
     std::string _path{"/tmp/splash_sink"};

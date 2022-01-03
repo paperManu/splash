@@ -43,7 +43,7 @@ namespace Splash
 {
 
 /*************/
-class ColorCalibrator : public ControllerObject
+class ColorCalibrator final : public ControllerObject
 {
   public:
     /**
@@ -56,6 +56,14 @@ class ColorCalibrator : public ControllerObject
      * Destructor
      */
     ~ColorCalibrator() final = default;
+
+    /**
+     * Constructors/operators
+     */
+    ColorCalibrator(const ColorCalibrator&) = delete;
+    ColorCalibrator& operator=(const ColorCalibrator&) = delete;
+    ColorCalibrator(ColorCalibrator&&) = delete;
+    ColorCalibrator& operator=(ColorCalibrator&&) = delete;
 
     /**
      * Update the color calibration of all cameras
