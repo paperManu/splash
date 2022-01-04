@@ -203,6 +203,10 @@ class Gui final : public ControllerObject
         uint32_t size;
     };
 
+    const int32_t _defaultWidth{900};
+    const int32_t _defaultHeight{900};
+    const float _backgroundAlpha{0.97f};
+
     bool _isInitialized{false};
     std::shared_ptr<GlWindow> _window;
     Scene* _scene;

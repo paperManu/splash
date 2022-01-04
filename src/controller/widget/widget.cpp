@@ -113,7 +113,9 @@ bool FileSelector(const std::string& label, std::string& path, bool& cancelled, 
     if (label.size() != 0)
         windowName += " - " + label;
 
-    ImGui::Begin(windowName.c_str(), nullptr, ImVec2(400, 600), 0.99f);
+    ImGui::SetNextWindowSize(ImVec2(400, 600));
+    ImGui::SetNextWindowBgAlpha(0.99f);
+    ImGui::Begin(windowName.c_str(), nullptr);
 
     ImGui::PushItemWidth(-64.f);
     std::vector<std::string> fileList;
@@ -200,7 +202,7 @@ bool FileSelector(const std::string& label, std::string& path, bool& cancelled, 
     if (ImGui::Button("Cancel"))
         cancelled = true;
 
-    if (ImGui::IsRootWindowOrAnyChildFocused())
+    if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
     {
         ImGuiIO& io = ImGui::GetIO();
         if (io.KeysDown[io.KeyMap[ImGuiKey_Escape]] && io.KeysDownDuration[io.KeyMap[ImGuiKey_Escape]] == 0.0)
@@ -364,9 +366,9 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                 ImGui::SetTooltip("If pressed, resend the value as-is");
             ImGui::SameLine();
 
-            int precision = 0;
+            bool isReal = false;
             if (attribute[0].getType() == Value::Type::real)
-                precision = 3;
+                isReal = true;
 
             switch (attribute.size())
             {
@@ -374,40 +376,87 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                 continue;
             case 1:
             {
-                auto tmp = attribute[0].as<float>();
-                float step = 0.01 * tmp;
-                if (ImGui::InputFloat(attrName.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                    setObjectAttribute(objName, attrName, {static_cast<float>(tmp)});
+                if (isReal)
+                {
+                    auto tmp = attribute[0].as<float>();
+                    const auto step = 0.01f * tmp;
+                    if (ImGui::InputFloat(attrName.c_str(), &tmp, step, step, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+                        setObjectAttribute(objName, attrName, {tmp});
+                }
+                else
+                {
+                    auto tmp = attribute[0].as<int32_t>();
+                    const auto stepSlow = 1;
+                    const auto stepFast = 100;
+                    if (ImGui::InputInt(attrName.c_str(), &tmp, stepSlow, stepFast, ImGuiInputTextFlags_EnterReturnsTrue))
+                        setObjectAttribute(objName, attrName, {tmp});
+                }
                 break;
             }
             case 2:
             {
-                std::array<float, 2> tmp;
-                tmp[0] = attribute[0].as<float>();
-                tmp[1] = attribute[1].as<float>();
-                if (ImGui::InputFloat2(attrName.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                    setObjectAttribute(objName, attrName, {tmp[0], tmp[1]});
+                if (isReal)
+                {
+                    std::array<float, 2> tmp;
+                    tmp[0] = attribute[0].as<float>();
+                    tmp[1] = attribute[1].as<float>();
+                    if (ImGui::InputFloat2(attrName.c_str(), tmp.data(), "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+                        setObjectAttribute(objName, attrName, {tmp[0], tmp[1]});
+                }
+                else
+                {
+                    std::array<int32_t, 2> tmp;
+                    tmp[0] = attribute[0].as<int32_t>();
+                    tmp[1] = attribute[1].as<int32_t>();
+                    if (ImGui::InputInt2(attrName.c_str(), tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
+                        setObjectAttribute(objName, attrName, {tmp[0], tmp[1]});
+                }
                 break;
             }
             case 3:
             {
-                std::array<float, 3> tmp;
-                tmp[0] = attribute[0].as<float>();
-                tmp[1] = attribute[1].as<float>();
-                tmp[2] = attribute[2].as<float>();
-                if (ImGui::InputFloat3(attrName.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                    setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2]});
+                if (isReal)
+                {
+                    std::array<float, 3> tmp;
+                    tmp[0] = attribute[0].as<float>();
+                    tmp[1] = attribute[1].as<float>();
+                    tmp[2] = attribute[2].as<float>();
+                    if (ImGui::InputFloat3(attrName.c_str(), tmp.data(), "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+                        setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2]});
+                }
+                else
+                {
+                    std::array<int32_t, 3> tmp;
+                    tmp[0] = attribute[0].as<int32_t>();
+                    tmp[1] = attribute[1].as<int32_t>();
+                    tmp[2] = attribute[2].as<int32_t>();
+                    if (ImGui::InputInt3(attrName.c_str(), tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
+                        setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2]});
+                }
                 break;
             }
             case 4:
             {
-                std::array<float, 4> tmp;
-                tmp[0] = attribute[0].as<float>();
-                tmp[1] = attribute[1].as<float>();
-                tmp[2] = attribute[2].as<float>();
-                tmp[3] = attribute[3].as<float>();
-                if (ImGui::InputFloat4(attrName.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                    setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2], tmp[3]});
+                if (isReal)
+                {
+                    std::array<float, 4> tmp;
+                    tmp[0] = attribute[0].as<float>();
+                    tmp[1] = attribute[1].as<float>();
+                    tmp[2] = attribute[2].as<float>();
+                    tmp[3] = attribute[3].as<float>();
+                    if (ImGui::InputFloat4(attrName.c_str(), tmp.data(), "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+                        setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2], tmp[3]});
+                }
+                else
+                {
+                    std::array<int32_t, 4> tmp;
+                    tmp[0] = attribute[0].as<int32_t>();
+                    tmp[1] = attribute[1].as<int32_t>();
+                    tmp[2] = attribute[2].as<int32_t>();
+                    tmp[3] = attribute[3].as<int32_t>();
+                    if (ImGui::InputInt4(attrName.c_str(), tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
+                        setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2], tmp[3]});
+                }
                 break;
             }
             }
@@ -462,7 +511,8 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                     if (ImGui::IsItemHovered())
                         UserInput::setCallback(
                             UserInput::State("dragndrop"), [=](const UserInput::State& state) { setObjectAttribute(objName, attrName, {state.value[0].as<std::string>()}); });
-                    else // Not really necessary as the GUI sets a default dragndrop callback at each frame, but anyway
+                    else // Not really necessary as the GUI sets a default dragndrop
+                         // callback at each frame, but anyway
                         UserInput::resetCallback(UserInput::State("dragndrop"));
 
                     ImGui::SameLine();

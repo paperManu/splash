@@ -551,11 +551,11 @@ void Gui::drawMainTab()
     ImGui::Separator();
     ImGui::Text("Blending parameters");
     static auto blendWidth = 0.05f;
-    if (ImGui::InputFloat("Blending width", &blendWidth, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
+    if (ImGui::InputFloat("Blending width", &blendWidth, 0.01f, 0.04f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
         setObjectsOfType("camera", "blendWidth", {blendWidth});
 
     static auto blendPrecision = 0.1f;
-    if (ImGui::InputFloat("Blending precision", &blendPrecision, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
+    if (ImGui::InputFloat("Blending precision", &blendPrecision, 0.01f, 0.04f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
         setObjectsOfType("camera", "blendPrecision", {blendPrecision});
 
     auto depthAwareBlendingValue = getObjectAttribute("blender", "depthAwareBlending");
@@ -743,7 +743,8 @@ void Gui::renderSplashScreen()
     auto parentWindowSize = ImGui::GetWindowSize();
     auto parentWindowPos = ImGui::GetWindowPos();
     ImGui::SetNextWindowPos(ImVec2(parentWindowPos[0] + (parentWindowSize[0] - splashWidth) / 2.f, parentWindowPos[1] + (parentWindowSize[1] - splashHeight) / 2.f));
-    ImGui::Begin("About Splash", &isOpen, ImVec2(splashWidth, splashHeight), 1.f, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
+    ImGui::SetNextWindowSize(ImVec2(splashWidth, splashHeight));
+    ImGui::Begin("About Splash", &isOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
     if (_splashLogo)
     {
         ImGui::Columns(2, nullptr, false);
@@ -773,7 +774,8 @@ void Gui::renderHelp()
     auto parentWindowSize = ImGui::GetWindowSize();
     auto parentWindowPos = ImGui::GetWindowPos();
     ImGui::SetNextWindowPos(ImVec2(parentWindowPos[0] + (parentWindowSize[0] - helpWidth) / 2.f, parentWindowPos[1] + 100.f));
-    ImGui::Begin("Help", &isOpen, ImVec2(helpWidth, helpHeight), 1.f, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::SetNextWindowSize(ImVec2(helpWidth, helpHeight));
+    ImGui::Begin("Help", &isOpen, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
 
     ImGui::Text("Tab: show / hide this GUI");
     ImGui::Text("General shortcuts:");
@@ -852,7 +854,9 @@ void Gui::render()
         std::string windowName = "Splash Control Panel";
         if (!_configurationPath.empty())
             windowName += " - " + _configurationPath;
-        ImGui::Begin(windowName.c_str(), nullptr, ImVec2(900, 900), 0.97f, _windowFlags);
+        ImGui::SetNextWindowSize(ImVec2(_defaultWidth, _defaultHeight));
+        ImGui::SetNextWindowBgAlpha(_backgroundAlpha);
+        ImGui::Begin(windowName.c_str(), nullptr, _windowFlags);
         _windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse;
 
         if (_showAbout)

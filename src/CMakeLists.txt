@@ -28,6 +28,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLM_ENABLE_EXPERIMENTAL")
 set_source_files_properties(
     ../external/imgui/imgui_demo.cpp
     ../external/imgui/imgui_draw.cpp
+    ../external/imgui/imgui_tables.cpp
     ../external/imgui/imgui_widgets.cpp
     ../external/imgui/imgui.cpp
 	../external/hap/source/hap.c
@@ -182,6 +183,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     utils/subprocess.cpp
     ../external/imgui/imgui_demo.cpp
     ../external/imgui/imgui_draw.cpp
+    ../external/imgui/imgui_tables.cpp
     ../external/imgui/imgui_widgets.cpp
     ../external/imgui/imgui.cpp
     ../external/hap/source/hap.c
