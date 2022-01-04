@@ -212,9 +212,14 @@ void Sink_Shmdata_Encoded::handlePixels(const char* pixels, const ImageBufferSpe
     }
 
     // Encoding
-    av_init_packet(&_packet);
-    _packet.data = nullptr;
-    _packet.size = 0;
+    AVPacket* packet = av_packet_alloc();
+    if (!packet)
+    {
+        Log::get() << Log::ERROR << "Sink_Shmdata_Encoded::" << __FUNCTION__ << " - Can not allocate memory for encoding frame" << Log::endl;
+    }
+
+    packet->data = nullptr;
+    packet->size = 0;
 
     av_image_fill_arrays(_frame->data, _frame->linesize, reinterpret_cast<const uint8_t*>(pixels), AV_PIX_FMT_RGB32, spec.width, spec.height, 1);
     sws_scale(_swsContext, _frame->data, _frame->linesize, 0, spec.height, _yuvFrame->data, _yuvFrame->linesize);
@@ -232,16 +237,18 @@ void Sink_Shmdata_Encoded::handlePixels(const char* pixels, const ImageBufferSpe
 
     while (1)
     {
-        ret = avcodec_receive_packet(_context, &_packet);
+        ret = avcodec_receive_packet(_context, packet);
         if (ret == AVERROR(EAGAIN))
             break;
         else if (ret < 0)
             return;
 
         // Sending through shmdata
-        if (_writer && _packet.size != 0)
-            _writer->copy_to_shm(_packet.data, _packet.size);
+        if (_writer && packet->size != 0)
+            _writer->copy_to_shm(packet->data, packet->size);
     }
+
+    av_packet_unref(packet);
 }
 
 /*************/

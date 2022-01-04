@@ -345,10 +345,14 @@ void Image_FFmpeg::readLoop()
         av_image_fill_arrays(rgbFrame->data, rgbFrame->linesize, buffer.data(), AV_PIX_FMT_YUYV422, videoCodecContext->width, videoCodecContext->height, 1);
     }
 
-    AVPacket packet;
-    av_init_packet(&packet);
+    AVPacket* packet = av_packet_alloc();
+    if (!packet)
+    {
+        Log::get() << Log::ERROR << "Image_FFmpeg::" << __FUNCTION__ << " - Unable to allocate packet for decoding frames" << Log::endl;
+        return;
+    }
 
-    _videoTimeBase = (double)videoStream->time_base.num / (double)videoStream->time_base.den;
+    _videoTimeBase = static_cast<double>(videoStream->time_base.num) / static_cast<double>(videoStream->time_base.den);
 
     // This implements looping
     _startTime = Timer::getTime();
@@ -356,13 +360,13 @@ void Image_FFmpeg::readLoop()
     {
         auto shouldContinueLoop = [&]() -> bool {
             std::lock_guard<std::mutex> lock(_videoSeekMutex);
-            return _continueRead && av_read_frame(_avContext, &packet) >= 0;
+            return _continueRead && av_read_frame(_avContext, packet) >= 0;
         };
 
         while (shouldContinueLoop())
         {
             // Reading the video
-            if (packet.stream_index == _videoStreamIndex && _videoSeekMutex.try_lock())
+            if (packet->stream_index == _videoStreamIndex && _videoSeekMutex.try_lock())
             {
                 auto img = std::unique_ptr<ImageBuffer>();
                 uint64_t timing = 0;
@@ -373,7 +377,7 @@ void Image_FFmpeg::readLoop()
                 if (!isHap)
                 {
                     auto frameFinished = false;
-                    if (avcodec_send_packet(videoCodecContext, &packet) < 0)
+                    if (avcodec_send_packet(videoCodecContext, packet) < 0)
                         Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Error while decoding a frame in file " << _filepath << Log::endl;
                     if (avcodec_receive_frame(videoCodecContext, frame) == 0)
                         frameFinished = true;
@@ -388,7 +392,7 @@ void Image_FFmpeg::readLoop()
                         unsigned char* pixels = reinterpret_cast<unsigned char*>(img->data());
                         std::copy(buffer.begin(), buffer.end(), pixels);
 
-                        if (packet.pts != AV_NOPTS_VALUE)
+                        if (packet->pts != AV_NOPTS_VALUE)
                             timing = static_cast<uint64_t>((double)frame->best_effort_timestamp * _videoTimeBase * 1e6);
                         else
                             timing = 0.0;
@@ -407,7 +411,7 @@ void Image_FFmpeg::readLoop()
                     // We are using kind of a hack to store a DXT compressed image in an ImageBuffer
                     // First, we check the texture format type
                     std::string textureFormat;
-                    if (hapDecodeFrame(packet.data, packet.size, nullptr, 0, textureFormat))
+                    if (hapDecodeFrame(packet->data, packet->size, nullptr, 0, textureFormat))
                     {
                         // Check if we need to resize the reader buffer
                         // We set the size so as to have just enough place for the given texture format
@@ -426,7 +430,7 @@ void Image_FFmpeg::readLoop()
                         }
                         else
                         {
-                            av_packet_unref(&packet);
+                            av_packet_unref(packet);
                             return;
                         }
 
@@ -435,10 +439,10 @@ void Image_FFmpeg::readLoop()
 
                         unsigned long outputBufferBytes = spec.width * spec.height * spec.channels;
 
-                        if (hapDecodeFrame(packet.data, packet.size, img->data(), outputBufferBytes, textureFormat))
+                        if (hapDecodeFrame(packet->data, packet->size, img->data(), outputBufferBytes, textureFormat))
                         {
-                            if (packet.pts != AV_NOPTS_VALUE)
-                                timing = static_cast<uint64_t>((double)packet.pts * _videoTimeBase * 1e6);
+                            if (packet->pts != AV_NOPTS_VALUE)
+                                timing = static_cast<uint64_t>(static_cast<double>(packet->pts) * _videoTimeBase * 1e6);
                             else
                                 timing = 0.0;
 
@@ -468,7 +472,7 @@ void Image_FFmpeg::readLoop()
                 int timedFramesBuffered = _timedFrames.size();
 
                 _videoSeekMutex.unlock();
-                av_packet_unref(&packet);
+                av_packet_unref(packet);
 
                 // Do not store more than a few frames in memory
                 // _maximumBufferSize is divided by 2 as another frame queue is held by the display loop
@@ -482,12 +486,12 @@ void Image_FFmpeg::readLoop()
             }
 #if HAVE_PORTAUDIO
             // Reading the audio
-            else if (packet.stream_index == _audioStreamIndex && audioCodecContext)
+            else if (packet->stream_index == _audioStreamIndex && audioCodecContext)
             {
-                if (avcodec_send_packet(audioCodecContext, &packet) < 0)
+                if (avcodec_send_packet(audioCodecContext, packet) < 0)
                     Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Error while decoding an audio frame in file " << _filepath << Log::endl;
-                uint64_t timing = (double)packet.pts * _audioTimeBase * 1e6;
-                av_packet_unref(&packet);
+                uint64_t timing = static_cast<double>(packet->pts) * _audioTimeBase * 1e6;
+                av_packet_unref(packet);
 
                 while (avcodec_receive_frame(audioCodecContext, frame) == 0)
                 {
@@ -519,7 +523,7 @@ void Image_FFmpeg::readLoop()
 #endif
             else
             {
-                av_packet_unref(&packet);
+                av_packet_unref(packet);
             }
         }
 

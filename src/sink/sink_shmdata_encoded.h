@@ -78,7 +78,6 @@ class Sink_Shmdata_Encoded final : public Sink
     AVCodecContext* _context{nullptr};
     AVFrame *_frame{nullptr}, *_yuvFrame{nullptr};
     SwsContext* _swsContext{nullptr};
-    AVPacket _packet;
 
     // Codec parameters
     int64_t _startTime{0ll};
