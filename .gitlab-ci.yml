@@ -12,33 +12,37 @@ cache:
     - ccache/
 
 #
-# Tests
+# ╺┳╸┏━╸┏━┓╺┳╸┏━┓
+#  ┃ ┣╸ ┗━┓ ┃ ┗━┓
+#  ╹ ┗━╸┗━┛ ╹ ┗━┛
 #
 
-# This is specifically used for Ubuntu builds
 before_script:
   - apt update -qq
-  - apt install -y --no-install-recommends software-properties-common
-  - add-apt-repository -y ppa:sat-metalab/metalab
   - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends ca-certificates
     ccache wget curl build-essential git-core libjsoncpp-dev zip cmake automake libtool
     libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev
-    libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python
-    libopencv-dev libx264-dev libx265-dev libshmdata-dev
+    libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev
+    libopencv-dev libx264-dev libx265-dev
+
   # CCache stuff
   - mkdir -p ccache
   - export CCACHE_BASEDIR=${PWD}
   - export CCACHE_DIR=${PWD}/ccache
   - export PATH="/usr/lib/ccache:${PATH}"
 
-test:20.04:
+test:20.04:gcc-bundled-libs:
   stage: test
   image: ubuntu:20.04
   script: 
+    # Install Metalab packages
+    - apt install -y --no-install-recommends software-properties-common
+    - add-apt-repository -y ppa:sat-metalab/metalab
+    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
+
     # Prepare bundled dependencies
-    # 
     - ./make_deps.sh
-    #
+
     # Test using bundled libs
     - rm -rf build && mkdir build
     - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr
@@ -46,7 +50,19 @@ test:20.04:
     - make test -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
-    #
+
+test:20.04:clang-bundled-libs:
+  stage: test
+  image: ubuntu:20.04
+  script: 
+    # Install Metalab packages
+    - apt install -y --no-install-recommends software-properties-common
+    - add-apt-repository -y ppa:sat-metalab/metalab
+    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
+
+    # Prepare bundled dependencies
+    - ./make_deps.sh
+
     # Test using Clang
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends clang
     - rm -rf build && mkdir build
@@ -55,10 +71,66 @@ test:20.04:
     - make test -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
-    #
+
+test:20.04:gcc-system-libs:
+  stage: test
+  image: ubuntu:20.04
+  script: 
+    # Install Metalab packages
+    - apt install -y --no-install-recommends software-properties-common
+    - add-apt-repository -y ppa:sat-metalab/metalab
+    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
+
     # Test using system libs
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
       libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev
+    - rm -rf build && mkdir build
+    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
+    - make -sC build -j$(nproc)
+    - make test -sC build
+    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+  except:
+    - website
+
+test:22.04:gcc-bundled-libs:
+  stage: test
+  image: ubuntu:22.04
+  script: 
+    # Prepare bundled dependencies
+    - ./make_deps.sh
+
+    # Test using bundled libs
+    - rm -rf build && mkdir build
+    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - make -sC build -j$(nproc)
+    - make test -sC build
+    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+
+test:22.04:clang-bundled-libs:
+  stage: test
+  image: ubuntu:22.04
+  script: 
+    # Prepare bundled dependencies
+    - ./make_deps.sh
+
+    # Test using Clang
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends clang
+    - rm -rf build && mkdir build
+    - CC=clang CXX=clang++ cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - make -sC build -j$(nproc)
+    - make test -sC build
+    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+
+test:22.04:gcc-system-libs:
+  stage: test
+  image: ubuntu:22.04
+  script: 
+    # Test using system libs
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
+      libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev
     - rm -rf build && mkdir build
     - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
     - make -sC build -j$(nproc)
@@ -96,6 +168,12 @@ coverage:
   stage: coverage
   image: ubuntu:20.04
   script: 
+    # Install Metalab packages
+    - apt install -y --no-install-recommends software-properties-common
+    - add-apt-repository -y ppa:sat-metalab/metalab
+    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
+
+    # Install coverage tools
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends lcov zip
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build
@@ -112,12 +190,20 @@ coverage:
     - website
 
 #
-# Package
+# ┏━┓┏━┓┏━╸╻┏ ┏━┓┏━╸┏━╸
+# ┣━┛┣━┫┃  ┣┻┓┣━┫┃╺┓┣╸ 
+# ╹  ╹ ╹┗━╸╹ ╹╹ ╹┗━┛┗━╸
 #
 package:debian:
   stage: deploy
   image: ubuntu:20.04
   script:
+    # Install Metalab packages
+    - apt install -y --no-install-recommends software-properties-common
+    - add-apt-repository -y ppa:sat-metalab/metalab
+    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
+
+    # Build package
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build
     - cmake -DBUILD_GENERIC_ARCH=ON -DWITH_LTO=ON -DCMAKE_INSTALL_PREFIX=/usr ..
@@ -134,7 +220,9 @@ package:debian:
       - "*.tar.bz2"
 
 #
-# Static analysis
+# ┏━┓╺┳╸┏━┓╺┳╸╻┏━╸   ┏━┓┏┓╻┏━┓╻  ╻ ╻┏━┓╻┏━┓
+# ┗━┓ ┃ ┣━┫ ┃ ┃┃     ┣━┫┃┗┫┣━┫┃  ┗┳┛┗━┓┃┗━┓
+# ┗━┛ ╹ ╹ ╹ ╹ ╹┗━╸   ╹ ╹╹ ╹╹ ╹┗━╸ ╹ ┗━┛╹┗━┛
 #
 static_analysis:
   stage: test
@@ -162,7 +250,9 @@ static_analysis:
     - "static_analysis_result.txt"
 
 #
-# Gitlab pages
+# ┏━╸╻╺┳╸╻  ┏━┓┏┓    ┏━┓┏━┓┏━╸┏━╸┏━┓
+# ┃╺┓┃ ┃ ┃  ┣━┫┣┻┓   ┣━┛┣━┫┃╺┓┣╸ ┗━┓
+# ┗━┛╹ ╹ ┗━╸╹ ╹┗━┛   ╹  ╹ ╹┗━┛┗━╸┗━┛
 #
 pages:
   stage: deploy
