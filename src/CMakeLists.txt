@@ -253,6 +253,12 @@ if (HAVE_PYTHON)
             controller/python/python_sink.cpp
 	    PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-cast-function-type"
         )
+    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        set_source_files_properties(
+            controller/controller_pythonembedded.cpp
+            controller/python/python_sink.cpp
+	    PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers"
+        )
     endif()
 
     target_sources(splash-${API_VERSION} PRIVATE

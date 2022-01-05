@@ -1553,7 +1553,7 @@ void Camera::registerAttributes()
             for (int u = 0; u < 3; ++u)
                 for (int v = 0; v < 3; ++v)
                     m[u * 3 + v] = _colorMixMatrix[u][v];
-            return {m};
+            return {Value(m)};
         },
         {'v'});
     setAttributeDescription("colorMixMatrix", "Set the color correction matrix");

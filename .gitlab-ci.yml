@@ -35,29 +35,36 @@ test:20.04:
   stage: test
   image: ubuntu:20.04
   script: 
+    # Prepare bundled dependencies
+    # 
+    - ./make_deps.sh
     #
     # Test using bundled libs
-    - ./make_deps.sh
     - rm -rf build && mkdir build
-    - pushd build
-    - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
-    - make -j$(nproc)
-    - make test
-    - ./src/splash --child --prefix unittest &
-    - ./src/splash --doNotSpawn --prefix unittest ../data/share/splash/splash.json
-    - popd
+    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - make -sC build -j$(nproc)
+    - make test -sC build
+    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+    #
+    # Test using Clang
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends clang
+    - rm -rf build && mkdir build
+    - CC=clang CXX=clang++ cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - make -sC build -j$(nproc)
+    - make test -sC build
+    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
     #
     # Test using system libs
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
       libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev
     - rm -rf build && mkdir build
-    - pushd build
-    - cmake -DBUILD_GENERIC_ARCH=ON -DUSE_SYSTEM_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr ..
-    - make -j$(nproc)
-    - make test
-    - ./src/splash --child --prefix unittest &
-    - ./src/splash --doNotSpawn --prefix unittest ../data/share/splash/splash.json
-    - popd
+    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
+    - make -sC build -j$(nproc)
+    - make test -sC build
+    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
     - website
 
