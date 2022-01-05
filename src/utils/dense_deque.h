@@ -25,6 +25,7 @@
 #ifndef SPLASH_DENSE_DEQUE_H
 #define SPLASH_DENSE_DEQUE_H
 
+#include <cstddef>
 #include <initializer_list>
 #include <vector>
 
