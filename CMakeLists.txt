@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(
     splash
-    VERSION 0.9.9
+    VERSION 0.9.11
     LANGUAGES C CXX
 )
 

@@ -4,4 +4,4 @@ Exec=splash
 Type=Application
 Icon=splash.png
 Categories=AudioVideo;Video;Graphics;
-Version=0.9.9
+Version=0.9.11
