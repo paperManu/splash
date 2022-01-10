@@ -142,10 +142,10 @@ struct deserializeHelper<T, typename std::enable_if<std::is_base_of<Mesh::MeshCo
     {
         Mesh::MeshContainer meshContainer;
         meshContainer.name = deserializer<std::string>(it);
-        meshContainer.vertices = std::move(deserializer<std::vector<glm::vec4>>(it));
-        meshContainer.uvs = std::move(deserializer<std::vector<glm::vec2>>(it));
-        meshContainer.normals = std::move(deserializer<std::vector<glm::vec4>>(it));
-        meshContainer.annexe = std::move(deserializer<std::vector<glm::vec4>>(it));
+        meshContainer.vertices = deserializer<std::vector<glm::vec4>>(it);
+        meshContainer.uvs = deserializer<std::vector<glm::vec2>>(it);
+        meshContainer.normals = deserializer<std::vector<glm::vec4>>(it);
+        meshContainer.annexe = deserializer<std::vector<glm::vec4>>(it);
         return meshContainer;
     }
 };

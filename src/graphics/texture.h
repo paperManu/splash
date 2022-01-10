@@ -46,18 +46,20 @@ class Texture : public GraphObject
      *  Constructor
      * \param root Root object
      */
-    Texture(RootObject* root);
+    explicit Texture(RootObject* root);
 
     /**
      *  Destructor
      */
-    virtual ~Texture();
+    virtual ~Texture() override;
 
     /**
-     * No copy constructor, but a move one
+     * Constructors/operators
      */
     Texture(const Texture&) = delete;
     Texture& operator=(const Texture&) = delete;
+    Texture(Texture&&) = delete;
+    Texture& operator=(Texture&&) = delete;
 
     /**
      *  Bind this texture

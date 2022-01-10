@@ -28,6 +28,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLM_ENABLE_EXPERIMENTAL")
 set_source_files_properties(
     ../external/imgui/imgui_demo.cpp
     ../external/imgui/imgui_draw.cpp
+    ../external/imgui/imgui_tables.cpp
     ../external/imgui/imgui_widgets.cpp
     ../external/imgui/imgui.cpp
 	../external/hap/source/hap.c
@@ -39,10 +40,12 @@ set_source_files_properties(
     PROPERTIES COMPILE_FLAGS "-Wno-error -Wno-all -Wno-extra -Wno-unused-parameter"
 )
 
-set_source_files_properties(
-    network/channel_zmq.cpp
-    PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized"
-)
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set_source_files_properties(
+        network/channel_zmq.cpp
+        PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized"
+    )
+endif()
 
 if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
   set_source_files_properties(
@@ -180,6 +183,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     utils/subprocess.cpp
     ../external/imgui/imgui_demo.cpp
     ../external/imgui/imgui_draw.cpp
+    ../external/imgui/imgui_tables.cpp
     ../external/imgui/imgui_widgets.cpp
     ../external/imgui/imgui.cpp
     ../external/hap/source/hap.c
@@ -248,6 +252,12 @@ if (HAVE_PYTHON)
             controller/controller_pythonembedded.cpp
             controller/python/python_sink.cpp
 	    PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-cast-function-type"
+        )
+    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        set_source_files_properties(
+            controller/controller_pythonembedded.cpp
+            controller/python/python_sink.cpp
+	    PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers"
         )
     endif()
 

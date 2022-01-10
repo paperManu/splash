@@ -36,13 +36,13 @@
 namespace Splash
 {
 
-class Image_Shmdata : public Image
+class Image_Shmdata final : public Image
 {
   public:
     /**
      * Constructor
      */
-    Image_Shmdata(RootObject* root);
+    explicit Image_Shmdata(RootObject* root);
 
     /**
      * Destructor
@@ -50,10 +50,12 @@ class Image_Shmdata : public Image
     ~Image_Shmdata() final;
 
     /**
-     * No copy constructor
+     * Constructors/operators
      */
     Image_Shmdata(const Image_Shmdata&) = delete;
     Image_Shmdata& operator=(const Image_Shmdata&) = delete;
+    Image_Shmdata(Image_Shmdata&&) = delete;
+    Image_Shmdata& operator=(Image_Shmdata&&) = delete;
 
     /**
      * Set the path to read from

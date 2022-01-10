@@ -54,10 +54,10 @@ class Base
 };
 
 /**********/
-class Obj : public Base
+class Obj final : public Base
 {
   public:
-    ~Obj(){};
+    ~Obj() final = default;
 
     /**
      * Remove trailing whitespaces

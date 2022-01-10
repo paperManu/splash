@@ -159,8 +159,9 @@ void GuiMedia::render()
                         ImGui::SameLine();
                         ImGui::PushItemWidth(96);
                         auto tmpFloat = values[2].as<float>();
+                        const auto step = 1.0f;
                         ImGui::PushID((idStack + "start").c_str());
-                        if (ImGui::InputFloat("", &tmpFloat, 1.0f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                        if (ImGui::InputFloat("", &tmpFloat, step, step, "%.2f", ImGuiInputTextFlags_EnterReturnsTrue))
                         {
                             source[2] = tmpFloat;
                             updated = true;
@@ -174,7 +175,7 @@ void GuiMedia::render()
                         ImGui::PushItemWidth(96);
                         tmpFloat = values[3].as<float>();
                         ImGui::PushID((idStack + "stop").c_str());
-                        if (ImGui::InputFloat("", &tmpFloat, 1.0f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                        if (ImGui::InputFloat("", &tmpFloat, step, step, "%.2f", ImGuiInputTextFlags_EnterReturnsTrue))
                         {
                             source[3] = tmpFloat;
                             updated = true;
@@ -255,7 +256,9 @@ void GuiMedia::render()
                 ImGui::SameLine();
                 ImGui::PushItemWidth(96); // Width for the media start time input box
                 ImGui::PushID("newMediaStart");
-                if (ImGui::InputFloat("", &_newMediaStart, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                const auto stepSlow = 0.1f;
+                const auto stepFast = 1.0f;
+                if (ImGui::InputFloat("", &_newMediaStart, stepSlow, stepFast, "%.2f", ImGuiInputTextFlags_EnterReturnsTrue))
                     _newMedia[2] = _newMediaStart;
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("Start time (s)");
@@ -265,7 +268,7 @@ void GuiMedia::render()
                 ImGui::SameLine();
                 ImGui::PushItemWidth(96); // Width for the media stop time input box
                 ImGui::PushID("newMediaStop");
-                if (ImGui::InputFloat("", &_newMediaStop, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                if (ImGui::InputFloat("", &_newMediaStop, stepSlow, stepFast, "%.2f", ImGuiInputTextFlags_EnterReturnsTrue))
                     _newMedia[3] = _newMediaStop;
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("Stop time (s)");

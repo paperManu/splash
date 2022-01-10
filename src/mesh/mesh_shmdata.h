@@ -40,28 +40,30 @@
 namespace Splash
 {
 
-class Mesh_Shmdata : public Mesh
+class Mesh_Shmdata final : public Mesh
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
-    Mesh_Shmdata(RootObject* root);
+    explicit Mesh_Shmdata(RootObject* root);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~Mesh_Shmdata() final;
 
     /**
-     * No copy constructor, only move
+     * Constructors/operators
      */
     Mesh_Shmdata(const Mesh_Shmdata&) = delete;
     Mesh_Shmdata& operator=(const Mesh_Shmdata&) = delete;
+    Mesh_Shmdata(Mesh_Shmdata&&) = delete;
+    Mesh_Shmdata& operator=(Mesh_Shmdata&&) = delete;
 
     /**
-     * \brief Set the path to read from
+     * Set the path to read from
      * \param filename File to read
      */
     bool read(const std::string& filename) final;
@@ -73,25 +75,25 @@ class Mesh_Shmdata : public Mesh
     bool _capsIsValid{false};
 
     /**
-     * \brief Base init for the class
+     * Base init for the class
      */
     void init();
 
     /**
-     * \brief Callback called when receiving a new caps
+     * Callback called when receiving a new caps
      * \param dataType String holding the data type
      */
     void onCaps(const std::string& dataType);
 
     /**
-     * \brief Callback called when receiving data
+     * Callback called when receiving data
      * \param data Pointer to the data
      * \param data_size Size of the buffer
      */
     void onData(void* data, int data_size);
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 };

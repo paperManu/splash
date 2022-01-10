@@ -34,21 +34,27 @@ namespace Splash
 {
 
 /*************/
-class FilterCustom : public Filter
+class FilterCustom final : public Filter
 {
   public:
     /**
-     *  Constructor
+     * Constructor
      * \param root Root object
      */
-    FilterCustom(RootObject* root);
+    explicit FilterCustom(RootObject* root);
 
     /**
-     * No copy constructor, but a move one
+     * Destructor
+     */
+    ~FilterCustom() final = default;
+
+    /**
+     * Constructors/operators
      */
     FilterCustom(const FilterCustom&) = delete;
-    FilterCustom(FilterCustom&&) = default;
     FilterCustom& operator=(const FilterCustom&) = delete;
+    FilterCustom(FilterCustom&&) = delete;
+    FilterCustom& operator=(FilterCustom&&) = delete;
 
   private:
     std::string _shaderSource{""};                            //!< User defined fragment shader filter

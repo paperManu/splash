@@ -1,6 +1,18 @@
 Splash release notes
 ====================
 
+Splash 0.9.10 (2022-01-10)
+-------------------------
+Improvements:
+* Reduced default texture size to get better out-of-the-box framerate on low-end GPUs
+* Added CI for Ubuntu 22.04
+* Added Clang to CI
+* Updated FFmpeg to version 4.4.2
+* Updated Dear ImGui to version 1.86
+
+Bugs fixed:
+* Fixed compilation on Ubuntu 22.04
+
 Splash 0.9.8 (2021-12-13)
 -------------------------
 Bugs fixed:

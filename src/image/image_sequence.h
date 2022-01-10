@@ -44,16 +44,23 @@ class Image_Sequence : public Image
     };
 
     /**
-     * No copy constructors
+     * Destructor
+     */
+    virtual ~Image_Sequence() override = default;
+
+    /**
+     * Constructors/operators
      */
     Image_Sequence(const Image_Sequence&) = delete;
     Image_Sequence& operator=(const Image_Sequence&) = delete;
+    Image_Sequence(Image_Sequence&&) = delete;
+    Image_Sequence& operator=(Image_Sequence&&) = delete;
 
     /**
      * Set the path to read from.
      * \param filename
      */
-    virtual bool read(const std::string& dirname) = 0;
+    virtual bool read(const std::string& dirname) override = 0;
 
     /**
      * Obtain a new image

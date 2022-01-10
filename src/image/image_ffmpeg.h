@@ -53,17 +53,17 @@ extern "C" {
 namespace Splash
 {
 
-class Image_FFmpeg : public Image
+class Image_FFmpeg final : public Image
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
-    Image_FFmpeg(RootObject* root);
+    explicit Image_FFmpeg(RootObject* root);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~Image_FFmpeg() final;
 
@@ -72,9 +72,11 @@ class Image_FFmpeg : public Image
      */
     Image_FFmpeg(const Image_FFmpeg&) = delete;
     Image_FFmpeg& operator=(const Image_FFmpeg&) = delete;
+    Image_FFmpeg(Image_FFmpeg&&) = delete;
+    Image_FFmpeg& operator=(Image_FFmpeg&&) = delete;
 
     /**
-     * \brief Set the path to read from
+     * Set the path to read from
      * \param filename File to read
      * \bool Return true if all went well
      */
@@ -142,14 +144,14 @@ class Image_FFmpeg : public Image
 #endif
 
     /**
-     * \brief Convert a codec tag to a fourcc
+     * Convert a codec tag to a fourcc
      * \param tag Tag to convert
      * \return Return the tag as a string
      */
     std::string tagToFourCC(unsigned int tag);
 
     /**
-     * \brief Free everything related to FFmpeg
+     * Free everything related to FFmpeg
      */
     void freeFFmpegObjects();
 
@@ -159,12 +161,12 @@ class Image_FFmpeg : public Image
     float getMediaDuration() const;
 
     /**
-     * \brief File read loop
+     * File read loop
      */
     void readLoop();
 
     /**
-     * \brief Seek in the video
+     * Seek in the video
      * \param seconds Desired position
      */
     void seek(float seconds, bool clearQueues = true);
@@ -192,12 +194,12 @@ class Image_FFmpeg : public Image
     void updateMoreMediaInfo(Values& mediaInfo) final;
 
     /**
-     * \brief Video display loop
+     * Video display loop
      */
     void videoDisplayLoop();
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 };

@@ -33,13 +33,13 @@
 namespace Splash
 {
 
-class Sink_Shmdata : public Sink
+class Sink_Shmdata final : public Sink
 {
   public:
     /**
      * Constructor
      */
-    Sink_Shmdata(RootObject* root);
+    explicit Sink_Shmdata(RootObject* root);
 
   private:
     std::string _path{"/tmp/splash_sink"};

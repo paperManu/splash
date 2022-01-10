@@ -51,7 +51,7 @@ namespace Splash
 class Scene;
 
 /*************/
-class Gui : public ControllerObject
+class Gui final : public ControllerObject
 {
   public:
     enum class FontType : uint8_t
@@ -84,10 +84,12 @@ class Gui : public ControllerObject
     ~Gui() final;
 
     /**
-     * No copy constructor, but a move one
+     * Constructors/operators
      */
     Gui(const Gui&) = delete;
     Gui& operator=(const Gui&) = delete;
+    Gui(Gui&&) = delete;
+    Gui& operator=(Gui&&) = delete;
 
     /**
      * \brief Get pointers to this gui textures
@@ -200,6 +202,10 @@ class Gui : public ControllerObject
         std::string filename;
         uint32_t size;
     };
+
+    const int32_t _defaultWidth{900};
+    const int32_t _defaultHeight{900};
+    const float _backgroundAlpha{0.97f};
 
     bool _isInitialized{false};
     std::shared_ptr<GlWindow> _window;

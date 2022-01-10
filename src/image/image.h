@@ -60,11 +60,12 @@ class Image : public BufferObject
     virtual ~Image() override;
 
     /**
-     * No copy constructor
+     * Constructors/operators
      */
     Image(const Image&) = delete;
     Image& operator=(const Image&) = delete;
-    Image& operator=(Image&&) = default;
+    Image(Image&&) = delete;
+    Image& operator=(Image&&) = delete;
 
     /**
      * Get a pointer to the data

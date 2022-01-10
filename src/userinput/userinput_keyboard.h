@@ -30,23 +30,31 @@
 namespace Splash
 {
 
-class Keyboard : public UserInput
+class Keyboard final : public UserInput
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
-    Keyboard(RootObject* root);
+    explicit Keyboard(RootObject* root);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~Keyboard() final;
 
+    /**
+     * Constructors/operators
+     */
+    Keyboard(const Keyboard&) = delete;
+    Keyboard& operator=(const Keyboard&) = delete;
+    Keyboard(Keyboard&&) = delete;
+    Keyboard& operator=(Keyboard&&) = delete;
+
   private:
     /**
-     * \brief Input update method
+     * Input update method
      */
     void updateMethod() final;
 };
