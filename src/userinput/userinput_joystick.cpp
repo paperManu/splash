@@ -1,5 +1,6 @@
 #include "./userinput/userinput_joystick.h"
 
+#include <cmath>
 #include <regex>
 
 namespace Splash
@@ -41,7 +42,7 @@ void Joystick::updateMethod()
 
         // TODO: axes configuration, in this case for the dead zone
         for (auto& a : axes)
-            if (abs(a) < 0.2f)
+            if (std::abs(a) < 0.2f)
                 a = 0.f;
 
         if (joystick.axes.size() < axes.size())

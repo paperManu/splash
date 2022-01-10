@@ -84,7 +84,7 @@ class GuiWidget : public ControllerObject
 {
   public:
     GuiWidget(Scene* scene, const std::string& name = "");
-    virtual ~GuiWidget() override {}
+    virtual ~GuiWidget() override = default;
 
     /**
      * Render the widget

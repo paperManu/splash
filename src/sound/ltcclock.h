@@ -44,26 +44,34 @@ namespace Splash
 {
 
 /*************/
-class LtcClock : public GraphObject
+class LtcClock final : public GraphObject
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      */
-    LtcClock(bool masterClock = false, const std::string& deviceName = "");
+    explicit LtcClock(bool masterClock = false, const std::string& deviceName = "");
 
     /**
-     * \brief Destructor
+     * Destructor
      */
-    ~LtcClock();
+    ~LtcClock() final;
 
     /**
-     * \brief Safe bool idiom
+     * Constructors/operators
+     */
+    LtcClock(const LtcClock&) = delete;
+    LtcClock& operator=(const LtcClock&) = delete;
+    LtcClock(LtcClock&&) = delete;
+    LtcClock& operator=(LtcClock&&) = delete;
+
+    /**
+     * Safe bool idiom
      */
     explicit operator bool() const { return _ready; }
 
     /**
-     * \brief Get the clock as a Clock struct
+     * Get the clock as a Clock struct
      * \return Return a Timer::Point
      */
     Timer::Point getClock();
@@ -82,7 +90,7 @@ class LtcClock : public GraphObject
     std::unique_ptr<Listener> _listener;
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes() {}
 };

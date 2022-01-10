@@ -43,7 +43,7 @@ class VideoCapture;
 namespace Splash
 {
 
-class Image_OpenCV : public Image
+class Image_OpenCV final : public Image
 {
   public:
     /**
@@ -57,10 +57,12 @@ class Image_OpenCV : public Image
     ~Image_OpenCV() final;
 
     /**
-     * No copy constructor
+     * Constructors/operators
      */
     Image_OpenCV(const Image_OpenCV&) = delete;
     Image_OpenCV& operator=(const Image_OpenCV&) = delete;
+    Image_OpenCV(Image_OpenCV&&) = delete;
+    Image_OpenCV& operator=(Image_OpenCV&&) = delete;
 
     /**
      * Set the path to read from

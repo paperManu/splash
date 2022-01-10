@@ -30,19 +30,27 @@
 namespace Splash
 {
 
-class Joystick : public UserInput
+class Joystick final : public UserInput
 {
   public:
     /**
      * \brief Constructor
      * \param root Root object
      */
-    Joystick(RootObject* root);
+    explicit Joystick(RootObject* root);
 
     /**
      * \brief Destructor
      */
     ~Joystick() final;
+
+    /**
+     * Constructors/operators
+     */
+    Joystick(const Joystick&) = delete;
+    Joystick& operator=(const Joystick&) = delete;
+    Joystick(Joystick&&) = delete;
+    Joystick& operator=(Joystick&&) = delete;
 
   private:
     struct Stick

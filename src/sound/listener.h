@@ -43,39 +43,41 @@ namespace Splash
 {
 
 /*************/
-class Listener : public GraphObject
+class Listener final : public GraphObject
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      */
     Listener();
 
     /**
-     * \brief Destructor
+     * Destructor
      */
-    ~Listener() override;
+    ~Listener() final;
 
     /**
-     * \brief Safe bool idiom
+     * Constructors/operators
+     */
+    Listener(const Listener&) = delete;
+    Listener& operator=(const Listener&) = delete;
+    Listener(Listener&&) = delete;
+    Listener& operator=(Listener&&) = delete;
+
+    /**
+     * Safe bool idiom
      */
     explicit operator bool() const { return _ready; }
 
     /**
-     * No copy, but some move constructors
-     */
-    Listener(const Listener&) = delete;
-    Listener& operator=(const Listener&) = delete;
-
-    /**
-     * \brief Add a buffer to the playing queue
+     * Add a buffer to the playing queue
      * \return Return false if there was an error
      */
     template <typename T>
     bool readFromQueue(std::vector<T>& buffer);
 
     /**
-     * \brief Set the audio parameters
+     * Set the audio parameters
      */
     void setParameters(uint32_t channels, uint32_t sampleRate, Sound_Engine::SampleFormat format, const std::string& deviceName = "");
 
@@ -97,23 +99,23 @@ class Listener : public GraphObject
     std::atomic_int _ringUnusedSpace{0};
 
     /**
-     * \brief Free all PortAudio resources
+     * Free all PortAudio resources
      */
     void freeResources();
 
     /**
-     * \brief Initialize PortAudio resources
+     * Initialize PortAudio resources
      */
     void initResources();
 
     /**
-     * \brief PortAudio callback
+     * PortAudio callback
      */
     static int portAudioCallback(
         const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData);
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 };

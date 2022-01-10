@@ -41,7 +41,7 @@
 namespace Splash
 {
 
-class Texture_Image : public Texture
+class Texture_Image final : public Texture
 {
   public:
     /**
@@ -54,7 +54,7 @@ class Texture_Image : public Texture
      * \param multisample Sample count for MSAA
      * \param cubemap True to request a cubemap
      */
-    Texture_Image(RootObject* root);
+    explicit Texture_Image(RootObject* root);
     Texture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisample = 0, bool cubemap = false);
 
     /**
@@ -63,10 +63,12 @@ class Texture_Image : public Texture
     ~Texture_Image() final;
 
     /**
-     * No copy constructor, but a move one
+     * Constructors/operators
      */
     Texture_Image(const Texture_Image&) = delete;
     Texture_Image& operator=(const Texture_Image&) = delete;
+    Texture_Image(Texture_Image&&) = delete;
+    Texture_Image& operator=(Texture_Image&&) = delete;
 
     /**
      * \brief Sets the specified buffer as the texture on the device

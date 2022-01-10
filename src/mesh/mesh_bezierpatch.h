@@ -39,43 +39,44 @@
 namespace Splash
 {
 
-class Mesh_BezierPatch : public Mesh
+class Mesh_BezierPatch final : public Mesh
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
-    Mesh_BezierPatch(RootObject* root);
+    explicit Mesh_BezierPatch(RootObject* root);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
-    virtual ~Mesh_BezierPatch() final;
+    ~Mesh_BezierPatch() final;
 
     /**
-     * No copy constructor, but a copy operator
+     * Constructors/operators
      */
     Mesh_BezierPatch(const Mesh_BezierPatch&) = delete;
     Mesh_BezierPatch& operator=(const Mesh_BezierPatch&) = delete;
-    Mesh_BezierPatch& operator=(Mesh_BezierPatch&&) = default;
+    Mesh_BezierPatch(Mesh_BezierPatch&&) = delete;
+    Mesh_BezierPatch& operator=(Mesh_BezierPatch&&) = delete;
 
     /**
-     * \brief Get the list of the control points
+     * Get the list of the control points
      * \return Returns the list
      */
     std::vector<glm::vec2> getControlPoints() const { return _patch.vertices; }
 
     /**
-     * \brief Select the bezier mesh or the control points as the mesh to output
+     * Select the bezier mesh or the control points as the mesh to output
      * \param control If true, selects the control points
      */
     void switchMeshes(bool control);
 
     /**
-     * \brief Update the content of the mesh
+     * Update the content of the mesh
      */
-    virtual void update() final;
+    void update() final;
 
   private:
     struct Patch
@@ -118,12 +119,12 @@ class Mesh_BezierPatch : public Mesh
     }
 
     /**
-     * \brief Initialization
+     * Initialization
      */
     void init();
 
     /**
-     * \brief Create a patch
+     * Create a patch
      * \param width Horizontal control point count
      * \param height Vertical control point count
      * \param patch Patch description
@@ -132,12 +133,12 @@ class Mesh_BezierPatch : public Mesh
     void createPatch(Patch& patch);
 
     /**
-     * \brief Update the underlying mesh from the patch control points
+     * Update the underlying mesh from the patch control points
      */
     void updatePatch();
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 };

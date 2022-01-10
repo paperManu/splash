@@ -41,7 +41,7 @@
 namespace Splash
 {
 
-class Shader : public GraphObject
+class Shader final : public GraphObject
 {
   public:
     enum ProgramType
@@ -99,10 +99,12 @@ class Shader : public GraphObject
     ~Shader() final;
 
     /**
-     * No copy constructor, but a move one
+     * Constructors/operators
      */
     Shader(const Shader&) = delete;
     Shader& operator=(const Shader&) = delete;
+    Shader(Shader&&) = delete;
+    Shader& operator=(Shader&&) = delete;
 
     /**
      * \brief Activate this shader

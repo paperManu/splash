@@ -30,23 +30,31 @@
 namespace Splash
 {
 
-class Mouse : public UserInput
+class Mouse final : public UserInput
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
-    Mouse(RootObject* root);
+    explicit Mouse(RootObject* root);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~Mouse() final;
 
+    /**
+     * Constructors/operators
+     */
+    Mouse(const Mouse&) = delete;
+    Mouse& operator=(const Mouse&) = delete;
+    Mouse(Mouse&&) = delete;
+    Mouse& operator=(Mouse&&) = delete;
+
   private:
     /**
-     * \brief Input update method
+     * Input update method
      */
     void updateMethod() final;
 };

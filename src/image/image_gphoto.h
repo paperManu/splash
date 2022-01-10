@@ -40,7 +40,7 @@ typedef Camera GpCamera;
 namespace Splash
 {
 
-class Image_GPhoto : public Image_Sequence
+class Image_GPhoto final : public Image_Sequence
 {
   public:
     /**
@@ -51,13 +51,15 @@ class Image_GPhoto : public Image_Sequence
     /**
      * Destructor
      */
-    ~Image_GPhoto() override;
+    ~Image_GPhoto() final;
 
     /**
-     * No copy constructor
+     * Constructors/operators
      */
     Image_GPhoto(const Image_GPhoto&) = delete;
     Image_GPhoto& operator=(const Image_GPhoto&) = delete;
+    Image_GPhoto(Image_GPhoto&&) = delete;
+    Image_GPhoto& operator=(Image_GPhoto&&) = delete;
 
     /**
      * Capture a new photo

@@ -43,7 +43,7 @@ namespace Splash
 {
 
 /*************/
-class ChannelOutput_Shmdata : public ChannelOutput
+class ChannelOutput_Shmdata final : public ChannelOutput
 {
   public:
     /**
@@ -56,15 +56,15 @@ class ChannelOutput_Shmdata : public ChannelOutput
     /**
      * Destructor
      */
-    ~ChannelOutput_Shmdata();
+    ~ChannelOutput_Shmdata() final;
 
     /**
      * Other constructors
      */
-    ChannelOutput_Shmdata(ChannelOutput_Shmdata&) = default;
-    ChannelOutput_Shmdata(ChannelOutput_Shmdata&&) = default;
-    ChannelOutput_Shmdata& operator=(ChannelOutput_Shmdata&) = default;
-    ChannelOutput_Shmdata& operator=(ChannelOutput_Shmdata&&) = default;
+    ChannelOutput_Shmdata(ChannelOutput_Shmdata&) = delete;
+    ChannelOutput_Shmdata(ChannelOutput_Shmdata&&) = delete;
+    ChannelOutput_Shmdata& operator=(ChannelOutput_Shmdata&) = delete;
+    ChannelOutput_Shmdata& operator=(ChannelOutput_Shmdata&&) = delete;
 
     /**
      * Connect to a target
@@ -155,7 +155,7 @@ class ChannelOutput_Shmdata : public ChannelOutput
 };
 
 /*************/
-class ChannelInput_Shmdata : public ChannelInput
+class ChannelInput_Shmdata final : public ChannelInput
 {
   public:
     /**
@@ -170,15 +170,15 @@ class ChannelInput_Shmdata : public ChannelInput
     /**
      * Destructor
      */
-    ~ChannelInput_Shmdata();
+    ~ChannelInput_Shmdata() final;
 
     /**
      * Other constructors
      */
-    ChannelInput_Shmdata(ChannelInput_Shmdata&) = default;
-    ChannelInput_Shmdata(ChannelInput_Shmdata&&) = default;
-    ChannelInput_Shmdata& operator=(ChannelInput_Shmdata&) = default;
-    ChannelInput_Shmdata& operator=(ChannelInput_Shmdata&&) = default;
+    ChannelInput_Shmdata(ChannelInput_Shmdata&) = delete;
+    ChannelInput_Shmdata(ChannelInput_Shmdata&&) = delete;
+    ChannelInput_Shmdata& operator=(ChannelInput_Shmdata&) = delete;
+    ChannelInput_Shmdata& operator=(ChannelInput_Shmdata&&) = delete;
 
     /**
      * Connect to the given target

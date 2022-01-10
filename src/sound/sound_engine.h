@@ -61,6 +61,14 @@ class Sound_Engine
     ~Sound_Engine();
 
     /**
+     * Constructors/operators
+     */
+    Sound_Engine(const Sound_Engine&) = default;
+    Sound_Engine& operator=(const Sound_Engine&) = default;
+    Sound_Engine(Sound_Engine&&) = default;
+    Sound_Engine& operator=(Sound_Engine&&) = default;
+
+    /**
      * Get device by name, or default device
      * \param inputDevice Set to true to get an input device, false otherwise
      * \param name Device name

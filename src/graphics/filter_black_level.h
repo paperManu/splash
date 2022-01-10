@@ -32,7 +32,7 @@ namespace Splash
 {
 
 /*************/
-class FilterBlackLevel : public Filter
+class FilterBlackLevel final : public Filter
 {
   public:
     /**
@@ -42,11 +42,17 @@ class FilterBlackLevel : public Filter
     FilterBlackLevel(RootObject* root);
 
     /**
-     * No copy constructor, but a move one
+     * Destructor
+     */
+    ~FilterBlackLevel() final = default;
+
+    /**
+     * Constructors/operators
      */
     FilterBlackLevel(const FilterBlackLevel&) = delete;
-    FilterBlackLevel(FilterBlackLevel&&) = default;
     FilterBlackLevel& operator=(const FilterBlackLevel&) = delete;
+    FilterBlackLevel(FilterBlackLevel&&) = delete;
+    FilterBlackLevel& operator=(FilterBlackLevel&&) = delete;
 
     /**
      *  Render the filter

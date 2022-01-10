@@ -38,14 +38,14 @@
 namespace Splash
 {
 
-class Image_V4L2 : public Image
+class Image_V4L2 final : public Image
 {
   public:
     /**
      * \brief Constructor
      * \param root Root object
      */
-    Image_V4L2(RootObject* root);
+    explicit Image_V4L2(RootObject* root);
 
     /**
      * \brief Destructor
@@ -57,7 +57,8 @@ class Image_V4L2 : public Image
      */
     Image_V4L2(const Image_V4L2&) = delete;
     Image_V4L2& operator=(const Image_V4L2&) = delete;
-    Image_V4L2& operator=(Image_V4L2&&) = default;
+    Image_V4L2(Image_V4L2&&) = delete;
+    Image_V4L2& operator=(Image_V4L2&&) = delete;
 
   private:
     std::string _devicePath{"/dev/video0"};

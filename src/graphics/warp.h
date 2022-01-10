@@ -44,14 +44,14 @@ namespace Splash
 {
 
 /*************/
-class Warp : public Texture
+class Warp final : public Texture
 {
   public:
     /**
      * \brief Constructor
      * \param root Root object
      */
-    Warp(RootObject* root);
+    explicit Warp(RootObject* root);
 
     /**
      * \brief Destructor
@@ -59,11 +59,12 @@ class Warp : public Texture
     ~Warp() final;
 
     /**
-     * No copy constructor, but a move one
+     * Constructors/operators
      */
     Warp(const Warp&) = delete;
-    Warp(Warp&&) = default;
     Warp& operator=(const Warp&) = delete;
+    Warp(Warp&&) = delete;
+    Warp& operator=(Warp&&) = delete;
 
     /**
      * \brier Bind this warp

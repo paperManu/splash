@@ -41,32 +41,34 @@ namespace Splash
 {
 
 /*************/
-class Speaker : public GraphObject
+class Speaker final : public GraphObject
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      */
     Speaker();
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~Speaker() final;
 
     /**
-     * \brief Safe bool idiom
+     * Constructors/operators
+     */
+    Speaker(const Speaker&) = delete;
+    Speaker& operator=(const Speaker&) = delete;
+    Speaker(Speaker&&) = delete;
+    Speaker& operator=(Speaker&&) = delete;
+
+    /**
+     * Safe bool idiom
      */
     explicit operator bool() const { return _ready; }
 
     /**
-     * No copy, but some move constructors
-     */
-    Speaker(const Speaker&) = delete;
-    Speaker& operator=(const Speaker&) = delete;
-
-    /**
-     * \brief Add a buffer to the playing queue
+     * Add a buffer to the playing queue
      * \param buffer Buffer to add
      * \return Return false if there was an error
      */
@@ -74,12 +76,12 @@ class Speaker : public GraphObject
     bool addToQueue(const ResizableArray<T>& buffer);
 
     /**
-     * \brief Clear the queue
+     * Clear the queue
      */
     void clearQueue();
 
     /**
-     * \brief Set the audio parameters
+     * Set the audio parameters
      * \param channels Channel count
      * \param sampleRate Sample rate
      * \param format Sample format
@@ -107,17 +109,17 @@ class Speaker : public GraphObject
     std::mutex _ringWriteMutex;
 
     /**
-     * \brief Free all PortAudio resources
+     * Free all PortAudio resources
      */
     void freeResources();
 
     /**
-     * \brief Initialize PortAudio resources
+     * Initialize PortAudio resources
      */
     void initResources();
 
     /**
-     * \brief PortAudio callback
+     * PortAudio callback
      * \param in Unused
      * \param out Pointer to output data
      * \param framesPerBuffer Frame count
@@ -128,7 +130,7 @@ class Speaker : public GraphObject
         const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData);
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 };

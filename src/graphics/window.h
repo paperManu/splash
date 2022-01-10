@@ -50,7 +50,7 @@ class Gui;
 
 /*************/
 //! Window class, holding the GL context
-class Window : public GraphObject
+class Window final : public GraphObject
 {
   public:
     /**
@@ -65,10 +65,12 @@ class Window : public GraphObject
     ~Window() final;
 
     /**
-     * No copy constructor, but a move one
+     * Constructors/operators
      */
     Window(const Window&) = delete;
     Window& operator=(const Window&) = delete;
+    Window(Window&&) = delete;
+    Window& operator=(Window&&) = delete;
 
     /**
      * Get grabbed character (not necesserily a specific key)

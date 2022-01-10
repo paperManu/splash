@@ -54,7 +54,7 @@ class UserInput : public GraphObject
     };
 
     /**
-     * \brief Compares two states, only considering the action and the modifiers
+     * Compares two states, only considering the action and the modifiers
      * \param lhs First state
      * \param rhs Second state
      * \return Return true if the states are considered identical
@@ -66,47 +66,55 @@ class UserInput : public GraphObject
 
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
     explicit UserInput(RootObject* root);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     virtual ~UserInput() override;
 
     /**
-     * \brief Lock the input to the given id
+     * Constructors/operators
+     */
+    UserInput(const UserInput&) = delete;
+    UserInput& operator=(const UserInput&) = delete;
+    UserInput(UserInput&&) = delete;
+    UserInput& operator=(UserInput&&) = delete;
+
+    /**
+     * Lock the input to the given id
      * \param id User ID to lock this input to
      */
     bool capture(const std::string& id);
 
     /**
-     * \brief Clear the input state
+     * Clear the input state
      */
     void clearState() { _state.clear(); }
 
     /**
-     * \brief Get the input state
+     * Get the input state
      * \return Return the input state as vector of States
      */
     std::vector<State> getState(const std::string& id);
 
     /**
-     * \brief Release the input
+     * Release the input
      * \param id User ID, used to check that the right user asks for release
      */
     void release(const std::string& id);
 
     /**
-     * \brief Remove a callback
+     * Remove a callback
      * \param state State for which to remove a callback
      */
     static void resetCallback(const State& state);
 
     /**
-     * \brief Set a new callback for the given state
+     * Set a new callback for the given state
      * This captures any state matching the given one. Only action and modifiers attributes are used for registering callbacks
      * \param state State which should trigger the callback
      * \param cb Callback
@@ -129,29 +137,29 @@ class UserInput : public GraphObject
     static std::map<State, std::function<void(const State&)>, StateCompare> _callbacks; //!< Callbacks for specific events
 
     /**
-     * \brief Get a window name from its GLFW handler
+     * Get a window name from its GLFW handler
      * \param window GLFW window handler
      * \return Return window name
      */
     std::string getWindowName(const GLFWwindow* glfwWindow) const;
 
     /**
-     * \brief Update loop
+     * Update loop
      */
     void updateLoop();
 
     /**
-     * \brief Callbacks update method
+     * Callbacks update method
      */
     virtual void updateCallbacks();
 
     /**
-     * \brief Input update method
+     * Input update method
      */
     virtual void updateMethod(){};
 
     /**
-     * \brief State update method
+     * State update method
      * \param state State container to update
      */
     virtual void readState(){};

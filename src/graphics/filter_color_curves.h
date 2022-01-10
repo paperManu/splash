@@ -32,21 +32,27 @@ namespace Splash
 {
 
 /*************/
-class FilterColorCurves : public Filter
+class FilterColorCurves final : public Filter
 {
   public:
     /**
-     *  Constructor
+     * Constructor
      * \param root Root object
      */
     FilterColorCurves(RootObject* root);
 
     /**
-     * No copy constructor, but a move one
+     * Destructor
+     */
+    ~FilterColorCurves() final = default;
+
+    /**
+     * Constructors/operators
      */
     FilterColorCurves(const FilterColorCurves&) = delete;
-    FilterColorCurves(FilterColorCurves&&) = default;
     FilterColorCurves& operator=(const FilterColorCurves&) = delete;
+    FilterColorCurves(FilterColorCurves&&) = delete;
+    FilterColorCurves& operator=(FilterColorCurves&&) = delete;
 
   private:
     Values _colorCurves{}; //!< RGB points for the color curves, active if at least 3 points are set
@@ -62,7 +68,7 @@ class FilterColorCurves : public Filter
     void updateShaderParameters();
 
     /**
-     *  Updates the shader uniforms according to the textures and images the filter is connected to.
+     * Updates the shader uniforms according to the textures and images the filter is connected to.
      */
     void updateUniforms() override;
 };

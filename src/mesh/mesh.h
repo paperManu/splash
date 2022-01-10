@@ -58,14 +58,20 @@ class Mesh : public BufferObject
      * \param root Root object
      * \param meshContainer Mesh container to initialize the Mesh from
      */
-    Mesh(RootObject* root, MeshContainer meshContainer = MeshContainer());
+    explicit Mesh(RootObject* root, MeshContainer meshContainer = MeshContainer());
 
     /**
-     * No copy constructor, but a copy operator
+     * Destructor
+     */
+    ~Mesh() override = default;
+
+    /**
+     * Constructors/operators
      */
     Mesh(const Mesh&) = delete;
     Mesh& operator=(const Mesh&) = delete;
-    Mesh& operator=(Mesh&&) = default;
+    Mesh(Mesh&&) = delete;
+    Mesh& operator=(Mesh&&) = delete;
 
     /**
      * Compare meshes based on their timestamps
