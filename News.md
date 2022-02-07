@@ -1,6 +1,13 @@
 Splash release notes
 ====================
 
+Splash 0.9.12 (2022-02-07)
+-------------------------
+Bugs fixed:
+* Fixed a regression in camera calibration
+* Fixed crash in Link when incoming buffer is empty
+* Fixed Calimiro-related compilation issues
+
 Splash 0.9.10 (2022-01-10)
 -------------------------
 Improvements:
