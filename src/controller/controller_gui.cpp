@@ -854,7 +854,7 @@ void Gui::render()
         std::string windowName = "Splash Control Panel";
         if (!_configurationPath.empty())
             windowName += " - " + _configurationPath;
-        ImGui::SetNextWindowSize(ImVec2(_defaultWidth, _defaultHeight));
+        ImGui::SetNextWindowSize(ImVec2(_defaultWidth, _defaultHeight), ImGuiCond_Once);
         ImGui::SetNextWindowBgAlpha(_backgroundAlpha);
         ImGui::Begin(windowName.c_str(), nullptr, _windowFlags);
         _windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse;

@@ -297,7 +297,7 @@ std::optional<GeometricCalibrator::Calibration> GeometricCalibrator::calibration
                 auto serializedImage = imageObject.serialize();
 
                 // Send the buffer, and make sure it has been received and displayed
-                sendBuffer(_worldImageName, std::move(serializedImage));
+                sendBuffer(std::move(serializedImage));
                 for (int64_t updatedTimestamp = 0; updatedTimestamp != imageObject.getTimestamp();
                      updatedTimestamp = getObjectAttribute(targetWindowName, "timestamp")[0].as<int64_t>())
                     std::this_thread::sleep_for(15ms);

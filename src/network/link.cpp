@@ -79,6 +79,9 @@ bool Link::waitForBufferSending(std::chrono::milliseconds maximumWait)
 /*************/
 bool Link::sendBuffer(SerializedObject&& buffer)
 {
+    if (buffer.size() == 0)
+        return true;
+
     return _channelOutput->sendBuffer(std::move(buffer));
 }
 
@@ -131,6 +134,9 @@ void Link::handleInputMessages(const std::vector<uint8_t>& message)
 /*************/
 void Link::handleInputBuffers(SerializedObject&& buffer)
 {
+    if (buffer.size() == 0)
+        return;
+
     auto bufferDataIt = buffer._data.cbegin();
     const auto name = Serial::detail::deserializer<std::string>(bufferDataIt);
     if (_rootObject)

@@ -115,12 +115,12 @@ void GuiCalibration::renderTexCoordCalibration(ImVec2& availableSize)
 
     auto tmpCameraPositionValue = getObjectAttribute("texCoordGenerator", "eyePosition");
     std::array<float, 3> tmpCameraPosition{tmpCameraPositionValue[0].as<float>(), tmpCameraPositionValue[1].as<float>(), tmpCameraPositionValue[2].as<float>()};
-    if (ImGui::InputFloat3("Eye position", tmpCameraPosition.data(), 5, ImGuiInputTextFlags_None))
+    if (ImGui::InputFloat3("Eye position", tmpCameraPosition.data(), "%.5f", ImGuiInputTextFlags_None))
         setObjectAttribute("texCoordGenerator", "eyePosition", {tmpCameraPosition[0], tmpCameraPosition[1], tmpCameraPosition[2]});
 
     auto tmpCameraOrientationValue = getObjectAttribute("texCoordGenerator", "eyeOrientation");
     std::array<float, 3> tmpCameraOrientation{tmpCameraOrientationValue[0].as<float>(), tmpCameraOrientationValue[1].as<float>(), tmpCameraOrientationValue[2].as<float>()};
-    if (ImGui::InputFloat3("Eye orientation", tmpCameraOrientation.data(), 5, ImGuiInputTextFlags_None))
+    if (ImGui::InputFloat3("Eye orientation", tmpCameraOrientation.data(), "%.5f", ImGuiInputTextFlags_None))
         setObjectAttribute("texCoordGenerator", "eyeOrientation", {tmpCameraOrientation[0], tmpCameraOrientation[1], tmpCameraOrientation[2]});
 
     if (ImGui::Button("Normalize orientation", ImVec2(availableSize.x * 0.5f - 12.f, 24.f)))
@@ -133,7 +133,7 @@ void GuiCalibration::renderTexCoordCalibration(ImVec2& availableSize)
         ImGui::SetTooltip("Replace the selected mesh with the new one with computed texture coordinates");
 
     auto tmpHorizonRotation = getObjectAttribute("texCoordGenerator", "horizonRotation")[0].as<float>();
-    if (ImGui::InputFloat("Horizon (degrees)", &tmpHorizonRotation, 5, ImGuiInputTextFlags_None))
+    if (ImGui::InputFloat("Horizon (degrees)", &tmpHorizonRotation))
         setObjectAttribute("texCoordGenerator", "horizonRotation", {tmpHorizonRotation});
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Additional rotation to align texture coordinates with horizon");
@@ -156,7 +156,7 @@ void GuiCalibration::renderTexCoordCalibration(ImVec2& availableSize)
         _stringToMethod[tmpCurrentMethod] == calimiro::TexCoordUtils::texCoordMethod::DOMEMASTER)
     {
         auto tmpFov = getObjectAttribute("texCoordGenerator", "fov")[0].as<float>();
-        if (ImGui::InputFloat("Field of view (degrees)", &tmpFov, 5, ImGuiInputTextFlags_None))
+        if (ImGui::InputFloat("Field of view (degrees)", &tmpFov))
             setObjectAttribute("texCoordGenerator", "fov", {tmpFov});
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Range of modelisation of a spheric object, in degrees");

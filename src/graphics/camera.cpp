@@ -250,13 +250,13 @@ bool Camera::doCalibration()
     {
         for (double t = 0.0; t <= 1.3; t += 0.3)
         {
-            gsl_vector_set(x, 0, 50.0 + (static_cast<float>(rand() / RAND_MAX) * 2.0 - 1.0) * 25.0);
+            gsl_vector_set(x, 0, 50.0 + (static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0 - 1.0) * 25.0);
             gsl_vector_set(x, 1, s);
             gsl_vector_set(x, 2, t);
             for (int i = 0; i < 3; ++i)
             {
                 gsl_vector_set(x, i + 3, eyeOriginal[i]);
-                gsl_vector_set(x, i + 6, static_cast<float>(rand() / RAND_MAX) * M_PI * 2.0);
+                gsl_vector_set(x, i + 6, static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * M_PI * 2.0);
             }
 
             gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
