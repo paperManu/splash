@@ -3,6 +3,7 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
 stages:
+  - build
   - test
   - coverage
   - deploy
@@ -218,6 +219,9 @@ package:debian:
     paths:
       - "*.deb"
       - "*.tar.bz2"
+
+include:
+  - remote: 'https://gitlab.com/sat-metalab/distributions/mpa-bionic-arm64-jetson/-/raw/feature/gitlab-ci-package/.gitlab-ci-package.yml'
 
 #
 # ┏━┓╺┳╸┏━┓╺┳╸╻┏━╸   ┏━┓┏┓╻┏━┓╻  ╻ ╻┏━┓╻┏━┓
