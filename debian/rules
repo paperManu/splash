@@ -5,6 +5,9 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 export DEB_CFLAGS_MAINT_APPEND  = -Wall
 export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
+export CC = "/usr/bin/gcc-8"
+export CXX = "/usr/bin/g++-8"
+
 %:
 	dh $@  
 
