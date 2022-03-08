@@ -51,6 +51,8 @@ test:20.04:gcc-bundled-libs:
     - make test -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+  except:
+    - debian/master
 
 test:20.04:clang-bundled-libs:
   stage: test
@@ -72,6 +74,8 @@ test:20.04:clang-bundled-libs:
     - make test -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+  except:
+    - debian/master
 
 test:20.04:gcc-system-libs:
   stage: test
@@ -108,6 +112,8 @@ test:22.04:gcc-bundled-libs:
     - make test -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+  except:
+    - debian/master
 
 test:22.04:clang-bundled-libs:
   stage: test
@@ -124,6 +130,8 @@ test:22.04:clang-bundled-libs:
     - make test -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+  except:
+    - debian/master
 
 test:22.04:gcc-system-libs:
   stage: test
@@ -161,6 +169,8 @@ test:archlinux:
     - cmake -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make test
+  except:
+    - debian/master
 
 #
 # Test coverage
