@@ -97,6 +97,7 @@ test:20.04:gcc-system-libs:
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
     - website
+    - debian/master
 
 test:22.04:gcc-bundled-libs:
   stage: test
@@ -148,6 +149,7 @@ test:22.04:gcc-system-libs:
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
     - website
+    - debian/master
 
 test:archlinux:
   stage: test
