@@ -52,7 +52,7 @@ test:20.04:gcc-bundled-libs:
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
-    - debian/master
+    - /^debian.*$/
 
 test:20.04:clang-bundled-libs:
   stage: test
@@ -75,7 +75,7 @@ test:20.04:clang-bundled-libs:
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
-    - debian/master
+    - /^debian.*$/
 
 test:20.04:gcc-system-libs:
   stage: test
@@ -97,7 +97,7 @@ test:20.04:gcc-system-libs:
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
     - website
-    - debian/master
+    - /^debian.*$/
 
 test:22.04:gcc-bundled-libs:
   stage: test
@@ -114,7 +114,7 @@ test:22.04:gcc-bundled-libs:
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
-    - debian/master
+    - /^debian.*$/
 
 test:22.04:clang-bundled-libs:
   stage: test
@@ -132,7 +132,7 @@ test:22.04:clang-bundled-libs:
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
-    - debian/master
+    - /^debian.*$/
 
 test:22.04:gcc-system-libs:
   stage: test
@@ -149,7 +149,7 @@ test:22.04:gcc-system-libs:
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
     - website
-    - debian/master
+    - /^debian.*$/
 
 test:archlinux:
   stage: test
@@ -172,7 +172,7 @@ test:archlinux:
     - make -j$(nproc)
     - make test
   except:
-    - debian/master
+    - /^debian.*$/
 
 #
 # Test coverage
