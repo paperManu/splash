@@ -70,23 +70,30 @@ class GlWindow
     GLFWwindow* getMainWindow() const { return _mainWindow; }
 
     /**
-     * Set the context of this window as current
-     * \return Return true if everything went well
+     * Get whether this GLFW window is the current context
+     * \return Return true if this window is the current context
      */
-    bool setAsCurrentContext() const
+    bool isCurrentContext() const
+    {
+        return _window == glfwGetCurrentContext();
+    }
+
+    /**
+     * Set the context of this window as current
+     */
+    void setAsCurrentContext()
     {
         _previousWindow = glfwGetCurrentContext();
         if (_previousWindow == _window)
-            return true;
+            return;
         _mutex.lock();
         glfwMakeContextCurrent(_window);
-        return true;
     }
 
     /**
      * Release the context
      */
-    void releaseContext() const
+    void releaseContext()
     {
         if (_window == _previousWindow)
             _previousWindow = nullptr;
@@ -104,8 +111,8 @@ class GlWindow
     }
 
   private:
-    mutable std::mutex _mutex;
-    mutable GLFWwindow* _previousWindow{nullptr};
+    std::mutex _mutex;
+    GLFWwindow* _previousWindow{nullptr};
     GLFWwindow* _window{nullptr};
     GLFWwindow* _mainWindow{nullptr};
 };
