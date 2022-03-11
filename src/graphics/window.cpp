@@ -696,7 +696,7 @@ bool Window::setProjectionSurface()
 /*************/
 void Window::setWindowDecoration(bool hasDecoration)
 {
-    if (!_window || !_window->isCurrentContext())
+    if (glfwGetCurrentContext() == nullptr)
         return;
 
     glfwWindowHint(GLFW_VISIBLE, true);
@@ -728,8 +728,10 @@ void Window::setWindowDecoration(bool hasDecoration)
 /*************/
 void Window::updateSwapInterval(int swapInterval)
 {
-    if (!_window->isCurrentContext())
-        Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
+    if (!_window)
+        return;
+
+    _window->setAsCurrentContext();
 
     _swapInterval = std::max<int>(-1, swapInterval);
     glfwSwapInterval(_swapInterval);
