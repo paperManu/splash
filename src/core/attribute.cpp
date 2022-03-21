@@ -69,14 +69,6 @@ bool Attribute::operator()(const Values& args)
     if (_isLocked)
         return false;
 
-    // Run all set callbacks
-    if (!_callbacks.empty())
-    {
-        std::lock_guard<std::mutex> lockCb(_callbackMutex);
-        for (const auto& cb : _callbacks)
-            cb.second(_objectName, _name);
-    }
-
     if (!_setFunc)
         return false;
 
@@ -101,7 +93,17 @@ bool Attribute::operator()(const Values& args)
         return false;
     }
 
-    return _setFunc(args);
+    const auto returnValue =  _setFunc(args);
+
+    // Run all set callbacks
+    if (!_callbacks.empty())
+    {
+        std::lock_guard<std::mutex> lockCb(_callbackMutex);
+        for (const auto& cb : _callbacks)
+            cb.second(_objectName, _name);
+    }
+
+    return returnValue;
 }
 
 /*************/
