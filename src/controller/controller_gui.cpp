@@ -52,8 +52,7 @@ Gui::Gui(std::shared_ptr<GlWindow> w, RootObject* s)
         return;
 
     _window = w;
-    if (!_window->setAsCurrentContext())
-        Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
+    _window->setAsCurrentContext();
     glGetError();
 
     _fbo = std::make_unique<Framebuffer>(_root);
@@ -85,12 +84,11 @@ Gui::~Gui()
     Log::get() << Log::DEBUGGING << "Gui::~Gui - Destructor" << Log::endl;
 #endif
 
-    if (_window->setAsCurrentContext())
-    {
-        // Clean ImGui
-        ImGui::DestroyContext();
-        _window->releaseContext();
-    }
+    _window->setAsCurrentContext();
+
+    // Clean ImGui
+    ImGui::DestroyContext();
+    _window->releaseContext();
 
     glDeleteTextures(1, &_imFontTextureId);
     glDeleteProgram(_imGuiShaderHandle);
@@ -1022,8 +1020,7 @@ void Gui::setOutputSize(int width, int height)
     if (width == 0 || height == 0)
         return;
 
-    if (!_window->setAsCurrentContext())
-        Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
+    _window->setAsCurrentContext();
 
     _fbo->setSize(width, height);
 
