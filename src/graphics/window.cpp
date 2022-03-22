@@ -512,9 +512,7 @@ void Window::setupFBOs()
 /*************/
 void Window::swapBuffers()
 {
-    if (!_window->setAsCurrentContext())
-        Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
-
+    _window->setAsCurrentContext();
     glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
 
     // Only one window will wait for vblank, the others draws directly into front buffer
@@ -661,9 +659,7 @@ void Window::setEventsCallbacks()
 /*************/
 bool Window::setProjectionSurface()
 {
-    if (!_window->setAsCurrentContext())
-        Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
-    ;
+    _window->setAsCurrentContext();
     glfwShowWindow(_window->get());
     glfwSwapInterval(_swapInterval);
 
@@ -732,8 +728,10 @@ void Window::setWindowDecoration(bool hasDecoration)
 /*************/
 void Window::updateSwapInterval(int swapInterval)
 {
-    if (!_window->setAsCurrentContext())
-        Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
+    if (!_window)
+        return;
+
+    _window->setAsCurrentContext();
 
     _swapInterval = std::max<int>(-1, swapInterval);
     glfwSwapInterval(_swapInterval);
@@ -744,11 +742,21 @@ void Window::updateSwapInterval(int swapInterval)
 /*************/
 void Window::updateWindowShape()
 {
-    if (glfwGetCurrentContext() == nullptr)
+    if (!_window)
         return;
+
+    bool wasGlfwContextEnabled = true;
+    if (!_window->isCurrentContext())
+    {
+        wasGlfwContextEnabled = false;
+        _window->setAsCurrentContext();
+    }
 
     glfwSetWindowPos(_window->get(), _windowRect[0], _windowRect[1]);
     glfwSetWindowSize(_window->get(), _windowRect[2], _windowRect[3]);
+
+    if (!wasGlfwContextEnabled)
+        _window->releaseContext();
 }
 
 /*************/

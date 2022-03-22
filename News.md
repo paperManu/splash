@@ -1,6 +1,13 @@
 Splash release notes
 ====================
 
+Splash 0.9.14 (2022-03-22)
+-------------------------
+Bugs fixed:
+* Fixed callbacks being called before attributes are set
+* Fixed broken decorated parameters of Window from the previous commit
+* Fixed Python controller not being able to change window size and decorated attributes
+
 Splash 0.9.12 (2022-02-07)
 -------------------------
 Bugs fixed:
