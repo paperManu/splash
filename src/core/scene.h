@@ -67,6 +67,14 @@ class Scene : public RootObject
     ~Scene() override;
 
     /**
+     * Other constructors/operators
+     */
+    Scene(const Scene&) = delete;
+    Scene& operator=(const Scene&) = delete;
+    Scene(Scene&&) = delete;
+    Scene& operator=(Scene&&) = delete;
+
+    /**
      *  Add an object of the given type, with the given name
      * \param type Object type
      * \param name Object name

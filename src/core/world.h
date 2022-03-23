@@ -61,6 +61,19 @@ class World : public RootObject
     explicit World(Context context);
 
     /**
+     * Destructor
+     */
+    ~World() override = default;
+
+    /**
+     * Other constructors/operators
+     */
+    World(const World&) = delete;
+    World& operator=(const World&) = delete;
+    World(World&&) = delete;
+    World& operator=(World&&) = delete;
+
+    /**
      * Get the status of the world after begin ran
      * \return Return true if all went well
      */
