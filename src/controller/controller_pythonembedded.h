@@ -111,7 +111,7 @@ class PythonEmbedded final : public ControllerObject
     std::map<std::string, Values> _attributesValue{};
     std::map<std::string, Values> _attributesToUpdate{};
 
-    static std::recursive_mutex _pythonMutex;
+    static std::mutex _pythonMutex;
     static std::atomic_int _pythonInstances;        //!< Number of Python scripts running
     static PyThreadState* _pythonGlobalThreadState; //!< Global Python thread state, shared by all PythonEmbedded instances
 
