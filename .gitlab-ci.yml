@@ -233,7 +233,7 @@ package:debian:
       - "*.tar.bz2"
 
 include:
-  - remote: 'https://gitlab.com/sat-metalab/distributions/mpa-bionic-arm64-jetson/-/raw/feature/gitlab-ci-package/.gitlab-ci-package.yml'
+  - remote: 'https://gitlab.com/sat-metalab/distributions/mpa-bionic-arm64-jetson/-/raw/main/.gitlab-ci-package.yml'
 
 #
 # ┏━┓╺┳╸┏━┓╺┳╸╻┏━╸   ┏━┓┏┓╻┏━┓╻  ╻ ╻┏━┓╻┏━┓
