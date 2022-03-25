@@ -183,7 +183,7 @@ void Texture_Image::reset(int width, int height, const std::string& pixelFormat,
     }
     else if (_pixelFormat == "RGBA16")
     {
-        _spec = ImageBufferSpec(width, height, 4, 64, ImageBufferSpec::Type::UINT8, "RGBA");
+        _spec = ImageBufferSpec(width, height, 4, 64, ImageBufferSpec::Type::UINT16, "RGBA");
         _texInternalFormat = GL_RGBA16;
         _texFormat = GL_RGBA;
         _texType = GL_UNSIGNED_INT_8_8_8_8_REV;
@@ -211,7 +211,7 @@ void Texture_Image::reset(int width, int height, const std::string& pixelFormat,
     }
     else if (_pixelFormat == "D")
     {
-        _spec = ImageBufferSpec(width, height, 1, 24, ImageBufferSpec::Type::UINT16, "R");
+        _spec = ImageBufferSpec(width, height, 1, 24, ImageBufferSpec::Type::FLOAT, "R");
         _texInternalFormat = GL_DEPTH_COMPONENT24;
         _texFormat = GL_DEPTH_COMPONENT;
         _texType = GL_FLOAT;
