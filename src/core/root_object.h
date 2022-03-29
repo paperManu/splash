@@ -199,7 +199,12 @@ class RootObject : public BaseObject
     bool set(const std::string& name, const std::string& attrib, const Values& args, bool async = true);
 
     /**
-     * Set an object from its serialized form. If non existant, it is handled by the handleSerializedObject method.
+     * Set an object from its serialized form. If non existant, it is handled
+     * by the handleSerializedObject method.
+     * Note that if the object exists, this method calls itself
+     * BufferObject::setFromSerializedObject, and that the deserialization is
+     * handled asynchronously. Use BufferObject::hasSerializedObjectWaiting to
+     * check whether a deserialization is waiting.
      * \param name Object name
      * \param obj Serialized object
      * \return Return true if the object has been set

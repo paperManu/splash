@@ -192,8 +192,7 @@ bool RootObject::setFromSerializedObject(const std::string& name, SerializedObje
         auto objectAsBuffer = std::dynamic_pointer_cast<BufferObject>(object);
         if (objectAsBuffer)
         {
-            objectAsBuffer->setSerializedObject(std::move(obj));
-            return true;
+            return objectAsBuffer->setSerializedObject(std::move(obj));
         }
     }
     else
