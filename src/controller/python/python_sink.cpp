@@ -669,7 +669,9 @@ PyTypeObject PythonSink::pythonSinkType = {
     0,                                                   /* tp_del */
     0,                                                   /* tp_version_tag */
     0,                                                   /* tp_finalize */
+    #if PY_MAJOR_VERSION > 3 || PY_MINOR_VERSION >= 8
     0                                                    /* tp_vectorcall */
+    #endif
 };
 // clang-format on
 

@@ -3,6 +3,7 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
 stages:
+  - build
   - test
   - coverage
   - deploy
@@ -50,6 +51,8 @@ test:20.04:gcc-bundled-libs:
     - make test -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+  except:
+    - /^debian.*$/
 
 test:20.04:clang-bundled-libs:
   stage: test
@@ -71,6 +74,8 @@ test:20.04:clang-bundled-libs:
     - make test -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+  except:
+    - /^debian.*$/
 
 test:20.04:gcc-system-libs:
   stage: test
@@ -92,6 +97,7 @@ test:20.04:gcc-system-libs:
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
     - website
+    - /^debian.*$/
 
 test:22.04:gcc-bundled-libs:
   stage: test
@@ -107,6 +113,8 @@ test:22.04:gcc-bundled-libs:
     - make test -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+  except:
+    - /^debian.*$/
 
 test:22.04:clang-bundled-libs:
   stage: test
@@ -123,6 +131,8 @@ test:22.04:clang-bundled-libs:
     - make test -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+  except:
+    - /^debian.*$/
 
 test:22.04:gcc-system-libs:
   stage: test
@@ -139,6 +149,7 @@ test:22.04:gcc-system-libs:
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
     - website
+    - /^debian.*$/
 
 test:archlinux:
   stage: test
@@ -160,6 +171,8 @@ test:archlinux:
     - cmake -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make test
+  except:
+    - /^debian.*$/
 
 #
 # Test coverage
@@ -218,6 +231,10 @@ package:debian:
     paths:
       - "*.deb"
       - "*.tar.bz2"
+
+include:
+  - remote: 'https://gitlab.com/sat-metalab/distributions/mpa-bionic-arm64-jetson/-/raw/main/.gitlab-ci-package.yml'
+  - remote: 'https://gitlab.com/sat-metalab/distributions/mpa-focal-amd64-nvidia/-/raw/main/.gitlab-ci-package.yml'
 
 #
 # ┏━┓╺┳╸┏━┓╺┳╸╻┏━╸   ┏━┓┏┓╻┏━┓╻  ╻ ╻┏━┓╻┏━┓
