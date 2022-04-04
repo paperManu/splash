@@ -77,6 +77,7 @@ struct SerializedObject
      * \return Return a pointer to the data
      */
     inline uint8_t* data() { return _data.data(); }
+    inline const uint8_t* data() const { return _data.data(); }
 
     /**
      * Get ownership over the inner buffer. Use with caution, as it invalidates the SerializedObject
@@ -88,7 +89,7 @@ struct SerializedObject
      * Get the size of the data
      * \return Return the size
      */
-    inline std::size_t size() { return _data.size(); }
+    inline std::size_t size() const { return _data.size(); }
 
     /**
      * Modify the size of the data

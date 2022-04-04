@@ -136,16 +136,20 @@ TEST_CASE("Testing RootObject serialized object set")
     auto timestamp = image->getTimestamp();
     auto result = root.setFromSerializedObject(imageName, SerializedObject());
     image->update();
-    CHECK_EQ(result, true);
+    CHECK_EQ(result, false);
     CHECK_EQ(timestamp, image->getTimestamp());
 
     auto otherName = "otherImage";
     auto otherImage = std::dynamic_pointer_cast<Image>(root.createObject("image", otherName).lock());
     otherImage->set(512, 512, 3, ImageBufferSpec::Type::UINT8);
     otherImage->update();
+    while (otherImage->hasSerializedObjectWaiting())
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
     result = root.setFromSerializedObject(imageName, otherImage->serialize());
     while (image->hasSerializedObjectWaiting())
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
     image->update();
     CHECK_EQ(result, true);
     CHECK_NE(timestamp, image->getTimestamp());

@@ -14,7 +14,7 @@ namespace Splash
 {
 
 /*************/
-std::recursive_mutex PythonEmbedded::_pythonMutex{};
+std::mutex PythonEmbedded::_pythonMutex{};
 std::atomic_int PythonEmbedded::_pythonInstances{0};
 PyThreadState* PythonEmbedded::_pythonGlobalThreadState{nullptr};
 PyObject* PythonEmbedded::SplashError{nullptr};
@@ -933,9 +933,12 @@ PyObject* PythonEmbedded::pythonRegisterAttributeCallback(PyObject* /*self*/, Py
     auto callbackFunc = [that, callable](const std::string& obj, const std::string& attr) {
         std::lock_guard<std::mutex> lockCb(that->_attributeCallbackMutex);
 
-        std::unique_lock<std::recursive_mutex> pythonMutexLock(_pythonMutex);
-        PyEval_AcquireThread(that->_pythonGlobalThreadState);
-        PyThreadState_Swap(that->_pythonLocalThreadState);
+        const bool pythonMutexLocked = _pythonMutex.try_lock();
+        if (pythonMutexLocked)
+        {
+            PyEval_AcquireThread(that->_pythonGlobalThreadState);
+            PyThreadState_Swap(that->_pythonLocalThreadState);
+        }
 
         auto pyTuple = PyTuple_New(2);
         PyTuple_SetItem(pyTuple, 0, Py_BuildValue("s", obj.c_str()));
@@ -947,8 +950,12 @@ PyObject* PythonEmbedded::pythonRegisterAttributeCallback(PyObject* /*self*/, Py
 
         Py_DECREF(pyTuple);
 
-        PyThreadState_Swap(that->_pythonGlobalThreadState);
-        PyEval_ReleaseThread(that->_pythonGlobalThreadState);
+        if (pythonMutexLocked)
+        {
+            PyThreadState_Swap(that->_pythonGlobalThreadState);
+            PyEval_ReleaseThread(that->_pythonGlobalThreadState);
+            _pythonMutex.unlock();
+        }
     };
 
     std::lock_guard<std::mutex> lockCb(that->_attributeCallbackMutex);
@@ -1114,7 +1121,7 @@ PythonEmbedded::~PythonEmbedded()
     stop();
     if (_pythonInstances.fetch_sub(1) == 1)
     {
-        std::unique_lock<std::recursive_mutex> pythonMutexLock(_pythonMutex);
+        std::unique_lock<std::mutex> pythonMutexLock(_pythonMutex);
         PyEval_AcquireThread(_pythonGlobalThreadState);
         Py_Finalize();
     }
@@ -1166,7 +1173,7 @@ void PythonEmbedded::loop()
     PyObject* pName;
 
     // Create the sub-interpreter
-    std::unique_lock<std::recursive_mutex> pythonMutexLock(_pythonMutex);
+    std::unique_lock<std::mutex> pythonMutexLock(_pythonMutex);
     PyEval_AcquireThread(_pythonGlobalThreadState);
     _pythonLocalThreadState = Py_NewInterpreter();
     PyThreadState_Swap(_pythonLocalThreadState);

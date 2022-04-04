@@ -25,8 +25,11 @@ bool BufferObject::deserialize()
 }
 
 /*************/
-void BufferObject::setSerializedObject(SerializedObject&& obj)
+bool BufferObject::setSerializedObject(SerializedObject&& obj)
 {
+    if (obj.size() == 0)
+        return false;
+
     if (_serializedObjectWaitingMutex.try_lock())
     {
         _serializedObject = std::move(obj);
@@ -38,7 +41,11 @@ void BufferObject::setSerializedObject(SerializedObject&& obj)
             deserialize();
             _serializedObjectWaitingMutex.unlock();
         });
+
+        return true;
     }
+
+    return false;
 }
 
 /*************/

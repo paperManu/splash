@@ -87,40 +87,46 @@ bool ChannelOutput_Shmdata::sendBuffer(SerializedObject&& buffer)
 /*************/
 void ChannelOutput_Shmdata::messageConsume()
 {
-    std::unique_lock<std::mutex> lock(_msgConsumeMutex);
     while (!_joinAllThreads)
     {
+        std::unique_lock<std::mutex> lock(_msgConsumeMutex);
         _msgCondition.wait_for(lock, std::chrono::milliseconds(50));
         if (!_msgNewInQueue)
             continue;
 
-        for (const auto& message : _msgQueue)
+        const auto messageQueue = std::move(_msgQueue);
+        _msgQueue = decltype(_msgQueue)();
+        _msgNewInQueue = false;
+        lock.unlock();
+
+        for (const auto& message : messageQueue)
         {
             if (!_msgWriter->copy_to_shm(message.data(), message.size()))
                 Log::get() << Log::WARNING << "ChannelOutput_Shmdata::messageConsume - Error while sending message\n";
         }
-        _msgQueue.clear();
-        _msgNewInQueue = false;
     }
 }
 
 /*************/
 void ChannelOutput_Shmdata::bufferConsume()
 {
-    std::unique_lock<std::mutex> lock(_bufConsumeMutex);
     while (!_joinAllThreads)
     {
+        std::unique_lock<std::mutex> lock(_bufConsumeMutex);
         _bufCondition.wait_for(lock, std::chrono::milliseconds(50));
         if (!_bufNewInQueue)
             continue;
 
-        for (auto& buffer : _bufQueue)
+        const auto bufferQueue = std::move(_bufQueue);
+        _bufQueue = decltype(_bufQueue)();
+        _bufNewInQueue = false;
+        lock.unlock();
+
+        for (const auto& buffer : bufferQueue)
         {
             if (!_bufWriter->copy_to_shm(buffer.data(), buffer.size()))
                 Log::get() << Log::WARNING << "ChannelOutput_Shmdata::messageConsume - Error while sending message\n";
         }
-        _bufQueue.clear();
-        _bufNewInQueue = false;
     }
 }
 
@@ -204,9 +210,8 @@ void ChannelInput_Shmdata::messageConsume()
             _msgCondition.wait_for(lock, std::chrono::milliseconds(50));
             if (_msgNewInQueue)
             {
-                // std::swap(_msgQueue, localQueue);
-                localQueue = _msgQueue;
-                _msgQueue.clear();
+                localQueue = std::move(_msgQueue);
+                _msgQueue = decltype(_msgQueue)();
                 updatedQueue = true;
                 _msgNewInQueue = false;
             }
@@ -233,7 +238,8 @@ void ChannelInput_Shmdata::bufferConsume()
             _bufCondition.wait_for(lock, std::chrono::milliseconds(50));
             if (_bufNewInQueue)
             {
-                std::swap(_bufQueue, localQueue);
+                localQueue = std::move(_bufQueue);
+                _bufQueue = decltype(_bufQueue)();
                 updatedQueue = true;
                 _bufNewInQueue = false;
             }

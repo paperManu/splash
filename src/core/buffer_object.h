@@ -151,10 +151,15 @@ class BufferObject : public GraphObject
     virtual SerializedObject serialize() const = 0;
 
     /**
-     * Set the next serialized object to deserialize to buffer
+     * Set the next serialized object to deserialize to buffer. Deserialization is
+     * done asynchronously, in a separate thread if the system allows for it. Use
+     * hasSerializedObjectWaiting to check whether a deserialization is waiting
+     * If another object is currently being set for deserialization, the call
+     * to this method will do nothing and return false.
      * \param obj Serialized object
+     * \return Return true if the object has been set for deserialization, false otherwise
      */
-    void setSerializedObject(SerializedObject&& obj);
+    bool setSerializedObject(SerializedObject&& obj);
 
     /**
      * Check whether a serialized object is waiting for deserialization

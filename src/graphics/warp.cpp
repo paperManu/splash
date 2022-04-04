@@ -148,7 +148,6 @@ void Warp::render()
     }
 
     _fbo->bindDraw();
-    glEnable(GL_FRAMEBUFFER_SRGB);
     glViewport(0, 0, _spec.width, _spec.height);
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
@@ -190,7 +189,6 @@ void Warp::render()
         }
     }
 
-    glDisable(GL_FRAMEBUFFER_SRGB);
     _fbo->unbindDraw();
 
     auto colorTexture = _fbo->getColorTexture();
@@ -256,7 +254,7 @@ void Warp::loadDefaultModels()
 void Warp::setupFBO()
 {
     _fbo = std::make_unique<Framebuffer>(_root);
-    _fbo->setsRGB(true);
+    _fbo->setSixteenBpc(true);
 
     // Setup the virtual screen
     _screen = std::make_shared<Object>(_root);
