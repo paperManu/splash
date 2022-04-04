@@ -1,6 +1,17 @@
 Splash release notes
 ====================
 
+Splash 0.9.16 (2022-04-04)
+-------------------------
+Bugs fixed:
+* Fixed queues being locked during buffer sendings in shmdata channels
+* Fixed RootObject serializing test
+* Fixed Texture_Image RGBA16 and depth not having the correct channel datatype
+* Fixed Warp doing its rendering in sRGB instead of RGB16
+* Fixed multithreading issue in Log
+* Fixed segfault on quit on certain setups
+* Fixed a stall when a Python script triggers a Python callback of an attribute
+
 Splash 0.9.14 (2022-03-22)
 -------------------------
 Bugs fixed:
