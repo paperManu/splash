@@ -988,7 +988,7 @@ void Scene::registerAttributes()
                 std::lock_guard<std::recursive_mutex> lock(_objectsMutex);
                 for (auto& obj : _objects)
                     if (obj.second->getType() == "window")
-                        std::dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTest", args);
+                        std::dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTest", {args[0].as<bool>()});
             });
             return true;
         },
