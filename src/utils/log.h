@@ -64,7 +64,7 @@ class Log
     };
 
     /**
-     * \brief Get the singleton
+     * Get the singleton
      */
     static Log& get()
     {
@@ -73,80 +73,84 @@ class Log
     }
 
     /**
-     * \brief Shortcut for any type of log
+     * Shortcut for any type of log
      * \param p Message priority
      * \param args Message
      */
     template <typename... T>
     void operator()(Priority p, T... args)
     {
-        std::lock_guard<Spinlock> lock(_mutex);
+        lockSameThread();
         rec(p, args...);
     }
 
     /**
-     * \brief Shortcut for setting MESSAGE log
+     * Shortcut for setting MESSAGE log
      * \param msg Message
      * \return Return this Log object
      */
     template <typename T>
     Log& operator<<(const T& msg)
     {
-        std::lock_guard<Spinlock> lock(_mutex);
+        lockSameThread();
         addToString(_tempString, msg);
         return *this;
     }
 
     /**
-     * \brief Shortcut for setting a MESSAGE log from a Value
+     * Shortcut for setting a MESSAGE log from a Value
      * \param v Value to set
      * \return Return this Log object
      */
     Log& operator<<(const Value& v)
     {
-        std::lock_guard<Spinlock> lock(_mutex);
+        lockSameThread();
         addToString(_tempString, v.as<std::string>());
         return *this;
     }
 
     /**
-     * \brief Set an action
+     * Set an action
      * \param action Action to set
      * \return Return this Log object
      */
     Log& operator<<(Log::Action action)
     {
-        std::lock_guard<Spinlock> lock(_mutex);
+        if (!isLockedByCurrentThread())
+            return *this;
+
         if (action == endl)
         {
             if (_tempPriority >= _verbosity)
                 rec(_tempPriority, _tempString);
             _tempString.clear();
             _tempPriority = MESSAGE;
+
+            unlockSameThread();
         }
         return *this;
     }
 
     /**
-     * \brief Set the priority
+     * Set the priority
      * \param p Priority
      * \return Return this Log object
      */
     Log& operator<<(Log::Priority p)
     {
-        std::lock_guard<Spinlock> lock(_mutex);
+        lockSameThread();
         _tempPriority = p;
         return *this;
     }
 
     /**
-     * \brief Get the full logs
+     * Get the full logs
      * \return Return the full logs
      */
     std::deque<std::tuple<uint64_t, std::string, Priority>> getFullLogs() { return _logs; }
 
     /**
-     * \brief Get the logs by priority
+     * Get the logs by priority
      * \param args Priorities
      * \return Return the logs
      */
@@ -165,7 +169,7 @@ class Log
     }
 
     /**
-     * \brief Get the new logs (from last call to this method)
+     * Get the new logs (from last call to this method)
      * \return Return the new logs
      */
     std::vector<std::tuple<uint64_t, std::string, Priority>> getNewLogs()
@@ -179,25 +183,25 @@ class Log
     }
 
     /**
-     * \brief Get the verbosity of the console output
+     * Get the verbosity of the console output
      * \return Return the verbosity (= the priority)
      */
     Priority getVerbosity() { return _verbosity; }
 
     /**
-     * \brief Activate logging to /var/log/splash.log
+     * Activate logging to /var/log/splash.log
      * \param active Activated if true
      */
     void logToFile(bool activate) { _logToFile = activate; }
 
     /**
-     * \brief Set the verbosity of the console output
+     * Set the verbosity of the console output
      * \param p Priority
      */
     void setVerbosity(Priority p) { _verbosity = p; }
 
     /**
-     * \brief Add new logs from an outside source, i.e. another process
+     * Add new logs from an outside source, i.e. another process
      * \param log Log
      * \param priority Priority
      */
@@ -215,12 +219,12 @@ class Log
 
   private:
     /**
-     * \brief Constructor
+     * Constructor
      */
     Log() {}
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~Log() {}
 
@@ -234,6 +238,7 @@ class Log
     static constexpr char _logFilePath[]{"/var/log/splash.log"};
 
     mutable Spinlock _mutex;
+    mutable std::thread::id _lockedThreadId{0};
     std::deque<std::tuple<uint64_t, std::string, Priority>> _logs;
     bool _logToFile{false};
     uint32_t _logLength{500};
@@ -244,6 +249,51 @@ class Log
     Priority _tempPriority{MESSAGE};
 
     /*****/
+    /**
+     * Get whether the logger is locked by the current thread.
+     * If locked by another thread, wait until unlocked.
+     * If locked by the same thread, continue
+     */
+    void lockSameThread()
+    {
+        const auto currentThreadId = std::this_thread::get_id();
+
+        if (!_mutex.try_lock())
+        {
+            if (currentThreadId != _lockedThreadId)
+            {
+                _mutex.lock();
+                _lockedThreadId = std::this_thread::get_id();
+            }
+        }
+        else
+        {
+            _lockedThreadId = currentThreadId;
+        }
+    }
+
+    /**
+     * Get whether the logger is locked by the current thread
+     */
+    bool isLockedByCurrentThread()
+    {
+        return std::this_thread::get_id() == _lockedThreadId;
+    }
+
+    /**
+     * Unlock the logger, if it is locked by the current thread
+     */
+    void unlockSameThread()
+    {
+        assert(std::this_thread::get_id() == _lockedThreadId);
+
+        if (std::this_thread::get_id() != _lockedThreadId)
+            return;
+
+        _lockedThreadId = std::thread::id();
+        _mutex.unlock();
+    }
+
     template <typename T, typename... Ts>
     void addToString(std::string& str, const T& t, Ts&... args) const
     {
@@ -268,7 +318,7 @@ class Log
     void addToString(std::string&) const { return; }
 
     /**
-     * \brief Set a new log message
+     * Set a new log message
      */
     template <typename... T>
     void rec(Priority p, T... args)

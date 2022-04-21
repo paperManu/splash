@@ -163,58 +163,55 @@ void Texture_Image::reset(int width, int height, const std::string& pixelFormat,
     // Fill texture parameters
     _spec.width = width;
     _spec.height = height;
-    auto realPixelFormat = pixelFormat;
-    if (realPixelFormat.empty())
-        realPixelFormat = "RGBA";
-    _pixelFormat = realPixelFormat;
+    _pixelFormat = pixelFormat.empty() ? "RGBA" : pixelFormat;
     _multisample = multisample;
     _cubemap = multisample == 0 ? cubemap : false;
 
-    if (realPixelFormat == "RGBA")
+    if (_pixelFormat == "RGBA")
     {
         _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
         _texInternalFormat = GL_RGBA8;
         _texFormat = GL_RGBA;
         _texType = GL_UNSIGNED_INT_8_8_8_8_REV;
     }
-    else if (realPixelFormat == "sRGBA")
+    else if (_pixelFormat == "sRGBA")
     {
         _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
         _texInternalFormat = GL_SRGB8_ALPHA8;
         _texFormat = GL_RGBA;
         _texType = GL_UNSIGNED_INT_8_8_8_8_REV;
     }
-    else if (realPixelFormat == "RGBA16")
+    else if (_pixelFormat == "RGBA16")
     {
-        _spec = ImageBufferSpec(width, height, 4, 64, ImageBufferSpec::Type::UINT8, "RGBA");
+        _spec = ImageBufferSpec(width, height, 4, 64, ImageBufferSpec::Type::UINT16, "RGBA");
         _texInternalFormat = GL_RGBA16;
         _texFormat = GL_RGBA;
         _texType = GL_UNSIGNED_INT_8_8_8_8_REV;
     }
-    else if (realPixelFormat == "RGB")
+    else if (_pixelFormat == "RGB")
     {
         _spec = ImageBufferSpec(width, height, 3, 24, ImageBufferSpec::Type::UINT8, "RGB");
         _texInternalFormat = GL_RGBA8;
         _texFormat = GL_RGB;
         _texType = GL_UNSIGNED_BYTE;
     }
-    else if (realPixelFormat == "R16")
+    else if (_pixelFormat == "R16")
     {
         _spec = ImageBufferSpec(width, height, 1, 16, ImageBufferSpec::Type::UINT16, "R");
         _texInternalFormat = GL_R16;
         _texFormat = GL_RED;
         _texType = GL_UNSIGNED_SHORT;
     }
-    else if (realPixelFormat == "YUYV" || realPixelFormat == "UYVY")
+    else if (_pixelFormat == "YUYV" || _pixelFormat == "UYVY")
     {
-        _spec = ImageBufferSpec(width, height, 3, 16, ImageBufferSpec::Type::UINT8, realPixelFormat);
+        _spec = ImageBufferSpec(width, height, 3, 16, ImageBufferSpec::Type::UINT8, _pixelFormat);
         _texInternalFormat = GL_RGBA8;
         _texFormat = GL_RGBA;
         _texType = GL_UNSIGNED_INT_8_8_8_8_REV;
     }
-    else if (realPixelFormat == "D")
+    else if (_pixelFormat == "D")
     {
-        _spec = ImageBufferSpec(width, height, 1, 24, ImageBufferSpec::Type::UINT16, "R");
+        _spec = ImageBufferSpec(width, height, 1, 24, ImageBufferSpec::Type::FLOAT, "R");
         _texInternalFormat = GL_DEPTH_COMPONENT24;
         _texFormat = GL_DEPTH_COMPONENT;
         _texType = GL_FLOAT;

@@ -462,6 +462,14 @@ void Scene::run()
             Timer::get() >> "tree_propagate";
         }
 
+        // If no sync message was received from the World for more than 10 seconds, exit
+        const int64_t syncTimeout = 10; // in seconds
+        if (_lastSyncMessageDate != 0 && (Timer::getTime() - _lastSyncMessageDate) > 10 * 1e6)
+        {
+            Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - No sign of life from the main process for more than " << syncTimeout << " seconds, exiting." << Log::endl;
+            _isRunning = false;
+        }
+
         FrameMarkEnd("Scene");
     }
     _mainWindow->releaseContext();
@@ -1000,9 +1008,10 @@ void Scene::registerAttributes()
         {});
     setAttributeDescription("swapTestColor", "Set the swap test color");
 
-    addAttribute("uploadTextures",
+    addAttribute("syncScenes",
         [&](const Values& /*args*/) {
             _doUploadTextures = true;
+            _lastSyncMessageDate = Timer::getTime();
             return true;
         },
         {});

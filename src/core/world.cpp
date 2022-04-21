@@ -174,7 +174,7 @@ void World::run()
             {
                 ZoneScopedN("Wait for buffers to be sent");
                 _link->waitForBufferSending(std::chrono::milliseconds(50)); // Maximum time to wait for frames to arrive
-                sendMessage(Constants::ALL_PEERS, "uploadTextures", {});
+                sendMessage(Constants::ALL_PEERS, "syncScenes", {});
                 Timer::get() >> "upload";
             }
 

@@ -108,6 +108,14 @@ class RootObject : public BaseObject
     virtual ~RootObject() override = default;
 
     /**
+     * Other constructors/operators
+     */
+    RootObject(const RootObject&) = delete;
+    RootObject& operator=(const RootObject&) = delete;
+    RootObject(RootObject&&) = delete;
+    RootObject& operator=(RootObject&&) = delete;
+
+    /**
      * Add a command into the tree
      * \param root Target root object
      * \param cmd Command type
@@ -191,7 +199,12 @@ class RootObject : public BaseObject
     bool set(const std::string& name, const std::string& attrib, const Values& args, bool async = true);
 
     /**
-     * Set an object from its serialized form. If non existant, it is handled by the handleSerializedObject method.
+     * Set an object from its serialized form. If non existant, it is handled
+     * by the handleSerializedObject method.
+     * Note that if the object exists, this method calls itself
+     * BufferObject::setFromSerializedObject, and that the deserialization is
+     * handled asynchronously. Use BufferObject::hasSerializedObjectWaiting to
+     * check whether a deserialization is waiting.
      * \param name Object name
      * \param obj Serialized object
      * \return Return true if the object has been set
@@ -223,7 +236,6 @@ class RootObject : public BaseObject
     std::unordered_map<std::string, CallbackHandle> _attributeCallbackHandles{};
 
     std::unique_ptr<Factory> _factory{}; //!< Object factory
-    std::unique_ptr<Link> _link{};       //!< Link object for communicatin between World and Scene
 
     Values _lastAnswerReceived{}; //!< Holds the last answer received through the link
     std::condition_variable _answerCondition{};
@@ -239,6 +251,8 @@ class RootObject : public BaseObject
     mutable std::recursive_mutex _objectsMutex{};                   //!< Used in registration and unregistration of objects
     std::atomic_bool _objectsCurrentlyUpdated{false};               //!< Prevents modification of objects from multiple places at the same time
     DenseMap<std::string, std::shared_ptr<GraphObject>> _objects{}; //!< Map of all the objects
+
+    std::unique_ptr<Link> _link{};       //!< Link object for communicatin between World and Scene
 
     /**
      * Wait for a BufferObject update. This does not prevent spurious wakeups.

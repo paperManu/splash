@@ -67,6 +67,14 @@ class Scene : public RootObject
     ~Scene() override;
 
     /**
+     * Other constructors/operators
+     */
+    Scene(const Scene&) = delete;
+    Scene& operator=(const Scene&) = delete;
+    Scene(Scene&&) = delete;
+    Scene& operator=(Scene&&) = delete;
+
+    /**
      *  Add an object of the given type, with the given name
      * \param type Object type
      * \param name Object name
@@ -255,7 +263,8 @@ class Scene : public RootObject
     bool _status{false};                        //!< Set to true if an error occured during rendering
     int _swapInterval{1};                       //!< Global value for the swap interval, default for all windows
     unsigned long long _targetFrameDuration{0}; //!< Duration in microseconds of a frame at the refresh rate of the primary monitor
-    std::atomic_bool _doUploadTextures{false};
+    std::atomic_bool _doUploadTextures{false};  //!< True if the render loop should upload the textures
+    int64_t _lastSyncMessageDate{0};            //!< Time in µs a sync message was sent from World
 
     // NV Swap group specific
     GLuint _maxSwapGroups{0};

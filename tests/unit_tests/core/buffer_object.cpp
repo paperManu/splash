@@ -67,9 +67,7 @@ TEST_CASE("Testing serialization")
     auto buffer = BufferObjectMock();
     auto timestamp = buffer.getTimestamp();
 
-    buffer.setSerializedObject({});
-    while (buffer.hasSerializedObjectWaiting())
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
-
-    CHECK_NE(timestamp, buffer.getTimestamp());
+    auto result = buffer.setSerializedObject({});
+    CHECK_EQ(result, false);
+    CHECK_EQ(timestamp, buffer.getTimestamp());
 }
