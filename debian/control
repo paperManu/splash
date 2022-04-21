@@ -6,6 +6,8 @@ Build-Depends:
     cmake, 
     debhelper (>=11~),
     build-essential,
+    gcc-9 | gcc-8,
+    g++-9 | g++-8,
     git-core,
     libxrandr-dev,
     libxi-dev,
