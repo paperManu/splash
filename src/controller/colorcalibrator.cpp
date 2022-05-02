@@ -18,6 +18,8 @@
 #include "./utils/scope_guard.h"
 #include "./utils/timer.h"
 
+#define MAX_SHUTTERSPEED_ITERATION_COUNT 10
+
 using namespace std::chrono;
 
 namespace Splash
@@ -74,7 +76,6 @@ void ColorCalibrator::update()
 
         // Get the Camera list
         auto cameras = getObjectsPtr(getObjectsOfType("camera"));
-
         _calibrationParams.clear();
         for (const auto& camera : cameras)
         {
@@ -369,9 +370,10 @@ cv::Mat3f ColorCalibrator::captureHDR(unsigned int nbrLDR, double step, bool com
 {
     // Capture LDR images
     // Get the current shutterspeed
-    Values res;
-    _gcamera->getAttribute("shutterspeed", res);
-    double defaultSpeed = res[0].as<float>();
+    Values previousExposure;
+    _gcamera->getAttribute("shutterspeed", previousExposure);
+    Values exposure = previousExposure;
+    double defaultSpeed = exposure[0].as<float>();
     double nextSpeed = defaultSpeed;
 
     // Compute the parameters of the first capture
@@ -383,9 +385,25 @@ cv::Mat3f ColorCalibrator::captureHDR(unsigned int nbrLDR, double step, bool com
     for (unsigned int i = 0; i < nbrLDR; ++i)
     {
         _gcamera->setAttribute("shutterspeed", {nextSpeed});
-        // We get the actual shutterspeed
-        _gcamera->getAttribute("shutterspeed", res);
-        nextSpeed = res[0].as<float>();
+        _gcamera->getAttribute("shutterspeed", exposure);
+
+        // To be sure exposure was updated
+        if (nbrLDR != 1)
+        { // Exposure doesn't have to be updated if there is only one capture
+            for (int iter = 0; exposure == previousExposure && iter < MAX_SHUTTERSPEED_ITERATION_COUNT; ++iter)
+            {
+                _gcamera->setAttribute("shutterspeed", {nextSpeed});
+                std::this_thread::sleep_for(100ms);
+                _gcamera->getAttribute("shutterspeed", exposure);
+            }
+            if (exposure == previousExposure)
+            {
+                Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Exposure time could not be updated" << Log::endl;
+                return {};
+            }
+        }
+
+        nextSpeed = exposure[0].as<float>();
         expositionDurations[i] = nextSpeed;
 
         Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Capturing LDRI with a " << nextSpeed << "sec exposure time" << Log::endl;
@@ -398,6 +416,7 @@ cv::Mat3f ColorCalibrator::captureHDR(unsigned int nbrLDR, double step, bool com
         _gcamera->write(filename);
 
         ldr[i] = cv::imread(filename);
+        previousExposure = exposure;
     }
 
     // Reset the shutterspeed
@@ -537,10 +556,30 @@ float ColorCalibrator::findCorrectExposure()
 {
     Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Finding correct exposure time" << Log::endl;
 
-    Values res;
+    Values exposure;
+    Values previousExposure;
+    bool firstLoop = true;
+    float speed = 1.f;
     while (true)
     {
-        _gcamera->getAttribute("shutterspeed", res);
+        _gcamera->getAttribute("shutterspeed", exposure);
+        // To be sure exposure was updated
+        if (!firstLoop) // previousExposure not initialized before first loop
+        {
+            for (int iter = 0; exposure == previousExposure && iter < MAX_SHUTTERSPEED_ITERATION_COUNT; ++iter)
+            {
+                _gcamera->setAttribute("shutterspeed", {speed});
+                std::this_thread::sleep_for(100ms);
+                _gcamera->getAttribute("shutterspeed", exposure);
+            }
+            if (exposure == previousExposure)
+            {
+                Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Exposure time could not be updated" << Log::endl;
+                return {};
+            }
+        }
+        firstLoop = false;
+
         captureSynchronously();
         ImageBuffer img = _gcamera->get();
         ImageBufferSpec spec = _gcamera->getSpec();
@@ -564,17 +603,18 @@ float ColorCalibrator::findCorrectExposure()
         if (meanValue >= 100.f && meanValue <= 160.f)
             break;
 
-        float speed = 1.f;
         if (meanValue < 100.f)
-            speed = res[0].as<float>() * std::max(1.5f, (100.f / meanValue));
+            speed = exposure[0].as<float>() * std::max(1.5f, (100.f / meanValue));
         else
-            speed = res[0].as<float>() / std::max(1.5f, (160.f / meanValue));
+            speed = exposure[0].as<float>() / std::max(1.5f, (meanValue / 160.f));
+
+        _gcamera->getAttribute("shutterspeed", previousExposure);
         _gcamera->setAttribute("shutterspeed", {speed});
     }
-    if (res.size() == 0)
+    if (exposure.size() == 0)
         return 0.f;
     else
-        return res[0].as<float>();
+        return exposure[0].as<float>();
 }
 
 /*************/
