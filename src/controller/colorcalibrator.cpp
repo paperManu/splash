@@ -441,6 +441,7 @@ cv::Mat3f ColorCalibrator::captureHDR(unsigned int nbrLDR, double step, bool com
     cv::Mat3f hdr;
     cv::Ptr<cv::MergeDebevec> mergeDebevec = cv::createMergeDebevec();
     mergeDebevec->process(ldr, hdr, expositionDurations, _crf);
+    cv::cvtColor(hdr, hdr, cv::COLOR_BGR2RGB);
 
     for (int y = 0; y < hdr.rows; ++y)
         for (int x = 0; x < hdr.cols; ++x)
