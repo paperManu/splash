@@ -72,7 +72,7 @@ class Warp final : public Texture
     void bind() final;
 
     /**
-     * \brier Unbind this warp
+     * \brief Unbind this warp
      */
     void unbind() final;
 

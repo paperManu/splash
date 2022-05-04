@@ -73,6 +73,12 @@ class Sink : public GraphObject
     std::string getCaps() const;
 
     /**
+     * Get the current buffer spec type
+     * \return Return the buffer spec type
+     */
+    ImageBufferSpec getSpec() const { return _spec; };
+
+    /**
      * Update the inner buffer of the sink
      */
     void update() override;
@@ -84,6 +90,9 @@ class Sink : public GraphObject
 
   protected:
     uint32_t _framerate{30}; //!< Maximum framerate
+    bool _sixteenBpc{false};
+    int _captureSize[2]{512, 512};
+    bool _keepRatio{false};
 
     /**
      * Try to link the given GraphObject to this object

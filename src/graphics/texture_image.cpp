@@ -186,7 +186,7 @@ void Texture_Image::reset(int width, int height, const std::string& pixelFormat,
         _spec = ImageBufferSpec(width, height, 4, 64, ImageBufferSpec::Type::UINT16, "RGBA");
         _texInternalFormat = GL_RGBA16;
         _texFormat = GL_RGBA;
-        _texType = GL_UNSIGNED_INT_8_8_8_8_REV;
+        _texType = GL_UNSIGNED_SHORT;
     }
     else if (_pixelFormat == "RGB")
     {

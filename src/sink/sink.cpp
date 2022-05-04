@@ -49,7 +49,6 @@ bool Sink::linkIt(const std::shared_ptr<GraphObject>& obj)
 {
     if (auto objAsFilter = std::dynamic_pointer_cast<Filter>(obj); objAsFilter)
     {
-        objAsFilter->setSixteenBpc(false);
         _inputFilter = std::dynamic_pointer_cast<Filter>(obj);
         return true;
     }
@@ -57,6 +56,7 @@ bool Sink::linkIt(const std::shared_ptr<GraphObject>& obj)
     {
         auto filter = std::dynamic_pointer_cast<Filter>(_root->createObject("filter", getName() + "_" + obj->getName() + "_filter").lock());
         filter->setSavable(_savable); // We always save the filters as they hold user-specified values, if this is savable
+
         if (filter->linkTo(obj))
             return linkTo(filter);
         else
@@ -113,6 +113,32 @@ void Sink::update()
         _mappedPixels = nullptr;
     }
 
+    if (_spec.type != ImageBufferSpec::Type::UINT16 && _sixteenBpc)
+        _inputFilter->setSixteenBpc(true);
+    else if (_spec.type == ImageBufferSpec::Type::UINT16 && !_sixteenBpc)
+        _inputFilter->setSixteenBpc(false);
+
+    if (std::tuple<int, int>(_captureSize[0], _captureSize[0]) != _inputFilter->getSizeOverride())
+    {
+        _inputFilter->setAttribute("sizeOverride", {_captureSize[0], _captureSize[1]});
+        if (_keepRatio)
+        {
+            int width = std::get<0>(_inputFilter->getSizeOverride());
+            int height = std::get<1>(_inputFilter->getSizeOverride());
+            if (width > 0 && height > 0)
+                setAttribute("captureSize", {width, height});
+        }
+    }
+
+    if (_keepRatio != _inputFilter->getKeepRatio())
+    {
+        _inputFilter->setAttribute("keepRatio", {_keepRatio});
+        int width = std::get<0>(_inputFilter->getSizeOverride());
+        int height = std::get<1>(_inputFilter->getSizeOverride());
+        if (width > 0 && height > 0)
+            setAttribute("captureSize", {width, height});
+    }
+
     if (!_opened)
         return;
 
@@ -141,7 +167,9 @@ void Sink::update()
     if (scene != nullptr && scene->getGLVendor() == Constants::GL_VENDOR_NVIDIA)
     {
         _inputFilter->bind();
-        if (_spec.bpp == 32)
+        if (_spec.bpp == 64)
+            glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_SHORT, 0);
+        else if (_spec.bpp == 32)
             glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, 0);
         else if (_spec.bpp == 24)
             glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
@@ -156,7 +184,9 @@ void Sink::update()
     else
     {
         glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboWriteIndex]);
-        if (_spec.bpp == 32)
+        if (_spec.bpp == 64)
+            glGetTextureImage(_inputFilter->getTexId(), 0, GL_RGBA, GL_UNSIGNED_SHORT, 0, 0);
+        else if (_spec.bpp == 32)
             glGetTextureImage(_inputFilter->getTexId(), 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, 0, 0);
         else if (_spec.bpp == 24)
             glGetTextureImage(_inputFilter->getTexId(), 0, GL_RGB, GL_UNSIGNED_BYTE, 0, 0);
@@ -234,6 +264,39 @@ void Sink::registerAttributes()
         [&]() -> Values { return {_opened}; },
         {'b'});
     setAttributeDescription("opened", "If true, the sink lets frames through");
+
+    addAttribute(
+        "16bits",
+        [&](const Values& args) {
+            _sixteenBpc = args[0].as<bool>();
+            return true;
+        },
+        [&]() -> Values { return {_sixteenBpc}; },
+        {'b'});
+    setAttributeDescription("16bits", "Set to true for the sink to render in 16 bits per components (otherwise 8bpc)");
+
+    addAttribute(
+        "captureSize",
+        [&](const Values& args) {
+            _captureSize[0] = args[0].as<int>();
+            _captureSize[1] = args[1].as<int>();
+            return true;
+        },
+        [&]() -> Values {
+            return {_captureSize[0], _captureSize[1]};
+        },
+        {'i', 'i'});
+    setAttributeDescription("captureSize", "Sets the sink output size");
+
+    addAttribute(
+        "keepRatio",
+        [&](const Values& args) {
+            _keepRatio = args[0].as<bool>();
+            return true;
+        },
+        [&]() -> Values { return {_keepRatio}; },
+        {'b'});
+    setAttributeDescription("keepRatio", "If true, keeps the ratio of the input image");
 }
 
 } // namespace Splash
