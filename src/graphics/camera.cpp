@@ -1707,6 +1707,54 @@ void Camera::registerAttributes()
 
     addAttribute("getReprojectionError", [&]() -> Values { return {_calibrationReprojectionError}; });
     setAttributeDescription("getReprojectionError", "Get the reprojection error for the current calibration");
+
+    // Store info to recompute color calibration with different equalization method for white balance
+    addAttribute(
+        "colorCurves",
+        [&](const Values& args) {
+            for (const auto& v : args[0].as<Values>())
+                if (!v.isConvertibleToType(Value::Type::real))
+                    return false;
+
+            _colorCurves = args[0].as<Values>();
+            return true;
+        },
+        [&]() -> Values {
+            if (_colorCurves.size() == _colorSamples * 6)
+                return {_colorCurves};
+            else
+                return {};
+        },
+        {'v'});
+    setAttributeDescription("colorCurves", "Color curves for the last color calibration");
+
+    addAttribute(
+        "whitePoint",
+        [&](const Values& args) {
+            if (args[0].as<Values>().size() != 3)
+                return false;
+
+            _whitePoint = args[0].as<Values>();
+            return true;
+        },
+        [&]() -> Values {
+            if (_whitePoint.size() == 3)
+                return {_whitePoint};
+            else
+                return {};
+        },
+        {'v'});
+    setAttributeDescription("whitePoint", "White point for the last color calibration");
+
+    addAttribute(
+        "colorSamples",
+        [&](const Values& args) {
+            _colorSamples = std::max(0, args[0].as<int>());
+            return true;
+        },
+        [&]() -> Values { return {_colorSamples}; },
+        {'i'});
+    setAttributeDescription("colorSamples", "Number of color samples for the last color calibration");
 }
 
 } // namespace Splash

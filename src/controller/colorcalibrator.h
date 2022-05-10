@@ -173,6 +173,17 @@ class ColorCalibrator final : public ControllerObject
      */
     std::vector<float> getMeanValue(const cv::Mat3f& image, std::vector<bool> mask);
 
+    /*
+     * Update equalization strategies without capturing again images
+     * Allow to switch equalization method quickly
+     */
+    void computeCalibration();
+
+    /*
+     * Load calibration parameters if a calibration was already computed and saved
+     */
+    bool loadCalibrationParams();
+
     /**
      * White balance equalization strategies
      */
