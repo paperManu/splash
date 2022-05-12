@@ -1408,6 +1408,7 @@ struct ShaderSources
         uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
         uniform int _isColorLUT = 0;
         uniform vec4 _color = vec4(0.0, 0.0, 0.0, 1.0);
+        uniform int _colorLUTSize = 256;
         uniform vec3 _colorLUT[256];
         uniform mat3 _colorMixMatrix = mat3(1.0, 0.0, 0.0,
                                             0.0, 1.0, 0.0,
@@ -1472,8 +1473,14 @@ struct ShaderSources
             // Color correction through a LUT
             if (_isColorLUT != 0)
             {
-                ivec3 icolor = ivec3(round(color.rgb * 255.f));
-                color.rgb = vec3(_colorLUT[icolor.r].r, _colorLUT[icolor.g].g, _colorLUT[icolor.b].b);
+                float maxValue = float(_colorLUTSize - 1);
+                ivec3 fcolor = ivec3(floor(color.rgb * maxValue));
+                ivec3 ccolor = ivec3(ceil(color.rgb * maxValue));
+                vec3 alpha = color.rgb * maxValue - fcolor.rgb;
+                // Linear interpolation
+                color.r = _colorLUT[fcolor.r].r * (1.f - alpha.r) + _colorLUT[ccolor.r].r * alpha.r; 
+                color.g = _colorLUT[fcolor.g].g * (1.f - alpha.g) + _colorLUT[ccolor.g].g * alpha.g;
+                color.b = _colorLUT[fcolor.b].b * (1.f - alpha.b) + _colorLUT[ccolor.b].b * alpha.b;
                 //color.rgb = clamp(_colorMixMatrix * color.rgb, vec3(0.0), vec3(1.0));
             }
 
