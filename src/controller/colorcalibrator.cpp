@@ -400,9 +400,10 @@ std::vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInv
         gsl_spline_init(spline, rawX.data(), rawY.data(), rawX.size());
 
         Curve projInvCurve;
-        for (double x = 0.0; x <= 255.0; x += 1.0)
+        const double LUTRange = static_cast<double>(_colorLUTSize - 1);
+        for (double x = 0.0; x <= LUTRange; x += 1.0)
         {
-            double realX = std::min(1.0, x / 255.0); // Make sure we don't try to go past 1.0
+            double realX = std::min(1.0, x / LUTRange); // Make sure we don't try to go past 1.0
             Point point;
             point.first = realX;
             point.second[c] = gsl_spline_eval(spline, realX, acc);
@@ -682,6 +683,8 @@ void ColorCalibrator::computeCalibration()
     if (_calibrationParams.size() == 0 && !loadCalibrationParams())
         return;
 
+    Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Computing new color calibration from last captures" << Log::endl;
+
     //
     // Find function inverse for each projector
     //
@@ -740,9 +743,11 @@ void ColorCalibrator::computeCalibration()
         whiteBalance.normalize();
         Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << params.camName << " correction white balance: " << whiteBalance[0] << " / "
                    << whiteBalance[1] << " / " << whiteBalance[2] << Log::endl;
+
         for (unsigned int c = 0; c < 3; ++c)
             for (auto& v : params.projectorCurves[c])
                 v.second[c] = v.second[c] * whiteBalance[c];
+
         params.minValues = params.minValues * whiteBalance;
         params.maxValues = params.maxValues * whiteBalance;
     }
@@ -773,6 +778,7 @@ void ColorCalibrator::computeCalibration()
         float range = params.maxValues.luminance() - params.minValues.luminance();
         float offset = (minValues[3] - params.minValues.luminance()) / range;
         float scale = (maxValues[3] - minValues[3]) / range;
+
         for (unsigned int c = 0; c < 3; ++c)
             for (auto& v : params.projectorCurves[c])
                 v.second[c] = v.second[c] * scale + offset;
@@ -785,9 +791,12 @@ void ColorCalibrator::computeCalibration()
     {
         std::string camName = params.camName;
 
+        // Color LUT Size
+        setObjectAttribute(camName, "colorLUTSize", {_colorLUTSize});
+
         // Color LUT
         Values lut;
-        for (unsigned int v = 0; v < 256; ++v)
+        for (unsigned int v = 0; v < _colorLUTSize; ++v)
             for (unsigned int c = 0; c < 3; ++c)
                 lut.push_back(params.projectorCurves[c][v].second[c]);
         auto attrParams = Values();
@@ -1040,6 +1049,17 @@ void ColorCalibrator::registerAttributes()
         [&]() -> Values { return {_equalizationMethod}; },
         {'i'});
     setAttributeDescription("equalizeMethod", "Set the color calibration method (0: WB only, 1: WB from weakest projector, 2: WB maximizing minimum luminance");
+
+    addAttribute(
+        "colorLUTSize",
+        [&](const Values& args) {
+            _colorLUTSize = std::max(2, std::min(256, args[0].as<int>()));
+            computeCalibration();
+            return true;
+        },
+        [&]() -> Values { return {_colorLUTSize}; },
+        {'i'});
+    setAttributeDescription("colorLUTSize", "Size per channel of the LUT");
 }
 
 } // end of namespace

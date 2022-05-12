@@ -275,6 +275,7 @@ class Camera : public GraphObject
     Values _colorCurves{0};
     Values _whitePoint{0};
     uint _colorSamples{0};
+    uint64_t _colorLUTSize{0};
 
     // Camera parameters
     float _fov{35.f};                      //!< Vertical FOV

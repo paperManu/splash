@@ -1408,7 +1408,7 @@ struct ShaderSources
         uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
         uniform int _isColorLUT = 0;
         uniform vec4 _color = vec4(0.0, 0.0, 0.0, 1.0);
-        uniform int _colorLUTSize = 256;
+        uniform int _colorLUTSize = 0;
         uniform vec3 _colorLUT[256];
         uniform mat3 _colorMixMatrix = mat3(1.0, 0.0, 0.0,
                                             0.0, 1.0, 0.0,

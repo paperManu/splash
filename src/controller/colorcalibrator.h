@@ -108,6 +108,7 @@ class ColorCalibrator final : public ControllerObject
     int _imagePerHDR{1};                    //!< Number of images taken for each color-measuring HDR
     double _hdrStep{1.0};                   //!< Stops between images taken for color-measuring HDR
     int _equalizationMethod{2};
+    uint32_t _colorLUTSize{16}; //!< Color LUT size for each channels
 
     std::vector<CalibrationParams> _calibrationParams{};
 

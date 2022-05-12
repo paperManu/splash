@@ -633,10 +633,11 @@ void Camera::render()
             objShader->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _brightness, _saturation, _contrast});
             objShader->setAttribute("uniform", {"_fovAndColorBalance", _fov * _width / _height * M_PI / 180.0, _fov * M_PI / 180.0, colorBalance.x, colorBalance.y});
             objShader->setAttribute("uniform", {"_showCameraCount", (int)_showCameraCount});
-            if (_colorLUT.size() == 768 && _isColorLUTActivated)
+            if (_colorLUT.size() == _colorLUTSize * 3 && _isColorLUTActivated)
             {
                 objShader->setAttribute("uniform", {"_colorLUT", _colorLUT});
                 objShader->setAttribute("uniform", {"_isColorLUT", 1});
+                objShader->setAttribute("uniform", {"_colorLUTSize", _colorLUTSize});
 
                 Values m(10);
                 m[0] = "_colorMixMatrix";
@@ -1488,7 +1489,7 @@ void Camera::registerAttributes()
     addAttribute(
         "colorLUT",
         [&](const Values& args) {
-            if (args[0].as<Values>().size() != 768)
+            if (args[0].as<Values>().size() != _colorLUTSize * 3)
                 return false;
 
             for (auto& v : args[0].as<Values>())
@@ -1500,13 +1501,23 @@ void Camera::registerAttributes()
             return true;
         },
         [&]() -> Values {
-            if (_colorLUT.size() == 768)
+            if (_colorLUT.size() == _colorLUTSize * 3)
                 return {_colorLUT};
             else
                 return {};
         },
         {'v'});
     setAttributeDescription("colorLUT", "Set the color lookup table");
+
+    addAttribute(
+        "colorLUTSize",
+        [&](const Values& args) {
+            _colorLUTSize = std::max(0, args[0].as<int>());
+            return true;
+        },
+        [&]() -> Values { return {_colorLUTSize}; },
+        {'i'});
+    setAttributeDescription("colorLUTSize", "Size per channel of the LUT");
 
     addAttribute("colorWireframe",
         [&](const Values& args) {
