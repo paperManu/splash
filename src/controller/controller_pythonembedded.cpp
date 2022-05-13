@@ -1281,7 +1281,7 @@ void PythonEmbedded::loop()
             lockAttributes.unlock();
             pythonMutexLock.unlock();
 
-            Timer::get() >> 1.f / static_cast<float>(_updateRate) * 1000.f >> timerName;
+            Timer::get() >> 1000000ull / _updateRate >> timerName;
         }
 
         pythonMutexLock.lock();
