@@ -34,9 +34,8 @@ RootObject::RootObject(Context context)
 /*************/
 bool RootObject::addTreeCommand(const std::string& root, Command cmd, const Values& args)
 {
-    if (!_tree.hasBranchAt("/" + root))
+    if (!_tree.hasBranchAt("/" + root + "/commands"))
         return false;
-    assert(_tree.hasBranchAt("/" + root + "/commands"));
 
     auto timestampAsStr = std::to_string(Timer::get().getTime());
     auto path = "/" + root + "/commands/" + timestampAsStr + "_";
