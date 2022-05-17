@@ -217,6 +217,24 @@ class Camera : public GraphObject
      */
     bool setCalibrationPoint(const Values& screenPoint);
 
+    /**
+     * Get the numner of color samples for the last color calibration
+     * \return Return the number of color samples
+     */
+    uint64_t getColorSamples() { return _colorSamples; };
+
+    /**
+     * Get the white point computed with color calibration
+     * \return Return the white point
+     */
+    Values getWhitePoint() { return _whitePoint; };
+
+    /**
+     * Get the color curves computed with color calibration
+     * \return Return the color curves
+     */
+    Values getColorCurves() { return _colorCurves; };
+
   protected:
     /**
      * Try to link the given GraphObject to this object
@@ -254,6 +272,10 @@ class Camera : public GraphObject
     Values _colorLUT{0};
     bool _isColorLUTActivated{false};
     glm::mat3 _colorMixMatrix;
+    Values _colorCurves{0};
+    Values _whitePoint{0};
+    uint _colorSamples{0};
+    uint64_t _colorLUTSize{0};
 
     // Camera parameters
     float _fov{35.f};                      //!< Vertical FOV

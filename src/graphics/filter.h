@@ -111,6 +111,18 @@ class Filter : public Texture
      */
     void render() override;
 
+    /**
+     * Get the size override
+     * \return Return the size override
+     */
+    std::tuple<int, int> getSizeOverride() { return {_sizeOverride[0], _sizeOverride[1]}; };
+
+    /**
+     * Get whether to keep the input image ratio
+     * \return true if keep ratio
+     */
+    bool getKeepRatio() const { return _keepRatio; };
+
   protected:
     std::vector<std::weak_ptr<Texture>> _inTextures;
     std::shared_ptr<Object> _screen;
@@ -142,7 +154,6 @@ class Filter : public Texture
     virtual void registerAttributes();
 
   private:
-
     // Filter parameters
     static constexpr int _defaultSize[2]{512, 512};
     int _sizeOverride[2]{-1, -1}; //!< If set to positive values, overrides the size given by input textures

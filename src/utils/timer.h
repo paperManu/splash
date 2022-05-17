@@ -26,6 +26,7 @@
 #define SPLASH_TIMER_H
 
 #include <chrono>
+#include <mutex>
 #include <string>
 #include <thread>
 
@@ -115,7 +116,7 @@ class Timer
      */
     bool waitUntilDuration(const std::string& name, unsigned long long duration)
     {
-        std::lock_guard<Spinlock> lock(_timerMutex);
+        std::unique_lock<Spinlock> lock(_timerMutex);
         if (!_enabled)
             return false;
 
@@ -144,6 +145,7 @@ class Timer
             _durationMap[name] = std::max(duration, elapsed);
         else
             durationIt->second = std::max(duration, elapsed);
+        lock.unlock();
 
         nanosleep(&nap, NULL);
 

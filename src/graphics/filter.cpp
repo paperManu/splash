@@ -360,7 +360,8 @@ void Filter::registerAttributes()
 /*************/
 void Filter::registerDefaultShaderAttributes()
 {
-    addAttribute("brightness",
+    addAttribute(
+        "brightness",
         [&](const Values& args) {
             auto brightness = args[0].as<float>();
             brightness = std::max(0.f, std::min(2.f, brightness));
@@ -376,7 +377,8 @@ void Filter::registerDefaultShaderAttributes()
         {'r'});
     setAttributeDescription("brightness", "Set the brightness for the linked texture");
 
-    addAttribute("contrast",
+    addAttribute(
+        "contrast",
         [&](const Values& args) {
             auto contrast = args[0].as<float>();
             contrast = std::max(0.f, std::min(2.f, contrast));
@@ -392,7 +394,8 @@ void Filter::registerDefaultShaderAttributes()
         {'r'});
     setAttributeDescription("contrast", "Set the contrast for the linked texture");
 
-    addAttribute("colorTemperature",
+    addAttribute(
+        "colorTemperature",
         [&](const Values& args) {
             auto colorTemperature = args[0].as<float>();
             colorTemperature = std::max(0.f, std::min(16000.f, colorTemperature));
@@ -410,7 +413,8 @@ void Filter::registerDefaultShaderAttributes()
         {'r'});
     setAttributeDescription("colorTemperature", "Set the color temperature correction for the linked texture");
 
-    addAttribute("invertChannels",
+    addAttribute(
+        "invertChannels",
         [&](const Values& args) {
             auto enable = args[0].as<bool>();
             _filterUniforms["_invertChannels"] = {enable};
@@ -425,7 +429,8 @@ void Filter::registerDefaultShaderAttributes()
         {'b'});
     setAttributeDescription("invertChannels", "Invert red and blue channels");
 
-    addAttribute("keepRatio",
+    addAttribute(
+        "keepRatio",
         [&](const Values& args) {
             setKeepRatio(args[0].as<bool>());
             return true;
@@ -434,7 +439,8 @@ void Filter::registerDefaultShaderAttributes()
         {'b'});
     setAttributeDescription("keepRatio", "If true, keeps the ratio of the input image");
 
-    addAttribute("saturation",
+    addAttribute(
+        "saturation",
         [&](const Values& args) {
             auto saturation = args[0].as<float>();
             saturation = std::max(0.f, std::min(2.f, saturation));
@@ -450,7 +456,8 @@ void Filter::registerDefaultShaderAttributes()
         {'r'});
     setAttributeDescription("saturation", "Set the saturation for the linked texture");
 
-    addAttribute("scale",
+    addAttribute(
+        "scale",
         [&](const Values& args) {
             auto scale_x = args[0].as<float>();
             auto scale_y = args[1].as<float>();

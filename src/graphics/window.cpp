@@ -274,68 +274,6 @@ void Window::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-bool Window::snapWindow(int distance)
-{
-    int sizeAndPos[4];
-    glfwGetWindowPos(_window->get(), &sizeAndPos[0], &sizeAndPos[1]);
-    glfwGetFramebufferSize(_window->get(), &sizeAndPos[2], &sizeAndPos[3]);
-
-    if (distance != 0)
-    {
-        int monitorCount;
-        const auto monitors = glfwGetMonitors(&monitorCount);
-        bool windowShapeUpdated = false;
-
-        for (int i = 0; i < monitorCount; ++i)
-        {
-            int xpos, ypos;
-            glfwGetMonitorPos(monitors[i], &xpos, &ypos);
-            const auto mode = glfwGetVideoMode(monitors[i]);
-
-            // Check whether the upper right corner is close to the top or left borders of a monitor
-            const auto distToLeft = abs(xpos - sizeAndPos[0]);
-            if (distToLeft < distance && distToLeft != 0)
-            {
-                sizeAndPos[0] = xpos;
-                windowShapeUpdated = true;
-            }
-
-            const auto distToTop = abs(ypos - sizeAndPos[1]);
-            if (distToTop < distance && distToTop != 0)
-            {
-                sizeAndPos[1] = ypos;
-                windowShapeUpdated = true;
-            }
-
-            // Check whether the lower right corner is close to bottom or right borders of a monitor
-            const auto distToRight = abs(xpos + mode->width - sizeAndPos[0] - sizeAndPos[2]);
-            if (distToRight < distance && distToRight != 0)
-            {
-                sizeAndPos[2] = xpos + mode->width - sizeAndPos[0];
-                windowShapeUpdated = true;
-            }
-
-            const auto distToBottom = abs(ypos + mode->height - sizeAndPos[1] - sizeAndPos[3]);
-            if (distToBottom < distance && distToBottom != 0)
-            {
-                sizeAndPos[3] = ypos + mode->height - sizeAndPos[1];
-                windowShapeUpdated = true;
-            }
-        }
-
-        if (windowShapeUpdated)
-        {
-            memcpy(_windowRect, sizeAndPos, 4 * sizeof(int));
-            updateWindowShape();
-            _resized = true;
-            return true;
-        }
-    }
-
-    return false;
-}
-
-/*************/
 void Window::updateSizeAndPos()
 {
     int sizeAndPos[4];
@@ -354,8 +292,7 @@ void Window::updateSizeAndPos()
 void Window::render()
 {
     // Update the window position and size
-    if (!snapWindow(_snapDistance))
-        updateSizeAndPos();
+    updateSizeAndPos();
 
     // Update the FBO configuration if needed
     if (_resized)
@@ -861,16 +798,6 @@ void Window::registerAttributes()
         },
         {'i', 'i'});
     setAttributeDescription("size", "Set the window dimensions");
-
-    addAttribute(
-        "snapDistance",
-        [&](const Values& args) {
-            _snapDistance = args[0].as<int>();
-            return true;
-        },
-        [&]() -> Values { return {_snapDistance}; },
-        {'i'});
-    setAttributeDescription("snapDistance", "Distance to snap the window to the screen borders");
 
     addAttribute("swapInterval",
         [&](const Values& args) {
