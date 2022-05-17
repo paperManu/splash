@@ -633,10 +633,11 @@ void Camera::render()
             objShader->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _brightness, _saturation, _contrast});
             objShader->setAttribute("uniform", {"_fovAndColorBalance", _fov * _width / _height * M_PI / 180.0, _fov * M_PI / 180.0, colorBalance.x, colorBalance.y});
             objShader->setAttribute("uniform", {"_showCameraCount", (int)_showCameraCount});
-            if (_colorLUT.size() == 768 && _isColorLUTActivated)
+            if (_colorLUT.size() == _colorLUTSize * 3 && _isColorLUTActivated)
             {
                 objShader->setAttribute("uniform", {"_colorLUT", _colorLUT});
                 objShader->setAttribute("uniform", {"_isColorLUT", 1});
+                objShader->setAttribute("uniform", {"_colorLUTSize", _colorLUTSize});
 
                 Values m(10);
                 m[0] = "_colorMixMatrix";
@@ -1488,7 +1489,7 @@ void Camera::registerAttributes()
     addAttribute(
         "colorLUT",
         [&](const Values& args) {
-            if (args[0].as<Values>().size() != 768)
+            if (args[0].as<Values>().size() != _colorLUTSize * 3)
                 return false;
 
             for (auto& v : args[0].as<Values>())
@@ -1500,13 +1501,23 @@ void Camera::registerAttributes()
             return true;
         },
         [&]() -> Values {
-            if (_colorLUT.size() == 768)
+            if (_colorLUT.size() == _colorLUTSize * 3)
                 return {_colorLUT};
             else
                 return {};
         },
         {'v'});
     setAttributeDescription("colorLUT", "Set the color lookup table");
+
+    addAttribute(
+        "colorLUTSize",
+        [&](const Values& args) {
+            _colorLUTSize = std::max(0, args[0].as<int>());
+            return true;
+        },
+        [&]() -> Values { return {_colorLUTSize}; },
+        {'i'});
+    setAttributeDescription("colorLUTSize", "Size per channel of the LUT");
 
     addAttribute("colorWireframe",
         [&](const Values& args) {
@@ -1707,6 +1718,54 @@ void Camera::registerAttributes()
 
     addAttribute("getReprojectionError", [&]() -> Values { return {_calibrationReprojectionError}; });
     setAttributeDescription("getReprojectionError", "Get the reprojection error for the current calibration");
+
+    // Store info to recompute color calibration with different equalization method for white balance
+    addAttribute(
+        "colorCurves",
+        [&](const Values& args) {
+            for (const auto& v : args[0].as<Values>())
+                if (!v.isConvertibleToType(Value::Type::real))
+                    return false;
+
+            _colorCurves = args[0].as<Values>();
+            return true;
+        },
+        [&]() -> Values {
+            if (_colorCurves.size() == _colorSamples * 6)
+                return {_colorCurves};
+            else
+                return {};
+        },
+        {'v'});
+    setAttributeDescription("colorCurves", "Color curves for the last color calibration");
+
+    addAttribute(
+        "whitePoint",
+        [&](const Values& args) {
+            if (args[0].as<Values>().size() != 3)
+                return false;
+
+            _whitePoint = args[0].as<Values>();
+            return true;
+        },
+        [&]() -> Values {
+            if (_whitePoint.size() == 3)
+                return {_whitePoint};
+            else
+                return {};
+        },
+        {'v'});
+    setAttributeDescription("whitePoint", "White point for the last color calibration");
+
+    addAttribute(
+        "colorSamples",
+        [&](const Values& args) {
+            _colorSamples = std::max(0, args[0].as<int>());
+            return true;
+        },
+        [&]() -> Values { return {_colorSamples}; },
+        {'i'});
+    setAttributeDescription("colorSamples", "Number of color samples for the last color calibration");
 }
 
 } // namespace Splash

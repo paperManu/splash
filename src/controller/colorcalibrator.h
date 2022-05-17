@@ -108,6 +108,7 @@ class ColorCalibrator final : public ControllerObject
     int _imagePerHDR{1};                    //!< Number of images taken for each color-measuring HDR
     double _hdrStep{1.0};                   //!< Stops between images taken for color-measuring HDR
     int _equalizationMethod{2};
+    uint32_t _colorLUTSize{16}; //!< Color LUT size for each channels
 
     std::vector<CalibrationParams> _calibrationParams{};
 
@@ -172,6 +173,17 @@ class ColorCalibrator final : public ControllerObject
      * \return Return the mean value for each channel
      */
     std::vector<float> getMeanValue(const cv::Mat3f& image, std::vector<bool> mask);
+
+    /*
+     * Update equalization strategies without capturing again images
+     * Allow to switch equalization method quickly
+     */
+    void computeCalibration();
+
+    /*
+     * Load calibration parameters if a calibration was already computed and saved
+     */
+    bool loadCalibrationParams();
 
     /**
      * White balance equalization strategies

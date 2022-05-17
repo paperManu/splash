@@ -203,7 +203,6 @@ class Window final : public GraphObject
     float _gammaCorrection{2.2f};
     Values _layout{0, 1, 2, 3};
     int _swapInterval{1};
-    int _snapDistance{16};
     bool _guiOnly{false};
 
     // Swap synchronization test

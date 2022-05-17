@@ -37,7 +37,7 @@ void GuiFilters::render()
         if (ImGui::ImageButton((void*)(intptr_t)filter->getTexId(), ImVec2(w, h), ImVec2(0, 0), ImVec2(1, 1)))
             _selectedFilterName = filter->getName();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", filter->getName().c_str());
+            ImGui::SetTooltip("%s", filter->getAlias().c_str());
     }
     ImGui::EndChild();
 

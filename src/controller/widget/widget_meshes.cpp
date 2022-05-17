@@ -44,7 +44,7 @@ void GuiMeshes::render()
         if (ImGui::Button(mesh->getName().c_str(), ImVec2(w, w)))
             _selectedMeshName = mesh->getName();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", mesh->getName().c_str());
+            ImGui::SetTooltip("%s", mesh->getAlias().c_str());
     }
     ImGui::EndChild();
 

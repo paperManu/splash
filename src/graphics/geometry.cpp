@@ -161,6 +161,9 @@ std::vector<char> Geometry::getGpuBufferAsVector(Geometry::BufferType type)
 /*************/
 SerializedObject Geometry::serialize() const
 {
+    if (std::any_of(_glAlternativeBuffers.cbegin(), _glAlternativeBuffers.cend(), [](const auto& buffer) { return buffer == nullptr; }))
+        return {};
+
     const auto vertices = _glAlternativeBuffers[0]->getBufferAsVector(_alternativeVerticesNumber);
     const auto uvs = _glAlternativeBuffers[1]->getBufferAsVector(_alternativeVerticesNumber);
     const auto normals = _glAlternativeBuffers[2]->getBufferAsVector(_alternativeVerticesNumber);

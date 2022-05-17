@@ -25,7 +25,6 @@ void PythonSink::pythonSinkDealloc(PythonSinkObject* self)
     if (that)
     {
         that->setInScene("deleteObject", {*self->sinkName});
-        that->setInScene("deleteObject", {*self->filterName});
     }
 
     Py_XDECREF(self->lastBuffer);
@@ -72,6 +71,7 @@ int PythonSink::pythonSinkInit(PythonSinkObject* self, PyObject* args, PyObject*
     self->linked = false;
     self->opened = false;
     self->lastBuffer = nullptr;
+    self->sixteenBpc = false;
 
     auto index = self->sinkIndex.fetch_add(1);
     self->sinkName = std::make_unique<std::string>(that->getName() + "_pythonsink_" + std::to_string(index));
@@ -178,16 +178,10 @@ PyObject* PythonSink::pythonSinkLink(PythonSinkObject* self, PyObject* args, PyO
         return Py_False;
     }
 
-    self->filterName = std::make_unique<std::string>(*self->sinkName + "_filter_" + *self->sourceName);
-
-    // Filter is added locally, we don't need (nor want) it in any other Scene
-    that->setInScene("addObject", {"filter", *self->filterName, root->getName()});
-    // Wait for the object to be created
-    that->waitForObjectCreation(*self->filterName, 50);
-    that->setInScene("link", {*self->sourceName, *self->filterName});
-    that->setInScene("link", {*self->filterName, *self->sinkName});
+    // Sink is added locally, we don't need (nor want) it in any other Scene
+    that->setInScene("link", {*self->sourceName, *self->sinkName});
     that->setObjectAttribute(*self->sinkName, "framerate", {self->framerate});
-    that->setObjectAttribute(*self->filterName, "sizeOverride", {self->width, self->height});
+    that->setObjectAttribute(*self->sinkName, "captureSize", {self->width, self->height});
 
     self->linked = true;
 
@@ -247,18 +241,7 @@ PyObject* PythonSink::pythonSinkUnlink(PythonSinkObject* self)
         Py_XDECREF(result);
     }
 
-    that->setInScene("unlink", {*self->sourceName, *self->filterName});
-    that->setInScene("unlink", {*self->filterName, *self->sinkName});
-    that->setInScene("deleteObject", {*self->filterName});
-
-    // Wait for the filter to be truly deleted. We do not try to get a shared_ptr
-    // of the object, because we want it to be deleted. So we get the object list
-    auto objectList = that->getObjectList();
-    while (std::find(objectList.begin(), objectList.end(), *self->filterName) != objectList.end())
-    {
-        std::this_thread::sleep_for(chrono::milliseconds(5));
-        objectList = that->getObjectList();
-    }
+    that->setInScene("unlink", {*self->sourceName, *self->sinkName});
 
     self->linked = false;
 
@@ -310,14 +293,16 @@ PyObject* PythonSink::pythonSinkGrab(PythonSinkObject* self)
     while (triesLeft)
     {
         auto frame = self->sink->getBuffer();
-        if (frame.size() != self->width * self->height * 4 /* RGBA*/)
+        uint64_t size = self->sink->getSpec().rawSize();
+
+        if (frame.size() != size)
         {
             --triesLeft;
             std::this_thread::sleep_for(chrono::milliseconds(5));
             // Keeping the ratio may also have some effects
             if (self->keepRatio)
             {
-                auto realSize = that->getObjectAttribute(*self->filterName, "sizeOverride");
+                auto realSize = that->getObjectAttribute(*self->sinkName, "captureSize");
                 self->width = realSize[0].as<int>();
                 self->height = realSize[1].as<int>();
             }
@@ -380,7 +365,7 @@ PyObject* PythonSink::pythonSinkSetSize(PythonSinkObject* self, PyObject* args, 
 
     self->width = width;
     self->height = height;
-    that->setObjectAttribute(*self->filterName, "sizeOverride", {self->width, self->height});
+    that->setObjectAttribute(*self->sinkName, "captureSize", {self->width, self->height});
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -407,7 +392,7 @@ PyObject* PythonSink::pythonSinkGetSize(PythonSinkObject* self)
         return Py_False;
     }
 
-    Values size = that->getObjectAttribute(*self->filterName, "sizeOverride");
+    Values size = that->getObjectAttribute(*self->sinkName, "captureSize");
     if (size.size() == 2)
         return Py_BuildValue("ii", size[0].as<int>(), size[1].as<int>());
     else
@@ -488,7 +473,7 @@ PyObject* PythonSink::pythonSinkKeepRatio(PythonSinkObject* self, PyObject* args
     }
 
     self->keepRatio = keepRatio;
-    that->setObjectAttribute(*self->filterName, "keepRatio", {keepRatio});
+    that->setObjectAttribute(*self->sinkName, "keepRatio", {keepRatio});
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -603,6 +588,71 @@ PyObject* PythonSink::pythonSinkGetCaps(PythonSinkObject* self)
     return Py_BuildValue("s", caps.c_str());
 }
 
+/*************/
+PyDoc_STRVAR(pythonSinkSetSixteenBpc_doc__,
+    "Set the bpc value of the grabbed images to 16 if true, 8 otherwise. \n"
+    "\n"
+    "splash.set_sixteenBpc(sixteenBpc)\n"
+    "\n"
+    "Args:\n"
+    "  sixteenBpc (int): set buffer in 16 bpc if true, 8 bpc otherwise \n"
+    "\n"
+    "Returns:\n"
+    "  True if the bpc has been set correctly\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonSink::pythonSinkSetSixteenBpc(PythonSinkObject* self, PyObject* args, PyObject* kwds)
+{
+    auto that = PythonEmbedded::getInstance();
+    if (!that)
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    int sixteenBpc = false;
+    static char* kwlist[] = {(char*)"sixteenBpc", nullptr};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "p", kwlist, &sixteenBpc))
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    self->sixteenBpc = sixteenBpc;
+    that->setObjectAttribute(*self->sinkName, "16bits", {self->sixteenBpc});
+
+    Py_INCREF(Py_True);
+    return Py_True;
+}
+
+/*************/
+PyDoc_STRVAR(pythonSinkGetSixteenBpc_doc__,
+    "Get the bpc of the grabbed images\n"
+    "\n"
+    "splash.get_sixteenBpc()\n"
+    "\n"
+    "Returns:\n"
+    "  true if set to 16 bpc\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonSink::pythonSinkGetSixteenBpc(PythonSinkObject* self)
+{
+    auto that = PythonEmbedded::getInstance();
+    if (!that)
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    Values sixteenBpc = that->getObjectAttribute(*self->sinkName, "16bits");
+    return Py_BuildValue("b", sixteenBpc[0].as<int>());
+}
+
 // clang-format off
 /*************/
 PyMethodDef PythonSink::SinkMethods[] = {
@@ -616,6 +666,8 @@ PyMethodDef PythonSink::SinkMethods[] = {
     {(const char*)"get_caps", (PyCFunction)PythonSink::pythonSinkGetCaps, METH_VARARGS | METH_KEYWORDS, pythonSinkGetCaps_doc__},
     {(const char*)"link_to", (PyCFunction)PythonSink::pythonSinkLink, METH_VARARGS | METH_KEYWORDS, pythonSinkLink_doc__},
     {(const char*)"unlink", (PyCFunction)PythonSink::pythonSinkUnlink, METH_NOARGS, pythonSinkUnlink_doc__},
+    {(const char*)"set_sixteenBpc", (PyCFunction)PythonSink::pythonSinkSetSixteenBpc, METH_VARARGS | METH_KEYWORDS, pythonSinkSetSixteenBpc_doc__},
+    {(const char*)"get_sixteenBpc", (PyCFunction)PythonSink::pythonSinkGetSixteenBpc, METH_VARARGS | METH_KEYWORDS, pythonSinkGetSixteenBpc_doc__},
     {nullptr, nullptr, 0, nullptr}
 };
 
@@ -669,7 +721,9 @@ PyTypeObject PythonSink::pythonSinkType = {
     0,                                                   /* tp_del */
     0,                                                   /* tp_version_tag */
     0,                                                   /* tp_finalize */
+    #if PY_MAJOR_VERSION > 3 || PY_MINOR_VERSION >= 8
     0                                                    /* tp_vectorcall */
+    #endif
 };
 // clang-format on
 

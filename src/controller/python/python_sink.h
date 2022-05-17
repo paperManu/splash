@@ -39,6 +39,7 @@ namespace Splash
 class PythonSink
 {
   public:
+    // clang-format off
     struct PythonSinkObject
     {
         PyObject_HEAD
@@ -49,12 +50,13 @@ class PythonSink
         uint32_t framerate;
         std::unique_ptr<std::string> sourceName;
         std::unique_ptr<std::string> sinkName;
-        std::unique_ptr<std::string> filterName;
         std::shared_ptr<Splash::Sink> sink;
         bool linked;
         bool opened;
+        bool sixteenBpc;
         PyObject* lastBuffer;
     };
+    // clang-format on
     PythonSinkObject pythonSinkObject;
 
     // Sink wrapper methods. They are in this class to be able to access the Splash capsule
@@ -71,6 +73,8 @@ class PythonSink
     static PyObject* pythonSinkOpen(PythonSinkObject* self);
     static PyObject* pythonSinkClose(PythonSinkObject* self);
     static PyObject* pythonSinkGetCaps(PythonSinkObject* self);
+    static PyObject* pythonSinkSetSixteenBpc(PythonSinkObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonSinkGetSixteenBpc(PythonSinkObject* self);
 
     static PyMethodDef SinkMethods[];
     static PyTypeObject pythonSinkType;
@@ -79,6 +83,6 @@ class PythonSink
     static const uint32_t _maxSinkCreationTries = 200;
 };
 
-}
+} // namespace Splash
 
 #endif // SPLASH_PYTHON_SINK_H

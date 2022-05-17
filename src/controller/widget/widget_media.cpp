@@ -55,7 +55,7 @@ void GuiMedia::render()
             if (ImGui::ImageButton((void*)(intptr_t)filter->getTexId(), ImVec2(w, h)))
                 _selectedMediaName = media->getName();
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("%s", media->getName().c_str());
+                ImGui::SetTooltip("%s", media->getAlias().c_str());
         }
         else
         {
@@ -66,7 +66,7 @@ void GuiMedia::render()
             if (ImGui::Button(media->getName().c_str(), ImVec2(w, w)))
                 _selectedMediaName = media->getName();
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("%s", media->getName().c_str());
+                ImGui::SetTooltip("%s", media->getAlias().c_str());
         }
     }
     ImGui::EndChild();

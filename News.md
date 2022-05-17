@@ -1,6 +1,25 @@
 Splash release notes
 ====================
 
+Splash 0.9.18 (2022-05-17)
+-------------------------
+Improvements:
+* Added a way to choose color lut size
+* Added a way to change the calibration mode without having to retake captures
+* Removed window snapping as it behaved badly
+
+Bugs fixed:
+* Fixed color calibration precision loss
+* Fixed add command to tree checking that the command branch exists
+* Fixed Geometry not checking buffers validity before serializing
+* Fixed Python interpreted not respecting the update rate
+* Fixed HDR in BGR instead of RGB
+* Fixed exposure not correctly updated
+* Fixed Sink forcing 8bpc
+
+Documentation:
+* Added zip as a dependency for building Splash
+
 Splash 0.9.16 (2022-04-04)
 -------------------------
 Bugs fixed:
