@@ -1,3 +1,9 @@
+splash-mapper (0.9.18-1) focal; urgency=low
+
+  * New release for version 0.9.18
+
+ -- Emmanuel Durand <edurand@sat.qc.ca>  Tue, 17 May 2022 09:39:37 -0400
+
 splash-mapper (0.9.16-1) focal; urgency=low
 
   * New release for version 0.9.16
