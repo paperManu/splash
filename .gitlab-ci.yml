@@ -154,13 +154,11 @@ test:22.04:gcc-system-libs:
 test:archlinux:
   stage: test
   image: archlinux:latest
-  only:
-    - archlinux
   before_script:
     - pacman -Syyu --noconfirm
     - pacman -Sy --noconfirm git cmake make gcc yasm ccache pkgconfig libxi libxinerama libxrandr
       libxcursor jsoncpp mesa gsl libgphoto2 python3 portaudio zip zlib x264 x265 opencv qt5-base vtk
-      hdf5 glew
+      hdf5 glew fmt openmpi
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
