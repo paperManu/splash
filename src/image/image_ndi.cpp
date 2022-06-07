@@ -41,7 +41,7 @@ bool Image_NDI::read(const std::string& sourceName)
 
     const auto prefix = _root->getSocketPrefix();
     const auto shmpath = "/tmp/splash_ndi_" + prefix + "_" + _name;
-    const auto args = "-n \"" + sourceName + "\" -v " + shmpath + " -b";
+    const auto args = "-n \"" + sourceName + "\" -v " + shmpath + " -f";
     _subprocess = std::make_unique<Subprocess>("ndi2shmdata", args);
 
     if (!_subprocess->isRunning())
