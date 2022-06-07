@@ -34,13 +34,13 @@ class Joystick final : public UserInput
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
     explicit Joystick(RootObject* root);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~Joystick() final;
 
@@ -62,22 +62,22 @@ class Joystick final : public UserInput
     std::vector<Stick> _joysticks; //!< Current joysticks state
 
     /**
-     * \brief Update the joystick list
+     * Update the joystick list
      */
     void detectJoysticks();
 
     /**
-     * \brief Input update method
+     * Input update method
      */
     void updateMethod() final;
 
     /**
-     * \brief Callbacks update method
+     * Callbacks update method
      */
     void updateCallbacks() final;
 
     /**
-     * \brief State update method
+     * State update method
      */
     void readState() final;
 };

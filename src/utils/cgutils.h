@@ -213,7 +213,7 @@ inline glm::vec2 colorBalanceFromTemperature(float temp)
 }
 
 /**
- * \brief Get the projection matrix given the fov and shift (0.5 meaning no shift, 0.0 and 1.0 meaning 100% on one direction or the other)
+ * Get the projection matrix given the fov and shift (0.5 meaning no shift, 0.0 and 1.0 meaning 100% on one direction or the other)
  * \param fov Field of view, in degrees
  * \param cx Center shift along X
  * \param cy Center shift along Y

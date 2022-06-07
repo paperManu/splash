@@ -58,7 +58,7 @@ class Texture_Image final : public Texture
     Texture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisample = 0, bool cubemap = false);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~Texture_Image() final;
 
@@ -71,23 +71,23 @@ class Texture_Image final : public Texture
     Texture_Image& operator=(Texture_Image&&) = delete;
 
     /**
-     * \brief Sets the specified buffer as the texture on the device
+     * Sets the specified buffer as the texture on the device
      * \param img Image to set the texture from
      */
     Texture_Image& operator=(const std::shared_ptr<Image>& img);
 
     /**
-     * \brief Bind this texture
+     * Bind this texture
      */
     void bind() override;
 
     /**
-     * \brief Unbind this texture
+     * Unbind this texture
      */
     void unbind() override;
 
     /**
-     * \brief Generate the mipmaps for the texture
+     * Generate the mipmaps for the texture
      */
     void generateMipmap() const;
 
@@ -98,13 +98,13 @@ class Texture_Image final : public Texture
     RgbValue getMeanValue() const;
 
     /**
-     * \brief Get the id of the gl texture
+     * Get the id of the gl texture
      * \return Return the texture id
      */
     GLuint getTexId() const final { return _glTex; }
 
     /**
-     * \brief Get the shader parameters related to this texture. Texture should be locked first.
+     * Get the shader parameters related to this texture. Texture should be locked first.
      * \return Return the shader uniforms
      */
     std::unordered_map<std::string, Values> getShaderUniforms() const final;
@@ -117,7 +117,7 @@ class Texture_Image final : public Texture
     ImageBuffer grabMipmap(unsigned int level = 0) const;
 
     /**
-     * \brief Read the texture and returns an Image
+     * Read the texture and returns an Image
      * \return Return the image
      */
     std::shared_ptr<Image> read();
@@ -134,32 +134,32 @@ class Texture_Image final : public Texture
     void reset(int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisampled = 0, bool cubemap = false);
 
     /**
-     * \brief Modify the size of the texture
+     * Modify the size of the texture
      * \param width Width
      * \param height Height
      */
     void resize(int width, int height);
 
     /**
-     * \brief Enable / disable clamp to edge
+     * Enable / disable clamp to edge
      * \param active If true, enables clamping
      */
     void setClampToEdge(bool active) { _glTextureWrap = active ? GL_CLAMP_TO_EDGE : GL_REPEAT; }
 
     /**
-     * \brief Update the texture according to the owned Image
+     * Update the texture according to the owned Image
      */
     void update() final;
 
   protected:
     /**
-     * \brief Try to link the given GraphObject to this object
+     * Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
     bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
 
     /**
-     * \brief Unlink a given object
+     * Unlink a given object
      * \param obj Object to unlink from
      */
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
@@ -200,19 +200,19 @@ class Texture_Image final : public Texture
     std::unordered_map<std::string, Values> _shaderUniforms;
 
     /**
-     * \brief Initialization
+     * Initialization
      */
     void init();
 
     /**
-     * \brief Get GL channel order according to spec.format
+     * Get GL channel order according to spec.format
      * \param spec Specification
      * \return Return the GL channel order (GL_RGBA, GL_BGRA, ...)
      */
     GLenum getChannelOrder(const ImageBufferSpec& spec);
 
     /**
-     * \brief Update the pbos according to the parameters
+     * Update the pbos according to the parameters
      * \param width Width
      * \param height Height
      * \param bytes Bytes per pixel
@@ -221,7 +221,7 @@ class Texture_Image final : public Texture
     bool updatePbos(int width, int height, int bytes);
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 };

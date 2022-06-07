@@ -42,13 +42,13 @@ class Image_V4L2 final : public Image
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
     explicit Image_V4L2(RootObject* root);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~Image_V4L2() final;
 
@@ -204,7 +204,7 @@ class Image_V4L2 final : public Image
     void updateMoreMediaInfo(Values& mediaInfo) final;
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 };

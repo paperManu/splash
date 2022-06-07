@@ -81,12 +81,12 @@ class GuiCamera : public GuiWidget
     Values _previousPointAdded;
 
     /**
-     * \brief Capture joystick
+     * Capture joystick
      */
     void captureJoystick();
 
     /**
-     * \brief Release joystick
+     * Release joystick
      */
     void releaseJoystick();
 
@@ -96,7 +96,7 @@ class GuiCamera : public GuiWidget
 
     // Actions
     /**
-     * \brief Activate the colorization of the wireframe rendering
+     * Activate the colorization of the wireframe rendering
      * \param colorize If true, activate the colorization
      */
     void colorizeCameraWireframes(bool colorize);
@@ -107,7 +107,7 @@ class GuiCamera : public GuiWidget
     void doCalibration();
 
     /**
-     * \brief Hide all cameras except for the selected one
+     * Hide all cameras except for the selected one
      * \param hide Hide cameras if true
      */
     void hideOtherCameras(bool hide);
