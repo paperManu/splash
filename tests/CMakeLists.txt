@@ -101,6 +101,7 @@ target_sources(unitTests PRIVATE
     unit_tests/utils/resizable_array.cpp
     unit_tests/utils/scope_guard.cpp
     unit_tests/utils/subprocess.cpp
+    unit_tests/controller/colorcalibrator.cpp
 )
 
 if (HAVE_CALIMIRO)
