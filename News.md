@@ -1,6 +1,20 @@
 Splash release notes
 ====================
 
+Splash 0.9.20 (2022-06-09)
+-------------------------
+Improvements:
+* Added the ability to relink the GUI to another window
+* Added allowing failure for Archlinux job
+* Add a way to use image_list for color calibration
+
+Bugs fixed:
+* Fixed issue which may arise from filepath being empty in Image_OpenCV
+* Fixed NDI image source not handling new video format, switched to UYVY by default
+
+Documentation:
+* Removed \brief everywhere
+
 Splash 0.9.18 (2022-05-17)
 -------------------------
 Improvements:
