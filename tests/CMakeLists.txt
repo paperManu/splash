@@ -134,12 +134,13 @@ if (NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
     add_dependencies(unitTests assets)
 endif()
 
+add_dependencies(unitTests download_splash_assets)
 target_link_libraries(unitTests splash-${API_VERSION})
 
 add_test(NAME unitTests COMMAND unitTests)
 
 add_custom_command(OUTPUT tests COMMAND unitTests)
-add_custom_target(check DEPENDS update_assets download_splash_assets tests)
+add_custom_target(check DEPENDS tests)
 
 #
 # Code coverage
