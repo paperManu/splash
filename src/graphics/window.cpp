@@ -179,9 +179,15 @@ bool Window::linkIt(const std::shared_ptr<GraphObject>& obj)
 {
     if (std::dynamic_pointer_cast<Gui>(obj))
     {
-        if (_guiTexture != nullptr)
-            _screenGui->removeTexture(_guiTexture);
+        if (_gui)
+            unlinkFrom(obj);
+
         _gui = std::dynamic_pointer_cast<Gui>(obj);
+
+        if (const auto window = _gui->getOutputWindow(); window)
+            window->unlinkFrom(obj);
+
+        _gui->setOutputWindow(this);
         _guiTexture = _gui->getTexture();
         _screenGui->addTexture(_guiTexture);
         return true;

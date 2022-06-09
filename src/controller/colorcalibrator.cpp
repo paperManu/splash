@@ -46,6 +46,38 @@ ColorCalibrator::ColorCalibrator(RootObject* root)
 }
 
 /*************/
+bool ColorCalibrator::linkIt(const std::shared_ptr<GraphObject>& obj)
+{
+    if (_grabber)
+    {
+        Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - A grabber is already linked to the color calibrator" << Log::endl;
+        return false;
+    }
+
+    auto image = std::dynamic_pointer_cast<Image>(obj);
+    if (!image)
+        return false;
+
+    const std::string remoteType = image->getRemoteType();
+    if (!(remoteType == "image_list" || remoteType == "image_gphoto"))
+        return false;
+
+    _grabber = image;
+    return true;
+}
+
+/*************/
+void ColorCalibrator::unlinkIt(const std::shared_ptr<GraphObject>& obj)
+{
+    const auto image = std::dynamic_pointer_cast<Image>(obj);
+    if (!image)
+        return;
+
+    if (_grabber == image)
+        _grabber.reset();
+}
+
+/*************/
 void ColorCalibrator::update()
 {
     if (!_calibrationMutex.try_lock())
@@ -58,18 +90,39 @@ void ColorCalibrator::update()
         _calibrationThread.wait();
 
     _calibrationThread = std::async(std::launch::async, [&]() {
-        // Initialize camera
-        _gcamera = std::make_shared<Image_GPhoto>(_root, "");
-        // Prepare for freeing the camera when leaving scope
+
         OnScopeExit
         {
             _calibrationMutex.unlock();
-            _gcamera.reset();
+            if (_grabberAuto)
+            {
+                _root->disposeObject("");
+                _grabberAuto = false;
+                _grabber.reset();
+            }
         };
 
+        if (!_grabber)
+        {
+            setWorldAttribute("addObject", {"image_gphoto", "color_calibrator_grabber"});
+            for (int iter = 0; !getObjectPtr("camera") && iter < 10; ++iter)
+                std::this_thread::sleep_for(100ms);
+
+            if (!getObjectPtr("color_calibrator_grabber"))
+            {
+                Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Grabber creation failed, unable to update calibration" << Log::endl;
+                return;
+            }
+
+            auto grabber = getObjectPtr("color_calibrator_grabber");
+
+            if (!linkIt(grabber))
+                return;
+            _grabberAuto = true;
+        }
+
         // Check whether the camera is ready
-        Values status;
-        _gcamera->getAttribute("ready", status);
+        Values status = getObjectAttribute(_grabber->getName(), "ready");
         if (status.size() == 0 || status[0].as<bool>() == false)
         {
             Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Camera is not ready, unable to update calibration" << Log::endl;
@@ -120,7 +173,7 @@ void ColorCalibrator::update()
         //
         // Find the location of each projection
         //
-        _gcamera->setAttribute("shutterspeed", {mediumExposureTime});
+        setObjectAttribute(_grabber->getName(), "shutterspeed", {mediumExposureTime});
         cv::Mat hdr;
         for (auto& params : _calibrationParams)
         {
@@ -180,7 +233,7 @@ void ColorCalibrator::update()
                     setObjectAttribute(camName, "clearColor", {color[0], color[1], color[2], color[3]});
 
                     // Set approximately the exposure
-                    _gcamera->setAttribute("shutterspeed", {mediumExposureTime});
+                    setObjectAttribute(_grabber->getName(), "shutterspeed", {mediumExposureTime});
 
                     hdr = captureHDR(_imagePerHDR, _hdrStep);
                     if (hdr.total() == 0)
@@ -214,6 +267,7 @@ void ColorCalibrator::update()
 /*************/
 void ColorCalibrator::updateCRF()
 {
+
     if (!_calibrationMutex.try_lock())
     {
         Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Another calibration is in process. Exiting." << Log::endl;
@@ -224,20 +278,42 @@ void ColorCalibrator::updateCRF()
         _calibrationThread.wait();
 
     _calibrationThread = std::async(std::launch::async, [&]() {
-        // Initialize camera
-        _gcamera = std::make_shared<Image_GPhoto>(_root, "");
+
         OnScopeExit
         {
             _calibrationMutex.unlock();
-            _gcamera.reset();
+            if (_grabberAuto)
+            {
+                setWorldAttribute("deleteObject", {_grabber->getName()});
+                _grabberAuto = false;
+                _grabber.reset();
+            }
         };
 
+        if (!_grabber)
+        {
+            setWorldAttribute("addObject", {"image_gphoto", "color_calibrator_grabber"});
+            for (int iter = 0; !getObjectPtr("camera") && iter < 10; ++iter)
+                std::this_thread::sleep_for(100ms);
+
+            if (!getObjectPtr("color_calibrator_grabber"))
+            {
+                Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Grabber creation failed, unable to update color response" << Log::endl;
+                return;
+            }
+
+            auto grabber = getObjectPtr("color_calibrator_grabber");
+
+            if (!linkIt(grabber))
+                return;
+            _grabberAuto = true;
+        }
+
         // Check whether the camera is ready
-        Values status;
-        _gcamera->getAttribute("ready", status);
+        Values status = getObjectAttribute(_grabber->getName(), "ready");
         if (status.size() == 0 || status[0].as<bool>() == false)
         {
-            Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Camera is not ready, unable to update color response" << Log::endl;
+            Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Grabber is not ready, unable to update color response" << Log::endl;
             return;
         }
 
@@ -253,9 +329,9 @@ cv::Mat3f ColorCalibrator::captureHDR(unsigned int nbrLDR, double step, bool com
 {
     // Capture LDR images
     // Get the current shutterspeed
-    Values previousExposure;
-    _gcamera->getAttribute("shutterspeed", previousExposure);
+    Values previousExposure = getObjectAttribute(_grabber->getName(), "shutterspeed");
     Values exposure = previousExposure;
+
     double defaultSpeed = exposure[0].as<float>();
     double nextSpeed = defaultSpeed;
 
@@ -267,17 +343,17 @@ cv::Mat3f ColorCalibrator::captureHDR(unsigned int nbrLDR, double step, bool com
     std::vector<float> expositionDurations(nbrLDR);
     for (unsigned int i = 0; i < nbrLDR; ++i)
     {
-        _gcamera->setAttribute("shutterspeed", {nextSpeed});
-        _gcamera->getAttribute("shutterspeed", exposure);
+        setObjectAttribute(_grabber->getName(), "shutterspeed", {nextSpeed});
+        exposure = getObjectAttribute(_grabber->getName(), "shutterspeed");
 
         // To be sure exposure was updated
         if (nbrLDR != 1)
         { // Exposure doesn't have to be updated if there is only one capture
             for (int iter = 0; exposure == previousExposure && iter < MAX_SHUTTERSPEED_ITERATION_COUNT; ++iter)
             {
-                _gcamera->setAttribute("shutterspeed", {nextSpeed});
+                setObjectAttribute(_grabber->getName(), "shutterspeed", {nextSpeed});
                 std::this_thread::sleep_for(100ms);
-                _gcamera->getAttribute("shutterspeed", exposure);
+                exposure = getObjectAttribute(_grabber->getName(), "shutterspeed");
             }
             if (exposure == previousExposure)
             {
@@ -296,14 +372,14 @@ cv::Mat3f ColorCalibrator::captureHDR(unsigned int nbrLDR, double step, bool com
 
         std::string filename = "/tmp/splash_ldr_sample_" + std::to_string(i) + ".bmp";
         captureSynchronously();
-        _gcamera->write(filename);
+        _grabber->write(filename);
 
         ldr[i] = cv::imread(filename);
         previousExposure = exposure;
     }
 
     // Reset the shutterspeed
-    _gcamera->setAttribute("shutterspeed", {defaultSpeed});
+    setObjectAttribute(_grabber->getName(), "shutterspeed", {defaultSpeed});
 
     // Check that all is well
     bool isValid = true;
@@ -425,13 +501,13 @@ std::vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInv
 /*************/
 void ColorCalibrator::captureSynchronously()
 {
-    assert(_gcamera != nullptr);
+    assert(_grabber != nullptr);
 
     const auto updateTime = Timer::getTime();
-    _gcamera->setAttribute("capture", {true});
-    while (updateTime > _gcamera->getTimestamp())
+    setObjectAttribute(_grabber->getName(), "capture", {true});
+    while (updateTime > _grabber->getTimestamp())
     {
-        _gcamera->update();
+        _grabber->update();
         std::this_thread::sleep_for(100ms);
     }
 }
@@ -447,15 +523,15 @@ float ColorCalibrator::findCorrectExposure()
     float speed = 1.f;
     while (true)
     {
-        _gcamera->getAttribute("shutterspeed", exposure);
+        exposure = getObjectAttribute(_grabber->getName(), "shutterspeed");
         // To be sure exposure was updated
         if (!firstLoop) // previousExposure not initialized before first loop
         {
             for (int iter = 0; exposure == previousExposure && iter < MAX_SHUTTERSPEED_ITERATION_COUNT; ++iter)
             {
-                _gcamera->setAttribute("shutterspeed", {speed});
+                setObjectAttribute(_grabber->getName(), "shutterspeed", {speed});
                 std::this_thread::sleep_for(100ms);
-                _gcamera->getAttribute("shutterspeed", exposure);
+                exposure = getObjectAttribute(_grabber->getName(), "shutterspeed");
             }
             if (exposure == previousExposure)
             {
@@ -466,8 +542,8 @@ float ColorCalibrator::findCorrectExposure()
         firstLoop = false;
 
         captureSynchronously();
-        ImageBuffer img = _gcamera->get();
-        ImageBufferSpec spec = _gcamera->getSpec();
+        ImageBuffer img = _grabber->get();
+        ImageBufferSpec spec = _grabber->getSpec();
 
         // Exposure is found from a centered area, covering 4% of the frame
         int roiSize = spec.width / 5;
@@ -493,8 +569,8 @@ float ColorCalibrator::findCorrectExposure()
         else
             speed = exposure[0].as<float>() / std::max(1.5f, (meanValue / 160.f));
 
-        _gcamera->getAttribute("shutterspeed", previousExposure);
-        _gcamera->setAttribute("shutterspeed", {speed});
+        previousExposure = getObjectAttribute(_grabber->getName(), "shutterspeed");
+        setObjectAttribute(_grabber->getName(), "shutterspeed", {speed});
     }
     if (exposure.size() == 0)
         return 0.f;

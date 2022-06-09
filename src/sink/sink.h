@@ -107,7 +107,7 @@ class Sink : public GraphObject
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) override;
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 
@@ -132,7 +132,7 @@ class Sink : public GraphObject
     virtual void handlePixels(const char* pixels, const ImageBufferSpec& spec);
 
     /**
-     * \brief Update the pbos according to the parameters
+     * Update the pbos according to the parameters
      * \param width Width
      * \param height Height
      * \param bytes Bytes per pixel

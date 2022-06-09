@@ -48,13 +48,13 @@ class Warp final : public Texture
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
     explicit Warp(RootObject* root);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~Warp() final;
 
@@ -72,18 +72,18 @@ class Warp final : public Texture
     void bind() final;
 
     /**
-     * \brief Unbind this warp
+     * Unbind this warp
      */
     void unbind() final;
 
     /**
-     * \brief Get the shader parameters related to this warp. Texture should be locked first.
+     * Get the shader parameters related to this warp. Texture should be locked first.
      * \return Return the shader uniforms
      */
     std::unordered_map<std::string, Values> getShaderUniforms() const;
 
     /**
-     * \brief Get the texture the warp is rendered to
+     * Get the texture the warp is rendered to
      * \return Return the rendered texture
      */
     std::shared_ptr<Texture_Image> getTexture() const { return _fbo->getColorTexture(); }
@@ -101,7 +101,7 @@ class Warp final : public Texture
     virtual int64_t getTimestamp() const final { return _spec.timestamp; }
 
     /**
-     * \brief Get the coordinates of the closest vertex to the given point
+     * Get the coordinates of the closest vertex to the given point
      * \param p Point around which to look
      * \param v Closest vertex coordinates
      * \return Return the index of the point
@@ -109,29 +109,29 @@ class Warp final : public Texture
     int pickControlPoint(glm::vec2 p, glm::vec2& v);
 
     /**
-     * \brief Warps should always be saved as it hold user-modifiable parameters. This method has no effect.
+     * Warps should always be saved as it hold user-modifiable parameters. This method has no effect.
      */
     void setSavable(bool /*savable*/) { _savable = true; }
 
     /**
-     * \brief Update the warp
+     * Update the warp
      */
     void render() final;
 
     /**
-     * \brief Update for a warp does nothing, it is the render() job
+     * Update for a warp does nothing, it is the render() job
      */
     void update() final {}
 
   protected:
     /**
-     * \brief Try to link the given GraphObject to this object
+     * Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
     bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
 
     /**
-     * \brief Try to unlink the given GraphObject from this object
+     * Try to unlink the given GraphObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
@@ -154,22 +154,22 @@ class Warp final : public Texture
     Values _mipmapBufferSpec{};
 
     /**
-     * \brief Init function called in constructors
+     * Init function called in constructors
      */
     void init();
 
     /**
-     * \brief Load some defaults models
+     * Load some defaults models
      */
     void loadDefaultModels();
 
     /**
-     * \brief Setup the output texture
+     * Setup the output texture
      */
     void setupFBO();
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 };

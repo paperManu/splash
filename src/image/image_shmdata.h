@@ -95,13 +95,13 @@ class Image_Shmdata final : public Image
     void init();
 
     /**
-     * \brief Callback called when receiving a new caps
+     * Callback called when receiving a new caps
      * \param dataType String holding the data type
      */
     void onCaps(const std::string& dataType);
 
     /**
-     * \brief Callback called when receiving a new frame
+     * Callback called when receiving a new frame
      * \param data Content of the frame
      * \param data_size Size of the frame
      * \param user_data User data

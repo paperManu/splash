@@ -55,7 +55,7 @@ class Sink_Shmdata final : public Sink
     void handlePixels(const char* pixels, const ImageBufferSpec& spec) final;
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 };

@@ -67,8 +67,10 @@ void Image_OpenCV::readLoop()
     std::unique_ptr<cv::VideoCapture> videoCapture{nullptr};
     if (_inputIndex >= 0)
         videoCapture = std::make_unique<cv::VideoCapture>(_inputIndex);
-    else
+    else if (!_filepath.empty())
         videoCapture = std::make_unique<cv::VideoCapture>(_filepath);
+    else
+        return;
 
     if (!videoCapture->isOpened())
     {

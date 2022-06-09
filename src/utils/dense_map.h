@@ -44,8 +44,20 @@ class DenseMap
 {
   public:
     class const_iterator;
-    class iterator : public std::iterator<std::input_iterator_tag, std::pair<const Key&, T&>, size_t, std::pair<const Key&, T&>*, std::pair<const Key&, T&>>
+#if __cplusplus < 201703L
+    class iterator : public std::iterator<std::input_iterator_tag, std::pair<const Key&, T&>, int, std::pair<const Key&, T&>*, std::pair<const Key&, T&>>
     {
+#else // C++17
+    class iterator
+    {
+      public:
+        using iterator_category = std::input_iterator_tag;
+        using value_type = std::pair<const Key&, T&>;
+        using difference_type = int;
+        using pointer = std::pair<const Key&, T&>*;
+        using reference = std::pair<const Key&, T&>;
+#endif
+
         friend const_iterator;
 
       public:
@@ -107,8 +119,20 @@ class DenseMap
         mutable std::unique_ptr<std::pair<const Key&, T&>> _entry{nullptr};
     };
 
-    class const_iterator : public std::iterator<std::input_iterator_tag, std::pair<const Key&, const T&>, size_t, std::pair<const Key&, const T&>*, std::pair<const Key&, const T&>>
+#if __cplusplus < 201703L
+    class const_iterator : public std::iterator<std::input_iterator_tag, std::pair<const Key&, const T&>, int, std::pair<const Key&, const T&>*, std::pair<const Key&, const T&>>
     {
+#else // C++17
+    class const_iterator
+    {
+      public:
+        using iterator_category = std::input_iterator_tag;
+        using value_type = std::pair<const Key&, const T&>;
+        using difference_type = int;
+        using pointer = std::pair<const Key&, const T&>*;
+        using reference = std::pair<const Key&, const T&>;
+#endif
+
       public:
         explicit const_iterator(const size_t& index, const DenseMap<Key, T>& map)
             : _index(index)
@@ -177,8 +201,20 @@ class DenseMap
     };
 
     class const_reverse_iterator;
-    class reverse_iterator : public std::iterator<std::input_iterator_tag, std::pair<Key, T&>, size_t, std::pair<Key, T&>*, std::pair<Key, T&>>
+#if __cplusplus < 201703L
+    class reverse_iterator : public std::iterator<std::input_iterator_tag, std::pair<Key&, T&>, int, std::pair<Key, T&>*, std::pair<Key, T&>>
     {
+#else // C++17
+    class reverse_iterator
+    {
+      public:
+        using iterator_category = std::input_iterator_tag;
+        using value_type = std::pair<Key&, T&>;
+        using difference_type = int;
+        using pointer = std::pair<Key&, T&>*;
+        using reference = std::pair<Key&, T&>;
+#endif
+
         friend const_reverse_iterator;
 
       public:
@@ -239,9 +275,21 @@ class DenseMap
         mutable std::unique_ptr<std::pair<const Key&, const T&>> _entry{nullptr};
     };
 
+#if __cplusplus < 201703L
     class const_reverse_iterator
-        : public std::iterator<std::input_iterator_tag, std::pair<const Key, const T&>, size_t, std::pair<const Key, const T&>*, std::pair<const Key, const T&>>
+        : public std::iterator<std::input_iterator_tag, std::pair<const Key&, const T&>, int, std::pair<const Key, const T&>*, std::pair<const Key, const T&>>
     {
+#else // C++17
+    class const_reverse_iterator
+    {
+      public:
+        using iterator_category = std::input_iterator_tag;
+        using value_type = std::pair<const Key&, const T&>;
+        using difference_type = int;
+        using pointer = std::pair<const Key&, const T&>*;
+        using reference = std::pair<const Key&, const T&>;
+#endif
+
       public:
         explicit const_reverse_iterator(const size_t& index, const DenseMap<Key, T>& map)
             : _index(index)
@@ -516,7 +564,7 @@ class DenseMap
     {
         auto result = _keys.insert(key);
         if (!result.second)
-            return make_pair(iterator(std::distance(_keys.begin(), result.first), *this), false);
+            return std::make_pair(iterator(std::distance(_keys.begin(), result.first), *this), false);
 
         _values.emplace_back(args...);
         return std::make_pair(iterator(_keys.size() - 1, *this), true);

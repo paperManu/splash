@@ -75,6 +75,20 @@ class ColorCalibrator final : public ControllerObject
      */
     void updateCRF();
 
+  protected:
+    /**
+     * Try linking the object to another one
+     * \param obj GraphObject to link to
+     * \return Return true if linking was successful
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
+
+    /**
+     * Try unlinking the given GraphObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
+
   private:
     //
     // Some internal types
@@ -99,7 +113,8 @@ class ColorCalibrator final : public ControllerObject
     //
     // Attributes
     //
-    std::shared_ptr<Image_GPhoto> _gcamera{nullptr};
+    std::shared_ptr<Image> _grabber{nullptr};
+    bool _grabberAuto {false};
     cv::Mat _crf{};
 
     unsigned int _colorCurveSamples{5};     //!< Number of samples for each channels to create the color curves

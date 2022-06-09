@@ -42,18 +42,18 @@ class Factory
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      */
     Factory();
 
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
     explicit Factory(RootObject* root);
 
     /**
-     * \brief Creates a GraphObject given its type
+     * Creates a GraphObject given its type
      * \param type Object type
      * \return Return a shared pointer to the created object
      */
@@ -66,34 +66,34 @@ class Factory
     const std::unordered_map<std::string, std::unordered_map<std::string, Values>> getDefaults() const { return _defaults; }
 
     /**
-     * \brief Get all creatable object types
+     * Get all creatable object types
      * \return Return a vector of all the creatable objects
      */
     const std::vector<std::string> getObjectTypes() const;
 
     /**
-     * \brief Get all objects of the given GraphObject::Category
+     * Get all objects of the given GraphObject::Category
      * \param c Category to look for
      * \return Return a list of object types of the given class
      */
     std::vector<std::string> getObjectsOfCategory(GraphObject::Category c);
 
     /**
-     * \brief Get object type short description
+     * Get object type short description
      * \param type Object type
      * \return Return short description
      */
     std::string getShortDescription(const std::string& type);
 
     /**
-     * \brief Get object type description
+     * Get object type description
      * \param type Object type
      * \return Return description
      */
     std::string getDescription(const std::string& type);
 
     /**
-     * \brief Check whether a type exists
+     * Check whether a type exists
      * \param type Type name
      * \return Return true if the type exists
      */
