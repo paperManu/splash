@@ -34,13 +34,13 @@ class DragNDrop final : public UserInput
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
      */
     explicit DragNDrop(RootObject* root);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~DragNDrop() final;
 
@@ -54,7 +54,7 @@ class DragNDrop final : public UserInput
 
   private:
     /**
-     * \brief Input update method
+     * Input update method
      */
     void updateMethod() final;
 };

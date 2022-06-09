@@ -76,7 +76,7 @@ class Timer
     };
 
     /**
-     * \brief Get the singleton
+     * Get the singleton
      * \return Return the Timer singleton
      */
     static Timer& get()
@@ -86,30 +86,30 @@ class Timer
     }
 
     /**
-     * \brief Returns whether the timer is set to debug mode
+     * Returns whether the timer is set to debug mode
      * \return Return true if it is
      */
     bool isDebug() { return _isDebug; }
 
     /**
-     * \brief Set the timer in debug mode
+     * Set the timer in debug mode
      * \param d If true, set to debug mode
      */
     void setDebug(bool d) { _isDebug = d; }
 
     /**
-     * \brief Set the master clock to be a loose contraint
+     * Set the master clock to be a loose contraint
      * \param loose If true, the master clock is loose
      */
     void setLoose(bool loose) { _looseClock = loose; }
 
     /**
-     * \brief Get whether the clock is loose or not
+     * Get whether the clock is loose or not
      */
     bool isLoose() const { return _looseClock; }
 
     /**
-     * \brief Wait for the specified timer to reach a certain value, in us
+     * Wait for the specified timer to reach a certain value, in us
      * \param name Duration name
      * \param duration Desired duration
      * \return Return false if the timer does not exist
@@ -153,7 +153,7 @@ class Timer
     }
 
     /**
-     * \brief Get the last occurence of the specified duration
+     * Get the last occurence of the specified duration
      * \param name Duration name
      * \return Return the duration in us
      */
@@ -167,7 +167,7 @@ class Timer
     }
 
     /**
-     * \brief Get the whole duration map
+     * Get the whole duration map
      * \return Return the whole duration map
      */
     const DenseMap<std::string, uint64_t> getDurationMap() const
@@ -177,7 +177,7 @@ class Timer
     }
 
     /**
-     * \brief Set an element in the duration map. Used for transmitting timings between pairs
+     * Set an element in the duration map. Used for transmitting timings between pairs
      * \param name Duration name
      * \param value Duration in us
      */
@@ -192,7 +192,7 @@ class Timer
     }
 
     /**
-     * \brief Return the duration since the last call with this name, or 0 if it is the first time.
+     * Return the duration since the last call with this name, or 0 if it is the first time.
      * \param name Duration name
      * \return Return the duration
      */
@@ -260,12 +260,12 @@ class Timer
     }
 
     /**
-     * \brief Enable / disable the timers
+     * Enable / disable the timers
      */
     void setStatus(bool enabled) { _enabled = enabled; }
 
     /**
-     * \brief Set the master clock time
+     * Set the master clock time
      * \param clock Master clock value
      */
     void setMasterClock(const Timer::Point& clock)
@@ -288,7 +288,7 @@ class Timer
     }
 
     /**
-     * \brief Get the master clock time
+     * Get the master clock time
      * \param clock Master clock value
      * \return Return true if the master clock is set
      */
@@ -307,7 +307,7 @@ class Timer
     }
 
     /**
-     * \brief Get the master clock time, corrected from the last update time
+     * Get the master clock time, corrected from the last update time
      * \param time Master clock time, unit based on template parameter
      * \param paused True if the clock is paused
      * \return Return true if the master clock is set
@@ -346,7 +346,7 @@ class Timer
     }
 
     /**
-     * \brief Get the current time in us from epoch
+     * Get the current time in us from epoch
      * \return Return the duration since epoch
      */
     static inline int64_t getTime() { return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
@@ -374,7 +374,7 @@ class Timer
     bool _clockSet{false};
 
     /**
-     * \brief Start a duration measurement
+     * Start a duration measurement
      * \param name Duration name
      */
     void start(const std::string& name)
@@ -391,7 +391,7 @@ class Timer
     }
 
     /**
-     * \brief End a duration measurement
+     * End a duration measurement
      * \param name Duration name
      */
     void stop(const std::string& name)

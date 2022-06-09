@@ -42,7 +42,7 @@ class GpuBuffer
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param elementSize Component count for each entry
      * \param type Component type, as per OpenGL specs
      * \param usage Buffer usage, as per OpenGL specs
@@ -52,12 +52,12 @@ class GpuBuffer
     GpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data = nullptr);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~GpuBuffer();
 
     /**
-     * \brief Copy constructor
+     * Copy constructor
      */
     GpuBuffer(const GpuBuffer& o)
     {
@@ -77,7 +77,7 @@ class GpuBuffer
     GpuBuffer& operator=(GpuBuffer&&) = default;
 
     /**
-     * \brief Bool pattern
+     * Bool pattern
      */
     explicit operator bool() const
     {
@@ -88,24 +88,24 @@ class GpuBuffer
     }
 
     /**
-     * \brief Fill the buffer with 0
+     * Fill the buffer with 0
      */
     void clear();
 
     /**
-     * \brief Get the GL id
+     * Get the GL id
      * \return Return the GL id
      */
     inline GLuint getId() const { return _glId; }
 
     /**
-     * \brief Get the entry count in the buffer
+     * Get the entry count in the buffer
      * \return Return the entry count
      */
     inline size_t getSize() const { return _size; }
 
     /**
-     * \brief Get the size in bytes of the buffer
+     * Get the size in bytes of the buffer
      * \return Return the size in bytes for the buffer
      */
     inline size_t getMemorySize() const { return _size * _baseSize * _elementSize; }
@@ -117,25 +117,25 @@ class GpuBuffer
     std::vector<char> getBufferAsVector(size_t vertexNbr = 0);
 
     /**
-     * \brief Get the component size
+     * Get the component size
      * \return Return the component size
      */
     inline size_t getComponentSize() const { return _baseSize; }
 
     /**
-     * \brief Get component count per entry
+     * Get component count per entry
      * \return Return the component count per entry
      */
     inline size_t getElementSize() const { return _elementSize; }
 
     /**
-     * \brief Resize the GL buffer
+     * Resize the GL buffer
      * \param size Entry count
      */
     void resize(size_t size);
 
     /**
-     * \brief Set the content from a vector of char
+     * Set the content from a vector of char
      * \param buffer Source buffer
      */
     void setBufferFromVector(const std::vector<char>& buffer);

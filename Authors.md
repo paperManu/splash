@@ -2,8 +2,8 @@
 * Marie-Eve Dumas
 * Nicolas Bouillot
 * Frédéric Lestage
-* Jérémie Soria
 * eva_decorps
+* Jérémie Soria
 * Sergio Jiménez Herena
 * Pascal Huerst
 * Josh Beckwith

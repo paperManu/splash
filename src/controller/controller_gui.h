@@ -72,14 +72,14 @@ class Gui final : public ControllerObject
 
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param w Window to display the gui
      * \param s Root scene
      */
     Gui(std::shared_ptr<GlWindow> w, RootObject* s);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~Gui() final;
 
@@ -92,32 +92,32 @@ class Gui final : public ControllerObject
     Gui& operator=(Gui&&) = delete;
 
     /**
-     * \brief Get pointers to this gui textures
+     * Get pointers to this gui textures
      * \return Return shared pointers to the rendered textures
      */
     std::shared_ptr<Texture> getTexture() const { return _fbo->getColorTexture(); }
 
     /**
-     * \brief Check wether it is initialized
+     * Check wether it is initialized
      * \return Return true if the gui is initialized
      */
     bool isInitialized() const { return _isInitialized; }
 
     /**
-     * \brief Forward a unicode char event
+     * Forward a unicode char event
      * \param unicodeChar Unicode character to forward to the gui
      */
     void unicodeChar(unsigned int unicodeChar);
 
     /**
-     * \brief Forward joystick state
+     * Forward joystick state
      * \param axes Axes state
      * \param buttons Buttons state
      */
     void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons);
 
     /**
-     * \brief Forward a key event
+     * Forward a key event
      * \param key Key code
      * \param action Action to applied to the key
      * \param mods Modifier keys
@@ -125,14 +125,14 @@ class Gui final : public ControllerObject
     void key(int key, int action, int mods);
 
     /**
-     * \brief Forward mouse position
+     * Forward mouse position
      * \param xpos X position
      * \param ypos Y position
      */
     void mousePosition(int xpos, int ypos);
 
     /**
-     * \brief Forward mouse buttons
+     * Forward mouse buttons
      * \param btn Button
      * \param action Action applied to the button
      * \param mods Key modifier
@@ -140,57 +140,69 @@ class Gui final : public ControllerObject
     void mouseButton(int btn, int action, int mods);
 
     /**
-     * \brief Forward mouse scroll
+     * Forward mouse scroll
      * \param xoffset Scroll along X axis
      * \param yoffset Scroll along Y axis
      */
     void mouseScroll(double xoffset, double yoffset);
 
     /**
-     * \brief Render this gui
+     * Render this gui
      */
     void render();
 
     /**
-     * \brief Specify the configuration path (as loaded by World)
+     * Specify the configuration path (as loaded by World)
      * \param path Configuration path
      */
     void setConfigFilePath(const std::string& path) { _configurationPath = path; }
 
     /**
-     * \brief Set joysticks state
+     * Set joysticks state
      * \param state Joysticks state
      */
     void setJoystickState(const std::vector<UserInput::State>& state);
 
     /**
-     * \brief Set the keyboard state
+     * Set the keyboard state
      * \param state Keyboard state
      */
     void setKeyboardState(const std::vector<UserInput::State>& state);
 
     /**
-     * \brief Set the mouse state
+     * Set the mouse state
      * \param state Mouse state
      */
     void setMouseState(const std::vector<UserInput::State>& state);
 
     /**
-     * \brief Set the resolution of the gui
+     * Set the resolution of the gui
      * \param width Width
      * \param height Height
      */
     void setOutputSize(int width, int height);
 
+    /**
+     * Store the window this GUI will be shown onto
+     * \param window Raw pointer to the target Window
+     */
+    void setOutputWindow(Window* window) { _window = window; }
+
+    /**
+     * Get the window this GUI is shown onto
+     * \return Return a raw pointer of the window
+     */
+    Window* getOutputWindow() const { return _window; }
+
   protected:
     /**
-     * \brief Try to link the given GraphObject to this object
+     * Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
     bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
 
     /**
-     * \brief Try to unlink the given GraphObject from this object
+     * Try to unlink the given GraphObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
@@ -208,8 +220,9 @@ class Gui final : public ControllerObject
     const float _backgroundAlpha{0.97f};
 
     bool _isInitialized{false};
-    std::shared_ptr<GlWindow> _window;
-    Scene* _scene;
+    std::shared_ptr<GlWindow> _glWindow;
+    Scene* _scene{nullptr};
+    Window* _window{nullptr};
 
     std::unique_ptr<Framebuffer> _fbo{nullptr};
     float _width{512}, _height{512};
@@ -252,14 +265,14 @@ class Gui final : public ControllerObject
     bool _fullscreen{false};
 
     /**
-     * \brief Initialize ImGui
-     * \brief width Default width
-     * \brief height Default height
+     * Initialize ImGui
+     * \param width Default width
+     * \param height Default height
      */
     void initImGui(int width, int height);
 
     /**
-     * \brief Initialize widgets
+     * Initialize widgets
      */
     void initImWidgets();
 
@@ -273,7 +286,7 @@ class Gui final : public ControllerObject
     const char* getLocalKeyName(char key);
 
     /**
-     * \brief ImGui render function
+     * ImGui render function
      * \param draw_data Data sent by ImGui for drawing
      */
     static void imGuiRenderDrawLists(ImDrawData* draw_data);
@@ -293,34 +306,34 @@ class Gui final : public ControllerObject
     void drawMenuBar();
 
     /**
-     * \brief Launch calibration of the camera response function
+     * Launch calibration of the camera response function
      */
     void calibrateColorResponseFunction();
 
     /**
-     * \brief Calibrate projectors colors
+     * Calibrate projectors colors
      */
     void calibrateColors();
 
     /**
-     * \brief Compute projectors blending
+     * Compute projectors blending
      */
     void computeBlending(bool once = false);
 
     /**
-     * \brief Get the clipboard
+     * Get the clipboard
      * \return Return a pointer to the text
      */
     static const char* getClipboardText(void* userData);
 
     /**
-     * \brief Set the clipboard
+     * Set the clipboard
      * \param text Text to set the clipboard to
      */
     static void setClipboardText(void* userData, const char* text);
 
     /**
-     * \brief Copy camera parameters from the specified configuration file to the current configuration
+     * Copy camera parameters from the specified configuration file to the current configuration
      * \param path Path to the configuration file to copy from
      */
     void copyCameraParameters(const std::string& path);
@@ -346,6 +359,6 @@ class Gui final : public ControllerObject
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_GUI_H

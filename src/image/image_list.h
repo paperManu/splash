@@ -70,11 +70,17 @@ class Image_List final : public Image_Sequence
 
   private:
     std::vector<std::string> _filenameSeq;
+    float _shutterspeed = 0.01;
 
     /**
      * Base init for the class
      */
     void init();
+
+    /**
+     * Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // namespace Splash

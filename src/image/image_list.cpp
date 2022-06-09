@@ -19,6 +19,7 @@ Image_List::Image_List(RootObject* root)
 void Image_List::init()
 {
     _type = "image_list";
+    registerAttributes();
 }
 
 /*************/
@@ -54,6 +55,31 @@ bool Image_List::capture()
     readFile(_filenameSeq.back());
      _filenameSeq.pop_back();
     return true;
+}
+
+void Image_List::registerAttributes()
+{
+    Image_Sequence::registerAttributes();
+
+    // Fake shutterspeed attribute
+    addAttribute(
+        "shutterspeed",
+        [&](const Values& args) {
+            _shutterspeed = args[0].as<float>();
+            return true;
+        },
+        [&]() -> Values { return {_shutterspeed}; },
+        {'r'});
+    setAttributeDescription("shutterspeed", "Set the fake shutter speed");
+
+    // Status
+    addAttribute("ready", [&]() -> Values {
+        if (_filenameSeq.size() == 0)
+            return {false};
+        else
+            return {true};
+    });
+    setAttributeDescription("ready", "Ask whether the image sequence is ready to capture");
 }
 
 } // namespace Splash

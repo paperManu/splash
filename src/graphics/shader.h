@@ -88,13 +88,13 @@ class Shader final : public GraphObject
     };
 
     /**
-     * \brief Constructor
+     * Constructor
      * \param type Shader type
      */
     explicit Shader(ProgramType type = prgGraphic);
 
     /**
-     * \brief Destructor
+     * Destructor
      */
     ~Shader() final;
 
@@ -107,36 +107,36 @@ class Shader final : public GraphObject
     Shader& operator=(Shader&&) = delete;
 
     /**
-     * \brief Activate this shader
+     * Activate this shader
      */
     void activate();
 
     /**
-     * \brief Deactivate this shader
+     * Deactivate this shader
      */
     void deactivate();
 
     /**
-     * \brief Launch the compute shader, if present
+     * Launch the compute shader, if present
      * \param numGroupsX Compute group count along X
      * \param numGroupsY Compute group count along Y
      */
     void doCompute(GLuint numGroupsX = 1, GLuint numGroupsY = 1);
 
     /**
-     * \brief Set the sideness of the object
+     * Set the sideness of the object
      * \param side Sideness
      */
     void setSideness(const Sideness side);
 
     /**
-     * \brief Get the sideness of the object
+     * Get the sideness of the object
      * \return Return the sideness
      */
     Sideness getSideness() const { return _sideness; }
 
     /**
-     * \brief Get the list of uniforms in the shader program
+     * Get the list of uniforms in the shader program
      * \return Return a map of uniforms and their values
      */
     std::map<std::string, Values> getUniforms() const;
@@ -148,7 +148,7 @@ class Shader final : public GraphObject
     std::unordered_map<std::string, std::string> getUniformsDocumentation() const { return _uniformsDocumentation; }
 
     /**
-     * \brief Set a shader source
+     * Set a shader source
      * \param src Shader string
      * \param type Shader type
      * \return Return true if the shader was compiled successfully
@@ -156,14 +156,14 @@ class Shader final : public GraphObject
     bool setSource(const std::string& src, const ShaderType type);
 
     /**
-     * \brief Set multiple shaders at once
+     * Set multiple shaders at once
      * \param sources Map of shader sources
      * \return Return true if all shader could be compiled
      */
     bool setSource(const std::map<ShaderType, std::string>& sources);
 
     /**
-     * \brief Set a shader source from file
+     * Set a shader source from file
      * \param filename Shader file
      * \param type Shader type
      * \return Return true if the shader was compiled successfully
@@ -171,7 +171,7 @@ class Shader final : public GraphObject
     bool setSourceFromFile(const std::string& filename, const ShaderType type);
 
     /**
-     * \brief Add a new texture to use
+     * Add a new texture to use
      * \param texture Texture
      * \param textureUnit GL texture unit
      * \param name Texture name
@@ -179,14 +179,14 @@ class Shader final : public GraphObject
     void setTexture(const std::shared_ptr<Texture>& texture, const GLuint textureUnit, const std::string& name);
 
     /**
-     * \brief Set the model view and projection matrices
+     * Set the model view and projection matrices
      * \param mv View matrix
      * \param mp Projection matrix
      */
     void setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp);
 
     /**
-     * \brief Set the currently queued uniforms updates
+     * Set the currently queued uniforms updates
      */
     void updateUniforms();
 
@@ -222,41 +222,41 @@ class Shader final : public GraphObject
     Sideness _sideness{doubleSided};
 
     /**
-     * \brief Compile the shader program
+     * Compile the shader program
      */
     void compileProgram();
 
     /**
-     * \brief Link the shader program
+     * Link the shader program
      */
     bool linkProgram();
 
     /**
-     * \brief Parses the shader to replace includes by the corresponding sources
+     * Parses the shader to replace includes by the corresponding sources
      * \param src Shader source
      */
     void parseIncludes(std::string& src);
 
     /**
-     * \brief Parses the shader to find uniforms
+     * Parses the shader to find uniforms
      */
     void parseUniforms(const std::string& src);
 
     /**
-     * \brief Get a string expression of the shader type, used for logging
+     * Get a string expression of the shader type, used for logging
      * \param type Shader type
      * \return Return the shader type as a string
      */
     std::string stringFromShaderType(int type);
 
     /**
-     * \brief Replace a shader with an empty one
+     * Replace a shader with an empty one
      * \param type Shader type
      */
     void resetShader(ShaderType type);
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
     void registerGraphicAttributes();

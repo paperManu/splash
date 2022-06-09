@@ -66,35 +66,35 @@ class VirtualProbe final : public Texture
     VirtualProbe& operator=(VirtualProbe&&) = delete;
 
     /**
-     * \brief Compute the matrix corresponding to the virtual screen position
+     * Compute the matrix corresponding to the virtual screen position
      * \return Return the view matrix
      */
     glm::dmat4 computeViewMatrix() const;
 
     /**
-     * \brief Get the shader parameters related to this warp. Texture should be locked first.
+     * Get the shader parameters related to this warp. Texture should be locked first.
      * \return Return the shader uniforms
      */
     std::unordered_map<std::string, Values> getShaderUniforms() const override;
 
     /**
-     * \brief Get spec of the texture
+     * Get spec of the texture
      * \return Return the spec
      */
     ImageBufferSpec getSpec() const override { return _outFbo->getColorTexture()->getSpec(); }
 
     /**
-     * \brief Render this camera into its textures
+     * Render this camera into its textures
      */
     void render() override;
 
     /**
-     * \brief Set the output framebuffer
+     * Set the output framebuffer
      */
     void setupFBO();
 
     /**
-     * \brief Set the resolution of this VirtualProbe
+     * Set the resolution of this VirtualProbe
      * \param width Width of the output textures
      * \param height Height of the output textures
      */
@@ -111,25 +111,25 @@ class VirtualProbe final : public Texture
     void unbind() final;
 
     /**
-     * \brief Get the id of the gl texture
+     * Get the id of the gl texture
      * \return Return the texture id
      */
     GLuint getTexId() const override { return _outFbo->getColorTexture()->getTexId(); }
 
     /**
-     * \brief Update for a VirtualProbe does nothing, it is the render() job
+     * Update for a VirtualProbe does nothing, it is the render() job
      */
     void update() final {}
 
   protected:
     /**
-     * \brief Try to link the given GraphObject to this object
+     * Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
     bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
 
     /**
-     * \brief Try to unlink the given GraphObject from this object
+     * Try to unlink the given GraphObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
@@ -157,7 +157,7 @@ class VirtualProbe final : public Texture
     float _sphericalFov{180.f};
 
     /**
-     * \brief Register new functors to modify attributes
+     * Register new functors to modify attributes
      */
     void registerAttributes();
 };
