@@ -156,8 +156,8 @@ test:archlinux:
   image: archlinux:latest
   allow_failure: true
   before_script:
-    - pacman -Syyu --noconfirm
-    - pacman -Sy --noconfirm git cmake make gcc yasm ccache pkgconfig libxi libxinerama libxrandr
+    - pacman -Syyu --noconfirm --disable-download-timeout
+    - pacman -Sy --noconfirm --disable-download-timeout git cmake make gcc yasm ccache pkgconfig libxi libxinerama libxrandr
       libxcursor jsoncpp mesa gsl libgphoto2 python3 portaudio zip zlib x264 x265 opencv qt5-base vtk
       hdf5 glew fmt openmpi
     - mkdir -p ccache
