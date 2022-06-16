@@ -192,7 +192,7 @@ TEST_CASE("Testing Color Calibration")
 
     cv::Mat expectedCRF(cv::Size(1, 256), CV_32FC3);
     int i = 0;
-    while (std::getline(crf, line, '\n'))
+    while (std::getline(crf, line, '\n') && i < 256)
     {
 
         std::stringstream ss(line);
@@ -208,7 +208,7 @@ TEST_CASE("Testing Color Calibration")
         i++;
     }
 
-    crf.close();
+    crf.close(); 
 
     CHECK_EQ(calibrator.testFindCorrectExposure(0.01f), true);
     CHECK_EQ(calibrator.testCRF(expectedCRF), true);
