@@ -208,7 +208,7 @@ TEST_CASE("Testing Color Calibration")
         i++;
     }
 
-    crf.close(); 
+    crf.close();
 
     CHECK_EQ(calibrator.testFindCorrectExposure(0.01f), true);
     CHECK_EQ(calibrator.testCRF(expectedCRF), true);
