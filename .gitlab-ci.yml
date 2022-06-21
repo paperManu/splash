@@ -48,7 +48,7 @@ test:20.04:gcc-bundled-libs:
     - rm -rf build && mkdir build
     - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
-    - make test -sC build
+    - make check -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
@@ -71,7 +71,7 @@ test:20.04:clang-bundled-libs:
     - rm -rf build && mkdir build
     - CC=clang CXX=clang++ cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
-    - make test -sC build
+    - make check -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
@@ -92,7 +92,7 @@ test:20.04:gcc-system-libs:
     - rm -rf build && mkdir build
     - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
     - make -sC build -j$(nproc)
-    - make test -sC build
+    - make check -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
@@ -110,7 +110,7 @@ test:22.04:gcc-bundled-libs:
     - rm -rf build && mkdir build
     - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
-    - make test -sC build
+    - make check -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
@@ -128,7 +128,7 @@ test:22.04:clang-bundled-libs:
     - rm -rf build && mkdir build
     - CC=clang CXX=clang++ cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
-    - make test -sC build
+    - make check -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
@@ -144,7 +144,7 @@ test:22.04:gcc-system-libs:
     - rm -rf build && mkdir build
     - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
     - make -sC build -j$(nproc)
-    - make test -sC build
+    - make check -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
@@ -169,7 +169,7 @@ test:archlinux:
   script:
     - cmake -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
-    - make test
+    - make check
   except:
     - /^debian.*$/
 

@@ -16,7 +16,6 @@ class RootObjectMock : public RootObject
     RootObjectMock()
         : RootObject()
     {
-        registerAttributes();
         _name = "world";
         _tree.setName(_name);
     }
@@ -154,8 +153,8 @@ TEST_CASE("Testing Color Calibration")
     std::string dataPath = Utils::getCurrentWorkingDirectory();
     dataPath = dataPath.substr(0, dataPath.size() - 11) + "tests/assets/color_calibration/";
 
-    int imagesWidth = 496;
-    int imagesHeight = 744;
+    const int imagesWidth = 496;
+    const int imagesHeight = 744;
 
     //
     // Set the right configuration
