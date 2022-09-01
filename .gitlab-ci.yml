@@ -88,7 +88,7 @@ test:20.04:gcc-system-libs:
 
     # Test using system libs
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
-      libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev
+      libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev
     - rm -rf build && mkdir build
     - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
     - make -sC build -j$(nproc)

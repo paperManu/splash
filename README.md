@@ -128,7 +128,7 @@ sudo apt install build-essential git-core cmake libxrandr-dev libxi-dev \
 
 # Non mandatory libraries needed to link against system libraries only
 sudo apt install libglfw3-dev libglm-dev libavcodec-dev libavformat-dev \
-    libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev
+    libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev
 ```
 
 - Archlinux (not well maintained, please signal any issue):
