@@ -31,7 +31,6 @@ Build-Depends:
     libswscale-dev,
     libsnappy-dev,
     libzmq3-dev,
-    libzmqpp-dev,
     libshmdata-dev,
     zip
 Standards-Version: 4.1.4
