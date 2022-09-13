@@ -188,7 +188,7 @@ And that's it, you can move on the the [Walkthrough](https://sat-mtl.gitlab.io/d
 
 ## Code contribution
 
-Contributions are welcome ! See [CONTRIBUTING.md](docs/Contributing.md) and [CODE_OF_CONDUCT.md](docs/Code_of_conduct.md) for details.
+Contributions are welcome ! See [CONTRIBUTING.md](Contributing.md) and [CODE_OF_CONDUCT.md](Code_of_conduct.md) for details.
 
 
 ## Going forward

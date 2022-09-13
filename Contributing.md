@@ -277,7 +277,7 @@ When you are ready to submit you changes for review, either for preliminary revi
 
 Do not forget to:
 
-1. Update the relevant [README](index.md) sections, if necessary.
+1. Update the relevant [README](./README.md) sections, if necessary.
 2. Add the relevant unit tests, if needed.
 3. Update documentation, if needed.
 4. Rebase your changes in nice, clear commits if your branch's commit history is messy.
@@ -307,7 +307,7 @@ The defects detected by static analysis should be fixed in a new commit, and sub
 
 ### Release process
 
-To release a new version of Splash, use the script provided in `./tools/release_version.py`. This script will take care of testing that the latest commit on **develop** build, update the version number as well as the [News.md](News.md) file, and update the various branches accordingly.
+To release a new version of Splash, use the script provided in `./tools/release_version.py`. This script will take care of testing that the latest commit on **develop** build, update the version number as well as the [News.md](./News.md) file, and update the various branches accordingly.
 
 ```bash
 ./tools/release_version.py
@@ -323,4 +323,4 @@ Once a MR has been submitted, your changes will be reviewed and constructive fee
 
 ## License
 
-By contributing to this repository, you agree that your contributions will be licensed in accordance to the [LICENSE](License.md) document at the root of this repository.
+By contributing to this repository, you agree that your contributions will be licensed in accordance to the [LICENSE](./License.md) document at the root of this repository.
