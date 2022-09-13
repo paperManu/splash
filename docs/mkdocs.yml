@@ -1,6 +1,6 @@
 site_name: Splash
 site_description: Video mapping tool
-repo_url: https://gitlab.com/sat-metalab/splash
+repo_url: https://gitlab.com/sat-mtl/tools/splash/splash
 edit_uri: ""
 
 docs_dir: ../docs

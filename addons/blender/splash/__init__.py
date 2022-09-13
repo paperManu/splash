@@ -24,7 +24,7 @@ bl_info = {
     "blender": (2, 80, 0),
     "location": "3D View > Toolbox, File > Export",
     "description": "Utility tools to connect Blender to the Splash videomapper",
-    "wiki_url": "https://sat-metalab.gitlab.io/splash",
+    "wiki_url": "https://sat-mtl.gitlab.io/documentation/splash",
     "category": "Object",
 }
 

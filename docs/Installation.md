@@ -23,7 +23,7 @@ Splash relies on a few libraries to get the job done. The mandatory libraries ar
 Some other libraries are optional:
 
 - External dependencies:
-  - [libshmdata](http://gitlab.com/sat-metalab/shmdata) to read video flows from a shared memory,
+  - [libshmdata](http://gitlab.com/sat-mtl/tools/shmdata) to read video flows from a shared memory,
   - [portaudio](http://portaudio.com/) to read and output audio,
   - [Python](https://python.org) for scripting capabilities,
   - [GPhoto](http://gphoto.sourceforge.net/) to use a camera for color calibration.
@@ -111,7 +111,7 @@ pacman -Sy mesa glm gsl libgphoto2 python3 portaudio zip zlib
 Once everything is installed, you can go on with building Splash. To build and link it against the bundled libraries:
 
 ```bash
-git clone https://gitlab.com/sat-metalab/splash
+git clone https://gitlab.com/sat-mtl/tools/splash/splash
 cd splash
 git submodule update --init
 ./make_deps.sh
@@ -123,7 +123,7 @@ make -j$(nproc) && sudo make install
 Otherwise, to build Splash and link it against the system libraries:
 
 ```bash
-git clone https://gitlab.com/sat-metalab/splash
+git clone https://gitlab.com/sat-mtl/tools/splash/splash
 cd splash
 git submodule update --init
 mkdir -p build && cd build
@@ -153,6 +153,6 @@ sudo adduser $USER syslog
 
 Then log out and log back in.
 
-If you want to specify some defaults values for the objects, you can set the environment variable SPLASH_DEFAULTS with the path to a file defining default values for given types. An example of such a file can be found in [data/config/splashrc](https://gitlab.com/sat-metalab/splash/tree/master/data/config/splashrc)
+If you want to specify some defaults values for the objects, you can set the environment variable SPLASH_DEFAULTS with the path to a file defining default values for given types. An example of such a file can be found in [data/config/splashrc](https://gitlab.com/sat-mtl/tools/splash/splash/tree/master/data/config/splashrc)
 
 And that's it, you can move on the the [Walkthrough](../Walkthrough) page.

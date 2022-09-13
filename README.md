@@ -2,10 +2,10 @@ Splash, a multi-projector video-mapping software
 ================================================
 
 [![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
-[![pipeline status](https://gitlab.com/sat-metalab/splash/badges/develop/pipeline.svg)](https://gitlab.com/sat-metalab/splash/commits/develop)
-[![coverage report](https://gitlab.com/sat-metalab/splash/badges/develop/coverage.svg)](https://gitlab.com/sat-metalab/splash/commits/develop)
+[![pipeline status](https://gitlab.com/sat-mtl/tools/splash/splash/badges/develop/pipeline.svg)](https://gitlab.com/sat-mtl/tools/splash/splash/commits/develop)
+[![coverage report](https://gitlab.com/sat-mtl/tools/splash/splash/badges/develop/coverage.svg)](https://gitlab.com/sat-mtl/tools/splash/splash/commits/develop)
 
-For a more complete documentation, go visit the [official website](https://sat-metalab.gitlab.io/splash).
+For a more complete documentation, go visit the [official website](https://sat-mtl.gitlab.io/documentation/splash).
 
 ## Table of Contents
 
@@ -41,7 +41,7 @@ This program uses external libraries, some of them being bundled in the source c
 See [AUTHORS.md](docs/Authors.md)
 
 ### Project URL
-This project can be found either on [its official website](https://sat-metalab.gitlab.io/splash), on the [SAT Metalab repository](https://gitlab.com/sat-metalab/splash) or on [Github](https://github.com/paperManu/splash).
+This project can be found either on [its official website](https://sat-mtl.gitlab.io/documentation/splash), on the [SAT Metalab repository](https://gitlab.com/sat-mtl/tools/splash) or on [Github](https://github.com/paperManu/splash).
 
 ### Sponsors
 This project is made possible thanks to the [Society for Arts and Technologies](http://www.sat.qc.ca) (also known as SAT).
@@ -71,7 +71,7 @@ Splash relies on a few libraries to get the job done. The mandatory libraries ar
 Some other libraries are optional:
 
 - External dependencies:
-  - [libshmdata](http://gitlab.com/sat-metalab/shmdata) to read video flows from a shared memory,
+  - [libshmdata](http://gitlab.com/sat-mtl/tools/shmdata) to read video flows from a shared memory,
   - [portaudio](http://portaudio.com/) to read and output audio,
   - [Python](https://python.org) for scripting capabilities,
   - [GPhoto](http://gphoto.sourceforge.net/) to use a camera for color calibration.
@@ -106,7 +106,7 @@ flatpak run com.gitlab.sat_metalab.Splash
 
 A known limitation of the Flatpak package is that it has no access to Jack.
 
-The current release of Splash is also packaged for Ubuntu (version 20.04) and derived. This is done through a Debian archive available on the [tags page](https://gitlab.com/sat-metalab/splash/tags), and install it with :
+The current release of Splash is also packaged for Ubuntu (version 20.04) and derived. This is done through a Debian archive available on the [tags page](https://gitlab.com/sat-mtl/tools/splash/splash/tags), and install it with :
 
 ```bash
 sudo apt install <download path>/splash-<version>-Linux.deb
@@ -141,7 +141,7 @@ pacman -Sy git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcur
 Once everything is installed, you can go on with building Splash. To build and link it against the bundled libraries:
 
 ```bash
-git clone https://gitlab.com/sat-metalab/splash
+git clone https://gitlab.com/sat-mtl/tools/splash/splash
 cd splash
 ./make_deps.sh
 mkdir -p build && cd build
@@ -152,7 +152,7 @@ make -j$(nproc) && sudo make install
 Otherwise, to build Splash and link it against the system libraries:
 
 ```bash
-git clone https://gitlab.com/sat-metalab/splash
+git clone https://gitlab.com/sat-mtl/tools/splash/splash
 cd splash
 mkdir -p build && cd build
 cmake -DUSE_SYSTEM_LIBS=ON ..
@@ -183,7 +183,7 @@ Then log out and log back in.
 
 If you want to specify some defaults values for the objects, you can set the environment variable SPLASH_DEFAULTS with the path to a file defining default values for given types. An example of such a file can be found in [data/config/splashrc](data/config/splashrc)
 
-And that's it, you can move on the the [Walkthrough](https://sat-metalab.gitlab.io/splash/Walkthrough/) page.
+And that's it, you can move on the the [Walkthrough](https://sat-mtl.gitlab.io/documentation/splash/Walkthrough/) page.
 
 
 ## Code contribution
@@ -193,4 +193,4 @@ Contributions are welcome ! See [CONTRIBUTING.md](docs/Contributing.md) and [COD
 
 ## Going forward
 
-To learn how to configure and use Splash, the best resource is [its official website](https://sat-metalab.gitlab.io/splash).
+To learn how to configure and use Splash, the best resource is [its official website](https://sat-mtl.gitlab.io/documentation/splash).

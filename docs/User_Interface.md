@@ -140,9 +140,9 @@ Laatly, it is also possible to export only the 3D models through the "Export 3D 
 
 ### Send meshes live from Blender to Splash
 
-Another useful addon which can be combined with Splash is the [shmdata addon](https://gitlab.com/sat-metalab/blender-addon-shmdata). Shmdata is a library which allows for sharing memory buffers between software, and the shmdata addon brings this capability to Blender. More specifically it allows for sharing meshes from Blender to Splash, so that the user can modify the projection surface in real-time.
+Another useful addon which can be combined with Splash is the [shmdata addon](https://gitlab.com/sat-mtl/tools/blender-addon-shmdata). Shmdata is a library which allows for sharing memory buffers between software, and the shmdata addon brings this capability to Blender. More specifically it allows for sharing meshes from Blender to Splash, so that the user can modify the projection surface in real-time.
 
-To install it, you need to first need to install the [shmdata library](https://gitlab.com/sat-metalab/shmdata) if it's not already the case. Refer to [shmdata's documentation](https://gitlab.com/sat-metalab/shmdata/-/blob/master/README.md) for this. Then you can install the shmdata Blender addon by following [its documentation](https://gitlab.com/sat-metalab/blender-addon-shmdata).
+To install it, you need to first need to install the [shmdata library](https://gitlab.com/sat-mtl/tools/shmdata) if it's not already the case. Refer to [shmdata's documentation](https://gitlab.com/sat-mtl/tools/shmdata/-/blob/master/README.md) for this. Then you can install the shmdata Blender addon by following [its documentation](https://gitlab.com/sat-mtl/tools/blender-addon-shmdata).
 
 Once installed in Blender you should see an additionnal section in the `Object properties` when having a 3D object selected: `Shmdata properties`. This section has a single button, `Send mesh`, which will send the current object through the shared memory. Any modification to the 3D mesh is then sent in real-time to any client software connected to the shmdata.
 

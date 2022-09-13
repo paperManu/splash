@@ -149,7 +149,7 @@ jack_lsp
 
 ## Piping video through v4l2loopback or shmdata
 
-It may happen that the capture card does not comply with the Video4Linux2 API. For example, Blackmagic distributes proprietary drivers with their capture card. As such they are not compatible with Splash out of the box, but it is still possible to use them. The trick is to transmit the data through [v4l2loopback](https://github.com/umlaeute/v4l2loopback) or [shmdata](https://gitlab.com/sat-metalab/shmdata), and read the capture card from [FFmpeg](https://ffmpeg.org) or [GStreamer](https://gstreamer.freedesktop.org/).
+It may happen that the capture card does not comply with the Video4Linux2 API. For example, Blackmagic distributes proprietary drivers with their capture card. As such they are not compatible with Splash out of the box, but it is still possible to use them. The trick is to transmit the data through [v4l2loopback](https://github.com/umlaeute/v4l2loopback) or [shmdata](https://gitlab.com/sat-mtl/tools/shmdata), and read the capture card from [FFmpeg](https://ffmpeg.org) or [GStreamer](https://gstreamer.freedesktop.org/).
 
 
 ### Piping through v4l2loopback
@@ -178,7 +178,7 @@ Then in Splash you can create a V4L2 media and grab the feed from the `/dev/vide
 
 ### Piping through shmdata
 
-Shmdata is a library which gives abilities similar to Syphon on OSX, but more general as it can carry any kind of data. First you have to make sure that it is installed on your system and that Splash has been compiled against it. Grab it [here](https://gitlab.com/sat-metalab/shmdata) and follow the [readme](https://gitlab.com/sat-metalab/shmdata/tree/master/README.md) to compile and install it. Then recompile and install Splash as described on the [Installation](../Installation) page.
+Shmdata is a library which gives abilities similar to Syphon on OSX, but more general as it can carry any kind of data. First you have to make sure that it is installed on your system and that Splash has been compiled against it. Grab it [here](https://gitlab.com/sat-mtl/tools/shmdata) and follow the [readme](https://gitlab.com/sat-metalab/shmdata/tree/master/README.md) to compile and install it. Then recompile and install Splash as described on the [Installation](../Installation) page.
 
 You can then launch a GStreamer pipeline and send any feed through Shmdata:
 
@@ -197,7 +197,7 @@ Then in Splash you can create a 'video through shared memory' object and set `/t
 
 ## Grabbing rendered images out of Splash
 
-Splash makes it possible to grab the rendered images (from Cameras, Filters, Warps, etc.) and either use it internally (in a Python script for instance) or send it to another software through [shmdata](https://gitlab.com/sat-metalab/shmdata).
+Splash makes it possible to grab the rendered images (from Cameras, Filters, Warps, etc.) and either use it internally (in a Python script for instance) or send it to another software through [shmdata](https://gitlab.com/sat-mtl/tools/shmdata).
 
 There are currently three types of Sinks, which work the same way but have different options:
 
@@ -238,7 +238,7 @@ Lastly, the internal rendering of Splash is done in a linear color space, which 
 
 A separate tool has been developed to convert NDI audio/video streams to and from shmdata, the shared memory protocol supported natively by Splash. Subtly named `ndi2shmdata`, this tool can be installed like this:
 ```bash
-git clone https://gitlab.com/sat-metalab/ndi2shmdata
+git clone https://gitlab.com/sat-mtl/tools/ndi2shmdata
 cd ndi2shmdata
 mkdir build && cd build
 cmake -DACCEPT_NDI_LICENSE=ON ..

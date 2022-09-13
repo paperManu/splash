@@ -65,7 +65,7 @@ link_directories(${Python3_LIBRARY_DIRS})
 # Custom target to download the splash-assets repository
 #
 add_custom_command(OUTPUT clone_splash_assets
-    COMMAND if [ ! -d ${CMAKE_CURRENT_SOURCE_DIR}/assets ]; then $(git clone https://gitlab.com/sat-metalab/splash-assets ${CMAKE_CURRENT_SOURCE_DIR}/assets); fi
+    COMMAND if [ ! -d ${CMAKE_CURRENT_SOURCE_DIR}/assets ]; then $(git clone https://gitlab.com/sat-mtl/tools/splash/splash-assets ${CMAKE_CURRENT_SOURCE_DIR}/assets); fi
     COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/assets && git pull origin master
 )
 add_custom_target(download_splash_assets DEPENDS clone_splash_assets)

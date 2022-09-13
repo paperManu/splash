@@ -354,7 +354,7 @@ The cameras parameters, as well as the warp if any, are now transferred to the c
 
 ### (Almost) automatic calibration with Calimiro
 
-The automatic calibration is done by [Calimiro](https://gitlab.com/sat-metalab/calimiro). It is designed to work with different cameras, in particular with DSLR, webcams and industrial cameras. We advice to use a fast shutter speed camera with a wide field of view to make the process faster. Note that, as of now, the calibration is only partial, it is still being developped and improved.
+The automatic calibration is done by [Calimiro](https://gitlab.com/sat-mtl/tools/splash/calimiro). It is designed to work with different cameras, in particular with DSLR, webcams and industrial cameras. We advice to use a fast shutter speed camera with a wide field of view to make the process faster. Note that, as of now, the calibration is only partial, it is still being developped and improved.
 
 To do this this tutorial, you will need:
 - Splash installed on a computer

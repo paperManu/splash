@@ -23,7 +23,7 @@ packaging_root_path = os.path.join(os.path.expanduser("~"), "src", "releases")
 version_file = "CMakeLists.txt"
 
 version_pattern = "\s+VERSION (\d+).(\d+).(\d+)"
-git_path = "git@gitlab.com:sat-metalab"
+git_path = "git@gitlab.com:sat-mtl/tools/splash"
 ppa_path = "ppa:sat-metalab/metalab"
 repo = "splash"
 package_name = "splash-mapper"

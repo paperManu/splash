@@ -282,7 +282,7 @@ pages:
 
     # Build the website
     - DEBIAN_FRONTEND=noninteractive apt install -y python3-pip doxygen graphviz
-    - git clone https://gitlab.com/sat-metalab/documentations/splash splash-doc
+    - git clone https://gitlab.com/sat-mtl/documentation/splash splash-doc
     - pushd splash-doc
     - git pull origin master # Make sure to be up-to-date
     - pip install -U sphinx
