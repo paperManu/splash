@@ -47,7 +47,7 @@ This project can be found either on [its official website](https://sat-mtl.gitla
 This project is made possible thanks to the [Society for Arts and Technologies](http://www.sat.qc.ca) (also known as SAT).
 
 
-## Installation
+## How to use Splash
 
 ### Dependencies
 Splash relies on a few libraries to get the job done. The mandatory libraries are:
@@ -84,35 +84,13 @@ By default Splash is built and linked against the libraries included as submodul
 
 ### Installation
 
-#### Linux
-
 Splash can be installed from a pre-built package, or compiled by hand. Newcomers are advised to try the packaged version first, and try to compile it if necessary only.
 
-##### Packages
+#### Install from packages
 
-The easiest way to install and test Splash is by using the [Flatpak](https://flatpak.org) archive, which is compatible with most Linux distributions. Splash is available on [Flathub](https://flathub.org/apps/details/com.gitlab.sat_metalab.Splash), and can be installed as follows on Ubuntu:
+To install from the binary packages, please refer to [Splash documentation](https://sat-mtl.gitlab.io/documentation/splash).
 
-```bash
-sudo apt install flatpak
-sudo flatpak install flathub org.freedesktop.Platform//1.6
-sudo flatpak install flathub com.gitlab.sat_metalab.Splash
-```
-
-Splash should now be accessible from your application menu (this may require to logout / log back in), or it can be run directly from the terminal as well:
-
-```bash
-flatpak run com.gitlab.sat_metalab.Splash
-```
-
-A known limitation of the Flatpak package is that it has no access to Jack.
-
-The current release of Splash is also packaged for Ubuntu (version 20.04) and derived. This is done through a Debian archive available on the [tags page](https://gitlab.com/sat-mtl/tools/splash/splash/tags), and install it with :
-
-```bash
-sudo apt install <download path>/splash-<version>-Linux.deb
-```
-
-##### Building
+#### Build from sources
 
 You can also compile Splash by hand, especially if you are curious about its internals or want to tinker with the code (or even, who knows, contribute!). Note that although what follows compiles the develop branch, it is more likely to contain bugs alongside new features / optimizations so if you experience crash you can try with the master branch.
 
@@ -184,6 +162,15 @@ Then log out and log back in.
 If you want to specify some defaults values for the objects, you can set the environment variable SPLASH_DEFAULTS with the path to a file defining default values for given types. An example of such a file can be found in [data/config/splashrc](data/config/splashrc)
 
 And that's it, you can move on the the [Walkthrough](https://sat-mtl.gitlab.io/documentation/splash/Walkthrough/) page.
+
+#### Uninstall Splash (when built from sources)
+
+To uninstall Splash when built from sources, you need to do from the very same directory where Splash has been built:
+
+```bash
+cd ${PATH_TO_SPLASH}/build
+sudo make uninstall
+```
 
 
 ## Code contribution

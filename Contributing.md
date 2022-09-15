@@ -101,13 +101,9 @@ A `coverage` subdirectory will be created, containing the results. You just have
 
 Should you have a suggestion for the documentation, you can open an issue and outline the problem or improvement you have - however, creating the fix yourself is much better!
 
-All the documentation for Splash can be found in the `docs` subdirectory. It is written in Markdown and should be pretty easy to navigate with a text editor, but it is primarily meant to be used to generate the [Splash website](https://sat-mtl.gitlab.io/documentation/splash).
+All the documentation for Splash can be found [Splash website](https://sat-mtl.gitlab.io/documentation/splash), and in the [source repository](https://gitlab.com/sat-mtl/documentation/splash). Please refer to this repository to help with improving the documentation.
 
-`mkdocs` is used to do the conversion from the Mardown files to the website. The website is updated automatically whenever a new commit is built successfully in either the `master` or the `website` branches. You can check the [Gitlab CI configuration](https://gitlab.com/sat-mtl/tools/splash/splash/tree/master/.gitlab-ci.yml) to learn more about the process.
-
-If you want to help improve the docs and it's a substantial change, create a new issue (or comment on a related existing one) to let others know what you're working on. Small changes (typos, improvements to phrasing) do not need an issue.
-
-For large fixes, please build and test the documentation before submitting the MR to be sure you haven't accidentally introduced any layout or formatting issues.
+If you want to help improve the docs and it's a substantial change, create a new issue (or comment on a related existing one) in the documentation repository to let others know what you're working on. Small changes (typos, improvements to phrasing) do not need an issue.
 
 
 ## Performance profiling
