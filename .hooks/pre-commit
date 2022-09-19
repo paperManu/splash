@@ -1,12 +1,12 @@
 #!/bin/bash
-#######################################################################################################
-#                                   GIT PRECOMMIT HOOK                                                #
-# This script checks if the formatting of .cpp and .hpp files is correct and                          #
-# proposes to fix it automatically, let the user do it or ignore the formatting (don't do it!).       #
-#                                                                                                     #
-# This file has been entirely copied from Switcher's sources: https://github.com/sat-metalab/switcher #
-#                                                                                                     #
-#######################################################################################################
+#########################################################################################################
+#                                   GIT PRECOMMIT HOOK                                                  #
+# This script checks if the formatting of .cpp and .hpp files is correct and                            #
+# proposes to fix it automatically, let the user do it or ignore the formatting (don't do it!).         #
+#                                                                                                       #
+# This file has been entirely copied from Switcher's sources: https://github.com/sat-mtl/tools/switcher #
+#                                                                                                       #
+#########################################################################################################
 
 ##################################
 # Global variables

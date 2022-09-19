@@ -927,6 +927,10 @@ bool ColorCalibrator::loadCalibrationParams()
 {
     // Load white point and color curves for each camera
     auto cameras = getObjectsPtr(getObjectsOfType("camera"));
+
+    if (cameras.size() == 0)
+        return false;
+
     for (const auto& cam : cameras)
     {
         auto camera = std::dynamic_pointer_cast<Camera>(cam);

@@ -48,7 +48,7 @@ test:20.04:gcc-bundled-libs:
     - rm -rf build && mkdir build
     - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
-    - make test -sC build
+    - make check -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
@@ -71,7 +71,7 @@ test:20.04:clang-bundled-libs:
     - rm -rf build && mkdir build
     - CC=clang CXX=clang++ cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
-    - make test -sC build
+    - make check -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
@@ -88,11 +88,11 @@ test:20.04:gcc-system-libs:
 
     # Test using system libs
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
-      libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev
+      libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev
     - rm -rf build && mkdir build
     - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
     - make -sC build -j$(nproc)
-    - make test -sC build
+    - make check -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
@@ -110,7 +110,7 @@ test:22.04:gcc-bundled-libs:
     - rm -rf build && mkdir build
     - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
-    - make test -sC build
+    - make check -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
@@ -128,7 +128,7 @@ test:22.04:clang-bundled-libs:
     - rm -rf build && mkdir build
     - CC=clang CXX=clang++ cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
-    - make test -sC build
+    - make check -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
@@ -144,7 +144,7 @@ test:22.04:gcc-system-libs:
     - rm -rf build && mkdir build
     - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
     - make -sC build -j$(nproc)
-    - make test -sC build
+    - make check -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   except:
@@ -156,8 +156,8 @@ test:archlinux:
   image: archlinux:latest
   allow_failure: true
   before_script:
-    - pacman -Syyu --noconfirm
-    - pacman -Sy --noconfirm git cmake make gcc yasm ccache pkgconfig libxi libxinerama libxrandr
+    - pacman -Syyu --noconfirm --disable-download-timeout
+    - pacman -Sy --noconfirm --disable-download-timeout git cmake make gcc yasm ccache pkgconfig libxi libxinerama libxrandr
       libxcursor jsoncpp mesa gsl libgphoto2 python3 portaudio zip zlib x264 x265 opencv qt5-base vtk
       hdf5 glew fmt openmpi
     - mkdir -p ccache
@@ -169,7 +169,7 @@ test:archlinux:
   script:
     - cmake -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
-    - make test
+    - make check
   except:
     - /^debian.*$/
 
@@ -276,38 +276,13 @@ pages:
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
   script:
-    # Build the dependencies.
-    # Needed for CMake to succeed and build API doc
+    # Here we build only the API doc, for testing purposes
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends doxygen
     - ./make_deps.sh
-
-    # Build the website
-    - DEBIAN_FRONTEND=noninteractive apt install -y python3-pip doxygen graphviz
-    - git clone https://gitlab.com/sat-metalab/documentations/splash splash-doc
-    - pushd splash-doc
-    - git pull origin master # Make sure to be up-to-date
-    - pip install -U sphinx
-    - pip install -r requirements.txt
-    - make htmlgitlab
-    - popd
-
-    # Build the API doc
     - mkdir -p build && pushd build
-    - cmake .. && make doc && cp -r docs/html ../splash-doc/public/doxygen
-    - popd
-
-    # Gather documentation togeter
-    - mv splash-doc/public public
-
-    # Build the packages
-    - pushd build
-    - cmake -DBUILD_GENERIC_ARCH=ON -DWITH_LTO=ON -DCMAKE_INSTALL_PREFIX=/usr ..
-    - make -j$(nproc)
-    - make package
-    - mv *.deb ../public/splash.deb
-    - mv addons/blender/*.tar.bz2 ../public/blender_splash_addon.tar.bz2
-    - popd
+    - cmake .. && make doc && cp -r docs/html ../public
   artifacts:
     paths:
       - public
-  only:
-    - website
+  # only:
+  #   - develop

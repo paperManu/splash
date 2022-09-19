@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Ubuntu packaging script
+Ubuntu packaging script. This script does the following:
+
+1 - Clone Splash in a new directory
+2 - Merge master branch into debian/master
+3 - Update debian/changelog with new package version
+4 - Commit changes in the debian/master branch
+5 - Ask the user if the updated debian/master branch needs to be pushed. 
+    If yes, the Splash CI will build and publish the new package.
 
 Usage: ./package_ubuntu.py
-
-Arguments:
-  -p, --ppa[=PPA]   Allows for specifying the PPA to upload to. Defaults to ppa:sat-metalab/metalab
 """
 
 import atexit
@@ -23,8 +27,7 @@ packaging_root_path = os.path.join(os.path.expanduser("~"), "src", "releases")
 version_file = "CMakeLists.txt"
 
 version_pattern = "\s+VERSION (\d+).(\d+).(\d+)"
-git_path = "git@gitlab.com:sat-metalab"
-ppa_path = "ppa:sat-metalab/metalab"
+git_path = "git@gitlab.com:sat-mtl/tools/splash"
 repo = "splash"
 package_name = "splash-mapper"
 remote_repo = "origin"
@@ -32,49 +35,6 @@ bringup_branch = "master"
 debian_branch_prefix = "debian"
 changelog_file = "changelog"
 success = True
-
-
-def dpkg_buildpackage() -> int:
-    """
-    Build Debian binary package locally with dpkg-buildpackage
-
-    :return: Return the exit code of the command
-    """
-    return subprocess.call("dpkg-buildpackage -us -uc", shell=True)
-
-
-def debuild() -> int:
-    """
-    Build the Debian source package
-
-    :return: Return the exit code of the command
-    """
-    return subprocess.call("debuild -S -sa", shell=True)
-
-
-def dput(ppa: str, repo: str, version: List[int]) -> int:
-    """
-    Upload the Debian source package to the PPA
-
-    :param ppa: PPA URL to upload to
-    :param repo: Repository name
-    :param version: Library version
-
-    :return: Return the exit code of the command
-    """
-    version_str = f"{version[0]}.{version[1]}.{version[2]}"
-    return subprocess.call(f"dput {ppa} {repo}_{version_str}-1_source.changes", shell=True)
-
-
-def gbp_pq(command: str) -> int:
-    """
-    Runs the given git-buildpackage patch queue command
-
-    :param command: Command to append to `gbp pq`
-
-    :return: Return the exit code of the command
-    """
-    return subprocess.call(f"gbp pq {command}", shell=True)
 
 
 def git_archive(repo: str, version: List[int]) -> int:
@@ -163,7 +123,7 @@ def git_merge(branch_name: str, force: bool = False) -> int:
 def git_tag(tag_name: str) -> int:
     """
     Tag the current commit
-    
+
     :param tag_name: Tag name
 
     :return: Return the exit code of the command
@@ -305,18 +265,7 @@ def usage() -> None:
 if __name__ == "__main__":
     assert(sys.version_info[0] == 3 and sys.version_info[1] > 6), f"This script must be ran with at least Python 3.7, detected Python {sys.version_info[0]}.{sys.version_info[1]}"
 
-    # Get command line arguments
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], "p:", ["ppa="])
-    except getopt.GetoptError as err:
-        print(err)
-        usage()
-        exit(2)
-
     cleanup_folder()  # Always remove the folder when launching the script.
-    for option, arg in opts:
-        if option in ["-p", "--ppa"]:
-            ppa_path = arg
 
     debian_master_branch = f"{debian_branch_prefix}/master"
 
@@ -334,29 +283,12 @@ if __name__ == "__main__":
     git_checkout(debian_master_branch)
 
     print(f"Merging the {bringup_branch} into {debian_master_branch}")
-    gbp_pq("import")
     git_checkout(debian_master_branch)
     git_merge(bringup_branch)
-    gbp_pq("rebase")
-    gbp_pq("export")
-    gbp_pq("drop")
     git_add(["debian/patches"])
     git_commit("Updated patches")
 
     update_changelog(f"{package_name}", release_version)
-
-    print("Test building binary package locally.")
-    assert dpkg_buildpackage() == 0, f"Could not build binary package for {repo} locally"
-    git_clean()
-
-    assert debuild() == 0, f"Could not build source package for {repo}"
-
-    print("Uploading the source package to the PPA.")
-    do_push=input(f"Do you want to push {repo} to the PPA {ppa_path}? [y/N]")
-    if do_push == "y":
-        os.chdir(packaging_root_path)
-        assert dput(ppa_path, f"{package_name}", release_version) == 0, f"Could not upload package source for {repo}"
-        os.chdir(os.path.join(packaging_root_path, package_name))
 
     print("Committing the modifications to the source repository.")
     do_commit=input(f"Do you want to push updates to {repo} on branch {debian_master_branch} to {remote_repo}? [y/N]")

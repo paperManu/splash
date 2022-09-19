@@ -2,10 +2,10 @@ Splash, a multi-projector video-mapping software
 ================================================
 
 [![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
-[![pipeline status](https://gitlab.com/sat-metalab/splash/badges/develop/pipeline.svg)](https://gitlab.com/sat-metalab/splash/commits/develop)
-[![coverage report](https://gitlab.com/sat-metalab/splash/badges/develop/coverage.svg)](https://gitlab.com/sat-metalab/splash/commits/develop)
+[![pipeline status](https://gitlab.com/sat-mtl/tools/splash/splash/badges/develop/pipeline.svg)](https://gitlab.com/sat-mtl/tools/splash/splash/commits/develop)
+[![coverage report](https://gitlab.com/sat-mtl/tools/splash/splash/badges/develop/coverage.svg)](https://gitlab.com/sat-mtl/tools/splash/splash/commits/develop)
 
-For a more complete documentation, go visit the [official website](https://sat-metalab.gitlab.io/splash).
+For a more complete documentation, go visit the [official website](https://sat-mtl.gitlab.io/documentation/splash).
 
 ## Table of Contents
 
@@ -41,13 +41,13 @@ This program uses external libraries, some of them being bundled in the source c
 See [AUTHORS.md](docs/Authors.md)
 
 ### Project URL
-This project can be found either on [its official website](https://sat-metalab.gitlab.io/splash), on the [SAT Metalab repository](https://gitlab.com/sat-metalab/splash) or on [Github](https://github.com/paperManu/splash).
+This project can be found either on [its official website](https://sat-mtl.gitlab.io/documentation/splash), on the [SAT Metalab repository](https://gitlab.com/sat-mtl/tools/splash) or on [Github](https://github.com/paperManu/splash).
 
 ### Sponsors
 This project is made possible thanks to the [Society for Arts and Technologies](http://www.sat.qc.ca) (also known as SAT).
 
 
-## Installation
+## How to use Splash
 
 ### Dependencies
 Splash relies on a few libraries to get the job done. The mandatory libraries are:
@@ -71,7 +71,7 @@ Splash relies on a few libraries to get the job done. The mandatory libraries ar
 Some other libraries are optional:
 
 - External dependencies:
-  - [libshmdata](http://gitlab.com/sat-metalab/shmdata) to read video flows from a shared memory,
+  - [libshmdata](http://gitlab.com/sat-mtl/tools/shmdata) to read video flows from a shared memory,
   - [portaudio](http://portaudio.com/) to read and output audio,
   - [Python](https://python.org) for scripting capabilities,
   - [GPhoto](http://gphoto.sourceforge.net/) to use a camera for color calibration.
@@ -84,35 +84,13 @@ By default Splash is built and linked against the libraries included as submodul
 
 ### Installation
 
-#### Linux
-
 Splash can be installed from a pre-built package, or compiled by hand. Newcomers are advised to try the packaged version first, and try to compile it if necessary only.
 
-##### Packages
+#### Install from packages
 
-The easiest way to install and test Splash is by using the [Flatpak](https://flatpak.org) archive, which is compatible with most Linux distributions. Splash is available on [Flathub](https://flathub.org/apps/details/com.gitlab.sat_metalab.Splash), and can be installed as follows on Ubuntu:
+To install from the binary packages, please refer to [Splash documentation](https://sat-mtl.gitlab.io/documentation/splash).
 
-```bash
-sudo apt install flatpak
-sudo flatpak install flathub org.freedesktop.Platform//1.6
-sudo flatpak install flathub com.gitlab.sat_metalab.Splash
-```
-
-Splash should now be accessible from your application menu (this may require to logout / log back in), or it can be run directly from the terminal as well:
-
-```bash
-flatpak run com.gitlab.sat_metalab.Splash
-```
-
-A known limitation of the Flatpak package is that it has no access to Jack.
-
-The current release of Splash is also packaged for Ubuntu (version 20.04) and derived. This is done through a Debian archive available on the [tags page](https://gitlab.com/sat-metalab/splash/tags), and install it with :
-
-```bash
-sudo apt install <download path>/splash-<version>-Linux.deb
-```
-
-##### Building
+#### Build from sources
 
 You can also compile Splash by hand, especially if you are curious about its internals or want to tinker with the code (or even, who knows, contribute!). Note that although what follows compiles the develop branch, it is more likely to contain bugs alongside new features / optimizations so if you experience crash you can try with the master branch.
 
@@ -128,7 +106,7 @@ sudo apt install build-essential git-core cmake libxrandr-dev libxi-dev \
 
 # Non mandatory libraries needed to link against system libraries only
 sudo apt install libglfw3-dev libglm-dev libavcodec-dev libavformat-dev \
-    libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev
+    libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev
 ```
 
 - Archlinux (not well maintained, please signal any issue):
@@ -141,7 +119,7 @@ pacman -Sy git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcur
 Once everything is installed, you can go on with building Splash. To build and link it against the bundled libraries:
 
 ```bash
-git clone https://gitlab.com/sat-metalab/splash
+git clone https://gitlab.com/sat-mtl/tools/splash/splash
 cd splash
 ./make_deps.sh
 mkdir -p build && cd build
@@ -152,7 +130,7 @@ make -j$(nproc) && sudo make install
 Otherwise, to build Splash and link it against the system libraries:
 
 ```bash
-git clone https://gitlab.com/sat-metalab/splash
+git clone https://gitlab.com/sat-mtl/tools/splash/splash
 cd splash
 mkdir -p build && cd build
 cmake -DUSE_SYSTEM_LIBS=ON ..
@@ -183,14 +161,23 @@ Then log out and log back in.
 
 If you want to specify some defaults values for the objects, you can set the environment variable SPLASH_DEFAULTS with the path to a file defining default values for given types. An example of such a file can be found in [data/config/splashrc](data/config/splashrc)
 
-And that's it, you can move on the the [Walkthrough](https://sat-metalab.gitlab.io/splash/Walkthrough/) page.
+And that's it, you can move on the the [Walkthrough](https://sat-mtl.gitlab.io/documentation/splash/Walkthrough/) page.
+
+#### Uninstall Splash (when built from sources)
+
+To uninstall Splash when built from sources, you need to do from the very same directory where Splash has been built:
+
+```bash
+cd ${PATH_TO_SPLASH}/build
+sudo make uninstall
+```
 
 
 ## Code contribution
 
-Contributions are welcome ! See [CONTRIBUTING.md](docs/Contributing.md) and [CODE_OF_CONDUCT.md](docs/Code_of_conduct.md) for details.
+Contributions are welcome ! See [CONTRIBUTING.md](Contributing.md) and [CODE_OF_CONDUCT.md](Code_of_conduct.md) for details.
 
 
 ## Going forward
 
-To learn how to configure and use Splash, the best resource is [its official website](https://sat-metalab.gitlab.io/splash).
+To learn how to configure and use Splash, the best resource is [its official website](https://sat-mtl.gitlab.io/documentation/splash).
