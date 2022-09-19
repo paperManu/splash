@@ -4,8 +4,8 @@
 * Frédéric Lestage
 * eva_decorps
 * Jérémie Soria
+* Christian Frisson
 * Sergio Jiménez Herena
 * Pascal Huerst
 * Josh Beckwith
 * Edith Viau
-* Christian Frisson

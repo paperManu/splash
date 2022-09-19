@@ -1,6 +1,26 @@
 Splash release notes
 ====================
 
+Splash 0.9.22 (2022-09-19)
+-------------------------
+Improvements:
+* Updated package script from using PPA to MPA
+* Remove dependency to libzmqpp-dev
+
+Bugs fixed:
+* Added some small fixes to the tests
+* Filled expectedCRF within size in ColorCalibrator
+* Fixed not pulling assets on make test
+* Added unit tests for color calibrator
+* Added assets before running unit tests
+* Added integration test for color calibrator
+
+Documentation:
+* Updated contribution to doc, added uninstall instructions for sources
+* Removed docs which duplicates what is available on the website
+* Removed the build of Splash website from this repo
+* Fixed URLs everywhere following the move to sat-mtl Gitlab group
+
 Splash 0.9.20 (2022-06-09)
 -------------------------
 Improvements:
