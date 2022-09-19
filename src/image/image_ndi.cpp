@@ -76,7 +76,7 @@ void Image_NDI::registerAttributes()
 
     setAttributeDescription("file", R"(NDI source name to read.
 Note that you need to have ndi2shmdata installed to read from NDI sources.
-Get it at https://gitlab.com/sat-metalab/ndi2shmdata)");
+Get it at https://gitlab.com/sat-mtl/tools/ndi2shmdata)");
 }
 
 } // namespace Splash

@@ -10,7 +10,7 @@ To justify a bit more that it is OK to include these headers into Splash reposit
 ```
 Hello,
 
-We have been developing for a few years now an open source projection-mapping software for Linux, which supports (among other video input) Datapath capture cards. For reference, here is its website: https://sat-metalab.gitlab.io/splash/.
+We have been developing for a few years now an open source projection-mapping software for Linux, which supports (among other video input) Datapath capture cards. For reference, here is its website: https://sat-mtl.gitlab.io/documentation/splash/.
 
 We use the Datapath SDK, and for now support is only activated whenever the user compiles the software him/herself. We would like to include it be default in the various pre-built packages (namely for Flatpak, and as a Ubuntu package), but for this we must include part of your SDK with the package sources.
 

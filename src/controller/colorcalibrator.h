@@ -43,7 +43,7 @@ namespace Splash
 {
 
 /*************/
-class ColorCalibrator final : public ControllerObject
+class ColorCalibrator : public ControllerObject
 {
   public:
     /**
@@ -55,7 +55,7 @@ class ColorCalibrator final : public ControllerObject
     /**
      * Destructor
      */
-    ~ColorCalibrator() final = default;
+    ~ColorCalibrator() = default;
 
     /**
      * Constructors/operators
@@ -89,7 +89,6 @@ class ColorCalibrator final : public ControllerObject
      */
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
-  private:
     //
     // Some internal types
     //

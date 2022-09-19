@@ -53,7 +53,7 @@ Subject: RFC: Deprecate BadFeature
 
 A new RFC (request for comment) has been opened here:
 
-https://gitlab.com/sat-metalab/splash/-/issues/333
+https://gitlab.com/sat-mtl/tools/splash/splash/-/issues/333
 
 Please visit the above link for discussion.
 
@@ -90,7 +90,7 @@ Subject: RFC Final Comment Period: Deprecate BadFeature
 
 An RFC has now entered Final Comment Period. In 14 days, discussion will end and the proposal will either be accepted, rejected or withdrawn:
 
-https://gitlab.com/sat-metalab/splash/-/issues/333
+https://gitlab.com/sat-mtl/tools/splash/splash/-/issues/333
 
 Please visit the above link for discussion.
 

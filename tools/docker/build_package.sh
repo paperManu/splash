@@ -13,7 +13,7 @@ fi
 
 echo "Checking out branch $git_branch"
 
-git clone https://gitlab.com/sat-metalab/splash.git
+git clone https://gitlab.com/sat-mtl/tools/splash/splash.git
 cd splash
 git checkout $git_branch
 git submodule update --init
