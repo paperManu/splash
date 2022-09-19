@@ -276,38 +276,13 @@ pages:
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
   script:
-    # Build the dependencies.
-    # Needed for CMake to succeed and build API doc
+    # Here we build only the API doc, for testing purposes
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends doxygen
     - ./make_deps.sh
-
-    # Build the website
-    - DEBIAN_FRONTEND=noninteractive apt install -y python3-pip doxygen graphviz
-    - git clone https://gitlab.com/sat-mtl/documentation/splash splash-doc
-    - pushd splash-doc
-    - git pull origin master # Make sure to be up-to-date
-    - pip install -U sphinx
-    - pip install -r requirements.txt
-    - make htmlgitlab
-    - popd
-
-    # Build the API doc
     - mkdir -p build && pushd build
-    - cmake .. && make doc && cp -r docs/html ../splash-doc/public/doxygen
-    - popd
-
-    # Gather documentation togeter
-    - mv splash-doc/public public
-
-    # Build the packages
-    - pushd build
-    - cmake -DBUILD_GENERIC_ARCH=ON -DWITH_LTO=ON -DCMAKE_INSTALL_PREFIX=/usr ..
-    - make -j$(nproc)
-    - make package
-    - mv *.deb ../public/splash.deb
-    - mv addons/blender/*.tar.bz2 ../public/blender_splash_addon.tar.bz2
-    - popd
+    - cmake .. && make doc && cp -r docs/html ../public
   artifacts:
     paths:
       - public
-  only:
-    - website
+  # only:
+  #   - develop
