@@ -9,7 +9,7 @@ class TestReplaceImage(SplashTestCase):
         print("Replace the Image object multiple times")
 
         image_file = f"{SplashTestCase.test_dir}/../../../data/share/splash/color_map.png"
-        video_file = f"{SplashTestCase.test_dir}/../../assets/tornado_h264.mov"
+        video_file = f"{SplashTestCase.test_dir}/../assets/tornado_h264.mov"
         for i in range(5):
             splash.set_world_attribute("replaceObject", ["image", "image", "image", "object"])
             sleep(0.5)
