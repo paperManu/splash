@@ -59,12 +59,22 @@ bool Image_NDI::read(const std::string& sourceName)
 /*************/
 void Image_NDI::update()
 {
-    _shmdata.update();
     if (_bufferImage == nullptr)
         _bufferImage = std::make_unique<ImageBuffer>();
+
+    _shmdata.update();
+
+    if (_timestamp == _shmdata.getTimestamp())
+        return;
+
     *_bufferImage = _shmdata.get();
     _bufferImageUpdated = true;
-    updateTimestamp(_bufferImage->getSpec().timestamp);
+
+    // We do not call Image::updateTimestamp() here because the
+    // new frame has already been signaled by _shmdata. We need
+    // to update some values though
+    _timestamp = _shmdata.getTimestamp();
+    _updatedBuffer = true;
 
     Image::update();
 }
