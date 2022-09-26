@@ -21,7 +21,7 @@ class TestGeometricCalibrator(SplashTestCase):
         print("-----------------")
         sleep(1)
 
-        splash.set_object_attribute("image_list", "file", f"{SplashTestCase.test_dir}/../../assets/captured_patterns/")
+        splash.set_object_attribute("image_list", "file", f"{SplashTestCase.test_dir}/../assets/captured_patterns/")
         print("-----------------")
 
         # Start the calibration

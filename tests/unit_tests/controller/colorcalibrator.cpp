@@ -151,7 +151,7 @@ class ColorCalibratorMock : public ColorCalibrator
 TEST_CASE("Testing Color Calibration")
 {
     std::string dataPath = Utils::getCurrentWorkingDirectory();
-    dataPath = dataPath.substr(0, dataPath.size() - 11) + "tests/assets/color_calibration/";
+    dataPath = dataPath + "/unit_tests/assets/color_calibration/";
 
     const int imagesWidth = 496;
     const int imagesHeight = 744;

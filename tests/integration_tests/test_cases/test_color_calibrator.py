@@ -24,7 +24,7 @@ class TestColorCalibrator(SplashTestCase):
         splash.set_object_attribute("colorCalibrator","colorSamples",3)
         splash.set_world_attribute("link", ["image_list", "colorCalibrator"])
         sleep(1)
-        splash.set_object_attribute("image_list", "file", f"{SplashTestCase.test_dir}/../../assets/color_calibration/")
+        splash.set_object_attribute("image_list", "file", f"{SplashTestCase.test_dir}/../assets/color_calibration/")
         sleep(1)
 
         # Calibrate camera response
