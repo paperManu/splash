@@ -1,6 +1,14 @@
 Splash release notes
 ====================
 
+Splash 0.9.24 (2022-09-26)
+-------------------------
+Improvements:
+* Reorganized tests assets, separated between unit and integration assets
+
+Bugs fixed:
+* Fixed memory overload in Image_NDI, due to buffer being triggered as updated as fast as CPU can
+
 Splash 0.9.22 (2022-09-19)
 -------------------------
 Improvements:
