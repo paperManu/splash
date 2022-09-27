@@ -7,35 +7,38 @@
 
 using namespace Splash;
 
-/*************/
-class BufferObjectMock : public BufferObject
+namespace BufferObjectTests
 {
-  public:
-    BufferObjectMock()
-        : BufferObject(nullptr)
+    /*************/
+    class BufferObjectMock : public BufferObject
     {
-    }
-
-    bool tryLockRead()
-    {
-        if (_readMutex.try_lock())
+      public:
+        BufferObjectMock()
+            : BufferObject(nullptr)
+        {
+        }
+    
+        bool tryLockRead()
+        {
+            if (_readMutex.try_lock())
+                return true;
+            return false;
+        }
+    
+        bool deserialize(SerializedObject&& obj) final
+        {
+            updateTimestamp();
             return true;
-        return false;
-    }
-
-    bool deserialize(SerializedObject&& obj) final
-    {
-        updateTimestamp();
-        return true;
-    }
-
-    SerializedObject serialize() const final { return {}; }
-};
+        }
+    
+        SerializedObject serialize() const final { return {}; }
+    };
+}
 
 /*************/
 TEST_CASE("Testing BufferObject locking")
 {
-    auto buffer = BufferObjectMock();
+    auto buffer = BufferObjectTests::BufferObjectMock();
     {
         const auto readLock = buffer.getReadLock();
         CHECK(!buffer.tryLockRead());
@@ -46,7 +49,7 @@ TEST_CASE("Testing BufferObject locking")
 /*************/
 TEST_CASE("Testing timestamp and update flag")
 {
-    auto buffer = BufferObjectMock();
+    auto buffer = BufferObjectTests::BufferObjectMock();
     auto timestamp = buffer.getTimestamp();
 
     buffer.setDirty();
@@ -64,7 +67,7 @@ TEST_CASE("Testing timestamp and update flag")
 /*************/
 TEST_CASE("Testing serialization")
 {
-    auto buffer = BufferObjectMock();
+    auto buffer = BufferObjectTests::BufferObjectMock();
     auto timestamp = buffer.getTimestamp();
 
     auto result = buffer.setSerializedObject({});

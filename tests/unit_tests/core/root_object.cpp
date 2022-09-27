@@ -13,50 +13,53 @@
 
 using namespace Splash;
 
-/*************/
-class RootObjectMock : public RootObject
+namespace RootObjectTests
 {
-  public:
-    Values _testValue{};
-
-  public:
-    RootObjectMock()
-        : RootObject()
+    /*************/
+    class RootObjectMock : public RootObject
     {
-        registerAttributes();
-        _link = std::make_unique<Link>(this, "mock", Link::ChannelType::zmq);
-        _name = "world";
-        _tree.setName(_name);
-    }
-
-    void step()
-    {
-        _tree.processQueue(true);
-        executeTreeCommands();
-        runTasks();
-        updateTreeFromObjects();
-        propagateTree();
-        waitSignalBufferObjectUpdated(100);
-    }
-
-  private:
-    void registerAttributes()
-    {
-        addAttribute(
-            "testValue",
-            [&](const Values& args) {
-                _testValue = args;
-                return true;
-            },
-            [&]() -> Values { return _testValue; },
-            {});
-    }
-};
+      public:
+        Values _testValue{};
+    
+      public:
+        RootObjectMock()
+            : RootObject()
+        {
+            registerAttributes();
+            _link = std::make_unique<Link>(this, "mock", Link::ChannelType::zmq);
+            _name = "world";
+            _tree.setName(_name);
+        }
+    
+        void step()
+        {
+            _tree.processQueue(true);
+            executeTreeCommands();
+            runTasks();
+            updateTreeFromObjects();
+            propagateTree();
+            waitSignalBufferObjectUpdated(100);
+        }
+    
+      private:
+        void registerAttributes()
+        {
+            addAttribute(
+                "testValue",
+                [&](const Values& args) {
+                    _testValue = args;
+                    return true;
+                },
+                [&]() -> Values { return _testValue; },
+                {});
+        }
+    };
+}
 
 /*************/
 TEST_CASE("Testing RootObject construction")
 {
-    auto root = RootObjectMock();
+    auto root = RootObjectTests::RootObjectMock();
     root.step();
     auto tree = root.getTree();
 
@@ -74,7 +77,7 @@ TEST_CASE("Testing RootObject construction")
 /*************/
 TEST_CASE("Testing RootObject basic configuration")
 {
-    auto root = RootObjectMock();
+    auto root = RootObjectTests::RootObjectMock();
 
     CHECK_EQ(root.getSocketPrefix(), "");
     CHECK_EQ(root.getConfigurationPath(), "");
@@ -85,7 +88,7 @@ TEST_CASE("Testing RootObject basic configuration")
 TEST_CASE("Testing RootObject object creation and lifetime handling")
 {
     std::string objectName = "name";
-    auto root = RootObjectMock();
+    auto root = RootObjectTests::RootObjectMock();
     auto graphObject = root.createObject("image", objectName);
     CHECK(!graphObject.expired());
 
@@ -106,7 +109,7 @@ TEST_CASE("Testing RootObject object creation and lifetime handling")
 /*************/
 TEST_CASE("Testing RootObject attribute set")
 {
-    auto root = RootObjectMock();
+    auto root = RootObjectTests::RootObjectMock();
 
     auto value = Values({1, "one"});
     root.set("world", "testValue", value);
@@ -129,7 +132,7 @@ TEST_CASE("Testing RootObject attribute set")
 /*************/
 TEST_CASE("Testing RootObject serialized object set")
 {
-    auto root = RootObjectMock();
+    auto root = RootObjectTests::RootObjectMock();
     auto imageName = "image";
     auto image = std::dynamic_pointer_cast<Image>(root.createObject("image", imageName).lock());
 
