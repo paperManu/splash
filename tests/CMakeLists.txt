@@ -101,19 +101,25 @@ target_sources(unitTests PRIVATE
     unit_tests/utils/resizable_array.cpp
     unit_tests/utils/scope_guard.cpp
     unit_tests/utils/subprocess.cpp
-    unit_tests/controller/colorcalibrator.cpp
+        unit_tests/controller/colorcalibrator.cpp
 )
 
+if (OPENCV_FOUND)
+    target_sources(unitTests PRIVATE
+        unit_tests/controller/colorcalibrator.cpp
+    )
+endif()
+
 if (HAVE_CALIMIRO)
-target_sources(unitTests PRIVATE
-    unit_tests/controller/geometriccalibrator.cpp
-)
+    target_sources(unitTests PRIVATE
+        unit_tests/controller/geometriccalibrator.cpp
+    )
 endif()
 
 if (HAVE_SHMDATA)
-target_sources(unitTests PRIVATE
-    unit_tests/network/channel_shmdata.cpp
-)
+    target_sources(unitTests PRIVATE
+        unit_tests/network/channel_shmdata.cpp
+    )
 endif()
 
 if(${WITH_LTO})
