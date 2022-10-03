@@ -31,6 +31,7 @@ if (NOT USE_SYSTEM_LIBS)
   add_subdirectory(glfw EXCLUDE_FROM_ALL)
   
   set(SNAPPY_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  set(SNAPPY_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
   add_subdirectory(snappy EXCLUDE_FROM_ALL)
 endif()
 
