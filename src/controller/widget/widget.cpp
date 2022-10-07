@@ -204,10 +204,9 @@ bool FileSelector(const std::string& label, std::string& path, bool& cancelled, 
 
     if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
     {
-        ImGuiIO& io = ImGui::GetIO();
-        if (io.KeysDown[io.KeyMap[ImGuiKey_Escape]] && io.KeysDownDuration[io.KeyMap[ImGuiKey_Escape]] == 0.0)
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape))
             cancelled = true;
-        else if (io.KeysDown[io.KeyMap[ImGuiKey_Enter]] && io.KeysDownDuration[io.KeyMap[ImGuiKey_Enter]] == 0.0)
+        else if (ImGui::IsKeyPressed(ImGuiKey_Enter))
             selectionDone = true;
     }
 
