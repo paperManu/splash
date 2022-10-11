@@ -23,9 +23,9 @@ Sink_Shmdata_Encoded::~Sink_Shmdata_Encoded()
 }
 
 /*************/
-AVCodec* Sink_Shmdata_Encoded::findEncoderByName(const std::string& codecName)
+const AVCodec* Sink_Shmdata_Encoded::findEncoderByName(const std::string& codecName)
 {
-    AVCodec* codec{nullptr};
+    const AVCodec* codec{nullptr};
 
     if (codecName == "h264")
     {

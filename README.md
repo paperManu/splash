@@ -101,8 +101,7 @@ The packages necessary to compile Splash are the following:
 sudo apt install build-essential git-core cmake libxrandr-dev libxi-dev \
     mesa-common-dev libgsl0-dev libatlas3-base libgphoto2-dev libz-dev \
     libxinerama-dev libxcursor-dev python3-dev yasm portaudio19-dev \
-    python3-numpy libopencv-dev gcc-8 g++-8 libjsoncpp-dev libx264-dev \
-    libx265-dev
+    python3-numpy libopencv-dev libjsoncpp-dev libx264-dev libx265-dev
 
 # Non mandatory libraries needed to link against system libraries only
 sudo apt install libglfw3-dev libglm-dev libavcodec-dev libavformat-dev \

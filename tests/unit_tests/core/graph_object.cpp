@@ -7,26 +7,29 @@
 
 using namespace Splash;
 
-/*************/
-class GraphObjectMock : public GraphObject
+namespace GraphObjectTests
 {
-  public:
-    GraphObjectMock(RootObject* root)
-        : GraphObject(root)
+    /*************/
+    class GraphObjectMock : public GraphObject
     {
-        _renderingPriority = Priority::NO_RENDER;
-    }
-
-    bool isConnectedToRemote() const { return _isConnectedToRemote; }
-
-    bool linkIt(const std::shared_ptr<GraphObject>&) override { return true; }
-};
+      public:
+        GraphObjectMock(RootObject* root)
+            : GraphObject(root)
+        {
+            _renderingPriority = Priority::NO_RENDER;
+        }
+    
+        bool isConnectedToRemote() const { return _isConnectedToRemote; }
+    
+        bool linkIt(const std::shared_ptr<GraphObject>&) override { return true; }
+    };
+}
 
 /*************/
 TEST_CASE("Testing GraphObject getters and setters")
 {
     auto root = RootObject();
-    auto object = GraphObjectMock(&root);
+    auto object = GraphObjectTests::GraphObjectMock(&root);
     CHECK_EQ(&root, object.getRoot());
     CHECK_EQ(object.getCategory(), GraphObject::Category::MISC);
 
@@ -50,9 +53,9 @@ TEST_CASE("Testing GraphObject getters and setters")
 TEST_CASE("Testing GraphObject linking and unlinking")
 {
     auto root = RootObject();
-    auto firstObject = std::make_shared<GraphObjectMock>(&root);
+    auto firstObject = std::make_shared<GraphObjectTests::GraphObjectMock>(&root);
     firstObject->setName("firstObject");
-    auto secondObject = std::make_shared<GraphObjectMock>(&root);
+    auto secondObject = std::make_shared<GraphObjectTests::GraphObjectMock>(&root);
     secondObject->setName("secondObject");
 
     firstObject->linkTo(secondObject);
@@ -86,7 +89,7 @@ TEST_CASE("Testing GraphObject linking and unlinking")
 TEST_CASE("Testing GraphObject tree updates")
 {
     auto root = RootObject();
-    auto object = std::make_shared<GraphObjectMock>(&root);
+    auto object = std::make_shared<GraphObjectTests::GraphObjectMock>(&root);
     object->setName("object");
     {
         auto tree = root.getTree();

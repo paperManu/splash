@@ -1,6 +1,18 @@
 Splash release notes
 ====================
 
+Splash 0.9.26 (2022-10-11)
+-------------------------
+Improvements:
+* Updated imgui to 1.88
+* Updated snappy to 1.1.9
+* Updated stb_image to 2.27 and stb_image_write to 1.16
+* Updated GLFW to version 3.3.8
+* Updated cppzmq
+
+Bugs fixed:
+* Fixed CI not able to get some submodule branches occasionnally, upon updates
+
 Splash 0.9.24 (2022-09-26)
 -------------------------
 Improvements:

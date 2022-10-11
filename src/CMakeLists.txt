@@ -48,9 +48,10 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 endif()
 
 if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
+  # This needs to be set because of stb_image.h
   set_source_files_properties(
       image/image.cpp
-      PROPERTIES COMPILE_FLAGS "-Wno-error=implicit-fallthrough -Wno-implicit-fallthrough -Wno-error=type-limits -Wno-type-limits"
+      PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers"
   )
 endif()
 
