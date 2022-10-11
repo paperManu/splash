@@ -74,7 +74,7 @@ class Sink_Shmdata_Encoded final : public Sink
     bool _resetEncoding{false};
 
     // FFmpeg objects
-    AVCodec* _codec{nullptr};
+    const AVCodec* _codec{nullptr};
     AVCodecContext* _context{nullptr};
     AVFrame *_frame{nullptr}, *_yuvFrame{nullptr};
     SwsContext* _swsContext{nullptr};
@@ -91,7 +91,7 @@ class Sink_Shmdata_Encoded final : public Sink
      * \param encoderName Codec name
      * \return Return a codec
      */
-    AVCodec* findEncoderByName(const std::string& codecName);
+    const AVCodec* findEncoderByName(const std::string& codecName);
 
     /**
      * Init FFmpeg objects

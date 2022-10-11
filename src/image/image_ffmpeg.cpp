@@ -193,7 +193,12 @@ bool Image_FFmpeg::setupAudioOutput(AVCodecContext* audioCodecContext)
     if (!_speaker)
         return false;
 
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(59, 37, 100)
     _speaker->setParameters(audioCodecContext->channels, audioCodecContext->sample_rate, format, _audioDeviceOutput);
+#else
+    _speaker->setParameters(audioCodecContext->ch_layout.nb_channels, audioCodecContext->sample_rate, format, _audioDeviceOutput);
+#endif
+
     return true;
 }
 #endif
@@ -281,7 +286,6 @@ void Image_FFmpeg::readLoop()
     auto audioCodecContext = avcodec_alloc_context3(nullptr);
     if (_audioStreamIndex >= 0)
     {
-        AVCodec* audioCodec{nullptr};
         auto audioCodecParameters = _avContext->streams[_audioStreamIndex]->codecpar;
         if (avcodec_parameters_to_context(audioCodecContext, audioCodecParameters) < 0)
         {
@@ -289,7 +293,7 @@ void Image_FFmpeg::readLoop()
             return;
         }
 
-        audioCodec = avcodec_find_decoder(audioCodecContext->codec_id);
+        const auto audioCodec = avcodec_find_decoder(audioCodecContext->codec_id);
 
         if (audioCodec == nullptr)
         {
@@ -502,11 +506,16 @@ void Image_FFmpeg::readLoop()
                         _audioDeviceOutputUpdated = false;
                     }
 
-                    size_t dataSize = av_samples_get_buffer_size(nullptr, audioCodecContext->channels, frame->nb_samples, audioCodecContext->sample_fmt, 1);
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(59, 37, 100)
+                    const auto nb_channels = audioCodecContext->channels;
+#else
+                    const auto nb_channels = audioCodecContext->ch_layout.nb_channels;
+#endif
+                    size_t dataSize = av_samples_get_buffer_size(nullptr, nb_channels, frame->nb_samples, audioCodecContext->sample_fmt, 1);
                     auto buffer = ResizableArray<uint8_t>(dataSize);
-                    auto linesize = dataSize / audioCodecContext->channels;
+                    auto linesize = dataSize / nb_channels;
                     if (_planar)
-                        for (int c = 0; c < audioCodecContext->channels; ++c)
+                        for (int c = 0; c < nb_channels; ++c)
                             std::copy(frame->extended_data[c], frame->extended_data[c] + linesize, buffer.data() + c * linesize);
                     else
                         std::copy(frame->extended_data[0], frame->extended_data[0] + dataSize, buffer.data());

@@ -1,5 +1,6 @@
 variables:
   DOCKER_DRIVER: overlay2
+  GIT_STRATEGY: clone
   GIT_SUBMODULE_STRATEGY: recursive
 
 stages:

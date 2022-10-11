@@ -10,99 +10,102 @@
 using namespace std::chrono;
 using namespace Splash;
 
-/*************/
-class BaseObjectMock : public BaseObject
+namespace BaseObjectTests
 {
-  public:
-    BaseObjectMock()
-        : BaseObject()
+    /*************/
+    class BaseObjectMock : public BaseObject
     {
-        registerAttributes();
-    }
-
-    void removeAttributeProxy(const std::string& name) { removeAttribute(name); }
-
-    void setupTasks()
-    {
-        addTask([this]() -> void { _float = 128.f; });
-
-        addPeriodicTask("counterTask", [this]() -> void { ++_integer; });
-        addPeriodicTask("counterTask", [this]() -> void { _integer += 2; });
-    }
-
-    void cleanPeriodicTask() { removePeriodicTask("counterTask"); }
-
-    void setupImbricatedPeriodicTasks()
-    {
-        addPeriodicTask("periodicTask", [this]() -> void {
-            addPeriodicTask("periodicerTaks", [this]() -> void {
-                _string = "Yo dawg!";
-                return;
+      public:
+        BaseObjectMock()
+            : BaseObject()
+        {
+            registerAttributes();
+        }
+    
+        void removeAttributeProxy(const std::string& name) { removeAttribute(name); }
+    
+        void setupTasks()
+        {
+            addTask([this]() -> void { _float = 128.f; });
+    
+            addPeriodicTask("counterTask", [this]() -> void { ++_integer; });
+            addPeriodicTask("counterTask", [this]() -> void { _integer += 2; });
+        }
+    
+        void cleanPeriodicTask() { removePeriodicTask("counterTask"); }
+    
+        void setupImbricatedPeriodicTasks()
+        {
+            addPeriodicTask("periodicTask", [this]() -> void {
+                addPeriodicTask("periodicerTaks", [this]() -> void {
+                    _string = "Yo dawg!";
+                    return;
+                });
             });
-        });
-    }
-
-    void setupAsyncTasks()
-    {
-        runAsyncTask([this]() -> void { _string = "Async task finished!"; });
-    }
-
-  private:
-    int _integer{0};
-    float _float{0.f};
-    std::string _string{""};
-
-    void registerAttributes()
-    {
-        addAttribute(
-            "integer",
-            [&](const Values& args) {
-                _integer = args[0].as<int>();
-                return true;
-            },
-            [&]() -> Values { return {_integer}; },
-            {'i'});
-        setAttributeDescription("integer", "An integer attribute");
-
-        addAttribute(
-            "float",
-            [&](const Values& args) {
-                _float = args[0].as<float>();
-                return true;
-            },
-            [&]() -> Values { return {_float}; },
-            {'r'});
-        setAttributeDescription("float", "A float attribute");
-        setAttributeSyncMethod("float", Attribute::Sync::force_async);
-
-        addAttribute(
-            "string",
-            [&](const Values& args) {
-                _string = args[0].as<std::string>();
-                return true;
-            },
-            [&]() -> Values { return {_string}; },
-            {'s'});
-        setAttributeDescription("string", "A string attribute");
-        setAttributeSyncMethod("string", Attribute::Sync::force_sync);
-
-        addAttribute("noGetterAttrib",
-            [&](const Values& args) {
-                _integer = 0;
-                _float = 0.f;
-                _string = "zero";
-                return true;
-            },
-            {});
-
-        addAttribute("noSetterAttrib", [&]() -> Values { return {"A getter but no setter"}; });
-    }
-};
+        }
+    
+        void setupAsyncTasks()
+        {
+            runAsyncTask([this]() -> void { _string = "Async task finished!"; });
+        }
+    
+      private:
+        int _integer{0};
+        float _float{0.f};
+        std::string _string{""};
+    
+        void registerAttributes()
+        {
+            addAttribute(
+                "integer",
+                [&](const Values& args) {
+                    _integer = args[0].as<int>();
+                    return true;
+                },
+                [&]() -> Values { return {_integer}; },
+                {'i'});
+            setAttributeDescription("integer", "An integer attribute");
+    
+            addAttribute(
+                "float",
+                [&](const Values& args) {
+                    _float = args[0].as<float>();
+                    return true;
+                },
+                [&]() -> Values { return {_float}; },
+                {'r'});
+            setAttributeDescription("float", "A float attribute");
+            setAttributeSyncMethod("float", Attribute::Sync::force_async);
+    
+            addAttribute(
+                "string",
+                [&](const Values& args) {
+                    _string = args[0].as<std::string>();
+                    return true;
+                },
+                [&]() -> Values { return {_string}; },
+                {'s'});
+            setAttributeDescription("string", "A string attribute");
+            setAttributeSyncMethod("string", Attribute::Sync::force_sync);
+    
+            addAttribute("noGetterAttrib",
+                [&](const Values& args) {
+                    _integer = 0;
+                    _float = 0.f;
+                    _string = "zero";
+                    return true;
+                },
+                {});
+    
+            addAttribute("noSetterAttrib", [&]() -> Values { return {"A getter but no setter"}; });
+        }
+    };
+}
 
 /*************/
 TEST_CASE("Testing BaseObject class")
 {
-    auto object = std::make_unique<BaseObjectMock>();
+    auto object = std::make_unique<BaseObjectTests::BaseObjectMock>();
     object->setName("Classe");
     CHECK_EQ(object->getName(), "Classe");
 
@@ -165,7 +168,7 @@ TEST_CASE("Testing BaseObject class")
 /*************/
 TEST_CASE("Testing BaseObject attribute registering")
 {
-    auto object = std::make_shared<BaseObjectMock>();
+    auto object = std::make_shared<BaseObjectTests::BaseObjectMock>();
     auto someString = std::string("What are you waiting for? Christmas?");
     auto otherString = std::string("Show me the money!");
 
@@ -188,7 +191,7 @@ TEST_CASE("Testing BaseObject attribute registering")
 /*************/
 TEST_CASE("Testing BaseObject task and periodic task")
 {
-    auto object = std::make_shared<BaseObjectMock>();
+    auto object = std::make_shared<BaseObjectTests::BaseObjectMock>();
     object->setupTasks();
     object->setAttribute("integer", {0});
 

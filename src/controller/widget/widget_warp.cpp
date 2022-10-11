@@ -147,7 +147,7 @@ void GuiWarp::processKeyEvents(const std::shared_ptr<Warp>& warp)
 {
     ImGuiIO& io = ImGui::GetIO();
     // Tabulation key
-    if (io.KeysDown[258] && io.KeysDownDuration[258] == 0.0)
+    if (ImGui::IsKeyPressed(ImGuiKey_Tab, false))
     {
         Values controlPoints;
         warp->getAttribute("patchControl", controlPoints);
@@ -180,28 +180,28 @@ void GuiWarp::processKeyEvents(const std::shared_ptr<Warp>& warp)
         else if (io.KeyCtrl)
             delta = 0.01f;
 
-        if (io.KeysDown[262])
+        if (ImGui::IsKeyDown(ImGuiKey_RightArrow))
         {
             Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();
             point[0] = point[0].as<float>() + delta;
             controlPoints[_currentControlPointIndex + 2] = point;
             setObjectAttribute(warp->getName(), "patchControl", controlPoints);
         }
-        if (io.KeysDown[263])
+        if (ImGui::IsKeyDown(ImGuiKey_LeftArrow))
         {
             Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();
             point[0] = point[0].as<float>() - delta;
             controlPoints[_currentControlPointIndex + 2] = point;
             setObjectAttribute(warp->getName(), "patchControl", controlPoints);
         }
-        if (io.KeysDown[264])
+        if (ImGui::IsKeyDown(ImGuiKey_DownArrow))
         {
             Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();
             point[1] = point[1].as<float>() - delta;
             controlPoints[_currentControlPointIndex + 2] = point;
             setObjectAttribute(warp->getName(), "patchControl", controlPoints);
         }
-        if (io.KeysDown[265])
+        if (ImGui::IsKeyDown(ImGuiKey_UpArrow))
         {
             Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();
             point[1] = point[1].as<float>() + delta;

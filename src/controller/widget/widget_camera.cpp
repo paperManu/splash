@@ -485,44 +485,44 @@ void GuiCamera::processKeyEvents()
         return;
 
     ImGuiIO& io = ImGui::GetIO();
-    if (io.KeysDown[' '] && io.KeysDownDuration[' '] == 0.0)
+    if (ImGui::IsKeyPressed(' ', false))
     {
         nextCamera();
         return;
     }
-    else if (io.KeysDown['A'] && io.KeysDownDuration['A'] == 0.0)
+    else if (ImGui::IsKeyPressed('A', false))
     {
         showAllCalibrationPoints();
         return;
     }
-    else if (io.KeysDown['C'] && io.KeysDownDuration['C'] == 0.0)
+    else if (ImGui::IsKeyPressed('C', false))
     {
         doCalibration();
         return;
     }
-    else if (io.KeysDown['H'] && io.KeysDownDuration['H'] == 0.0)
+    else if (ImGui::IsKeyPressed('H', false))
     {
         _hideCameras = !_camerasHidden;
         return;
     }
-    else if (io.KeysDown['O'] && io.KeysDownDuration['O'] == 0.0)
+    else if (ImGui::IsKeyPressed('O', false))
     {
         showAllCamerasCalibrationPoints();
         return;
     }
-    else if (io.KeysDown['V'] && io.KeysDownDuration['V'] == 0.0)
+    else if (ImGui::IsKeyPressed('V', false))
     {
         _camerasColorized = !_camerasColorized;
         return;
     }
     // Reset to the previous camera calibration
-    else if (io.KeysDown['Z'] && io.KeysDownDuration['Z'] == 0.0)
+    else if (ImGui::IsKeyPressed('Z', false))
     {
         if (io.KeyCtrl)
             revertCalibration();
         return;
     }
-    else if (io.KeysDown[ImGui::GetKeyIndex(ImGuiKey_Tab)] && io.KeysDownDuration[ImGui::GetKeyIndex(ImGuiKey_Tab)] == 0.0)
+    else if (ImGui::IsKeyPressed(ImGuiKey_Tab, false))
     {
         if (io.KeyShift)
             setObjectAttribute(_camera->getName(), "selectPreviousCalibrationPoint", {});
@@ -540,13 +540,13 @@ void GuiCamera::processKeyEvents()
 
         // Setting the camera locally is needed due to async nature of
         // setObjectAttribute
-        if (io.KeysDownDuration[ImGui::GetKeyIndex(ImGuiKey_RightArrow)] > 0.0)
+        if (ImGui::IsKeyDown(ImGuiKey_RightArrow))
             setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {delta, 0});
-        if (io.KeysDownDuration[ImGui::GetKeyIndex(ImGuiKey_LeftArrow)] > 0.0)
+        if (ImGui::IsKeyDown(ImGuiKey_LeftArrow))
             setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {-delta, 0});
-        if (io.KeysDownDuration[ImGui::GetKeyIndex(ImGuiKey_DownArrow)] > 0.0)
+        if (ImGui::IsKeyDown(ImGuiKey_DownArrow))
             setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {0, -delta});
-        if (io.KeysDownDuration[ImGui::GetKeyIndex(ImGuiKey_UpArrow)] > 0.0)
+        if (ImGui::IsKeyDown(ImGuiKey_UpArrow))
             setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {0, delta});
 
         return;

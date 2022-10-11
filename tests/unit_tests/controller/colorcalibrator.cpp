@@ -9,143 +9,149 @@
 
 using namespace Splash;
 
-/*************/
-class RootObjectMock : public RootObject
+namespace ColorCalibratorTests
 {
-  public:
-    RootObjectMock()
-        : RootObject()
+    /*************/
+    class RootObjectMock : public RootObject
     {
-        _name = "world";
-        _tree.setName(_name);
-    }
-
-    void step() { updateTreeFromObjects(); }
-};
-
-/*************/
-class ColorCalibratorMock : public ColorCalibrator
-{
-  public:
-    ColorCalibratorMock(RootObject* root)
-        : ColorCalibrator(root){};
-
-    float testFindCorrectExposure(float expectedExposure) { return (std::abs(expectedExposure - findCorrectExposure()) < 1e-5); }
-
-    bool testCRF(cv::Mat expectedCRF)
-    {
-        captureHDR(9, 0.33);
-        return (cv::norm(expectedCRF, _crf, cv::NORM_L1) < 1e-5);
-    }
-
-    bool testCaptureHDR(cv::Mat3f expectedHdr)
-    {
-        cv::Mat3f hdr = captureHDR(1);
-        for (int x = 0; x < hdr.rows; x++)
-            for (int y = 0; y < hdr.cols; y++)
-                for (int c = 0; c < 3; c++)
-                    if (std::abs(expectedHdr.at<cv::Vec3f>(x, y)[c] - hdr.at<cv::Vec3f>(x, y)[c]) > 1e-3)
-                        return false;
-        return true;
-    }
-
-    bool testGetMaskROI(std::vector<bool> expectedMask)
-    {
-        // Compute hdr difference
-        cv::Mat hdr = captureHDR(1);
-        cv::Mat othersHdr = captureHDR(1);
-
-        cv::Mat diffHdr = hdr.clone();
-        for (int y = 0; y < diffHdr.rows; ++y)
-            for (int x = 0; x < diffHdr.cols; ++x)
-            {
-                auto pixelValue = diffHdr.at<cv::Vec3f>(y, x) - othersHdr.at<cv::Vec3f>(y, x) * _displayDetectionThreshold;
-                diffHdr.at<cv::Vec3f>(y, x)[0] = std::max(0.f, pixelValue[0]);
-                diffHdr.at<cv::Vec3f>(y, x)[1] = std::max(0.f, pixelValue[1]);
-                diffHdr.at<cv::Vec3f>(y, x)[2] = std::max(0.f, pixelValue[2]);
-            }
-
-        // Compute mask
-        _mask = getMaskROI(diffHdr);
-
-        for (int i = 0; i < _mask.size(); i++)
-            if (!(_mask[i] == expectedMask[i]))
-                return false;
-
-        return true;
-    }
-
-    bool testGetMeanValue(std::vector<float> expectedMean)
-    {
-        cv::Mat hdr = captureHDR(1);
-        std::vector<float> mean = getMeanValue(hdr, _mask);
-        std::cout << mean[0] << "," << mean[1] << "," << mean[2] << "\n";
-        for (int i = 0; i < 3; i++)
-            if (std::abs(mean[i] - expectedMean[i]) > 1e-3)
-                return false;
-        return true;
-    }
-
-    bool testComputeProjectorFunctionInverse(std::vector<float> colorCurves, std::vector<float> expectedCurves)
-    {
-        // Input curves
-        std::vector<Curve> curves{3};
-        for (int s = 0; s < 3; ++s)
+      public:
+        RootObjectMock()
+            : RootObject()
         {
-            for (int c = 0; c < 3; ++c)
-            {
-                RgbValue sampleValue = RgbValue(0., 0., 0.);
-                sampleValue[c] = colorCurves[s * 6 + 2 * c + 1];
-                curves[c].push_back(Point(colorCurves[s * 6 + 2 * c], sampleValue));
-            }
+            _name = "world";
+            _tree.setName(_name);
         }
-
-        // Output projector curves
-        std::vector<Curve> projCurves = computeProjectorFunctionInverse(curves);
-
-        // Check values one by one
-        for (unsigned int s = 0; s < _colorLUTSize; ++s)
+    
+        void step() { updateTreeFromObjects(); }
+    };
+    
+    /*************/
+    class ColorCalibratorMock : public ColorCalibrator
+    {
+      public:
+        ColorCalibratorMock(RootObject* root)
+            : ColorCalibrator(root){};
+    
+        bool testFindCorrectExposure(float expectedExposure)
         {
-            for (int c = 0; c < 3; ++c)
-            {
-                bool sample = std::abs(expectedCurves[s * 6 + c * 2] - projCurves[c][s].first) < 1e-5;
-                bool value = std::abs(expectedCurves[s * 6 + c * 2 + 1] - projCurves[c][s].second[c]) < 1e-5;
-
-                if (!(sample && value))
+            const auto foundExposure = findCorrectExposure();
+            return (std::abs(std::log(expectedExposure / foundExposure)) < 1e-5);
+        }
+    
+        bool testCRF(cv::Mat expectedCRF)
+        {
+            captureHDR(9, 0.33);
+            return (cv::norm(expectedCRF, _crf, cv::NORM_L2) < 2.0);
+        }
+    
+        bool testCaptureHDR(cv::Mat3f expectedHdr)
+        {
+            cv::Mat3f hdr = captureHDR(1);
+            for (int x = 0; x < hdr.rows; x++)
+                for (int y = 0; y < hdr.cols; y++)
+                    for (int c = 0; c < 3; c++)
+                        if (std::abs(std::log(expectedHdr.at<cv::Vec3f>(x, y)[c] / hdr.at<cv::Vec3f>(x, y)[c])) > 0.1)
+                            return false;
+            return true;
+        }
+    
+        bool testGetMaskROI(std::vector<bool> expectedMask)
+        {
+            // Compute hdr difference
+            cv::Mat hdr = captureHDR(1);
+            cv::Mat othersHdr = captureHDR(1);
+    
+            cv::Mat diffHdr = hdr.clone();
+            for (int y = 0; y < diffHdr.rows; ++y)
+                for (int x = 0; x < diffHdr.cols; ++x)
+                {
+                    auto pixelValue = diffHdr.at<cv::Vec3f>(y, x) - othersHdr.at<cv::Vec3f>(y, x) * _displayDetectionThreshold;
+                    diffHdr.at<cv::Vec3f>(y, x)[0] = std::max(0.f, pixelValue[0]);
+                    diffHdr.at<cv::Vec3f>(y, x)[1] = std::max(0.f, pixelValue[1]);
+                    diffHdr.at<cv::Vec3f>(y, x)[2] = std::max(0.f, pixelValue[2]);
+                }
+    
+            // Compute mask
+            _mask = getMaskROI(diffHdr);
+    
+            for (int i = 0; i < _mask.size(); i++)
+                if (!(_mask[i] == expectedMask[i]))
                     return false;
-            }
+    
+            return true;
         }
-
-        return true;
-    }
-
-    bool testEqualizeWhiteBalances(RgbValue expectedWB, std::pair<RgbValue, RgbValue> whitePoints)
-    {
-        // Initialize parameters
-        CalibrationParams params;
-
-        params.camName = "cam1";
-        params.whitePoint = whitePoints.first;
-        _calibrationParams.push_back(params);
-
-        params.camName = "cam2";
-        params.whitePoint = whitePoints.second;
-        _calibrationParams.push_back(params);
-
-        RgbValue whiteBalance = equalizeWhiteBalances();
-        _calibrationParams.clear();
-
-        // Check values one by one
-        for (int i = 0; i < 3; i++)
-            if (std::abs(whiteBalance[i] - expectedWB[i]) > 1e-5)
-                return false;
-
-        return true;
-    }
-
-  private:
-    std::vector<bool> _mask{};
-};
+    
+        bool testGetMeanValue(std::vector<float> expectedMean)
+        {
+            cv::Mat hdr = captureHDR(1);
+            std::vector<float> mean = getMeanValue(hdr, _mask);
+            for (int i = 0; i < 3; i++)
+                if (std::abs(std::log(mean[i] / expectedMean[i])) > 0.1f)
+                    return false;
+            return true;
+        }
+    
+        bool testComputeProjectorFunctionInverse(std::vector<float> colorCurves, std::vector<float> expectedCurves)
+        {
+            // Input curves
+            std::vector<Curve> curves{3};
+            for (int s = 0; s < 3; ++s)
+            {
+                for (int c = 0; c < 3; ++c)
+                {
+                    RgbValue sampleValue = RgbValue(0., 0., 0.);
+                    sampleValue[c] = colorCurves[s * 6 + 2 * c + 1];
+                    curves[c].push_back(Point(colorCurves[s * 6 + 2 * c], sampleValue));
+                }
+            }
+    
+            // Output projector curves
+            std::vector<Curve> projCurves = computeProjectorFunctionInverse(curves);
+    
+            // Check values one by one
+            for (unsigned int s = 0; s < _colorLUTSize; ++s)
+            {
+                for (int c = 0; c < 3; ++c)
+                {
+                    bool sample = std::abs(expectedCurves[s * 6 + c * 2] - projCurves[c][s].first) < 1e-5;
+                    bool value = std::abs(expectedCurves[s * 6 + c * 2 + 1] - projCurves[c][s].second[c]) < 1e-5;
+    
+                    if (!(sample && value))
+                        return false;
+                }
+            }
+    
+            return true;
+        }
+    
+        bool testEqualizeWhiteBalances(RgbValue expectedWB, std::pair<RgbValue, RgbValue> whitePoints)
+        {
+            // Initialize parameters
+            CalibrationParams params;
+    
+            params.camName = "cam1";
+            params.whitePoint = whitePoints.first;
+            _calibrationParams.push_back(params);
+    
+            params.camName = "cam2";
+            params.whitePoint = whitePoints.second;
+            _calibrationParams.push_back(params);
+    
+            RgbValue whiteBalance = equalizeWhiteBalances();
+            _calibrationParams.clear();
+    
+            // Check values one by one
+            for (int i = 0; i < 3; i++)
+                if (std::abs(whiteBalance[i] - expectedWB[i]) > 1e-5)
+                    return false;
+    
+            return true;
+        }
+    
+      private:
+        std::vector<bool> _mask{};
+    };
+}
 
 /*************/
 TEST_CASE("Testing Color Calibration")
@@ -161,22 +167,22 @@ TEST_CASE("Testing Color Calibration")
     //
 
     // Initialize objects
-    auto root = RootObjectMock();
+    auto root = ColorCalibratorTests::RootObjectMock();
     auto image = std::dynamic_pointer_cast<Image_List>(root.createObject("image_list", "list").lock());
     image->setRemoteType("image_list");
-    auto calibrator = ColorCalibratorMock(&root);
+    auto calibrator = ColorCalibratorTests::ColorCalibratorMock(&root);
 
     // Set attributes and links
     calibrator.setAttribute("colorSamples", {3});
     image->read(dataPath);
     root.step(); // Update objects in the tree
-    CHECK_EQ(calibrator.linkTo(image), true);
+    CHECK(calibrator.linkTo(image));
 
     // Check attributes
     Values status = calibrator.getObjectAttribute(image->getName(), "ready");
     Values exposure = calibrator.getObjectAttribute(image->getName(), "shutterspeed");
     CHECK_EQ(status.size(), 1);
-    CHECK_EQ(status[0].as<bool>(), true);
+    CHECK(status[0].as<bool>());
 
     //
     // Check functions for camera response function
@@ -209,8 +215,8 @@ TEST_CASE("Testing Color Calibration")
 
     crf.close();
 
-    CHECK_EQ(calibrator.testFindCorrectExposure(0.01f), true);
-    CHECK_EQ(calibrator.testCRF(expectedCRF), true);
+    CHECK(calibrator.testFindCorrectExposure(0.01f));
+    CHECK(calibrator.testCRF(expectedCRF));
 
     //
     // Check functions for projectors calibration
@@ -394,21 +400,21 @@ TEST_CASE("Testing Color Calibration")
     // Cameras' white point
     std::pair<RgbValue, RgbValue> whitePoints{RgbValue(18.408, 18.213, 19.231), RgbValue(22.475, 21.821, 23.419)};
 
-    CHECK_EQ(calibrator.testFindCorrectExposure(0.00296296f), true);
-    CHECK_EQ(calibrator.testGetMaskROI(expectedMask), true);
-    CHECK_EQ(calibrator.testGetMeanValue(expectedMean), true);
-    CHECK_EQ(calibrator.testCaptureHDR(expectedHdr), true);
-    CHECK_EQ(calibrator.testComputeProjectorFunctionInverse(colorCurves, expectedCurves), true);
+    CHECK(calibrator.testFindCorrectExposure(0.00296296f));
+    CHECK(calibrator.testGetMaskROI(expectedMask));
+    CHECK(calibrator.testGetMeanValue(expectedMean));
+    CHECK(calibrator.testCaptureHDR(expectedHdr));
+    CHECK(calibrator.testComputeProjectorFunctionInverse(colorCurves, expectedCurves));
 
     // Test equalize white balance methods
     RgbValue expectedWB;
     calibrator.setAttribute("equalizeMethod", {0});
     expectedWB = RgbValue(1.020339, 1.000000, 1.064563);
-    CHECK_EQ(calibrator.testEqualizeWhiteBalances(expectedWB, whitePoints), true);
+    CHECK(calibrator.testEqualizeWhiteBalances(expectedWB, whitePoints));
     calibrator.setAttribute("equalizeMethod", {1});
     expectedWB = RgbValue(1.010707, 1.000000, 1.055894);
-    CHECK_EQ(calibrator.testEqualizeWhiteBalances(expectedWB, whitePoints), true);
+    CHECK(calibrator.testEqualizeWhiteBalances(expectedWB, whitePoints));
     calibrator.setAttribute("equalizeMethod", {2});
     expectedWB = RgbValue(1.009368, 1.000000, 1.048908);
-    CHECK_EQ(calibrator.testEqualizeWhiteBalances(expectedWB, whitePoints), true);
+    CHECK(calibrator.testEqualizeWhiteBalances(expectedWB, whitePoints));
 }
