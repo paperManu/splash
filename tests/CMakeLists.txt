@@ -101,10 +101,9 @@ target_sources(unitTests PRIVATE
     unit_tests/utils/resizable_array.cpp
     unit_tests/utils/scope_guard.cpp
     unit_tests/utils/subprocess.cpp
-        unit_tests/controller/colorcalibrator.cpp
 )
 
-if (OPENCV_FOUND)
+if (GPHOTO_FOUND AND OPENCV_FOUND)
     target_sources(unitTests PRIVATE
         unit_tests/controller/colorcalibrator.cpp
     )
