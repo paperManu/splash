@@ -1,6 +1,12 @@
 Splash release notes
 ====================
 
+Splash 0.9.28 (2022-10-31)
+-------------------------
+Bugs fixed:
+* Fixed Flatpak package build with Freedesktop SDK 22.08
+* Fixed build dependency when OpenCV is not present
+
 Splash 0.9.26 (2022-10-11)
 -------------------------
 Improvements:
