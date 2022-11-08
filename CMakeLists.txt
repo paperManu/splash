@@ -43,6 +43,7 @@ set(PACKAGE_VERSION ${PROJECT_VERSION})
 # Build options
 #
 set(BUILD_GENERIC_ARCH OFF CACHE BOOL "Enable building without architecture-specitif optimization")
+set(BUILD_ONLY_DOC OFF CACHE BOOL "Enable building only the documentation")
 set(DEBUG_OPENGL OFF CACHE BOOL "Enable OpenGL debugging")
 set(PROFILE OFF CACHE BOOL "Enable profiling")
 set(PROFILE_OPENGL OFF CACHE BOOL "Enable OpenGL profiling")
@@ -71,29 +72,32 @@ if (NOT USE_SYSTEM_LIBS)
 endif()
 
 find_package(PkgConfig REQUIRED)
-find_package(Threads REQUIRED)
+find_package(Threads)
 
 if (USE_SYSTEM_LIBS)
-  find_package(glfw3 REQUIRED)
+  find_package(glfw3)
 endif()
 
-# Mandatory dependencies
-pkg_search_module(JSONCPP REQUIRED jsoncpp)
-pkg_search_module(GSL REQUIRED gsl)
-pkg_search_module(ZMQ REQUIRED libzmq)
-pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswscale)
-pkg_check_modules(UUID REQUIRED uuid)
+if (NOT BUILD_ONLY_DOC)
+    # Mandatory dependencies
+    pkg_search_module(JSONCPP REQUIRED jsoncpp)
+    pkg_search_module(GSL REQUIRED gsl)
+    pkg_search_module(ZMQ REQUIRED libzmq)
+    pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswscale)
+    pkg_check_modules(UUID REQUIRED uuid)
 
-# Optional dependencies
-find_package (Python3 COMPONENTS Interpreter Development)
+    # Optional dependencies
+    find_program(ZIP zip)
+    find_package (Python3 COMPONENTS Interpreter Development)
+    find_package(OpenCV)
+    pkg_search_module(GPHOTO libgphoto2)
+    pkg_search_module(JACK jack)
+    pkg_search_module(PORTAUDIO portaudio-2.0)
+    pkg_search_module(SHMDATA shmdata-1.3)
+    pkg_search_module(CALIMIRO calimiro-0.2)
+endif()
 
 find_package(Doxygen)
-find_package(OpenCV)
-pkg_search_module(GPHOTO libgphoto2)
-pkg_search_module(JACK jack)
-pkg_search_module(PORTAUDIO portaudio-2.0)
-pkg_search_module(SHMDATA shmdata-1.3)
-pkg_search_module(CALIMIRO calimiro-0.2)
 
 #
 # Configuration
@@ -156,12 +160,15 @@ endif()
 #
 # Sources
 #
-add_subdirectory(addons)
-add_subdirectory(data)
 add_subdirectory(docs)
-add_subdirectory(external)
-add_subdirectory(src)
-add_subdirectory(tests)
+
+if (NOT BUILD_ONLY_DOC)
+    add_subdirectory(addons)
+    add_subdirectory(data)
+    add_subdirectory(external)
+    add_subdirectory(src)
+    add_subdirectory(tests)
+endif()
 
 # Uninstall target
 configure_file(
@@ -241,6 +248,7 @@ info_cfg_option(SHMDATA_VERSION)
 info_cfg_option(CALIMIRO_VERSION)
 info_cfg_option(ZMQ_VERSION)
 info_cfg_option(DOXYGEN_FOUND)
+info_cfg_option(ZIP)
 info_cfg_option(DEBUG_OPENGL)
 info_cfg_option(PROFILE)
 info_cfg_option(PROFILE_OPENGL)
