@@ -199,8 +199,9 @@ coverage:
     name: "splash_coverage_${CI_BUILD_REF_NAME}"
     paths:
     - "coverage.zip"
-  except:
-    - website
+  only:
+    - develop
+    - master
 
 #
 # ┏━┓┏━┓┏━╸╻┏ ┏━┓┏━╸┏━╸
