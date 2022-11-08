@@ -270,6 +270,21 @@ package:blender_addon:
       - "*.tar.bz2"
 
 
+package:fullsources:
+  stage: deploy
+  image: alpine
+  before_script:
+    - apk update && apk upgrade
+  script:
+    # This job packages the whole sources, including the submodules
+    - tar cvzf splash.tar.gz --exclude='.git' --exclude='ccache' .
+  only:
+    - tags
+  artifacts:
+    paths:
+      - splash.tar.gz
+
+# Includes for MPA packaging
 include:
   - remote: 'https://gitlab.com/sat-metalab/distributions/mpa-bionic-arm64-jetson/-/raw/main/.gitlab-ci-package.yml'
   - remote: 'https://gitlab.com/sat-metalab/distributions/mpa-focal-amd64-nvidia/-/raw/main/.gitlab-ci-package.yml'
