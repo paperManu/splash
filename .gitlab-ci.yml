@@ -208,15 +208,10 @@ coverage:
 # ┣━┛┣━┫┃  ┣┻┓┣━┫┃╺┓┣╸ 
 # ╹  ╹ ╹┗━╸╹ ╹╹ ╹┗━┛┗━╸
 #
-package:debian:
+package:debian:20.04:
   stage: deploy
   image: ubuntu:20.04
   script:
-    # Install Metalab packages
-    - apt install -y --no-install-recommends software-properties-common
-    - add-apt-repository -y ppa:sat-metalab/metalab
-    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
-
     # Build package
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build
@@ -224,14 +219,56 @@ package:debian:
     - make -j$(nproc)
     - make package
     - mv *.deb ../
-    - mv addons/blender/*.tar.bz2 ../
   only:
     - tags
+    - master
   artifacts:
     name: "splash_${CI_BUILD_REF_NAME}"
     paths:
       - "*.deb"
       - "*.tar.bz2"
+
+package:debian:22.04:
+  stage: deploy
+  image: ubuntu:22.04
+  script:
+    # Build package
+    - ./make_deps.sh
+    - rm -rf build && mkdir build && cd build
+    - cmake -DBUILD_GENERIC_ARCH=ON -DWITH_LTO=ON -DCMAKE_INSTALL_PREFIX=/usr ..
+    - make -j$(nproc)
+    - make package
+    - mv *.deb ../
+  only:
+    - tags
+    - master
+  artifacts:
+    name: "splash_${CI_BUILD_REF_NAME}"
+    paths:
+      - "*.deb"
+      - "*.tar.bz2"
+
+package:blender_addon:
+  stage: deploy
+  image: ubuntu:20.04
+  before_script:
+    - apt update -qq
+    - DEBIAN_FRONTEND=noninteractive apt install -y git git-lfs zip cmake build-essential pkg-config
+
+  script:
+    # Build the Blender addon
+    - rm -rf build && mkdir build && cd build
+    - cmake -DBUILD_CODE=OFF ..
+    - make blenderSplash
+    - mv addons/blender/*.tar.bz2 ../
+  only:
+    - tags
+    - master
+  artifacts:
+    name: "splash_blender_addon_${CI_BUILD_REF_NAME}"
+    paths:
+      - "*.tar.bz2"
+
 
 include:
   - remote: 'https://gitlab.com/sat-metalab/distributions/mpa-bionic-arm64-jetson/-/raw/main/.gitlab-ci-package.yml'
@@ -280,9 +317,8 @@ pages:
   script:
     # Here we build only the API doc, for testing purposes
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends doxygen
-    - ./make_deps.sh
     - mkdir -p build && pushd build
-    - cmake .. && make doc && cp -r docs/html ../public
+    - cmake -DBUILD_CODE=OFF .. && make doc && cp -r docs/html ../public
   artifacts:
     paths:
       - public

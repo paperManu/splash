@@ -43,7 +43,7 @@ set(PACKAGE_VERSION ${PROJECT_VERSION})
 # Build options
 #
 set(BUILD_GENERIC_ARCH OFF CACHE BOOL "Enable building without architecture-specitif optimization")
-set(BUILD_ONLY_DOC OFF CACHE BOOL "Enable building only the documentation")
+set(BUILD_CODE ON CACHE BOOL "Enable building the code")
 set(DEBUG_OPENGL OFF CACHE BOOL "Enable OpenGL debugging")
 set(PROFILE OFF CACHE BOOL "Enable profiling")
 set(PROFILE_OPENGL OFF CACHE BOOL "Enable OpenGL profiling")
@@ -78,7 +78,7 @@ if (USE_SYSTEM_LIBS)
   find_package(glfw3)
 endif()
 
-if (NOT BUILD_ONLY_DOC)
+if (BUILD_CODE)
     # Mandatory dependencies
     pkg_search_module(JSONCPP REQUIRED jsoncpp)
     pkg_search_module(GSL REQUIRED gsl)
@@ -87,7 +87,6 @@ if (NOT BUILD_ONLY_DOC)
     pkg_check_modules(UUID REQUIRED uuid)
 
     # Optional dependencies
-    find_program(ZIP zip)
     find_package (Python3 COMPONENTS Interpreter Development)
     find_package(OpenCV)
     pkg_search_module(GPHOTO libgphoto2)
@@ -97,6 +96,7 @@ if (NOT BUILD_ONLY_DOC)
     pkg_search_module(CALIMIRO calimiro-0.2)
 endif()
 
+find_program(ZIP zip)
 find_package(Doxygen)
 
 #
@@ -160,10 +160,10 @@ endif()
 #
 # Sources
 #
+add_subdirectory(addons)
 add_subdirectory(docs)
 
-if (NOT BUILD_ONLY_DOC)
-    add_subdirectory(addons)
+if (BUILD_CODE)
     add_subdirectory(data)
     add_subdirectory(external)
     add_subdirectory(src)
