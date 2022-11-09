@@ -213,21 +213,20 @@ test:archlinux:
 #
 coverage:
   stage: coverage
-  image: ubuntu:22.04
+  image: ubuntu:20.04
   script: 
     # Install Metalab packages
-    - *add_jammy_mpa
+    - *add_focal_mpa
     - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
 
     # Install coverage tools
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends lcov zip
     - ./make_deps.sh
-    - rm -rf build && mkdir build && cd build
-    - cmake -DTEST_COVERAGE=ON -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
-    - make -j$(nproc)
-    - make check_coverage
-    - zip -r coverage.zip coverage
-    - mv coverage.zip ../
+    - rm -rf build && mkdir build
+    - cmake -B build -DTEST_COVERAGE=ON
+    - make -sC build -j$(nproc)
+    - make -sC build check_coverage
+    - zip -r coverage.zip build/coverage
   artifacts:
     name: "splash_coverage_${CI_BUILD_REF_NAME}"
     paths:
