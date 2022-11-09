@@ -112,7 +112,7 @@ bool checkAndUpgradeConfiguration(Json::Value& configuration)
     {
         Json::Value newConfig = configuration;
 
-        const static std::array boolAttributes{"16bits",
+        const static std::vector<std::string> boolAttributes = {"16bits",
             "decorated",
             "flip",
             "flop",
