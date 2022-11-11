@@ -1,6 +1,17 @@
 Splash release notes
 ====================
 
+Splash 0.9.30 (2022-11-11)
+-------------------------
+Improvements:
+* Fixed test coverage
+* Fixed gitlab-ci.yml file begin different from the one in debian/master
+* Fixed CI to use MPA instead of PPA
+* Added source packaging and fixed build on Archlinux
+* Separated Debian packages and Blender addon generations
+* Added more flexibility to the CMake project to be able to build doc and addons without building Splash
+* Activated test coverage evaluation only for develop and master branches
+
 Splash 0.9.28 (2022-10-31)
 -------------------------
 Bugs fixed:
