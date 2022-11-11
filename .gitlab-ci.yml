@@ -13,19 +13,44 @@ cache:
   paths:
     - ccache/
 
+
+# ┏━╸╻ ╻┏┓╻┏━╸╺┳╸╻┏━┓┏┓╻┏━┓
+# ┣╸ ┃ ┃┃┗┫┃   ┃ ┃┃ ┃┃┗┫┗━┓
+# ╹  ┗━┛╹ ╹┗━╸ ╹ ╹┗━┛╹ ╹┗━┛
+.add_jammy_mpa: &add_jammy_mpa
+  - DEBIAN_FRONTEND=noninteractive apt install -y coreutils wget &&
+    wget -qO - https://sat-mtl.gitlab.io/distribution/mpa-jammy-amd64-nvidia/sat-metalab-mpa-keyring.gpg
+        | gpg --dearmor
+        | dd of=/usr/share/keyrings/sat-metalab-mpa-keyring.gpg &&
+    echo 'deb [ arch=amd64, signed-by=/usr/share/keyrings/sat-metalab-mpa-keyring.gpg ] https://sat-mtl.gitlab.io/distribution/mpa-jammy-amd64-nvidia/debs/ sat-metalab main'
+        | tee /etc/apt/sources.list.d/sat-metalab-mpa.list &&
+    echo 'deb [ arch=amd64, signed-by=/usr/share/keyrings/sat-metalab-mpa-keyring.gpg ] https://sat-mtl.gitlab.io/distribution/mpa-datasets/debs/ sat-metalab main main/debug'
+        | tee /etc/apt/sources.list.d/sat-metalab-mpa-datasets.list &&
+    apt update
+
+.add_focal_mpa: &add_focal_mpa
+  - DEBIAN_FRONTEND=noninteractive apt install -y coreutils wget &&
+    wget -qO - https://sat-mtl.gitlab.io/distribution/mpa-focal-amd64-nvidia/sat-metalab-mpa-keyring.gpg
+        | gpg --dearmor
+        | dd of=/usr/share/keyrings/sat-metalab-mpa-keyring.gpg &&
+    echo 'deb [ arch=amd64, signed-by=/usr/share/keyrings/sat-metalab-mpa-keyring.gpg ] https://sat-mtl.gitlab.io/distribution/mpa-focal-amd64-nvidia/debs/ sat-metalab main'
+        | tee /etc/apt/sources.list.d/sat-metalab-mpa.list &&
+    echo 'deb [ arch=amd64, signed-by=/usr/share/keyrings/sat-metalab-mpa-keyring.gpg ] https://sat-mtl.gitlab.io/distribution/mpa-datasets/debs/ sat-metalab main'
+        | tee /etc/apt/sources.list.d/sat-metalab-mpa-datasets.list &&
+    apt update
+
 #
 # ╺┳╸┏━╸┏━┓╺┳╸┏━┓
 #  ┃ ┣╸ ┗━┓ ┃ ┗━┓
 #  ╹ ┗━╸┗━┛ ╹ ┗━┛
 #
-
 before_script:
   - apt update -qq
   - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends ca-certificates
     ccache wget curl build-essential git-core libjsoncpp-dev zip cmake automake libtool
     libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev
     libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev
-    libopencv-dev libx264-dev libx265-dev
+    libopencv-dev libx264-dev libx265-dev software-properties-common
 
   # CCache stuff
   - mkdir -p ccache
@@ -38,8 +63,7 @@ test:20.04:gcc-bundled-libs:
   image: ubuntu:20.04
   script: 
     # Install Metalab packages
-    - apt install -y --no-install-recommends software-properties-common
-    - add-apt-repository -y ppa:sat-metalab/metalab
+    - *add_focal_mpa
     - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
 
     # Prepare bundled dependencies
@@ -60,8 +84,7 @@ test:20.04:clang-bundled-libs:
   image: ubuntu:20.04
   script: 
     # Install Metalab packages
-    - apt install -y --no-install-recommends software-properties-common
-    - add-apt-repository -y ppa:sat-metalab/metalab
+    - *add_focal_mpa
     - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
 
     # Prepare bundled dependencies
@@ -83,8 +106,7 @@ test:20.04:gcc-system-libs:
   image: ubuntu:20.04
   script: 
     # Install Metalab packages
-    - apt install -y --no-install-recommends software-properties-common
-    - add-apt-repository -y ppa:sat-metalab/metalab
+    - *add_focal_mpa
     - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
 
     # Test using system libs
@@ -104,6 +126,10 @@ test:22.04:gcc-bundled-libs:
   stage: test
   image: ubuntu:22.04
   script: 
+    # Install Metalab packages
+    - *add_jammy_mpa
+    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
+
     # Prepare bundled dependencies
     - ./make_deps.sh
 
@@ -121,6 +147,10 @@ test:22.04:clang-bundled-libs:
   stage: test
   image: ubuntu:22.04
   script: 
+    # Install Metalab packages
+    - *add_jammy_mpa
+    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
+
     # Prepare bundled dependencies
     - ./make_deps.sh
 
@@ -139,6 +169,10 @@ test:22.04:gcc-system-libs:
   stage: test
   image: ubuntu:22.04
   script: 
+    # Install Metalab packages
+    - *add_jammy_mpa
+    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
+
     # Test using system libs
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
       libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev
@@ -182,40 +216,34 @@ coverage:
   image: ubuntu:20.04
   script: 
     # Install Metalab packages
-    - apt install -y --no-install-recommends software-properties-common
-    - add-apt-repository -y ppa:sat-metalab/metalab
+    - *add_focal_mpa
     - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
 
     # Install coverage tools
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends lcov zip
     - ./make_deps.sh
-    - rm -rf build && mkdir build && cd build
-    - cmake -DTEST_COVERAGE=ON -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
-    - make -j$(nproc)
-    - make check_coverage
-    - zip -r coverage.zip coverage
-    - mv coverage.zip ../
+    - rm -rf build && mkdir build
+    - cmake -B build -DTEST_COVERAGE=ON
+    - make -sC build -j$(nproc)
+    - make -sC build check_coverage
+    - zip -r coverage.zip build/coverage
   artifacts:
     name: "splash_coverage_${CI_BUILD_REF_NAME}"
     paths:
     - "coverage.zip"
-  except:
-    - website
+  only:
+    - develop
+    - master
 
 #
 # ┏━┓┏━┓┏━╸╻┏ ┏━┓┏━╸┏━╸
 # ┣━┛┣━┫┃  ┣┻┓┣━┫┃╺┓┣╸ 
 # ╹  ╹ ╹┗━╸╹ ╹╹ ╹┗━┛┗━╸
 #
-package:debian:
+package:debian:20.04:
   stage: deploy
   image: ubuntu:20.04
   script:
-    # Install Metalab packages
-    - apt install -y --no-install-recommends software-properties-common
-    - add-apt-repository -y ppa:sat-metalab/metalab
-    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
-
     # Build package
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build
@@ -223,18 +251,76 @@ package:debian:
     - make -j$(nproc)
     - make package
     - mv *.deb ../
-    - mv addons/blender/*.tar.bz2 ../
   only:
     - tags
+    - master
   artifacts:
     name: "splash_${CI_BUILD_REF_NAME}"
     paths:
       - "*.deb"
       - "*.tar.bz2"
 
+package:debian:22.04:
+  stage: deploy
+  image: ubuntu:22.04
+  script:
+    # Build package
+    - ./make_deps.sh
+    - rm -rf build && mkdir build && cd build
+    - cmake -DBUILD_GENERIC_ARCH=ON -DWITH_LTO=ON -DCMAKE_INSTALL_PREFIX=/usr ..
+    - make -j$(nproc)
+    - make package
+    - mv *.deb ../
+  only:
+    - tags
+    - master
+  artifacts:
+    name: "splash_${CI_BUILD_REF_NAME}"
+    paths:
+      - "*.deb"
+      - "*.tar.bz2"
+
+package:blender_addon:
+  stage: deploy
+  image: ubuntu:20.04
+  before_script:
+    - apt update -qq
+    - DEBIAN_FRONTEND=noninteractive apt install -y git git-lfs zip cmake build-essential pkg-config
+
+  script:
+    # Build the Blender addon
+    - rm -rf build && mkdir build && cd build
+    - cmake -DBUILD_CODE=OFF ..
+    - make blenderSplash
+    - mv addons/blender/*.tar.bz2 ../
+  only:
+    - tags
+    - master
+  artifacts:
+    name: "splash_blender_addon_${CI_BUILD_REF_NAME}"
+    paths:
+      - "*.tar.bz2"
+
+package:fullsources:
+  stage: deploy
+  image: alpine
+  before_script:
+    - apk update && apk upgrade
+  script:
+    # This job packages the whole sources, including the submodules
+    - tar cvzf splash.tar.gz --exclude='.git' --exclude='ccache' .
+  only:
+    - tags
+  artifacts:
+    paths:
+      - splash.tar.gz
+
+# Includes for MPA packaging
 include:
-  - remote: 'https://gitlab.com/sat-metalab/distributions/mpa-bionic-arm64-jetson/-/raw/main/.gitlab-ci-package.yml'
-  - remote: 'https://gitlab.com/sat-metalab/distributions/mpa-focal-amd64-nvidia/-/raw/main/.gitlab-ci-package.yml'
+  # - remote: 'https://gitlab.com/sat-mtl/metalab/distributions/mpa-bionic-arm64-jetson/-/raw/main/.gitlab-ci-package.yml'
+  - remote: 'https://gitlab.com/sat-mtl/metalab/distributions/mpa-focal-amd64-nvidia/-/raw/main/.gitlab-ci-package.yml'
+  - remote: 'https://gitlab.com/sat-mtl/metalab/distributions/mpa-focal-arm64-jetson/-/raw/main/.gitlab-ci-package.yml'
+  - remote: 'https://gitlab.com/sat-mtl/metalab/distributions/mpa-jammy-amd64-nvidia/-/raw/main/.gitlab-ci-package.yml'
 
 #
 # ┏━┓╺┳╸┏━┓╺┳╸╻┏━╸   ┏━┓┏┓╻┏━┓╻  ╻ ╻┏━┓╻┏━┓
@@ -279,9 +365,8 @@ pages:
   script:
     # Here we build only the API doc, for testing purposes
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends doxygen
-    - ./make_deps.sh
     - mkdir -p build && pushd build
-    - cmake .. && make doc && cp -r docs/html ../public
+    - cmake -DBUILD_CODE=OFF .. && make doc && cp -r docs/html ../public
   artifacts:
     paths:
       - public
