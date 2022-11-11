@@ -17,20 +17,22 @@
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-set(UPDATE_BLENDER_VERSION sed -i 's/\"version\": .*/\"version\": \(${PROJECT_VERSION_MAJOR}, ${PROJECT_VERSION_MINOR}, ${PROJECT_VERSION_PATCH}\),/g' ${CMAKE_CURRENT_SOURCE_DIR}/splash/__init__.py)
+if (ZIP)
+    set(UPDATE_BLENDER_VERSION sed -i 's/\"version\": .*/\"version\": \(${PROJECT_VERSION_MAJOR}, ${PROJECT_VERSION_MINOR}, ${PROJECT_VERSION_PATCH}\),/g' ${CMAKE_CURRENT_SOURCE_DIR}/splash/__init__.py)
 
-add_custom_command(
-    OUTPUT blenderSplash.zip
-    COMMAND ${UPDATE_BLENDER_VERSION}
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/splash ./splash
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/templates ./templates
-    COMMAND zip blenderSplash.zip -r splash/* -x *.swp -x *.pyc splash/Makefile*
-    COMMAND ${CMAKE_COMMAND} -E remove -f templates/*.blend1
-    COMMAND tar cvjf blender_splash_addon.tar.bz2 --exclude='Makefile*' --exclude='*.swp' blenderSplash.zip templates
-    COMMAND ${CMAKE_COMMAND} -E remove_directory splash
-    COMMAND ${CMAKE_COMMAND} -E remove_directory templates
-)
+    add_custom_command(
+        OUTPUT blenderSplash.zip
+        COMMAND ${UPDATE_BLENDER_VERSION}
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/splash ./splash
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/templates ./templates
+        COMMAND zip blenderSplash.zip -r splash/* -x *.swp -x *.pyc splash/Makefile*
+        COMMAND ${CMAKE_COMMAND} -E remove -f templates/*.blend1
+        COMMAND tar cvjf blender_splash_addon.tar.bz2 --exclude='Makefile*' --exclude='*.swp' blenderSplash.zip templates
+        COMMAND ${CMAKE_COMMAND} -E remove_directory splash
+        COMMAND ${CMAKE_COMMAND} -E remove_directory templates
+    )
 
-add_custom_target(blenderSplash ALL DEPENDS blenderSplash.zip)
+    add_custom_target(blenderSplash ALL DEPENDS blenderSplash.zip)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/blenderSplash.zip DESTINATION "share/splash")
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/blenderSplash.zip DESTINATION "share/splash")
+endif()

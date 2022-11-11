@@ -177,13 +177,10 @@ std::list<std::string> Branch::getLeafList() const
 /*************/
 std::string Branch::getPath() const
 {
-    std::string path{};
     if (_parentBranch)
-        path = _parentBranch->getPath() + _name + "/";
+        return _parentBranch->getPath() + _name + "/";
     else
-        path = "/";
-
-    return path;
+        return "/";
 }
 
 /*************/
