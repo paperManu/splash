@@ -62,26 +62,26 @@ void Listener::initResources()
 int Listener::portAudioCallback(
     const void* in, void* /*out*/, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* /*timeInfo*/, PaStreamCallbackFlags /*statusFlags*/, void* userData)
 {
-    auto that = (Listener*)userData;
-    uint8_t* input = (uint8_t*)in;
+    auto that = static_cast<Listener*>(userData);
+    auto input = static_cast<const uint8_t*>(in);
 
     if (!input)
         return paContinue;
 
-    int readPosition = that->_ringReadPosition;
-    int writePosition = that->_ringWritePosition;
+    const uint32_t readPosition = that->_ringReadPosition;
+    uint32_t writePosition = that->_ringWritePosition;
 
-    int delta = 0;
+    uint32_t delta = 0;
     if (readPosition > writePosition)
         delta = readPosition - writePosition;
     else
         delta = _ringbufferSize - writePosition + readPosition;
 
-    int step = framesPerBuffer * that->_channels * that->_sampleSize;
+    const uint32_t step = static_cast<uint32_t>(framesPerBuffer) * that->_channels * that->_sampleSize;
     if (delta < step)
         return paContinue;
 
-    int spaceLeft = _ringbufferSize - writePosition - 1;
+    uint32_t spaceLeft = _ringbufferSize - writePosition - 1;
 
     if (spaceLeft < step)
         writePosition = 0;
@@ -89,7 +89,7 @@ int Listener::portAudioCallback(
         spaceLeft = 0;
 
     std::copy(input, input + step, &that->_ringBuffer[writePosition]);
-    writePosition = (writePosition + step);
+    writePosition = writePosition + step;
 
     that->_ringUnusedSpace = spaceLeft;
     that->_ringWritePosition = writePosition;

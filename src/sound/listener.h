@@ -85,8 +85,8 @@ class Listener final : public GraphObject
     static constexpr uint32_t _ringbufferSize{4 * 1024 * 1024};
     Sound_Engine _engine;
     bool _ready{false};
-    unsigned int _channels{2};
-    unsigned int _sampleRate{0};
+    uint32_t _channels{2};
+    uint32_t _sampleRate{0};
     Sound_Engine::SampleFormat _sampleFormat{Sound_Engine::SAMPLE_FMT_FLT};
     bool _planar{false};
     std::string _deviceName{""};
@@ -94,9 +94,9 @@ class Listener final : public GraphObject
     bool _abortCallback{false};
 
     std::array<uint8_t, _ringbufferSize> _ringBuffer;
-    std::atomic_int _ringWritePosition{0};
-    std::atomic_int _ringReadPosition{0};
-    std::atomic_int _ringUnusedSpace{0};
+    std::atomic_uint _ringWritePosition{0};
+    std::atomic_uint _ringReadPosition{0};
+    std::atomic_uint _ringUnusedSpace{0};
 
     /**
      * Free all PortAudio resources
@@ -127,18 +127,18 @@ bool Listener::readFromQueue(std::vector<T>& buffer)
     if (buffer.size() == 0)
         return false;
 
-    int readPosition = _ringReadPosition;
-    int writePosition = _ringWritePosition;
-    int unusedSpace = _ringUnusedSpace;
+    uint32_t readPosition = _ringReadPosition;
+    uint32_t writePosition = _ringWritePosition;
+    uint32_t unusedSpace = _ringUnusedSpace;
 
     // If the ring buffer is not filled enough, fill with zeros instead
-    int delta = 0;
+    uint32_t delta = 0;
     if (writePosition >= readPosition)
         delta = writePosition - readPosition;
     else
         delta = _ringbufferSize - unusedSpace - readPosition + writePosition;
 
-    int step = buffer.size() * sizeof(T);
+    uint32_t step = buffer.size() * sizeof(T);
     if (delta < step)
     {
         return false;
@@ -146,12 +146,12 @@ bool Listener::readFromQueue(std::vector<T>& buffer)
     // Else, we copy the values and move the read position
     else
     {
-        int effectiveSpace = _ringbufferSize - unusedSpace - 1;
-        int ringBufferEndLength = effectiveSpace - readPosition;
+        uint32_t effectiveSpace = _ringbufferSize - unusedSpace - 1;
+        uint32_t ringBufferEndLength = effectiveSpace - readPosition;
 
         if (step <= ringBufferEndLength)
         {
-            std::copy(&_ringBuffer[readPosition], &_ringBuffer[readPosition] + step, buffer.data());
+            std::copy(&_ringBuffer[readPosition], &_ringBuffer[readPosition + step], buffer.data());
             readPosition = readPosition + step;
         }
         else
