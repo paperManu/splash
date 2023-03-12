@@ -81,7 +81,7 @@ int Listener::portAudioCallback(
     if (delta < step)
         return paContinue;
 
-    int spaceLeft = _ringbufferSize - writePosition;
+    int spaceLeft = _ringbufferSize - writePosition - 1;
 
     if (spaceLeft < step)
         writePosition = 0;

@@ -146,7 +146,7 @@ bool Listener::readFromQueue(std::vector<T>& buffer)
     // Else, we copy the values and move the read position
     else
     {
-        int effectiveSpace = _ringbufferSize - unusedSpace;
+        int effectiveSpace = _ringbufferSize - unusedSpace - 1;
         int ringBufferEndLength = effectiveSpace - readPosition;
 
         if (step <= ringBufferEndLength)
