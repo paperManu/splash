@@ -1,6 +1,15 @@
 Splash release notes
 ====================
 
+Splash 0.9.32 (2023-03-12)
+-------------------------
+Improvements:
+* Improved slightly the code for Listener
+* Fixed Freedesktop categories
+
+Bugs fixed:
+* Fixed segfault in listener when looping ring buffer
+
 Splash 0.9.30 (2022-11-11)
 -------------------------
 Improvements:
