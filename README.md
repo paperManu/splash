@@ -108,6 +108,15 @@ sudo apt install libglfw3-dev libglm-dev libavcodec-dev libavformat-dev \
     libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev
 ```
 
+- Fedora 38:
+
+```bash
+sudo dnf install gcc g++ cmake gsl-dev atlas-devel libgphoto2-devel python3-devel \
+    yasm portaudio-devel python3-numpy opencv-devel jsoncpp-devel x264-devel \
+    x265-devel libuuid-devel libX11-devel libXrandr-devel libXinerama-devel \
+    libXcursor-devel libXi-devel mesa-libGL-devel
+```
+
 - Archlinux (not well maintained, please signal any issue):
 
 ```bash
