@@ -300,7 +300,7 @@ class Scene : public RootObject
     /**
      *  Callback for GL errors and warnings
      */
-    static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, void*);
+    static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
 
     /**
      *  Register new attributes

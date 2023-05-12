@@ -758,7 +758,7 @@ void Scene::glfwErrorCallback(int /*code*/, const char* msg)
 }
 
 /*************/
-void Scene::glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, void* /*userParam*/)
+void Scene::glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* /*userParam*/)
 {
     std::string typeString{"OTHER"};
     std::string severityString{""};
