@@ -12,6 +12,7 @@
 #include "./image/image.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
+#include "./utils/scope_guard.h"
 
 #include <functional>
 #include <glm/gtc/matrix_transform.hpp>
@@ -20,6 +21,8 @@ using namespace std::placeholders;
 
 namespace Splash
 {
+
+extern void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
 
 /*************/
 std::mutex Window::_callbackMutex;
@@ -297,6 +300,15 @@ void Window::updateSizeAndPos()
 /*************/
 void Window::render()
 {
+#ifdef DEBUGGL
+    glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(this));
+
+    OnScopeExit
+    {
+        glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(_root));
+    };
+#endif
+
     // Update the window position and size
     updateSizeAndPos();
 

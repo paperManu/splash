@@ -26,6 +26,7 @@
 #define SPLASH_UUID_H
 
 #include <cstring>
+#include <string>
 
 #include <uuid/uuid.h>
 

@@ -594,7 +594,7 @@ std::shared_ptr<GlWindow> Scene::getNewSharedWindow(const std::string& name)
 
     glWindow->setAsCurrentContext();
 #ifdef DEBUGGL
-    glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
+    glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(this));
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
 #endif
@@ -655,7 +655,7 @@ std::vector<int> Scene::findGLVersion()
 /*************/
 void Scene::init(const std::string& name)
 {
-    glfwSetErrorCallback(Scene::glfwErrorCallback);
+    glfwSetErrorCallback(glfwErrorCallback);
 
     // GLFW stuff
     if (!glfwInit())
@@ -711,7 +711,7 @@ void Scene::init(const std::string& name)
 
 // Activate GL debug messages
 #ifdef DEBUGGL
-    glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
+    glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(this));
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
 #endif
@@ -752,42 +752,43 @@ unsigned long long Scene::updateTargetFrameDuration()
 }
 
 /*************/
-void Scene::glfwErrorCallback(int /*code*/, const char* msg)
+void glfwErrorCallback(int /*code*/, const char* msg)
 {
-    Log::get() << Log::WARNING << "Scene::glfwErrorCallback - " << msg << Log::endl;
+    Log::get() << Log::WARNING << "glfwErrorCallback - " << msg << Log::endl;
 }
 
 /*************/
-void Scene::glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* /*userParam*/)
+void glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* userParam)
 {
-    std::string typeString{"OTHER"};
-    std::string severityString{""};
+    const auto userParamsAsObj = reinterpret_cast<const BaseObject*>(userParam);
+    std::string typeString{"GL::other"};
+    std::string messageString;
     Log::Priority logType{Log::MESSAGE};
 
     switch (type)
     {
     case GL_DEBUG_TYPE_ERROR:
-        typeString = "Error";
+        typeString = "GL::Error";
         logType = Log::ERROR;
         break;
     case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-        typeString = "Deprecated behavior";
+        typeString = "GL::Deprecated behavior";
         logType = Log::WARNING;
         break;
     case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-        typeString = "Undefined behavior";
+        typeString = "GL::Undefined behavior";
         logType = Log::ERROR;
         break;
     case GL_DEBUG_TYPE_PORTABILITY:
-        typeString = "Portability";
+        typeString = "GL::Portability";
         logType = Log::WARNING;
         break;
     case GL_DEBUG_TYPE_PERFORMANCE:
-        typeString = "Performance";
+        typeString = "GL::Performance";
         logType = Log::WARNING;
         break;
     case GL_DEBUG_TYPE_OTHER:
-        typeString = "Other";
+        typeString = "GL::Other";
         logType = Log::MESSAGE;
         break;
     }
@@ -795,22 +796,27 @@ void Scene::glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum 
     switch (severity)
     {
     case GL_DEBUG_SEVERITY_LOW:
-        severityString = "low";
+        messageString = typeString + "::low";
         break;
     case GL_DEBUG_SEVERITY_MEDIUM:
-        severityString = "medium";
+        messageString = typeString + "::medium";
         break;
     case GL_DEBUG_SEVERITY_HIGH:
-        severityString = "high";
+        messageString = typeString + "::high";
         break;
     case GL_DEBUG_SEVERITY_NOTIFICATION:
         // Disable notifications, they are far too verbose
         return;
-        // severityString = "notification";
+        // messageString = "\033[32;1m[" + typeString + "::notification]\033[0m";
         // break;
     }
 
-    Log::get() << logType << "GL::debug - [" << typeString << "::" << severityString << "] - " << message << Log::endl;
+    if (userParam == nullptr)
+        Log::get() << logType << messageString << " - Object: unknown" << " - " << message << Log::endl;
+    else if (const auto userParamsAsGraphObject = dynamic_cast<const GraphObject*>(userParamsAsObj); userParamsAsGraphObject != nullptr)
+        Log::get() << logType << messageString << " - Object "  << userParamsAsGraphObject->getName() << " of type " << userParamsAsGraphObject->getType() << " - " << message << Log::endl;
+    else
+        Log::get() << logType << messageString << " - Object "  << userParamsAsObj->getName() << " - " << message << Log::endl;
 }
 
 /*************/

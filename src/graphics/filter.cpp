@@ -6,11 +6,14 @@
 #include "./utils/cgutils.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
+#include "./utils/scope_guard.h"
 
 namespace chrono = std::chrono;
 
 namespace Splash
 {
+
+extern void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
 
 /*************/
 Filter::Filter(RootObject* root)
@@ -175,6 +178,15 @@ void Filter::updateSizeWrtRatio()
 /*************/
 void Filter::render()
 {
+#ifdef DEBUGGL
+    glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(this));
+
+    OnScopeExit
+    {
+        glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(_root));
+    };
+#endif
+
     // Intialize FBO, textures and everything OpenGL
     if (!_shaderAttributesRegistered)
     {

@@ -21,6 +21,7 @@
 #include "./utils/log.h"
 #include "./utils/osutils.h"
 #include "./utils/timer.h"
+#include "./utils/scope_guard.h"
 
 #define SCISSOR_WIDTH 8
 #define WORLDMARKER_SCALE 0.0003
@@ -62,6 +63,8 @@ using namespace glm;
 
 namespace Splash
 {
+
+extern void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
 
 /*************/
 Camera::Camera(RootObject* root)
@@ -553,6 +556,15 @@ Values Camera::pickVertexOrCalibrationPoint(float x, float y)
 /*************/
 void Camera::render()
 {
+#ifdef DEBUGGL
+    glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(this));
+
+    OnScopeExit
+    {
+        glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(_root));
+    };
+#endif
+
     // Keep the timestamp of the newest object
     int64_t timestamp{0};
 
@@ -787,8 +799,6 @@ void Camera::render()
     if (error)
         Log::get() << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
 #endif
-
-    return;
 }
 
 /*************/
