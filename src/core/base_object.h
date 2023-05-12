@@ -57,7 +57,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     /**
      * Constructor.
      */
-    BaseObject() { registerAttributes(); }
+    BaseObject();
 
     /**
      * Destructor.
@@ -148,7 +148,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     virtual void runTasks();
 
   protected:
-    std::string _name{""};                               //!< Object name
+    std::string _name;                               //!< Object name
     DenseMap<std::string, Attribute> _attribFunctions{}; //!< Map of all attributes
     mutable std::recursive_mutex _attribMutex;
     bool _updatedParams{true}; //!< True if the parameters have been updated and the object needs to reflect these changes
