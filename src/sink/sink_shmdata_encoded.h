@@ -128,7 +128,7 @@ class Sink_Shmdata_Encoded final : public Sink
      * option1=value1, option2=value2, etc
      * \param options Encoding options
      */
-    std::unordered_map<std::string, std::string> parseOptions(const std::string& options);
+    const std::unordered_map<std::string, std::string> parseOptions(const std::string& options);
 
     /**
      * Register new functors to modify attributes

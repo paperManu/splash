@@ -52,18 +52,18 @@ const AVCodec* Sink_Shmdata_Encoded::findEncoderByName(const std::string& codecN
 }
 
 /*************/
-std::unordered_map<std::string, std::string> Sink_Shmdata_Encoded::parseOptions(const std::string& options)
+const std::unordered_map<std::string, std::string> Sink_Shmdata_Encoded::parseOptions(const std::string& options)
 {
-    std::regex re("(([^=]+)=([^ ,]+))+");
-    auto sre_begin = std::sregex_iterator(options.begin(), options.end(), re);
-    auto sre_end = std::sregex_iterator();
+    static const std::regex re("(([^=]+)=([^ ,]+))+");
+    const auto sre_begin = std::sregex_iterator(options.begin(), options.end(), re);
+    const auto sre_end = std::sregex_iterator();
 
     std::unordered_map<std::string, std::string> result;
     for (auto i = sre_begin; i != sre_end; ++i)
     {
-        std::smatch match = *i;
-        auto key = match[2];
-        auto value = match[3];
+        const std::smatch match = *i;
+        const auto key = std::string(match[2]);
+        const auto value = std::string(match[3]);
         result[key] = value;
     }
 
@@ -94,7 +94,7 @@ bool Sink_Shmdata_Encoded::initFFmpegObjects(const ImageBufferSpec& spec)
     _context->sample_aspect_ratio = (AVRational){static_cast<int>(spec.width), static_cast<int>(spec.height)};
     _context->pix_fmt = AV_PIX_FMT_YUV420P;
 
-    auto options = parseOptions(_options);
+    const auto options = parseOptions(_options);
     for (auto& option : options)
         av_opt_set(_context->priv_data, option.first.c_str(), option.second.c_str(), 0);
 
@@ -167,7 +167,7 @@ std::string Sink_Shmdata_Encoded::generateCaps(const ImageBufferSpec& spec, uint
 
     auto profile = std::string("baseline");
 
-    auto options = parseOptions(optionString);
+    const auto options = parseOptions(optionString);
     auto optionIt = options.find("profile");
     if (optionIt != options.end())
     {
