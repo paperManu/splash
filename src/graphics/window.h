@@ -214,6 +214,7 @@ class Window final : public GraphObject
     // Offscreen rendering related objects
     GLuint _renderFbo{0};
     GLuint _readFbo{0};
+    bool _renderTextureUpdated{false};
     std::shared_ptr<Texture_Image> _depthTexture{nullptr};
     std::shared_ptr<Texture_Image> _colorTexture{nullptr};
     GLsync _renderFence{nullptr};
