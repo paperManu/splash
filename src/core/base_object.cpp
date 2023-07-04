@@ -3,18 +3,9 @@
 #include <algorithm>
 
 #include "./utils/log.h"
-#include "./utils/uuid.h"
 
 namespace Splash
 {
-
-/*************/
-BaseObject::BaseObject()
-{
-    UUID uuid(true);
-    _name = uuid.to_string();
-    registerAttributes();
-}
 
 /*************/
 void BaseObject::addTask(const std::function<void()>& task)
