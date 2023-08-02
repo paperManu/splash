@@ -5,6 +5,7 @@
 * eva_decorps
 * Jérémie Soria
 * Christian Frisson
+* Tarek Yasser
 * Sergio Jiménez Herena
 * Pascal Huerst
 * Josh Beckwith
