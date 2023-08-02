@@ -12,6 +12,7 @@
 #include "./image/image.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
+#include "./utils/scope_guard.h"
 
 #include <functional>
 #include <glm/gtc/matrix_transform.hpp>
@@ -20,6 +21,8 @@ using namespace std::placeholders;
 
 namespace Splash
 {
+
+extern void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
 
 /*************/
 std::mutex Window::_callbackMutex;
@@ -297,6 +300,15 @@ void Window::updateSizeAndPos()
 /*************/
 void Window::render()
 {
+#ifdef DEBUGGL
+    glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(this));
+
+    OnScopeExit
+    {
+        glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(_root));
+    };
+#endif
+
     // Update the window position and size
     updateSizeAndPos();
 
@@ -437,19 +449,9 @@ void Window::setupFBOs()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     // Read FBO
-    if (_readFbo != 0)
-        glDeleteFramebuffers(1, &_readFbo);
-
-    glCreateFramebuffers(1, &_readFbo);
-
-    glNamedFramebufferTexture(_readFbo, GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
-    _status = glCheckNamedFramebufferStatus(_readFbo, GL_FRAMEBUFFER);
-    if (_status != GL_FRAMEBUFFER_COMPLETE)
-        Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing read framebuffer object: " << _status << Log::endl;
-#ifdef DEBUG
-    else
-        Log::get() << Log::DEBUGGING << "Window::" << __FUNCTION__ << " - Read framebuffer object successfully initialized" << Log::endl;
-#endif
+    // It has to be created in the context where it is used, so its (re)creation will be triggered
+    // in Window::swapBuffers if needed, depending on the following flag
+    _renderTextureUpdated = true;
 }
 
 /*************/
@@ -469,6 +471,23 @@ void Window::swapBuffers()
         glDrawBuffer(GL_FRONT);
     }
 
+    if (_renderTextureUpdated)
+    {
+        if (_readFbo != 0)
+            glDeleteFramebuffers(1, &_readFbo);
+
+        glCreateFramebuffers(1, &_readFbo);
+
+        glNamedFramebufferTexture(_readFbo, GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
+        auto status = glCheckNamedFramebufferStatus(_readFbo, GL_FRAMEBUFFER);
+        if (status != GL_FRAMEBUFFER_COMPLETE)
+            Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing read framebuffer object: " << status << Log::endl;
+#ifdef DEBUG
+        else
+            Log::get() << Log::DEBUGGING << "Window::" << __FUNCTION__ << " - Read framebuffer object successfully initialized" << Log::endl;
+#endif
+        _renderTextureUpdated = false;
+    }
     glBlitNamedFramebuffer(_readFbo, 0, 0, 0, _windowRect[2], _windowRect[3], 0, 0, _windowRect[2], _windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     if (Scene::getHasNVSwapGroup())

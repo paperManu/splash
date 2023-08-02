@@ -26,7 +26,7 @@ void DragNDrop::updateMethod()
         State substate("dragndrop");
         for (auto& p : paths)
             substate.value.push_back(p);
-        _state.emplace_back(std::move(substate));
+        _state.emplace_back(substate);
     }
 }
 

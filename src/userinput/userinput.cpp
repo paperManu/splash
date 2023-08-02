@@ -12,10 +12,10 @@ std::map<UserInput::State, std::function<void(const UserInput::State&)>, UserInp
 
 /*************/
 UserInput::State::State(const std::string& a, const Values& v, int m, const std::string& w)
-    : action(a)
-    , value(v)
-    , modifiers(m)
+    : modifiers(m)
+    , action(a)
     , window(w)
+    , value(v)
 {
 }
 

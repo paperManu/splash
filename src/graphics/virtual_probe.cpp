@@ -1,11 +1,15 @@
 #include "./graphics/virtual_probe.h"
 
+#include "./utils/scope_guard.h"
+
 #include <glm/gtc/matrix_transform.hpp>
 
 using namespace glm;
 
 namespace Splash
 {
+
+extern void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
 
 /*************/
 VirtualProbe::VirtualProbe(RootObject* root)
@@ -87,6 +91,15 @@ void VirtualProbe::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 /*************/
 void VirtualProbe::render()
 {
+#ifdef DEBUGGL
+    glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(this));
+
+    OnScopeExit
+    {
+        glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(_root));
+    };
+#endif
+
     if (_newWidth != 0 && _newHeight != 0)
     {
         setOutputSize(_newWidth, _newHeight);

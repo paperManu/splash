@@ -7,6 +7,7 @@
 #include "./utils/cgutils.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
+#include "./utils/scope_guard.h"
 
 #define CONTROL_POINT_SCALE 0.02
 #define WORLDMARKER_SCALE 0.0003
@@ -17,6 +18,8 @@
 
 namespace Splash
 {
+
+extern void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
 
 /*************/
 Warp::Warp(RootObject* root)
@@ -124,6 +127,15 @@ void Warp::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 /*************/
 void Warp::render()
 {
+#ifdef DEBUGGL
+    glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(this));
+
+    OnScopeExit
+    {
+        glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(_root));
+    };
+#endif
+
     std::shared_ptr<Texture> input(nullptr);
 
     if (!_inCamera.expired())

@@ -44,13 +44,13 @@ class UserInput : public GraphObject
     struct State
     {
         State() = default;
-        State(const std::string& a, const Values& v = {}, int m = 0, const std::string& w = "");
+        explicit State(const std::string& a, const Values& v = {}, int m = 0, const std::string& w = "");
         bool operator==(const State& s) const;
 
-        std::string action{""};
-        Values value{};
         int modifiers{0};
-        std::string window{""};
+        std::string action{};
+        std::string window{};
+        Values value{};
     };
 
     /**
@@ -74,7 +74,7 @@ class UserInput : public GraphObject
     /**
      * Destructor
      */
-    virtual ~UserInput() override;
+    ~UserInput() override;
 
     /**
      * Constructors/operators

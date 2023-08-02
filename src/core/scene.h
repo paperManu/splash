@@ -291,18 +291,6 @@ class Scene : public RootObject
     unsigned long long updateTargetFrameDuration();
 
     /**
-     *  Callback for GLFW errors
-     * \param code Error code
-     * \param msg Associated error message
-     */
-    static void glfwErrorCallback(int code, const char* msg);
-
-    /**
-     *  Callback for GL errors and warnings
-     */
-    static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, void*);
-
-    /**
      *  Register new attributes
      */
     void registerAttributes();
@@ -317,6 +305,18 @@ class Scene : public RootObject
      */
     void updateInputs();
 };
+
+/**
+ *  Callback for GLFW errors
+ * \param code Error code
+ * \param msg Associated error message
+ */
+void glfwErrorCallback(int code, const char* msg);
+
+/**
+ *  Callback for GL errors and warnings
+ */
+void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
 
 } // namespace Splash
 

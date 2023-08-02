@@ -26,6 +26,7 @@
 #define SPLASH_UUID_H
 
 #include <cstring>
+#include <string>
 
 #include <uuid/uuid.h>
 
@@ -40,8 +41,13 @@ class UUID
     /**
      * Constructor
      */
-    UUID() { UUID(false); }
-    explicit UUID(bool generate)
+    UUID() { init(false); }
+    explicit UUID(bool generate) { init(generate); }
+
+    bool operator==(const UUID& rhs) const { return uuid_compare(_uuid, rhs._uuid) == 0; }
+    bool operator!=(const UUID& rhs) const { return operator==(rhs); }
+
+    void init(bool generate)
     {
         if (generate)
             uuid_generate(_uuid);
@@ -49,8 +55,13 @@ class UUID
             memset(_uuid, 0, 16);
     }
 
-    bool operator==(const UUID& rhs) const { return uuid_compare(_uuid, rhs._uuid) == 0; }
-    bool operator!=(const UUID& rhs) const { return operator==(rhs); }
+    std::string to_string() const
+    {
+        const size_t uuidstr_size = 36;
+        std::string uuidstr(uuidstr_size, ' ');
+        uuid_unparse(_uuid, uuidstr.data());
+        return uuidstr;
+    }
 
   private:
     uuid_t _uuid;

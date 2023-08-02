@@ -317,7 +317,7 @@ void Shader::compileProgram()
             {
                 glAttachShader(_program, shader.second);
 #ifdef DEBUG
-                Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << std::stringFromShaderType(shader.first) << " successfully attached to the program"
+                Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(shader.first) << " successfully attached to the program"
                            << Log::endl;
 #endif
             }
