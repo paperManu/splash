@@ -1,6 +1,24 @@
 Splash release notes
 ====================
 
+Splash 0.9.34 (2023-08-02)
+-------------------------
+Improvements:
+* Added -DDEBUG flag by default when compiling in debug
+* Updated ZMQ to its latest master commit to date
+
+Bugs fixed:
+* Fixed Window read FBO being shared between GL contexts
+* Fixed Sink_Shmdata_Encoded compilation with GCC13
+* Fixed compile error when building with DEBUG_OPENGL flag
+* Fixed UUID constructor which in some cases built an object twice
+* Fixed compile error when building with DEBUG_OPENGL flag
+* Fixed compilation error with GCC 13 regarding a potentially uninitialized variable in UserInput
+
+Documentation:
+* Update README to link to first steps properly
+* Added documentation to compile on Fedora
+
 Splash 0.9.32 (2023-03-12)
 -------------------------
 Improvements:
