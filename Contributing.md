@@ -169,6 +169,22 @@ The resulting file can be opened the svg with your browser. As of now, there is 
 
 The list of outstanding feature requests and bugs can be found on the [GitLab issue tracker](https://gitlab.com/splashmapper/splash/-/issues). Pick an unassigned issue that you think you can accomplish and add a comment that you are attempting to do it.
 
+### Testing without installing on the system
+
+Sometimes it is preferable to test Splash without installing it on the target system. Or we just do not have the administrator rights to do it, but we still need to do the tests because the issue cannot be reproduced elsewhere. Or Splash was never installed in the first place and our newly built binary cannot find some assets.
+
+In all these cases (non exhaustive list), a good workaround is to install Splash in a non-system directory, where we have write access. This is done by specifying a different installation prefix and install Splash without sudo rights:
+
+```bash
+mkdir -p build && cd build
+cmake -DCMAKE_INSTALL_PREFIX=${HOME}/splash_debug  # It can be any directory we have access to
+make -j$(nproc)
+make install
+# Then you can go to this directory and run Splash:
+cd ${HOME}/splash_debug/bin
+./splash
+```
+
 ### Debugging
 
 When debugging, the first step is to compile Splash in `Debug` mode. From the build directory, run:
