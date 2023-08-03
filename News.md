@@ -1,6 +1,12 @@
 Splash release notes
 ====================
 
+splash 0.9.36 (2023-08-03)
+-------------------------
+Improvements:
+* Added back build test for Debian packaging in package_ubuntu.py
+* Updated URLs to match the move to gitlab.com/splashmapper
+
 Splash 0.9.34 (2023-08-02)
 -------------------------
 Improvements:
