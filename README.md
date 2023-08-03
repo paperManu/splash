@@ -2,10 +2,10 @@ Splash, a multi-projector video-mapping software
 ================================================
 
 [![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
-[![pipeline status](https://gitlab.com/sat-mtl/tools/splash/splash/badges/develop/pipeline.svg)](https://gitlab.com/sat-mtl/tools/splash/splash/commits/develop)
-[![coverage report](https://gitlab.com/sat-mtl/tools/splash/splash/badges/develop/coverage.svg)](https://gitlab.com/sat-mtl/tools/splash/splash/commits/develop)
+[![pipeline status](https://gitlab.com/splashmapper/splash/badges/develop/pipeline.svg)](https://gitlab.com/splashmapper/splash/commits/develop)
+[![coverage report](https://gitlab.com/splashmapper/splash/badges/develop/coverage.svg)](https://gitlab.com/splashmapper/splash/commits/develop)
 
-For a more complete documentation, go visit the [official website](https://sat-mtl.gitlab.io/documentation/splash).
+For a more complete documentation, go visit the [official website](https://splashmapper.gitlab.io).
 
 ## Table of Contents
 
@@ -41,7 +41,7 @@ This program uses external libraries, some of them being bundled in the source c
 See [AUTHORS.md](docs/Authors.md)
 
 ### Project URL
-This project can be found either on [its official website](https://sat-mtl.gitlab.io/documentation/splash), on the [SAT Metalab repository](https://gitlab.com/sat-mtl/tools/splash) or on [Github](https://github.com/paperManu/splash).
+This project can be found either on [its official website](https://splashmapper.gitlab.io), on the [Gitlab repository](https://gitlab.com/splashmapper/splash) or on [Github](https://github.com/paperManu/splash).
 
 ### Sponsors
 This project is made possible thanks to the [Society for Arts and Technologies](http://www.sat.qc.ca) (also known as SAT).
@@ -88,7 +88,7 @@ Splash can be installed from a pre-built package, or compiled by hand. Newcomers
 
 #### Install from packages
 
-To install from the binary packages, please refer to [Splash documentation](https://sat-mtl.gitlab.io/documentation/splash).
+To install from the binary packages, please refer to [Splash documentation](https://splashmapper.gitlab.io).
 
 #### Build from sources
 
@@ -127,7 +127,7 @@ pacman -Sy git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcur
 Once everything is installed, you can go on with building Splash. To build and link it against the bundled libraries:
 
 ```bash
-git clone https://gitlab.com/sat-mtl/tools/splash/splash
+git clone https://gitlab.com/splashmapper/splash
 cd splash
 ./make_deps.sh
 mkdir -p build && cd build
@@ -138,7 +138,7 @@ make -j$(nproc) && sudo make install
 Otherwise, to build Splash and link it against the system libraries:
 
 ```bash
-git clone https://gitlab.com/sat-mtl/tools/splash/splash
+git clone https://gitlab.com/splashmapper/splash
 cd splash
 mkdir -p build && cd build
 cmake -DUSE_SYSTEM_LIBS=ON ..
@@ -169,7 +169,7 @@ Then log out and log back in.
 
 If you want to specify some defaults values for the objects, you can set the environment variable SPLASH_DEFAULTS with the path to a file defining default values for given types. An example of such a file can be found in [data/config/splashrc](data/config/splashrc)
 
-And that's it, you can move on to the [First steps](https://sat-mtl.gitlab.io/documentation/splash/en/tutorials/first_steps.html) page.
+And that's it, you can move on to the [First steps](https://splashmapper.gitlab.io/en/tutorials/first_steps.html) page.
 
 #### Uninstall Splash (when built from sources)
 
@@ -188,4 +188,4 @@ Contributions are welcome ! See [CONTRIBUTING.md](Contributing.md) and [CODE_OF_
 
 ## Going forward
 
-To learn how to configure and use Splash, the best resource is [its official website](https://sat-mtl.gitlab.io/documentation/splash).
+To learn how to configure and use Splash, the best resource is [its official website](https://splashmapper.gitlab.io).

@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(
     splash
-    VERSION 0.9.34
+    VERSION 0.9.36
     LANGUAGES C CXX
 )
 
@@ -198,7 +198,7 @@ set(CPACK_GENERATOR "DEB")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-mapper")
 set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}")
-set(CPACK_DEBIAN_PROJECT_HOMEPAGE "https://sat-mtl.gitlab.io/documentation/splash")
+set(CPACK_DEBIAN_PROJECT_HOMEPAGE "https://splashmapper.gitlab.io")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_VENDOR} <emmanueldurand@protonmail.com>")

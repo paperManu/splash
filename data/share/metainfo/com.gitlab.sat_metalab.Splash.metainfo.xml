@@ -11,14 +11,15 @@
 Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending and color), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers is planned.
     </p>
   </description>
-  <url type="homepage">https://sat-mtl.gitlab.io/documentation/splash</url>
+  <url type="homepage">https://splashmapper.gitlab.io</url>
   <screenshots>
     <screenshot type="default">
-      <image>https://sat-mtl.gitlab.io/documentation/splash/en/_images/splash_multiview_gui.jpg</image>
+      <image>https://splashmapper.gitlab.io/en/_images/splash_multiview_gui.jpg</image>
       <caption>Splash user interface showing a fulldome project</caption>
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.9.36" date="2023-08-03" />
     <release version="0.9.34" date="2023-08-02" />
     <release version="0.9.32" date="2023-03-12" />
     <release version="0.9.30" date="2022-11-11" />
