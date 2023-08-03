@@ -1,8 +1,8 @@
 ![Icon](./images/icon.png)
 
 [![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
-[![pipeline status](https://gitlab.com/sat-mtl/tools/splash/splash/badges/master/pipeline.svg)](https://gitlab.com/sat-mtl/tools/splash/splash/commits/develop)
-[![coverage report](https://gitlab.com/sat-mtl/tools/splash/splash/badges/develop/coverage.svg)](https://gitlab.com/sat-mtl/tools/splash/splash/commits/develop)
+[![pipeline status](https://gitlab.com/splashmapper/splash/badges/master/pipeline.svg)](https://gitlab.com/splashmapper/splash/commits/develop)
+[![coverage report](https://gitlab.com/splashmapper/splash/badges/develop/coverage.svg)](https://gitlab.com/splashmapper/splash/commits/develop)
 
 
 ## Introduction
@@ -25,10 +25,10 @@ Splash can read videos from various sources amoung which video files (most commo
 - experimental automatic colorimetric calibration (with a gPhoto compatible camera)
 
 ## Community
-Don't hesitate to report any issues with the [Gitlab issue tracker](https://gitlab.com/sat-mtl/tools/splash/splash/issues), and share your thoughts and success on IRC, [channel ##splash on Freenode](http://webchat.freenode.net/?randomnick=1&channels=%23%23splash&uio=d4)!
+Don't hesitate to report any issues with the [Gitlab issue tracker](https://gitlab.com/splashmapper/splash/issues), and share your thoughts and success on IRC, [channel ##splash on Freenode](http://webchat.freenode.net/?randomnick=1&channels=%23%23splash&uio=d4)!
 
 ## Projet URL
-This project can be found either on [its official website](https://sat-mtl.gitlab.io/documentation/splash), on the [SAT Metalab repository](https://gitlab.com/sat-mtl/tools/splash/splash) or on [Github](https://github.com/paperManu/splash).
+This project can be found either on [its official website](https://splashmappercumentation/splash), on the [Gitlab repository](https://gitlab.com/splashmapper/splash) or on [Github](https://github.com/paperManu/splash).
 
 ### Licenses
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.

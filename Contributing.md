@@ -16,16 +16,16 @@ By participating in this project, you agree to abide by the Splash [Code of Cond
 ## Important Resources
 
 * [README](index.md)
-* [Issue tracker](https://gitlab.com/sat-mtl/tools/splash/splash/-/issues)
+* [Issue tracker](https://gitlab.com/splashmapper/splash/-/issues)
 
 
 ## Contributing
 
 Contributing to Splash is achieved through Gitlab's Merge Request (MR) system. This include contribution by the core team. We also welcome external contributions through the contribution process described here.
 
-Please send your merge request to [Splash repository](https://gitlab.com/sat-mtl/tools/splash/splash/-/merge_requests). Merge requests must refer to a gitlab issue in the [Splash issues list](https://gitlab.com/sat-mtl/tools/splash/splash/-/issues). If your merge request does not refer to a gitlab issue, you may be asked to fill an issue before a decision is made. For more technical details regarding MRs, see the section about the [Merge Request Process](#merge-request-process).
+Please send your merge request to [Splash repository](https://gitlab.com/splashmapper/splash/-/merge_requests). Merge requests must refer to a gitlab issue in the [Splash issues list](https://gitlab.com/splashmapper/splash/-/issues). If your merge request does not refer to a gitlab issue, you may be asked to fill an issue before a decision is made. For more technical details regarding MRs, see the section about the [Merge Request Process](#merge-request-process).
 
-Before you submit your issue, please [search the issue tracker](https://gitlab.com/sat-mtl/tools/splash/splash/-/issues) - maybe your question or issue has already been identified or addressed.
+Before you submit your issue, please [search the issue tracker](https://gitlab.com/splashmapper/splash/-/issues) - maybe your question or issue has already been identified or addressed.
 
 Splash has several issue types:
 
@@ -34,7 +34,7 @@ Splash has several issue types:
 - Feature request: ask for a new feature.
 - Request For Comment: propose a significant change , such as code refactoring, CI deployment, or any change in the repository that impacts the Splash community. See a more detailled description of the [RFC process](./RFC.md).
 
-The preferred way of asking question to us is through opening a default issue on [Splash repository](https://gitlab.com/sat-mtl/tools/splash/splash/~/issues). We'll get back to you as soon as possible!
+The preferred way of asking question to us is through opening a default issue on [Splash repository](https://gitlab.com/splashmapper/splash/-/issues). We'll get back to you as soon as possible!
 
 **If you find a security vulnerability, do NOT open an issue. Email metalab-dev@sat.qc.ca instead.**
 
@@ -101,7 +101,7 @@ A `coverage` subdirectory will be created, containing the results. You just have
 
 Should you have a suggestion for the documentation, you can open an issue and outline the problem or improvement you have - however, creating the fix yourself is much better!
 
-All the documentation for Splash can be found [Splash website](https://sat-mtl.gitlab.io/documentation/splash), and in the [source repository](https://gitlab.com/sat-mtl/documentation/splash). Please refer to this repository to help with improving the documentation.
+All the documentation for Splash can be found [Splash website](https://splashmapper.gitlab.io), and in the [source repository](https://gitlab.com/splashmapper/splashmapper.gitlab.io). Please refer to this repository to help with improving the documentation.
 
 If you want to help improve the docs and it's a substantial change, create a new issue (or comment on a related existing one) in the documentation repository to let others know what you're working on. Small changes (typos, improvements to phrasing) do not need an issue.
 
@@ -167,7 +167,7 @@ The resulting file can be opened the svg with your browser. As of now, there is 
 
 ### Fixing an Issue
 
-The list of outstanding feature requests and bugs can be found on the [GitLab issue tracker](https://gitlab.com/sat-mtl/tools/splash/splash/-/issues). Pick an unassigned issue that you think you can accomplish and add a comment that you are attempting to do it.
+The list of outstanding feature requests and bugs can be found on the [GitLab issue tracker](https://gitlab.com/splashmapper/splash/-/issues). Pick an unassigned issue that you think you can accomplish and add a comment that you are attempting to do it.
 
 ### Debugging
 
@@ -227,7 +227,7 @@ To add an integration test, the steps are:
 
 ### Coding style
 
-We use LLVM style for the C++ code, with a few exceptions. See the [clang-format configuration](https://gitlab.com/sat-mtl/tools/splash/splash/tree/master/.clang-format) for more about this.
+We use LLVM style for the C++ code, with a few exceptions. See the [clang-format configuration](https://gitlab.com/splashmapper/splash/tree/master/.clang-format) for more about this.
 
 It is possible to let git ensure that you are conforming to the standards by using pre-commit hooks and clang-format:
 ```
@@ -240,7 +240,7 @@ For Python code we follow the [PEP 8 style guide](https://www.python.org/dev/pep
 
 ### Branching strategy with git
 
-The [master](https://gitlab.com/sat-mtl/tools/splash/splash/tree/master) branch contains Splash releases. Validated new developments are into the [develop](https://gitlab.com/sat-mtl/tools/splash/splash/tree/develop) branch.
+The [master](https://gitlab.com/splashmapper/splash/tree/master) branch contains Splash releases. Validated new developments are into the [develop](https://gitlab.com/splashmapper/splash/tree/develop) branch.
 
 Modifications are made into a dedicated branch that needs to be merged into the **develop** branch through a Gitlab merge request. When you modification is ready, you need to prepare your merge request as follow:
 
@@ -262,7 +262,7 @@ Core developers will prepare new releases regularly by creating a *release branc
 
 ### CI pipeline
 	
-This repository includes a CI pipeline, used to validate that incoming commits do not break the build, and that all unit tests still pass. It will be run automatically when a new commit is pushed to the repository. If the pipeline fails, it is your responsability to checkout the [CI Jobs page](https://gitlab.com/sat-mtl/tools/splash/splash/-/jobs) and figure out how to fix it. A Merge Requests that breaks the pipeline will not be merged by the core developers.
+This repository includes a CI pipeline, used to validate that incoming commits do not break the build, and that all unit tests still pass. It will be run automatically when a new commit is pushed to the repository. If the pipeline fails, it is your responsability to checkout the [CI Jobs page](https://gitlab.com/splashmapper/splash/-/jobs) and figure out how to fix it. A Merge Requests that breaks the pipeline will not be merged by the core developers.
 
 
 ## Merge Request Process

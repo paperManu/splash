@@ -27,8 +27,8 @@ desktop_file = os.path.join("data", "share", "applications", "splash.desktop")
 blender_addon_init_file = os.path.join("addons", "blender", "splash", "__init__.py")
 
 version_pattern = "\s+VERSION (\d+).(\d+).(\d+)"
-git_path = "git@gitlab.com:sat-mtl/tools/splash"
-git_project = "Splash"
+git_path = "git@gitlab.com:splashmapper"
+git_project = "splash"
 remote_repo = 'origin'
 bringup_branch = "master"
 working_branch = "develop"
