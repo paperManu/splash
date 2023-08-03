@@ -101,7 +101,7 @@ A `coverage` subdirectory will be created, containing the results. You just have
 
 Should you have a suggestion for the documentation, you can open an issue and outline the problem or improvement you have - however, creating the fix yourself is much better!
 
-All the documentation for Splash can be found [Splash website](https://splashmapper.gitlab.io), and in the [source repository](https://gitlab.com/splashmapper/splashmapper.gitlab.io). Please refer to this repository to help with improving the documentation.
+All the documentation for Splash can be found [Splash website](https://splashmapper.xyz), and in the [source repository](https://gitlab.com/splashmapper/splashmapper.gitlab.io). Please refer to this repository to help with improving the documentation.
 
 If you want to help improve the docs and it's a substantial change, create a new issue (or comment on a related existing one) in the documentation repository to let others know what you're working on. Small changes (typos, improvements to phrasing) do not need an issue.
 
@@ -311,7 +311,7 @@ To release a new version of Splash, use the script provided in `./tools/release_
 
 The resulting branches will also be pushed to the repository. Note that you need to have write access to this repository for this to work.
 
-The website should be updated to match the new release. Also the [Flatpak package](https://github.com/flathub/com.gitlab.sat_metalab.Splash) should be updated separately.
+The website should be updated to match the new release. Also the [Flatpak package](https://github.com/flathub/xyz.splashmapper.Splash) should be updated separately.
 
 ### Addressing Feedback
 
