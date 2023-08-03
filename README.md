@@ -5,7 +5,7 @@ Splash, a multi-projector video-mapping software
 [![pipeline status](https://gitlab.com/splashmapper/splash/badges/develop/pipeline.svg)](https://gitlab.com/splashmapper/splash/commits/develop)
 [![coverage report](https://gitlab.com/splashmapper/splash/badges/develop/coverage.svg)](https://gitlab.com/splashmapper/splash/commits/develop)
 
-For a more complete documentation, go visit the [official website](https://splashmapper.gitlab.io).
+For a more complete documentation, go visit the [official website](https://splashmapper.xyz).
 
 ## Table of Contents
 
@@ -41,7 +41,7 @@ This program uses external libraries, some of them being bundled in the source c
 See [AUTHORS.md](docs/Authors.md)
 
 ### Project URL
-This project can be found either on [its official website](https://splashmapper.gitlab.io), on the [Gitlab repository](https://gitlab.com/splashmapper/splash) or on [Github](https://github.com/paperManu/splash).
+This project can be found either on [its official website](https://splashmapper.xyz), on the [Gitlab repository](https://gitlab.com/splashmapper/splash) or on [Github](https://github.com/paperManu/splash).
 
 ### Sponsors
 This project is made possible thanks to the [Society for Arts and Technologies](http://www.sat.qc.ca) (also known as SAT).
@@ -88,7 +88,7 @@ Splash can be installed from a pre-built package, or compiled by hand. Newcomers
 
 #### Install from packages
 
-To install from the binary packages, please refer to [Splash documentation](https://splashmapper.gitlab.io).
+To install from the binary packages, please refer to [Splash documentation](https://splashmapper.xyz).
 
 #### Build from sources
 
@@ -169,7 +169,7 @@ Then log out and log back in.
 
 If you want to specify some defaults values for the objects, you can set the environment variable SPLASH_DEFAULTS with the path to a file defining default values for given types. An example of such a file can be found in [data/config/splashrc](data/config/splashrc)
 
-And that's it, you can move on to the [First steps](https://splashmapper.gitlab.io/en/tutorials/first_steps.html) page.
+And that's it, you can move on to the [First steps](https://splashmapper.xyz/en/tutorials/first_steps.html) page.
 
 #### Uninstall Splash (when built from sources)
 
@@ -188,4 +188,4 @@ Contributions are welcome ! See [CONTRIBUTING.md](Contributing.md) and [CODE_OF_
 
 ## Going forward
 
-To learn how to configure and use Splash, the best resource is [its official website](https://splashmapper.gitlab.io).
+To learn how to configure and use Splash, the best resource is [its official website](https://splashmapper.xyz).

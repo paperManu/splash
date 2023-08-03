@@ -752,7 +752,7 @@ void Gui::renderSplashScreen()
         ImGui::Text("Splash, a modular video-mapping engine");
         ImGui::Text("Version %s", PACKAGE_VERSION);
         ImGui::Spacing();
-        ImGui::Text("https://splashmapper.gitlab.io");
+        ImGui::Text("https://splashmapper.xyz");
         ImGui::Columns(1);
 
         auto& io = ImGui::GetIO();

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Copyright 2019 Emmanuel Durand -->
 <component type="desktop-application">
-  <id>com.gitlab.sat_metalab.Splash</id>
-  <launchable type="desktop-id">com.gitlab.sat_metalab.Splash.desktop</launchable>
+  <id>xyz.splashmapper.Splash</id>
+  <launchable type="desktop-id">xyz.splashmapper.Splash.desktop</launchable>
   <content_rating type="oars-1.1" />
   <name>Splash</name>
   <summary>Video-mapping software</summary>
@@ -11,10 +11,10 @@
 Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending and color), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers is planned.
     </p>
   </description>
-  <url type="homepage">https://splashmapper.gitlab.io</url>
+  <url type="homepage">https://splashmapper.xyz</url>
   <screenshots>
     <screenshot type="default">
-      <image>https://splashmapper.gitlab.io/en/_images/splash_multiview_gui.jpg</image>
+      <image>https://splashmapper.xyz/en/_images/splash_multiview_gui.jpg</image>
       <caption>Splash user interface showing a fulldome project</caption>
     </screenshot>
   </screenshots>
