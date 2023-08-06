@@ -329,7 +329,7 @@ void Shader::compileProgram()
                 glGetShaderiv(_program, GL_INFO_LOG_LENGTH, &length);
                 char* log = (char*)malloc(length);
                 glGetShaderInfoLog(_program, length, &length, log);
-                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << log << Log::endl;
+                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
             }
         }
         else
