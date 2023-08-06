@@ -35,7 +35,7 @@ void Geometry::init()
     if (!_root)
         return;
 
-    glCreateQueries(GL_PRIMITIVES_GENERATED, 1, &_feedbackQuery);
+    glGenQueries(1, &_feedbackQuery);
 
     _mesh = std::make_shared<Mesh>(_root);
     update();
@@ -373,7 +373,7 @@ void Geometry::update()
         {
             vertexArrayIt = (_vertexArray.emplace(std::make_pair(context, 0))).first;
             vertexArrayIt->second = 0;
-            glCreateVertexArrays(1, &(vertexArrayIt->second));
+            glGenVertexArrays(1, &(vertexArrayIt->second));
         }
 
         glBindVertexArray(vertexArrayIt->second);

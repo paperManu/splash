@@ -1110,10 +1110,10 @@ void Gui::initImGui(int width, int height)
     _imGuiUVLocation = glGetAttribLocation(_imGuiShaderHandle, "UV");
     _imGuiColorLocation = glGetAttribLocation(_imGuiShaderHandle, "Color");
 
-    glCreateBuffers(1, &_imGuiVboHandle);
-    glCreateBuffers(1, &_imGuiElementsHandle);
+    glGenBuffers(1, &_imGuiVboHandle);
+    glGenBuffers(1, &_imGuiElementsHandle);
 
-    glCreateVertexArrays(1, &_imGuiVaoHandle);
+    glGenVertexArrays(1, &_imGuiVaoHandle);
     glBindVertexArray(_imGuiVaoHandle);
     glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
     glEnableVertexAttribArray(_imGuiPositionLocation);

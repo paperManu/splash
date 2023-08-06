@@ -419,23 +419,24 @@ void Window::render()
 void Window::setupFBOs()
 {
     // Render FBO
-    if (glIsFramebuffer(_renderFbo) == GL_FALSE)
-        glCreateFramebuffers(1, &_renderFbo);
+    if (glIsFramebuffer(_renderFbo) == GL_FALSE) {
+        glGenFramebuffers(1, &_renderFbo);
+    }
 
-    glNamedFramebufferTexture(_renderFbo, GL_DEPTH_ATTACHMENT, 0, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
+
     _depthTexture = std::make_shared<Texture_Image>(_root, _windowRect[2], _windowRect[3], "D", nullptr);
-    glNamedFramebufferTexture(_renderFbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
 
-    glNamedFramebufferTexture(_renderFbo, GL_COLOR_ATTACHMENT0, 0, 0);
     _colorTexture = std::make_shared<Texture_Image>(_root);
     _colorTexture->setAttribute("filtering", {false});
-    _colorTexture->reset(_windowRect[2], _windowRect[3], "sRGBA", nullptr);
-    glNamedFramebufferTexture(_renderFbo, GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
+    _colorTexture->reset(_windowRect[2], _windowRect[3], "RGBA", nullptr);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
 
     GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    glNamedFramebufferDrawBuffers(_renderFbo, 1, fboBuffers);
+    glDrawBuffers(1, fboBuffers);
 
-    GLenum _status = glCheckNamedFramebufferStatus(_renderFbo, GL_FRAMEBUFFER);
+    const auto _status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing render framebuffer object: " << _status << Log::endl;
 #ifdef DEBUG
@@ -443,12 +444,10 @@ void Window::setupFBOs()
         Log::get() << Log::DEBUGGING << "Window::" << __FUNCTION__ << " - Render framebuffer object successfully initialized" << Log::endl;
 #endif
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-    // Read FBO
     // It has to be created in the context where it is used, so its (re)creation will be triggered
     // in Window::swapBuffers if needed, depending on the following flag
     _renderTextureUpdated = true;
@@ -464,11 +463,13 @@ void Window::swapBuffers()
     auto windowIndex = _swappableWindowsCount++;
 
     // If swap interval is null (meaning no vsync), draw directly to the front buffer in any case
-    bool drawToFront = false;
     if (!Scene::getHasNVSwapGroup() && windowIndex != 0)
     {
-        drawToFront = true;
-        glDrawBuffer(GL_FRONT);
+        // Since we can't draw to the front buffer directly in OpenGL ES,
+        // we draw to the back buffer, then immediately present it
+        GLenum buffers[] = {GL_BACK};
+        glDrawBuffers(1, buffers);
+        glfwSwapBuffers(_window->get());
     }
 
     if (_renderTextureUpdated)
@@ -476,10 +477,11 @@ void Window::swapBuffers()
         if (_readFbo != 0)
             glDeleteFramebuffers(1, &_readFbo);
 
-        glCreateFramebuffers(1, &_readFbo);
+        glGenFramebuffers(1, &_readFbo);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, _readFbo);
 
-        glNamedFramebufferTexture(_readFbo, GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
-        auto status = glCheckNamedFramebufferStatus(_readFbo, GL_FRAMEBUFFER);
+        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
+        const auto status = glCheckFramebufferStatus(GL_READ_FRAMEBUFFER);
         if (status != GL_FRAMEBUFFER_COMPLETE)
             Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing read framebuffer object: " << status << Log::endl;
 #ifdef DEBUG
@@ -488,15 +490,12 @@ void Window::swapBuffers()
 #endif
         _renderTextureUpdated = false;
     }
-    glBlitNamedFramebuffer(_readFbo, 0, 0, 0, _windowRect[2], _windowRect[3], 0, 0, _windowRect[2], _windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-    if (Scene::getHasNVSwapGroup())
-        glfwSwapBuffers(_window->get());
-    else if (windowIndex == 0)
+    glBlitFramebuffer(0, 0, _windowRect[2], _windowRect[3], 0, 0, _windowRect[2], _windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+    if (Scene::getHasNVSwapGroup() || windowIndex == 0)
         glfwSwapBuffers(_window->get());
 
-    if (drawToFront)
-        glDrawBuffer(GL_BACK);
 
     _frontBufferTimestamp = _backBufferTimestamp;
     _presentationDelay = Timer::getTime() - _frontBufferTimestamp;

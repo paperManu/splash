@@ -628,7 +628,7 @@ std::shared_ptr<GlWindow> Scene::getNewSharedWindow(const std::string& name)
 /*************/
 std::vector<int> Scene::findGLVersion()
 {
-    std::vector<std::vector<int>> glVersionList{{4, 5}};
+    std::vector<std::vector<int>> glVersionList{{3, 2}};
     std::vector<int> detectedVersion{0, 0};
 
     for (auto version : glVersionList)
@@ -639,6 +639,8 @@ std::vector<int> Scene::findGLVersion()
         glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
         glfwWindowHint(GLFW_DEPTH_BITS, 24);
         glfwWindowHint(GLFW_VISIBLE, false);
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+
         GLFWwindow* window = glfwCreateWindow(512, 512, "test_window", NULL, NULL);
 
         if (window)
@@ -676,6 +678,7 @@ void Scene::init(const std::string& name)
     _glVersion = glVersion;
     Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - GL version: " << glVersion[0] << "." << glVersion[1] << Log::endl;
 
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, glVersion[0]);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, glVersion[1]);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);

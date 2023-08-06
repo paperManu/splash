@@ -6,7 +6,8 @@ namespace Splash
 /*************/
 GpuBuffer::GpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data)
 {
-    glCreateBuffers(1, &_glId);
+    glGenBuffers(1, &_glId);
+
     switch (type)
     {
     case GL_FLOAT:
@@ -36,14 +37,15 @@ GpuBuffer::GpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, 
     _type = type;
     _usage = usage;
 
+    glBindBuffer(GL_ARRAY_BUFFER, _glId);
     if (data == nullptr)
     {
         auto zeroBuffer = std::vector<char>(size * _elementSize * _baseSize, 0);
-        glNamedBufferData(_glId, size * _elementSize * _baseSize, zeroBuffer.data(), usage);
+        glBufferData(GL_ARRAY_BUFFER, size * _elementSize * _baseSize, zeroBuffer.data(), usage);
     }
     else
     {
-        glNamedBufferData(_glId, size * _elementSize * _baseSize, data, usage);
+        glBufferData(GL_ARRAY_BUFFER, size * _elementSize * _baseSize, data, usage);
     }
 }
 
