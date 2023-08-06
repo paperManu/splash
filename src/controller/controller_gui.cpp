@@ -1041,7 +1041,8 @@ void Gui::initImGui(int width, int height)
 
     // Initialize GL stuff for ImGui
     const std::string vertexShader{R"(
-        #version 330 core
+        #version 320 es
+        precision mediump float;
 
         uniform mat4 ProjMtx;
         in vec2 Position;
@@ -1059,7 +1060,8 @@ void Gui::initImGui(int width, int height)
     )"};
 
     const std::string fragmentShader{R"(
-        #version 330 core
+        #version 320 es
+        precision mediump float;
 
         uniform sampler2D Texture;
         in vec2 Frag_UV;

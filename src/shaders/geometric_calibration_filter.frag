@@ -1,4 +1,5 @@
-#version 450 core
+#version 320 es 
+precision mediump float;
 
 uniform sampler2D _tex0; // black texture
 uniform sampler2D _tex1; // grey texture

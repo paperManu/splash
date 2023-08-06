@@ -220,7 +220,7 @@ bool Shader::setSource(const std::map<ShaderType, std::string>& sources)
 
     bool status = true;
     if (sources.find(ShaderType::vertex) == sources.end())
-        status = setSource(ShaderSources.VERSION_DIRECTIVE_GL4 + ShaderSources.VERTEX_SHADER_DEFAULT, ShaderType::vertex);
+        status = setSource(ShaderSources.VERSION_DIRECTIVE_GL32_ES + ShaderSources.VERTEX_SHADER_DEFAULT, ShaderType::vertex);
     for (auto& source : sources)
         status = status && setSource(source.second, source.first);
 
@@ -765,7 +765,7 @@ void Shader::registerGraphicAttributes()
     addAttribute("fill",
         [&](const Values& args) {
             // Get additionnal shading options
-            std::string options = ShaderSources.VERSION_DIRECTIVE_GL4;
+            std::string options = ShaderSources.VERSION_DIRECTIVE_GL32_ES;
             for (uint32_t i = 1; i < args.size(); ++i)
                 options += "#define " + args[i].as<std::string>() + "\n";
 
@@ -951,7 +951,7 @@ void Shader::registerComputeAttributes()
                 return false;
 
             // Get additionnal shading options
-            std::string options = ShaderSources.VERSION_DIRECTIVE_GL4;
+            std::string options = ShaderSources.VERSION_DIRECTIVE_GL32_ES;
             for (uint32_t i = 1; i < args.size(); ++i)
                 options += "#define " + args[i].as<std::string>() + "\n";
 
@@ -996,7 +996,7 @@ void Shader::registerFeedbackAttributes()
                 return false;
 
             // Get additionnal shader options
-            std::string options = ShaderSources.VERSION_DIRECTIVE_GL4;
+            std::string options = ShaderSources.VERSION_DIRECTIVE_GL32_ES;
             for (uint32_t i = 1; i < args.size(); ++i)
                 options += "#define " + args[i].as<std::string>() + "\n";
 

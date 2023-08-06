@@ -203,10 +203,14 @@ struct ShaderSources
         )"}};
 
     /**
-     * Version directive, included at the start of all shaders
+     * Version directives, included at the start of all shaders
      */
     const std::string VERSION_DIRECTIVE_GL4{R"(
         #version 450 core
+    )"};
+
+    const std::string VERSION_DIRECTIVE_GL32_ES{R"(
+        #version 320 es
     )"};
 
     /**************************/
@@ -219,6 +223,7 @@ struct ShaderSources
     const std::string COMPUTE_SHADER_DEFAULT{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
+        precision mediump float;
 
         layout(local_size_x = 32, local_size_y = 32) in;
 
@@ -264,6 +269,7 @@ struct ShaderSources
     const std::string COMPUTE_SHADER_RESET_VISIBILITY{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
+        precision mediump float;
 
         layout(local_size_x = 128) in;
 
@@ -297,6 +303,7 @@ struct ShaderSources
     const std::string COMPUTE_SHADER_RESET_BLENDING{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
+        precision mediump float;
 
         layout(local_size_x = 128) in;
 
@@ -329,6 +336,7 @@ struct ShaderSources
     const std::string COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
+        precision mediump float;
 
         layout(local_size_x = 32, local_size_y = 32) in;
 
@@ -363,6 +371,7 @@ struct ShaderSources
     const std::string COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
+        precision mediump float;
 
         #include getSmoothBlendFromVertex
         #include normalVector
@@ -450,6 +459,8 @@ struct ShaderSources
      * Default vertex shader with feedback
      */
     const std::string VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
+        precision mediump float;
+
         layout (location = 0) in vec4 _vertex;
         layout (location = 1) in vec2 _texCoord;
         layout (location = 2) in vec4 _normal;
@@ -479,6 +490,8 @@ struct ShaderSources
      * Default feedback tessellation shader
      */
     const std::string TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
+        precision mediump float;
+
         #include normalVector
         #include projectAndCheckVisibility
 
@@ -596,6 +609,8 @@ struct ShaderSources
     )"};
 
     const std::string TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
+        precision mediump float;
+
         //layout (triangles, fractional_odd_spacing) in;
         layout (triangles) in;
 
@@ -638,6 +653,8 @@ struct ShaderSources
      * Feedback geometry shader for handling camera borders
      */
     const std::string GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
+        precision mediump float;
+
         #include normalVector
         #include projectAndCheckVisibility
 
@@ -834,6 +851,8 @@ struct ShaderSources
      * Vertex shader which transmits the vertex attributes as-is
      */
     const std::string VERTEX_SHADER_DEFAULT{R"(
+        precision mediump float;
+
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texCoord;
         layout(location = 2) in vec4 _normal;
@@ -858,6 +877,8 @@ struct ShaderSources
      * Vertex shader which projects the vertices using the modelview matrix
      */
     const std::string VERTEX_SHADER_MODELVIEW{R"(
+        precision mediump float;
+
         #include getSmoothBlendFromVertex
 
         layout(location = 0) in vec4 _vertex;
@@ -892,6 +913,8 @@ struct ShaderSources
      * Filter vertex shader
      */
     const std::string VERTEX_SHADER_FILTER{R"(
+        precision mediump float;
+
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texCoord;
         out vec2 texCoord;
@@ -908,6 +931,8 @@ struct ShaderSources
      * Does not do much except for applying the intput texture
      */
     const std::string FRAGMENT_SHADER_DEFAULT_FILTER{R"(
+        precision mediump float;
+
     #ifdef TEXTURE_RECT
         uniform sampler2DRect _tex0;
     #else
@@ -939,6 +964,8 @@ struct ShaderSources
      * also able to convert from YUYV to RGB
      */
     const std::string FRAGMENT_SHADER_IMAGE_FILTER{R"(
+        precision mediump float;
+
         #include colorEncoding
         #include srgb
         #include hsv
@@ -1048,6 +1075,8 @@ struct ShaderSources
      * Black level fragment shader for filters
      */
     const std::string FRAGMENT_SHADER_BLACKLEVEL_FILTER{R"(
+        precision mediump float;
+
     #ifdef TEXTURE_RECT
         uniform sampler2DRect _tex0;
     #else
@@ -1078,6 +1107,8 @@ struct ShaderSources
      * This filter applies a transformation curve to RGB colors
      */
     const std::string FRAGMENT_SHADER_COLOR_CURVES_FILTER{R"(
+        precision mediump float;
+
     #ifdef TEXTURE_RECT
         uniform sampler2DRect _tex0;
     #else
@@ -1143,6 +1174,8 @@ struct ShaderSources
      * Warp vertex shader
      */
     const std::string VERTEX_SHADER_WARP{R"(
+        precision mediump float;
+
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texCoord;
         out vec2 texCoord;
@@ -1158,7 +1191,7 @@ struct ShaderSources
      * Fragment shader for warp
      */
     const std::string FRAGMENT_SHADER_WARP{R"(
-
+        precision mediump float;
         #define PI 3.14159265359
 
     #ifdef TEXTURE_RECT
@@ -1202,6 +1235,8 @@ struct ShaderSources
      * Cubemap objects rendering (used by the virtual screens)
      */
     const std::string VERTEX_SHADER_OBJECT_CUBEMAP{R"(
+        precision mediump float;
+
         #include getSmoothBlendFromVertex
 
         layout(location = 0) in vec4 _vertex;
@@ -1225,6 +1260,8 @@ struct ShaderSources
     )"};
 
     const std::string GEOMETRY_SHADER_OBJECT_CUBEMAP{R"(
+        precision mediump float;
+
         layout(triangles) in;
         layout(triangle_strip, max_vertices = 18) out;
 
@@ -1288,6 +1325,8 @@ struct ShaderSources
     )"};
 
     const std::string FRAGMENT_SHADER_OBJECT_CUBEMAP{R"(
+        precision mediump float;
+
         #ifdef TEXTURE_RECT
             uniform sampler2DRect _tex0;
         #else
@@ -1320,6 +1359,8 @@ struct ShaderSources
      * Vertex shader for textured rendering
      */
     const std::string VERTEX_SHADER_TEXTURE{R"(
+        precision mediump float;
+
         #include getSmoothBlendFromVertex
 
         layout(location = 0) in vec4 _vertex;
@@ -1382,6 +1423,8 @@ struct ShaderSources
      * Textured fragment shader
      */
     const std::string FRAGMENT_SHADER_TEXTURE{R"(
+        precision mediump float;
+
         #include hsv
         #include correctColor
 
@@ -1511,6 +1554,8 @@ struct ShaderSources
      * Single color fragment shader
      */
     const std::string FRAGMENT_SHADER_COLOR{R"(
+        precision mediump float;
+
         #define PI 3.14159265359
 
         uniform int _sideness = 0;
@@ -1543,6 +1588,8 @@ struct ShaderSources
      * UV coordinates are encoded on 2 channels each, to get 16bits precision
      */
     const std::string FRAGMENT_SHADER_UV{R"(
+        precision mediump float;
+
         #define PI 3.14159265359
 
         uniform int _sideness = 0;
@@ -1577,6 +1624,8 @@ struct ShaderSources
      * This shader has to be used after a pass of COMPUTE_SHADER_RESET_VISIBILITY
      */
     const std::string FRAGMENT_SHADER_PRIMITIVEID{R"(
+        precision mediump float;
+
         in VertexData
         {
             vec4 position;
@@ -1601,6 +1650,8 @@ struct ShaderSources
      * Wireframe rendering
      */
     const std::string VERTEX_SHADER_WIREFRAME{R"(
+        precision mediump float;
+
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texCoord;
         layout(location = 2) in vec4 _normal;
@@ -1619,6 +1670,8 @@ struct ShaderSources
     )"};
 
     const std::string GEOMETRY_SHADER_WIREFRAME{R"(
+        precision mediump float;
+
         layout(triangles) in;
         layout(triangle_strip, max_vertices = 3) out;
         uniform mat4 _modelViewProjectionMatrix;
@@ -1664,6 +1717,8 @@ struct ShaderSources
     )"};
 
     const std::string FRAGMENT_SHADER_WIREFRAME{R"(
+        precision mediump float;
+
         #define PI 3.14159265359
 
         in VertexData
@@ -1700,6 +1755,8 @@ struct ShaderSources
      * Cubemap projection to spherical, equirectangular, or "single layer cubemap"
      */
     const std::string VERTEX_SHADER_CUBEMAP_PROJECTION{R"(
+        precision mediump float;
+
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texCoord;
         out vec2 texCoord;
@@ -1712,6 +1769,8 @@ struct ShaderSources
     )"};
 
     const std::string FRAGMENT_SHADER_CUBEMAP_PROJECTION{R"(
+        precision mediump float;
+
         #define PI 3.141592653589793
         #define HALFPI 1.5707963268 
 
@@ -1777,6 +1836,8 @@ struct ShaderSources
      * Wireframe rendering for Warps
      */
     const std::string VERTEX_SHADER_WARP_WIREFRAME{R"(
+        precision mediump float;
+
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texCoord;
 
@@ -1794,6 +1855,8 @@ struct ShaderSources
     )"};
 
     const std::string GEOMETRY_SHADER_WARP_WIREFRAME{R"(
+        precision mediump float;
+
         layout(triangles) in;
         layout(triangle_strip, max_vertices = 3) out;
 
@@ -1830,6 +1893,8 @@ struct ShaderSources
     )"};
 
     const std::string FRAGMENT_SHADER_WARP_WIREFRAME{R"(
+        precision mediump float;
+
         #define PI 3.14159265359
 
         in VertexData
@@ -1857,6 +1922,8 @@ struct ShaderSources
      * Rendering of the output windows
      */
     const std::string VERTEX_SHADER_WINDOW{R"(
+        precision mediump float;
+
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texCoord;
         //layout(location = 2) in vec3 _normal;
@@ -1871,6 +1938,8 @@ struct ShaderSources
     )"};
 
     const std::string FRAGMENT_SHADER_WINDOW{R"(
+        precision mediump float;
+
         #define PI 3.14159265359
 
     #ifdef TEX_1
