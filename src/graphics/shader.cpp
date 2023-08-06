@@ -321,6 +321,20 @@ void Shader::compileProgram()
                            << Log::endl;
 #endif
             }
+            else
+            {
+                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling the " << stringFromShaderType(shader.first) << " shader in program "
+                           << _currentProgramName << Log::endl;
+                GLint length;
+                glGetShaderiv(_program, GL_INFO_LOG_LENGTH, &length);
+                char* log = (char*)malloc(length);
+                glGetShaderInfoLog(_program, length, &length, log);
+                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << log << Log::endl;
+            }
+        }
+        else
+        {
+            Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - ID (" << shader.second << ") does not belong to a shader" << Log::endl;
         }
     }
 }
@@ -467,8 +481,18 @@ void Shader::parseUniforms(const std::string& src)
                 continue;
             }
 
+            const auto uniformIndex = glGetUniformLocation(_program, name.c_str());
+
+            if (uniformIndex == -1)
+            {
+                Log::get() << Log::ERROR << "Shader::" << __FUNCTION__ << "- Uniform \"" << name << "\" with type \"" << type << "\" "
+                           << "was not found in the shader. You might have forgotten it or it might have been optimized out" << Log::endl;
+
+                continue;
+            }
+
             _uniforms[name].type = type;
-            _uniforms[name].glIndex = glGetUniformLocation(_program, name.c_str());
+            _uniforms[name].glIndex = uniformIndex;
             _uniforms[name].elementSize = type.find("mat") != std::string::npos ? elementSize * elementSize : elementSize;
             _uniforms[name].arraySize = arraySize;
             _uniformsDocumentation[name] = documentation;
