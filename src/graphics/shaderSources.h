@@ -279,7 +279,7 @@ struct ShaderSources
         };
 
         uniform int _vertexNbr;
-        uniform int _primitiveIdShift = 0;
+        uniform int _primitiveIdShift;
 
         void main(void)
         {
@@ -347,7 +347,7 @@ struct ShaderSources
         };
 
         uniform vec2 _texSize;
-        uniform int _idShift = 0;
+        uniform int _idShift;
 
         void main(void)
         {
@@ -398,7 +398,7 @@ struct ShaderSources
         uniform mat4 _mv; // Model View matrix
         uniform mat4 _mvp; // Model View Projection matrix
         uniform mat4 _mNormal; // Normal matrix
-        uniform float _blendWidth = 0.1;
+        uniform float _blendWidth;
 
         void main(void)
         {
@@ -515,8 +515,8 @@ struct ShaderSources
 
         uniform mat4 _mvp;
         uniform mat4 _mNormal;
-        uniform float _blendWidth = 0.1;
-        uniform float _blendPrecision = 0.1;
+        uniform float _blendWidth;
+        uniform float _blendPrecision;
 
         const float blendDistFactorToSubdiv = 2.0;
 
@@ -888,7 +888,8 @@ struct ShaderSources
 
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
-        uniform vec4 _cameraAttributes = vec4(0.05, 1.0, 1.0, 1.0); // blendWidth, brightness, saturation, contrast
+        // TODO: OpenGL ES doesn't allow this initialization, make sure it doesn't break anything.
+        uniform vec4 _cameraAttributes; // blendWidth, brightness, saturation, contrast
 
         out VertexData
         {
@@ -942,9 +943,9 @@ struct ShaderSources
         in vec2 texCoord;
         out vec4 fragColor;
 
-        uniform vec2 _tex0_size = vec2(1.0);
+        uniform vec2 _tex0_size;
 
-        uniform float _blackLevel = 0.f;
+        uniform float _blackLevel;
 
         void main()
         {
@@ -983,24 +984,24 @@ struct ShaderSources
         in vec2 texCoord;
         out vec4 fragColor;
 
-        uniform vec2 _tex0_size = vec2(1.0);
+        uniform vec2 _tex0_size;
         // Texture transformation
-        uniform int _tex0_flip = 0;
-        uniform int _tex0_flop = 0;
+        uniform int _tex0_flip;
+        uniform int _tex0_flop;
         // Format specific parameters
-        uniform int _tex0_encoding = COLOR_RGB;
+        uniform int _tex0_encoding;
 
         // Film uniforms
-        uniform float _filmDuration = 0.f;
-        uniform float _filmRemaining = 0.f;
+        /* uniform float _filmDuration; */
+        /* uniform float _filmRemaining; */
 
         // Filter parameters
-        uniform float _brightness = 1.f;
-        uniform float _contrast = 1.f;
-        uniform float _saturation = 1.f;
-        uniform int _invertChannels = 0;
-        uniform vec2 _colorBalance = vec2(1.f, 1.f);
-        uniform vec2 _scale = vec2(1.f, 1.f);
+        uniform float _brightness;
+        uniform float _contrast;
+        uniform float _saturation;
+        uniform int _invertChannels;
+        uniform vec2 _colorBalance;
+        uniform vec2 _scale;
 
         void main(void)
         {
@@ -1086,9 +1087,9 @@ struct ShaderSources
         in vec2 texCoord;
         out vec4 fragColor;
 
-        uniform vec2 _tex0_size = vec2(1.0);
+        uniform vec2 _tex0_size;
 
-        uniform float _blackLevel = 0.f;
+        uniform float _blackLevel;
 
         void main()
         {
@@ -1118,7 +1119,7 @@ struct ShaderSources
         in vec2 texCoord;
         out vec4 fragColor;
 
-        uniform vec2 _tex0_size = vec2(1.0);
+        uniform vec2 _tex0_size;
 
     #ifdef COLOR_CURVE_COUNT
         // This is set if Filter::_colorCurves is not empty, by Filter::updateShaderParameters
@@ -1203,10 +1204,10 @@ struct ShaderSources
         in vec2 texCoord;
         out vec4 fragColor;
 
-        uniform vec2 _tex0_size = vec2(1.0);
+        uniform vec2 _tex0_size;
         // Texture transformation
-        uniform int _tex0_flip = 0;
-        uniform int _tex0_flop = 0;
+        uniform int _tex0_flip;
+        uniform int _tex0_flop;
 
         void main(void)
         {
@@ -1333,7 +1334,7 @@ struct ShaderSources
             uniform sampler2D _tex0;
         #endif
 
-            uniform vec2 _tex0_size = vec2(1.0);
+            uniform vec2 _tex0_size;
 
             in VertexData
             {
@@ -1371,10 +1372,10 @@ struct ShaderSources
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _modelViewMatrix;
         uniform mat4 _normalMatrix;
-        uniform vec4 _cameraAttributes = vec4(0.05, 1.0, 1.0, 1.0); // blendWidth, brightness, saturation, contrast
+        uniform vec4 _cameraAttributes; // blendWidth, brightness, saturation, contrast
 
     #ifdef VERTEXBLENDING
-        uniform float _farthestVertex = 0.0;
+        uniform float _farthestVertex;
     #endif
 
         out VertexData
@@ -1395,7 +1396,7 @@ struct ShaderSources
             vertexOut.texCoord = _texCoord;
             vertexOut.annexe = _annexe;
 
-            const vec4 projectedVertex = vertexOut.position / vertexOut.position.w;
+            vec4 projectedVertex = vertexOut.position / vertexOut.position.w;
             if (projectedVertex.z >= 0.0)
             {
     #ifdef VERTEXBLENDING
@@ -1442,21 +1443,25 @@ struct ShaderSources
         uniform sampler2D _tex1;
     #endif
 
-        uniform vec2 _tex0_size = vec2(1.0);
-        uniform vec2 _tex1_size = vec2(1.0);
+        // TODO: Make sure the removed initializations don't break anything.
+        uniform vec2 _tex0_size;
+        uniform vec2 _tex1_size;
 
-        uniform int _showCameraCount = 0;
-        uniform int _sideness = 0;
-        uniform vec4 _cameraAttributes = vec4(0.05, 1.0, 1.0, 1.0); // blendWidth, brightness, saturation, contrast
-        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
-        uniform int _isColorLUT = 0;
-        uniform vec4 _color = vec4(0.0, 0.0, 0.0, 1.0);
-        uniform int _colorLUTSize = 0;
+        uniform int _showCameraCount;
+        uniform int _sideness;
+        
+        // blendWidth, brightness, saturation, contrast
+        uniform vec4 _cameraAttributes;
+
+        // fovX and fovY, r/g and b/g
+        uniform vec4 _fovAndColorBalance;
+
+        uniform int _isColorLUT;
+        uniform vec4 _color;
+        uniform int _colorLUTSize;
         uniform vec3 _colorLUT[256];
-        uniform mat3 _colorMixMatrix = mat3(1.0, 0.0, 0.0,
-                                            0.0, 1.0, 0.0,
-                                            0.0, 0.0, 1.0);
-        uniform float _normalExp = 0.0;
+        uniform mat3 _colorMixMatrix;
+        uniform float _normalExp;
 
         in VertexData
         {
@@ -1516,14 +1521,14 @@ struct ShaderSources
             // Color correction through a LUT
             if (_isColorLUT != 0)
             {
-                float maxValue = float(_colorLUTSize - 1);
-                ivec3 fcolor = ivec3(floor(color.rgb * maxValue));
-                ivec3 ccolor = ivec3(ceil(color.rgb * maxValue));
+                vec3 maxValue = vec3(_colorLUTSize - 1);
+                vec3 fcolor = vec3(floor(color.rgb * maxValue));
+                vec3 ccolor = vec3(ceil(color.rgb * maxValue));
                 vec3 alpha = color.rgb * maxValue - fcolor.rgb;
                 // Linear interpolation
-                color.r = _colorLUT[fcolor.r].r * (1.f - alpha.r) + _colorLUT[ccolor.r].r * alpha.r; 
-                color.g = _colorLUT[fcolor.g].g * (1.f - alpha.g) + _colorLUT[ccolor.g].g * alpha.g;
-                color.b = _colorLUT[fcolor.b].b * (1.f - alpha.b) + _colorLUT[ccolor.b].b * alpha.b;
+                color.r = _colorLUT[int(fcolor.r)].r * (1.f - alpha.r) + _colorLUT[int(ccolor.r)].r * alpha.r; 
+                color.g = _colorLUT[int(fcolor.g)].g * (1.f - alpha.g) + _colorLUT[int(ccolor.g)].g * alpha.g;
+                color.b = _colorLUT[int(fcolor.b)].b * (1.f - alpha.b) + _colorLUT[int(ccolor.b)].b * alpha.b;
                 //color.rgb = clamp(_colorMixMatrix * color.rgb, vec3(0.0), vec3(1.0));
             }
 
@@ -1558,9 +1563,9 @@ struct ShaderSources
 
         #define PI 3.14159265359
 
-        uniform int _sideness = 0;
-        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
-        uniform vec4 _color = vec4(0.0, 1.0, 0.0, 1.0);
+        uniform int _sideness;
+        uniform vec4 _fovAndColorBalance; // fovX and fovY, r/g and b/g
+        uniform vec4 _color;
 
         in VertexData
         {
@@ -1592,8 +1597,8 @@ struct ShaderSources
 
         #define PI 3.14159265359
 
-        uniform int _sideness = 0;
-        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
+        uniform int _sideness;
+        uniform vec4 _fovAndColorBalance; // fovX and fovY, r/g and b/g
 
         in VertexData
         {
@@ -1728,9 +1733,9 @@ struct ShaderSources
             vec4 position;
         } vertexIn;
 
-        uniform vec4 _wireframeColor = vec4(1.0, 0.0, 0.0, 1.0);
-        uniform int _sideness = 0;
-        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
+        uniform vec4 _wireframeColor;
+        uniform int _sideness;
+        uniform vec4 _fovAndColorBalance; // fovX and fovY, r/g and b/g
         out vec4 fragColor;
 
         float edgeFactor()
@@ -1775,10 +1780,10 @@ struct ShaderSources
         #define HALFPI 1.5707963268 
 
         uniform samplerCube _tex0;
-        uniform vec2 _tex0_size = vec2(1.0);
+        uniform vec2 _tex0_size;
 
-        uniform int _projectionType = 1; // 0 = equirectangular, 1 = spherical
-        uniform float _sphericalFov = 180.0;
+        uniform int _projectionType; // 0 = equirectangular, 1 = spherical
+        uniform float _sphericalFov;
 
         in vec2 texCoord;
         out vec4 fragColor;
@@ -1902,8 +1907,8 @@ struct ShaderSources
             vec3 bcoord;
         } vertexIn;
 
-        uniform int _sideness = 0;
-        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
+        uniform int _sideness;
+        uniform vec4 _fovAndColorBalance; // fovX and fovY, r/g and b/g
         out vec4 fragColor;
 
         void main(void)
@@ -1943,6 +1948,8 @@ struct ShaderSources
         #define PI 3.14159265359
 
     #ifdef TEX_1
+        uniform ivec4 _layout;
+
         uniform sampler2D _tex0;
     #ifdef TEX_2
         uniform sampler2D _tex1;
@@ -1954,8 +1961,7 @@ struct ShaderSources
     #endif
     #endif
     #endif
-        uniform ivec4 _layout = ivec4(0, 1, 2, 3);
-        uniform vec2 _gamma = vec2(1.0, 2.2);
+        uniform vec2 _gamma;
         in vec2 texCoord;
         out vec4 fragColor;
 
@@ -1989,8 +1995,13 @@ struct ShaderSources
                 #endif
             }
 
-            if (_gamma.x != 1.0)
-                fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / _gamma.y));
+	    vec2 gamma = _gamma;
+	    if(length(gamma) == 0.0) {
+	    	gamma = vec2(0.0, 2.2);
+	    }
+
+	    fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / gamma.y));
+
         }
     )"};
 
