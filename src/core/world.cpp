@@ -29,6 +29,9 @@
 
 using namespace glm;
 
+// Pointer to all the environment variables, see `man 7 environ`
+extern char** environ;
+
 namespace Splash
 {
 /*************/
@@ -481,7 +484,15 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
             argv.push_back(nullptr);
 
             // Constructing environment variables
-            std::vector<char*> env = {const_cast<char*>(display.c_str()), const_cast<char*>(xauth.c_str()), nullptr};
+            std::vector<char*> env;
+            // Start with our own envvars.
+            // Note that in case of duplicate envvars, getenv() returns the first one
+            env.push_back(const_cast<char*>(display.c_str()));
+            env.push_back(const_cast<char*>(xauth.c_str()));
+            // Then copy all envvars existing in environ
+            for (char** envvar = environ; *envvar != nullptr; ++envvar)
+                env.push_back(*envvar);
+            env.push_back(nullptr);
 
             int status = posix_spawn(&pid, cmd.c_str(), nullptr, nullptr, argv.data(), env.data());
             if (status != 0)
