@@ -481,7 +481,15 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
             argv.push_back(nullptr);
 
             // Constructing environment variables
-            std::vector<char*> env = {const_cast<char*>(display.c_str()), const_cast<char*>(xauth.c_str()), nullptr};
+	    const auto GLES_VERSION_OVERRIDE = "MESA_GLES_VERSION_OVERRIDE=3.2";
+	    const auto GLSL_VERSION_OVERRIDE = "MESA_GLSL_VERSION_OVERRIDE=320";
+            std::vector<char*> env = {
+		    const_cast<char*>(display.c_str()), 
+		    const_cast<char*>(xauth.c_str()), 
+		    const_cast<char*>(GLES_VERSION_OVERRIDE),
+		    const_cast<char*>(GLSL_VERSION_OVERRIDE),
+		    nullptr
+	    };
 
             int status = posix_spawn(&pid, cmd.c_str(), nullptr, nullptr, argv.data(), env.data());
             if (status != 0)

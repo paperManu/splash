@@ -168,7 +168,7 @@ void Texture_Image::reset(int width, int height, const std::string& pixelFormat,
     _multisample = multisample;
     _cubemap = multisample == 0 ? cubemap : false;
 
-    if (_pixelFormat == "RGBA")
+    if (_pixelFormat == "RGBA" || _pixelFormat == "RGBA16")
     {
         _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
         _texInternalFormat = GL_RGBA8;
@@ -185,13 +185,6 @@ void Texture_Image::reset(int width, int height, const std::string& pixelFormat,
         _texInternalFormat = GL_SRGB8_ALPHA8;
         _texFormat = GL_RGBA;
         _texType = GL_UNSIGNED_BYTE;
-    }
-    else if (_pixelFormat == "RGBA16")
-    {
-        _spec = ImageBufferSpec(width, height, 4, 64, ImageBufferSpec::Type::UINT16, "RGBA");
-        _texInternalFormat = GL_RGBA16;
-        _texFormat = GL_RGBA;
-        _texType = GL_UNSIGNED_SHORT;
     }
     else if (_pixelFormat == "RGB")
     {

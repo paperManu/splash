@@ -23,8 +23,14 @@ Framebuffer::Framebuffer(RootObject* root)
         _colorTexture = std::make_shared<Texture_Image>(_root);
         _colorTexture->setAttribute("clampToEdge", {true});
         _colorTexture->setAttribute("filtering", {false});
-        _colorTexture->reset(_width, _height, _16bits ? "RGBA16" : "RGBA", nullptr, _multisample);
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
+        _colorTexture->reset(_width, _height,  "RGBA", nullptr, _multisample);
+        glFramebufferTexture2D(	
+            GL_DRAW_FRAMEBUFFER,
+            GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D,
+            _colorTexture->getTexId(),
+            0
+        );
     }
 
     GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
@@ -141,8 +147,6 @@ void Framebuffer::setRenderingParameters()
 
     if (_srgb)
         _colorTexture->reset(spec.width, spec.height, "sRGBA", nullptr, _multisample, _cubemap);
-    else if (_16bits)
-        _colorTexture->reset(spec.width, spec.height, "RGBA16", nullptr, _multisample, _cubemap);
     else
         _colorTexture->reset(spec.width, spec.height, "RGBA", nullptr, _multisample, _cubemap);
 

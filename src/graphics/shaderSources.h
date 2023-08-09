@@ -1995,12 +1995,12 @@ struct ShaderSources
                 #endif
             }
 
-	    vec2 gamma = _gamma;
-	    if(length(gamma) == 0.0) {
-	    	gamma = vec2(0.0, 2.2);
-	    }
+	    // vec2 gamma = _gamma;
+	    // if(length(gamma) == 0.0) {
+	    // 	gamma = vec2(0.0, 2.2);
+	    // }
 
-	    fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / gamma.y));
+	    // fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / gamma.y));
 
         }
     )"};
