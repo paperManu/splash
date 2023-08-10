@@ -190,6 +190,12 @@ class Shader final : public GraphObject
      */
     void updateUniforms();
 
+    /**
+     * Utility functions to get the program/shader logs. Should only be called on errors.
+     */
+    static std::string getProgramInfoLog(GLint program);
+    static std::string getShaderInfoLog(GLint shader);
+
   private:
     mutable std::mutex _mutex;
     std::atomic_bool _activated{false};
