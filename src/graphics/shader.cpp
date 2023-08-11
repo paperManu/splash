@@ -326,9 +326,9 @@ void Shader::compileProgram()
                 Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling the " << stringFromShaderType(shader.first) << " shader in program "
                            << _currentProgramName << Log::endl;
                 GLint length;
-                glGetShaderiv(_program, GL_INFO_LOG_LENGTH, &length);
+                glGetShaderiv(shader.second, GL_INFO_LOG_LENGTH, &length);
                 char* log = (char*)malloc(length);
-                glGetShaderInfoLog(_program, length, &length, log);
+                glGetShaderInfoLog(shader.second, length, &length, log);
                 Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
             }
         }
