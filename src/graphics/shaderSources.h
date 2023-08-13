@@ -1062,10 +1062,17 @@ struct ShaderSources
                 color.rgb = color.bgr;
 
             // Color balance
-            float maxBalanceRatio = max(_colorBalance.r, _colorBalance.g);
-            color.r *= _colorBalance.r / maxBalanceRatio;
+	    
+	    vec2 colorBalance = _colorBalance;
+
+	    if(colorBalance.x == 0.0f && colorBalance.y == 0.0f) {
+		colorBalance = vec2(1.0f, 1.0f);
+	    }
+
+            float maxBalanceRatio = max(colorBalance.r, _colorBalance.g);
+            color.r *= colorBalance.r / maxBalanceRatio;
             color.g *= 1.0 / maxBalanceRatio;
-            color.b *= _colorBalance.g / maxBalanceRatio;
+            color.b *= colorBalance.g / maxBalanceRatio;
 
             color = correctColor(color, _brightness, _saturation, _contrast);
             fragColor = color;
