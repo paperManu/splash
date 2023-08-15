@@ -47,6 +47,7 @@ Shader::Shader(ProgramType type)
         _shaders[tess_ctrl] = glCreateShader(GL_TESS_CONTROL_SHADER);
         _shaders[tess_eval] = glCreateShader(GL_TESS_EVALUATION_SHADER);
         _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
+        _shaders[fragment] = glCreateShader(GL_FRAGMENT_SHADER);
 
         registerFeedbackAttributes();
 
@@ -178,12 +179,17 @@ std::map<std::string, Values> Shader::getUniforms() const
 /*************/
 bool Shader::setSource(const std::string& src, const ShaderType type)
 {
-    GLuint shader = _shaders[type];
+    const GLuint shader = glCreateShader(type);
+
+    if (glIsShader(_shaders[type]))
+        resetShader(type);
+
+    _shaders[type] = shader;
 
     auto parsedSources = src;
     parseIncludes(parsedSources);
     const char* shaderSrc = parsedSources.c_str();
-    glShaderSource(shader, 1, (const GLchar**)&shaderSrc, 0);
+    glShaderSource(shader, 1, &shaderSrc, nullptr);
     glCompileShader(shader);
 
     GLint status;
@@ -221,8 +227,8 @@ bool Shader::setSource(const std::map<ShaderType, std::string>& sources)
     bool status = true;
     if (sources.find(ShaderType::vertex) == sources.end())
         status = setSource(ShaderSources.VERSION_DIRECTIVE_GL32_ES + ShaderSources.VERTEX_SHADER_DEFAULT, ShaderType::vertex);
-    for (auto& source : sources)
-        status = status && setSource(source.second, source.first);
+    for (auto& [shaderType, source] : sources)
+        status = status && setSource(source, shaderType);
 
     compileProgram();
     return status;
@@ -308,33 +314,35 @@ void Shader::compileProgram()
         glDeleteProgram(_program);
 
     _program = glCreateProgram();
-    for (auto& shader : _shaders)
+    for (auto& [shader, shaderID] : _shaders)
     {
-        if (glIsShader(shader.second))
+        if (glIsShader(shaderID))
         {
-            glGetShaderiv(shader.second, GL_COMPILE_STATUS, &status);
+            glGetShaderiv(shaderID, GL_COMPILE_STATUS, &status);
             if (status == GL_TRUE)
             {
-                glAttachShader(_program, shader.second);
+                glAttachShader(_program, shaderID);
 #ifdef DEBUG
-                Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(shader.first) << " successfully attached to the program"
+                Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(shader) << " successfully attached to the program"
                            << Log::endl;
 #endif
             }
             else
             {
-                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling the " << stringFromShaderType(shader.first) << " shader in program "
+                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling the " << stringFromShaderType(shader) << " shader in program "
                            << _currentProgramName << Log::endl;
+
                 GLint length;
-                glGetShaderiv(shader.second, GL_INFO_LOG_LENGTH, &length);
+                glGetShaderiv(shaderID, GL_INFO_LOG_LENGTH, &length);
                 char* log = (char*)malloc(length);
-                glGetShaderInfoLog(shader.second, length, &length, log);
+                glGetShaderInfoLog(shaderID, length, &length, log);
+
                 Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
             }
         }
         else
         {
-            Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - ID (" << shader.second << ") does not belong to a shader" << Log::endl;
+            Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - ID (" << shaderID << ") does not belong to a shader" << Log::endl;
         }
     }
 }
@@ -736,22 +744,15 @@ void Shader::updateUniforms()
 void Shader::resetShader(ShaderType type)
 {
     glDeleteShader(_shaders[type]);
-
-    if (type == vertex)
-        _shaders[type] = glCreateShader(GL_VERTEX_SHADER);
-    else if (type == geometry)
-        _shaders[type] = glCreateShader(GL_GEOMETRY_SHADER);
-    else if (type == fragment)
-        _shaders[type] = glCreateShader(GL_FRAGMENT_SHADER);
-    else
-        return;
+    _shaders.erase(type);
 }
 
 /*************/
 void Shader::registerAttributes()
 {
     addAttribute("uniform",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             if (args.size() < 2)
                 return false;
 
@@ -786,8 +787,10 @@ void Shader::registerAttributes()
 /*************/
 void Shader::registerGraphicAttributes()
 {
-    addAttribute("fill",
-        [&](const Values& args) {
+    addAttribute(
+        "fill",
+        [&](const Values& args)
+        {
             // Get additionnal shading options
             std::string options = ShaderSources.VERSION_DIRECTIVE_GL32_ES;
             for (uint32_t i = 1; i < args.size(); ++i)
@@ -937,7 +940,8 @@ void Shader::registerGraphicAttributes()
             }
             return true;
         },
-        [&]() -> Values {
+        [&]() -> Values
+        {
             std::string fill;
             if (_fill == texture)
                 fill = "texture";
@@ -956,8 +960,10 @@ void Shader::registerGraphicAttributes()
         {'s'});
     setAttributeDescription("fill", "Set the filling mode");
 
-    addAttribute("sideness",
-        [&](const Values& args) {
+    addAttribute(
+        "sideness",
+        [&](const Values& args)
+        {
             _sideness = (Shader::Sideness)args[0].as<int>();
             return true;
         },
@@ -970,7 +976,8 @@ void Shader::registerGraphicAttributes()
 void Shader::registerComputeAttributes()
 {
     addAttribute("computePhase",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             if (args.size() < 1)
                 return false;
 
@@ -1015,7 +1022,8 @@ void Shader::registerFeedbackAttributes()
     GraphObject::registerAttributes();
 
     addAttribute("feedbackPhase",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             if (args.size() < 1)
                 return false;
 
@@ -1031,6 +1039,10 @@ void Shader::registerFeedbackAttributes()
                 setSource(options + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_ctrl);
                 setSource(options + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_eval);
                 setSource(options + ShaderSources.GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, geometry);
+
+                const auto testFrag = "void main() {}";
+                setSource(options + testFrag, fragment);
+
                 compileProgram();
             }
 
@@ -1039,7 +1051,8 @@ void Shader::registerFeedbackAttributes()
         {});
 
     addAttribute("feedbackVaryings",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             if (args.size() < 1)
                 return false;
 

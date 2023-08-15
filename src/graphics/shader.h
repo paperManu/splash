@@ -53,12 +53,12 @@ class Shader final : public GraphObject
 
     enum ShaderType
     {
-        vertex = 0,
-        tess_ctrl,
-        tess_eval,
-        geometry,
-        fragment,
-        compute
+        vertex = GL_VERTEX_SHADER,
+        tess_ctrl = GL_TESS_CONTROL_SHADER,
+        tess_eval = GL_TESS_EVALUATION_SHADER,
+        geometry = GL_GEOMETRY_SHADER,
+        fragment = GL_FRAGMENT_SHADER,
+        compute = GL_COMPUTE_SHADER
     };
 
     enum Sideness
