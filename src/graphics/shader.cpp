@@ -178,12 +178,17 @@ std::map<std::string, Values> Shader::getUniforms() const
 /*************/
 bool Shader::setSource(const std::string& src, const ShaderType type)
 {
-    GLuint shader = _shaders[type];
+    const GLuint shader = glCreateShader(type);
+
+    if (glIsShader(_shaders[type]))
+        resetShader(type);
+
+    _shaders[type] = shader;
 
     auto parsedSources = src;
     parseIncludes(parsedSources);
     const char* shaderSrc = parsedSources.c_str();
-    glShaderSource(shader, 1, (const GLchar**)&shaderSrc, 0);
+    glShaderSource(shader, 1, &shaderSrc, nullptr);
     glCompileShader(shader);
 
     GLint status;
@@ -217,8 +222,8 @@ bool Shader::setSource(const std::map<ShaderType, std::string>& sources)
     bool status = true;
     if (sources.find(ShaderType::vertex) == sources.end())
         status = setSource(ShaderSources.VERSION_DIRECTIVE_GL4 + ShaderSources.VERTEX_SHADER_DEFAULT, ShaderType::vertex);
-    for (auto& source : sources)
-        status = status && setSource(source.second, source.first);
+    for (auto& [shaderType, source] : sources)
+        status = status && setSource(source, shaderType);
 
     compileProgram();
     return status;
@@ -304,30 +309,30 @@ void Shader::compileProgram()
         glDeleteProgram(_program);
 
     _program = glCreateProgram();
-    for (auto& shader : _shaders)
+    for (auto& [shader, shaderID] : _shaders)
     {
-        if (glIsShader(shader.second))
+        if (glIsShader(shaderID))
         {
-            glGetShaderiv(shader.second, GL_COMPILE_STATUS, &status);
+            glGetShaderiv(shaderID, GL_COMPILE_STATUS, &status);
             if (status == GL_TRUE)
             {
-                glAttachShader(_program, shader.second);
+                glAttachShader(_program, shaderID);
 #ifdef DEBUG
-                Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(shader.first) << " successfully attached to the program"
+                Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(shader) << " successfully attached to the program"
                            << Log::endl;
 #endif
             }
             else
             {
-                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling the " << stringFromShaderType(shader.first) << " shader in program "
+                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling the " << stringFromShaderType(shader) << " shader in program "
                            << _currentProgramName << Log::endl;
-                auto log = getShaderInfoLog(shader.second);
+                auto log = getShaderInfoLog(shaderID);
                 Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << log << Log::endl;
             }
         }
         else
         {
-            Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - ID (" << shader.second << ") does not belong to a shader" << Log::endl;
+            Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - ID (" << shaderID << ") does not belong to a shader" << Log::endl;
         }
     }
 }
@@ -737,15 +742,7 @@ std::string Shader::getShaderInfoLog(GLint shader)
 void Shader::resetShader(ShaderType type)
 {
     glDeleteShader(_shaders[type]);
-
-    if (type == vertex)
-        _shaders[type] = glCreateShader(GL_VERTEX_SHADER);
-    else if (type == geometry)
-        _shaders[type] = glCreateShader(GL_GEOMETRY_SHADER);
-    else if (type == fragment)
-        _shaders[type] = glCreateShader(GL_FRAGMENT_SHADER);
-    else
-        return;
+    _shaders.erase(type);
 }
 
 /*************/
