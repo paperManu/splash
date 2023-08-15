@@ -177,7 +177,7 @@ void Texture_Image::reset(int width, int height, const std::string& pixelFormat,
         // OpenGL 4 vs ES 3.1: GL_UNSIGNED_INT_8_8_8_8_REV seems to be unavailable
         // The docs say to use GL_RGBA8, GL_RGBA, and GL_UNSIGNED_BYTE for the internal format,
         // texture format, and type respectively.
-        _texType = GL_UNSIGNED_BYTE;    
+        _texType = GL_UNSIGNED_BYTE;
     }
     else if (_pixelFormat == "sRGBA")
     {
@@ -203,9 +203,9 @@ void Texture_Image::reset(int width, int height, const std::string& pixelFormat,
     else if (_pixelFormat == "YUYV" || _pixelFormat == "UYVY")
     {
         _spec = ImageBufferSpec(width, height, 3, 16, ImageBufferSpec::Type::UINT8, _pixelFormat);
-        _texInternalFormat = GL_RGBA8;
-        _texFormat = GL_RGBA;
-        _texType = GL_UNSIGNED_BYTE;
+        _texInternalFormat = GL_RG8;
+        _texFormat = GL_RG;
+        _texType = GL_UNSIGNED_SHORT;
     }
     else if (_pixelFormat == "D")
     {
@@ -222,11 +222,16 @@ void Texture_Image::reset(int width, int height, const std::string& pixelFormat,
     glGenTextures(1, &_glTex);
 
     GLenum textureType = GL_TEXTURE_2D;
-    if (_multisample > 1) {
+    if (_multisample > 1)
+    {
         textureType = GL_TEXTURE_2D_MULTISAMPLE;
-    } else if (_cubemap) {
+    }
+    else if (_cubemap)
+    {
         textureType = GL_TEXTURE_CUBE_MAP;
-    } else {
+    }
+    else
+    {
         textureType = GL_TEXTURE_2D;
     }
 
@@ -385,7 +390,7 @@ void Texture_Image::update()
         if (spec.channels == 4 && spec.type == ImageBufferSpec::Type::UINT8)
         {
             dataFormat = GL_UNSIGNED_BYTE;
-            _texFormat = GL_RGBA;       // Not sure if we're supposed to modify data members here..
+            _texFormat = GL_RGBA; // Not sure if we're supposed to modify data members here..
             if (srgb[0].as<bool>())
                 internalFormat = GL_SRGB8_ALPHA8;
             else
@@ -397,17 +402,17 @@ void Texture_Image::update()
             if (srgb[0].as<bool>())
                 internalFormat = GL_SRGB8_ALPHA8;
             else
-                internalFormat = GL_RGBA;
+                internalFormat = GL_RGBA8;
+        }
+        else if (spec.channels == 2 && spec.type == ImageBufferSpec::Type::UINT8)
+        {
+            dataFormat = GL_UNSIGNED_BYTE;
+            internalFormat = GL_RG8;
         }
         else if (spec.channels == 1 && spec.type == ImageBufferSpec::Type::UINT16)
         {
             dataFormat = GL_UNSIGNED_SHORT;
             internalFormat = GL_R16;
-        }
-        else if (spec.channels == 2 && spec.type == ImageBufferSpec::Type::UINT8)
-        {
-            dataFormat = GL_UNSIGNED_SHORT;
-            internalFormat = GL_RG;
         }
         else
         {
@@ -466,7 +471,6 @@ void Texture_Image::update()
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         }
-
 
         // Create or update the texture parameters
         if (!isCompressed)
@@ -569,7 +573,7 @@ bool Texture_Image::updatePbos(int width, int height, int bytes)
 
     auto mapAccessFlags = GL_MAP_WRITE_BIT;
     // TODO: I think this is the most lenient option, might be worth it to see how others affect things
-    auto bufferUsageFlags = GL_STATIC_DRAW;   
+    auto bufferUsageFlags = GL_STATIC_DRAW;
     auto imageDataSize = width * height * bytes;
 
     glGenBuffers(2, _pbos);
@@ -604,7 +608,8 @@ void Texture_Image::registerAttributes()
 
     addAttribute(
         "filtering",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _filtering = args[0].as<bool>();
             return true;
         },
@@ -613,7 +618,8 @@ void Texture_Image::registerAttributes()
     setAttributeDescription("filtering", "Activate the mipmaps for this texture");
 
     addAttribute("clampToEdge",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _glTextureWrap = args[0].as<bool>() ? GL_CLAMP_TO_EDGE : GL_REPEAT;
             return true;
         },
@@ -622,7 +628,8 @@ void Texture_Image::registerAttributes()
 
     addAttribute(
         "size",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             resize(args[0].as<int>(), args[1].as<int>());
             return true;
         },

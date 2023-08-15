@@ -155,16 +155,14 @@ struct ShaderSources
         {"yuv", R"(
             vec3 yuv2rgb(vec3 c)
             {
-                // Input colors are stored with a gamma applied to them
-                vec3 yuv = rgb2srgb(c) - vec3(16.0 / 255.0, 0.5, 0.5);
-                vec3 rgb = vec3(1.164 * yuv.r + 2.018 * yuv.b,
+                vec3 yuv = c - vec3(16.0 / 255.0, 0.5, 0.5);
+                vec3 srgb = vec3(1.164 * yuv.r + 2.018 * yuv.b,
                                 1.164 * yuv.r - 0.813 * yuv.g - 0.391 * yuv.b,
                                 1.164 * yuv.r + 1.596 * yuv.g);
-                // RGB values are scaled back to [0, 255], as this gives results
-                // closer to the references
-                rgb = rgb * 255.0 / (235.0 - 16.0);
-                rgb = clamp(rgb, vec3(0.0), vec3(1.0));
-                rgb = srgb2rgb(rgb);
+                // Computed color is in the sRGB space.
+                // We must convert it back to RGB
+                srgb = clamp(srgb, vec3(0.0), vec3(1.0));
+                vec3 rgb = srgb2rgb(srgb);
                 return rgb;
             }
 
