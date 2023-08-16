@@ -63,7 +63,7 @@ class World : public RootObject
     /**
      * Destructor
      */
-    ~World() override = default;
+    ~World() override;
 
     /**
      * Other constructors/operators
@@ -103,7 +103,7 @@ class World : public RootObject
     std::string _blendingMode{};      //!< Blending mode: can be none, once or continuous
     bool _runInBackground{false};     //!< If true, no window will be created
 
-    bool _runAsChild{false}; //!< If true, runs as a child process
+    bool _runAsChild{false};       //!< If true, runs as a child process
     bool _spawnSubprocesses{true}; //!< If true, spawns subprocesses if needed
     std::string _childSceneName{"scene"};
 
@@ -117,6 +117,10 @@ class World : public RootObject
     Json::Value _config;                //!< Configuration as JSon
 
     NameRegistry _nameRegistry{}; //!< Object name registry
+
+    // Scenes handling
+    std::shared_ptr<Scene> _embeddedScene; //!< embedded Scene, if any
+    std::thread _embeddedSceneThread;      //!< Thread for the embedded Scene, if any
     bool _sceneLaunched{false};
     std::mutex _childProcessMutex;
     std::condition_variable _childProcessConditionVariable;
@@ -149,8 +153,9 @@ class World : public RootObject
      * \param display Display where to spawn the scene
      * \param address Address where to spawn the scene
      * \param spawn If true, the Scene is spawned, otherwise it is considered to be already running
+     * \param allowEmbedded If true, try to run an embedded Scene instead of spawning a process
      */
-    bool addScene(const std::string& sceneName, const std::string& sceneDisplay, const std::string& sceneAddress, bool spawn = true);
+    bool addScene(const std::string& sceneName, const std::string& sceneDisplay, const std::string& sceneAddress, bool spawn = true, bool allowEmbedded = false);
 
     /**
      * Copies the camera calibration from the given file to the current configuration

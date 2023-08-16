@@ -54,6 +54,14 @@ World::World(Context context)
 }
 
 /*************/
+World::~World()
+{
+    if (_embeddedSceneThread.joinable())
+        _embeddedSceneThread.join();
+    _embeddedScene.reset();
+}
+
+/*************/
 bool World::applyContext()
 {
     if (_context.info)
@@ -253,13 +261,19 @@ bool World::applyConfig()
         }
 
         const Json::Value& scenes = _config["scenes"];
-        for (const auto& sceneName : scenes.getMemberNames())
+        const auto& sceneNames = scenes.getMemberNames();
+        const auto sceneCount = sceneNames.size();
+        for (const auto& sceneName : sceneNames)
         {
             std::string sceneAddress = scenes[sceneName].isMember("address") ? scenes[sceneName]["address"].asString() : "localhost";
             std::string sceneDisplay = scenes[sceneName].isMember("display") ? scenes[sceneName]["display"].asString() : "";
             bool spawn = scenes[sceneName].isMember("spawn") ? scenes[sceneName]["spawn"].asBool() : true;
 
-            if (!addScene(sceneName, sceneDisplay, sceneAddress, spawn && _context.spawnSubprocesses))
+            // We only allow to embed a scene when one Scene is configured
+            const bool allowEmbbededScene = sceneCount == 1;
+
+            const bool spawnSubprocess = spawn && _context.spawnSubprocesses;
+            if (!addScene(sceneName, sceneDisplay, sceneAddress, spawnSubprocess, allowEmbbededScene))
                 return false;
 
             // Set the remaining parameters
@@ -410,7 +424,7 @@ bool World::applyConfig()
 }
 
 /*************/
-bool World::addScene(const std::string& sceneName, const std::string& sceneDisplay, const std::string& sceneAddress, bool spawn)
+bool World::addScene(const std::string& sceneName, const std::string& sceneDisplay, const std::string& sceneAddress, bool spawn, bool allowEmbedded)
 {
     if (sceneAddress == "localhost")
     {
@@ -451,52 +465,75 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
         {
             _sceneLaunched = false;
 
-            // Spawn a new process containing this Scene
-            Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting a Scene in another process" << Log::endl;
+            if (allowEmbedded && _embeddedScene)
+                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to embbed Scene " << sceneName << " as another Scene is already embbeded" << Log::endl;
 
-            std::string cmd = _context.executablePath;
-            std::string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
-            std::string timer = Timer::get().isDebug() ? "-t" : "";
-            std::string slave = "--child";
-            std::string xauth = "XAUTHORITY=" + Utils::getHomePath() + "/.Xauthority";
+            const bool embbedScene = !_embeddedScene && allowEmbedded;
+            const bool sameDisplay = !worldDisplay.empty() && display.find(worldDisplay) == display.size() - worldDisplay.size();
 
-            // Constructing arguments
-            std::vector<char*> argv = {const_cast<char*>(cmd.c_str()), const_cast<char*>(slave.c_str())};
-            if (!_context.socketPrefix.empty())
+            if (embbedScene && !sameDisplay)
+                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to embbed Scene " << sceneName
+                           << " as it is not configured to run on the same $DISPLAY as the World" << Log::endl;
+
+            // If the current process is in the right display, and if we are allowed to do it,
+            // we created an embedded Scene instead of spawning a new process
+            if (embbedScene && sameDisplay)
             {
-                argv.push_back((char*)"--prefix");
-                argv.push_back(const_cast<char*>(_context.socketPrefix.c_str()));
+                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an embedded Scene" << Log::endl;
+                auto sceneContext = _context;
+                sceneContext.childSceneName = sceneName;
+                _embeddedScene = std::make_shared<Scene>(sceneContext);
+                _embeddedSceneThread = std::thread([&]() { _embeddedScene->run(); });
             }
-            if (!debug.empty())
-                argv.push_back(const_cast<char*>(debug.c_str()));
-            if (!timer.empty())
-                argv.push_back(const_cast<char*>(timer.c_str()));
+            // otherwise we spawn a new process containing this Scene
+            else
+            {
+                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting a Scene in another process" << Log::endl;
 
-            argv.push_back((char*)"--ipc");
-            if (_context.channelType == Link::ChannelType::zmq)
-                argv.push_back((char*)"zmq");
+                std::string cmd = _context.executablePath;
+                std::string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
+                std::string timer = Timer::get().isDebug() ? "-t" : "";
+                std::string slave = "--child";
+                std::string xauth = "XAUTHORITY=" + Utils::getHomePath() + "/.Xauthority";
+
+                // Constructing arguments
+                std::vector<char*> argv = {const_cast<char*>(cmd.c_str()), const_cast<char*>(slave.c_str())};
+                if (!_context.socketPrefix.empty())
+                {
+                    argv.push_back(const_cast<char*>("--prefix"));
+                    argv.push_back(const_cast<char*>(_context.socketPrefix.c_str()));
+                }
+                if (!debug.empty())
+                    argv.push_back(const_cast<char*>(debug.c_str()));
+                if (!timer.empty())
+                    argv.push_back(const_cast<char*>(timer.c_str()));
+
+                argv.push_back(const_cast<char*>("--ipc"));
+                if (_context.channelType == Link::ChannelType::zmq)
+                    argv.push_back(const_cast<char*>("zmq"));
 #if HAVE_SHMDATA
-            else if (_context.channelType == Link::ChannelType::shmdata)
-                argv.push_back((char*)"shmdata");
+                else if (_context.channelType == Link::ChannelType::shmdata)
+                    argv.push_back(const_cast<char*>("shmdata"));
 #endif
 
-            argv.push_back(const_cast<char*>(sceneName.c_str()));
-            argv.push_back(nullptr);
+                argv.push_back(const_cast<char*>(sceneName.c_str()));
+                argv.push_back(nullptr);
 
-            // Constructing environment variables
-            std::vector<char*> env;
-            // Start with our own envvars.
-            // Note that in case of duplicate envvars, getenv() returns the first one
-            env.push_back(const_cast<char*>(display.c_str()));
-            env.push_back(const_cast<char*>(xauth.c_str()));
-            // Then copy all envvars existing in environ
-            for (char** envvar = environ; *envvar != nullptr; ++envvar)
-                env.push_back(*envvar);
-            env.push_back(nullptr);
+                // Constructing environment variables
+                std::vector<char*> env;
+                // Start with our own envvars.
+                // Note that in case of duplicate envvars, getenv() returns the first one
+                env.push_back(const_cast<char*>(display.c_str()));
+                env.push_back(const_cast<char*>(xauth.c_str()));
+                // Then copy all envvars existing in environ
+                for (char** envvar = environ; *envvar != nullptr; ++envvar)
+                    env.push_back(*envvar);
+                env.push_back(nullptr);
 
-            int status = posix_spawn(&pid, cmd.c_str(), nullptr, nullptr, argv.data(), env.data());
-            if (status != 0)
-                Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << sceneName << Log::endl;
+                int status = posix_spawn(&pid, cmd.c_str(), nullptr, nullptr, argv.data(), env.data());
+                if (status != 0)
+                    Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << sceneName << Log::endl;
+            }
 
             // Initialize the communication
             _link->connectTo(sceneName);
@@ -1028,7 +1065,15 @@ void World::registerAttributes()
                         sendMessage(sceneName, "quit");
                         _link->disconnectFrom(sceneName);
                         if (scenePid != -1)
+                        {
                             waitpid(scenePid, nullptr, 0);
+                        }
+                        else
+                        {
+                            if (_embeddedSceneThread.joinable())
+                                _embeddedSceneThread.join();
+                            _embeddedScene.reset();
+                        }
                     }
 
                     _masterSceneName = "";
