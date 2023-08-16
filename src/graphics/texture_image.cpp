@@ -406,6 +406,7 @@ void Texture_Image::update()
         }
         else if (spec.channels == 2 && spec.type == ImageBufferSpec::Type::UINT8)
         {
+            _texFormat = GL_RG;
             dataFormat = GL_UNSIGNED_BYTE;
             internalFormat = GL_RG8;
         }
@@ -514,6 +515,7 @@ void Texture_Image::update()
     {
         // Copy the pixels from the current PBO to the texture
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboUploadIndex]);
+        glBindTexture(GL_TEXTURE_2D, _glTex);
         if (!isCompressed)
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, 0);
         else
