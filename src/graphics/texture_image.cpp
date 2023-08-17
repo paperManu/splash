@@ -275,6 +275,7 @@ void Texture_Image::reset(int width, int height, const std::string& pixelFormat,
     }
     else if (_cubemap == true)
     {
+        // TODO: Will probably crash
         glTexStorage2D(GL_TEXTURE_CUBE_MAP, _texLevels, _texInternalFormat, width, height);
     }
     else
@@ -488,7 +489,7 @@ void Texture_Image::update()
             Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Creating a new compressed texture" << Log::endl;
 #endif
 
-            manualGlTexStorage2D(_texLevels, internalFormat, _texFormat, _texType, spec.width, spec.height);
+            manualGlCompressedTexStorage2D(_texLevels, internalFormat, imageDataSize, spec.width, spec.height);
             glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, internalFormat, imageDataSize, img->data());
         }
 
