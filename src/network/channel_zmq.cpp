@@ -281,9 +281,11 @@ void ChannelInput_ZMQ::handleInputMessages()
         while (_continueListening)
         {
             zmq::message_t msg;
-            if (!_socketMessageIn->recv(msg,
-                    zmq::recv_flags::dontwait)) // name of the target
+            if (!_socketMessageIn->recv(msg, zmq::recv_flags::dontwait))
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
                 continue;
+            }
 
             std::vector<uint8_t> message(static_cast<size_t>(msg.size()));
             std::copy(static_cast<uint8_t*>(msg.data()), static_cast<uint8_t*>(msg.data()) + msg.size(), message.data());
@@ -309,7 +311,10 @@ void ChannelInput_ZMQ::handleInputBuffers()
         {
             zmq::message_t msg;
             if (!_socketBufferIn->recv(msg, zmq::recv_flags::dontwait))
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
                 continue;
+            }
 
             const auto data = static_cast<uint8_t*>(msg.data());
             auto buffer = SerializedObject(data, data + msg.size());
