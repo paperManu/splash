@@ -497,11 +497,14 @@ void Texture_Image::update()
             return;
 
         // Fill one of the PBOs right now
-        auto pixels = _pbosPixels[0];
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[0]);
+        auto pixels = (GLubyte*)glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, imageDataSize, GL_MAP_WRITE_BIT);
         if (pixels != nullptr)
         {
             memcpy((void*)pixels, img->data(), imageDataSize);
         }
+	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
         // And copy it to the second PBO
         glBindBuffer(GL_COPY_READ_BUFFER, _pbos[0]);
@@ -526,9 +529,12 @@ void Texture_Image::update()
         _pboUploadIndex = (_pboUploadIndex + 1) % 2;
 
         // Fill the next PBO with the image pixels
-        auto pixels = _pbosPixels[_pboUploadIndex];
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboUploadIndex]);
+	auto pixels = (GLubyte*)glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, imageDataSize, GL_MAP_WRITE_BIT);
         if (pixels != nullptr)
             memcpy(pixels, img->data(), imageDataSize);
+	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     }
 
     _spec.timestamp = spec.timestamp;
@@ -574,7 +580,6 @@ bool Texture_Image::updatePbos(int width, int height, int bytes)
 {
     glDeleteBuffers(2, _pbos);
 
-    auto mapAccessFlags = GL_MAP_WRITE_BIT;
     // TODO: I think this is the most lenient option, might be worth it to see how others affect things
     auto bufferUsageFlags = GL_STATIC_DRAW;
     auto imageDataSize = width * height * bytes;
@@ -585,19 +590,9 @@ bool Texture_Image::updatePbos(int width, int height, int bytes)
 
     glBindBuffer(bufferType, _pbos[0]);
     glBufferData(bufferType, imageDataSize, 0, bufferUsageFlags);
-    _pbosPixels[0] = (GLubyte*)glMapBufferRange(bufferType, 0, imageDataSize, mapAccessFlags);
-    glUnmapBuffer(bufferType);
 
     glBindBuffer(bufferType, _pbos[1]);
     glBufferData(bufferType, imageDataSize, 0, bufferUsageFlags);
-    _pbosPixels[1] = (GLubyte*)glMapBufferRange(bufferType, 0, imageDataSize, mapAccessFlags);
-    glUnmapBuffer(bufferType);
-
-    if (!_pbosPixels[0] || !_pbosPixels[1])
-    {
-        Log::get() << Log::ERROR << "Texture_Image::" << __FUNCTION__ << " - Unable to initialize upload PBOs" << Log::endl;
-        return false;
-    }
 
     glBindBuffer(bufferType, 0);
 

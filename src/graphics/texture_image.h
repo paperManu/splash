@@ -176,7 +176,6 @@ class Texture_Image final : public Texture
 
     GLuint _glTex{0};
     GLuint _pbos[2];
-    GLubyte* _pbosPixels[2];
 
     int _multisample{0};
     bool _cubemap{false};
