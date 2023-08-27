@@ -234,6 +234,17 @@ class Texture_Image final : public Texture
             height = std::max(1, (height / 2));
         }
     }
+
+    void manualGlCompressedTexStorage2D(int texLevels, int texInternalFormat, int textureBytes, int width, int height)
+    {
+        for (int i = 0; i < texLevels; i++)
+        {
+            glCompressedTexImage2D(GL_TEXTURE_2D, i, texInternalFormat, width, height, 0, textureBytes, NULL);
+            width = std::max(1, (width / 2));
+            height = std::max(1, (height / 2));
+            textureBytes = textureBytes / 4;
+        }
+    }
 };
 
 } // namespace Splash
