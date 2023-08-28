@@ -3,8 +3,8 @@
 #include <list>
 #include <utility>
 
-#include <Tracy.hpp>
-#include <TracyOpenGL.hpp>
+#include <tracy/Tracy.hpp>
+#include <tracy/TracyOpenGL.hpp>
 
 #include "./controller/controller_blender.h"
 #include "./controller/controller_gui.h"

@@ -12,7 +12,7 @@
 #include <unistd.h>
 
 #include <glm/gtc/matrix_transform.hpp>
-#include <Tracy.hpp>
+#include <tracy/Tracy.hpp>
 
 #include "./core/buffer_object.h"
 #include "./core/constants.h"
@@ -221,7 +221,7 @@ void World::run()
         // Sync to world framerate
         Timer::get() >> "loop_world";
 
-        FrameMarkEnd("World")
+        FrameMarkEnd("World");
     }
 }
 

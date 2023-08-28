@@ -36,7 +36,7 @@ set_source_files_properties(
 )
 
 set_source_files_properties(
-    ../external/tracy/TracyClient.cpp
+    ../external/tracy/public/TracyClient.cpp
     PROPERTIES COMPILE_FLAGS "-Wno-error -Wno-all -Wno-extra -Wno-unused-parameter"
 )
 
@@ -72,7 +72,7 @@ include_directories(../external/imgui)
 include_directories(../external/libltc/src)
 include_directories(../external/stb)
 include_directories(../external/syphon/build/Release/Syphon.framework/Headers)
-include_directories(../external/tracy)
+include_directories(../external/tracy/public)
 
 include_directories(${GLFW_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIRS})
@@ -188,7 +188,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     ../external/imgui/imgui_widgets.cpp
     ../external/imgui/imgui.cpp
     ../external/hap/source/hap.c
-    ../external/tracy/TracyClient.cpp
+    ../external/tracy/public/TracyClient.cpp
 )
 
     target_sources(splash-${API_VERSION} PRIVATE
@@ -280,6 +280,7 @@ endif()
 # Distributed third parties
 target_link_libraries(splash-${API_VERSION} snappy)
 target_link_libraries(splash-${API_VERSION} glfw)
+target_link_libraries(splash-${API_VERSION} dl) # Needed for Tracy
 if (USE_SYSTEM_LIBS)
     target_link_libraries(splash-${API_VERSION} ${FFMPEG_LIBRARIES})
     target_link_libraries(splash-${API_VERSION} zmq)
