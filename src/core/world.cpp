@@ -536,7 +536,11 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
             }
 
             // Initialize the communication
-            _link->connectTo(sceneName);
+            if (!_link->connectTo(sceneName))
+            {
+                Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Could not connect to spawned scene " << sceneName << Log::endl;
+                return false;
+            }
 
             // We wait for the child process to be launched
             std::unique_lock<std::mutex> lockChildProcess(_childProcessMutex);
@@ -558,7 +562,12 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
         else
         {
             // Initialize the communication
-            _link->connectTo(sceneName);
+            if (!_link->connectTo(sceneName))
+            {
+                Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Could not connect to scene " << sceneName
+                           << ", which should be handled outside of this Splash instance" << Log::endl;
+                return false;
+            }
         }
 
         _scenes[sceneName] = pid;
@@ -1063,7 +1072,10 @@ void World::registerAttributes()
                     for (auto& [sceneName, scenePid] : _scenes)
                     {
                         sendMessage(sceneName, "quit");
-                        _link->disconnectFrom(sceneName);
+
+                        if (!_link->disconnectFrom(sceneName))
+                            Log::get() << Log::ERROR << "World~~loadConfig - Error while disconnecting from " << sceneName << Log::endl;
+
                         if (scenePid != -1)
                         {
                             waitpid(scenePid, nullptr, 0);

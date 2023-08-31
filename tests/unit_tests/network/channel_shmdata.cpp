@@ -53,8 +53,8 @@ TEST_CASE("Test sending a message and a buffer through a shmdata channel")
             receivedObj = std::move(obj);
         });
 
-    channelOutput.connectTo("input");
-    channelInput.connectTo("output");
+    CHECK(channelOutput.connectTo("input"));
+    CHECK(channelInput.connectTo("output"));
 
     std::vector<uint8_t> msg = {1, 2, 3, 4};
     CHECK(channelOutput.sendMessage(msg));

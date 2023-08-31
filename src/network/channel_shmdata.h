@@ -77,7 +77,7 @@ class ChannelOutput_Shmdata final : public ChannelOutput
      * \param target Target name
      * \return Return true if connection was successful
      */
-    bool connectTo(const std::string& target) final;
+    [[nodiscard]] bool connectTo(const std::string& target) final;
 
     /**
      * Disconnect from a target
@@ -88,7 +88,14 @@ class ChannelOutput_Shmdata final : public ChannelOutput
      * \param target Target name
      * \return Return true if disconnection was successful, false otherwise or if no connection existed
      */
-    bool disconnectFrom(const std::string& /*target*/) final { return true; }
+    [[nodiscard]] bool disconnectFrom(const std::string& /*target*/) final { return true; }
+
+    /**
+     * Get the connect direction for this channel type
+     * shmdata channels need the input (reader) to connect to the output (writer)
+     * \return Return ConnectDirection::InToOut
+     */
+    ConnectDirection getConnectDirection() const final { return ConnectDirection::InToOut; }
 
     /**
      * Send a message
@@ -186,7 +193,7 @@ class ChannelInput_Shmdata final : public ChannelInput
      * \param target Target name
      * \return Return true if connection was successful
      */
-    bool connectTo(const std::string& target) final;
+    [[nodiscard]] bool connectTo(const std::string& target) final;
 
     /**
      * Disconnect from the given target
@@ -194,7 +201,7 @@ class ChannelInput_Shmdata final : public ChannelInput
      * \param target name
      * \return Return true if disconnection was successful, false otherwise or if no connection existed
      */
-    bool disconnectFrom(const std::string& target) final;
+    [[nodiscard]] bool disconnectFrom(const std::string& target) final;
 
   private:
     static const std::string _defaultPathPrefix;

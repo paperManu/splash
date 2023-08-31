@@ -69,14 +69,21 @@ class ChannelOutput_ZMQ final : public ChannelOutput
      * \param target Target name
      * \return Return true if connection was successful
      */
-    bool connectTo(const std::string& target) final;
+    [[nodiscard]] bool connectTo(const std::string& target) final;
 
     /**
      * Disconnect from a target
      * \param target Target name
      * \return Return true if disconnection was successful, false otherwise or if no connection existed
      */
-    bool disconnectFrom(const std::string& target) final;
+    [[nodiscard]] bool disconnectFrom(const std::string& target) final;
+
+    /**
+     * Get the connect direction for this channel type
+     * ZMQ channels need the output to connect to the input
+     * \return Return ConnectDirection::OutToIn
+     */
+    ConnectDirection getConnectDirection() const final { return ConnectDirection::OutToIn; }
 
     /**
      * Send a message
@@ -151,14 +158,14 @@ class ChannelInput_ZMQ final : public ChannelInput
      * \param target Target name
      * \return Return true if connection was successful
      */
-    bool connectTo(const std::string&) final { return true; }
+    [[nodiscard]] bool connectTo(const std::string&) final { return true; }
 
     /**
      * Disconnect from the given target
      * \param target name
      * \return Return true if disconnection was successful, false otherwise or if no connection existed
      */
-    bool disconnectFrom(const std::string&) final { return true; }
+    [[nodiscard]] bool disconnectFrom(const std::string&) final { return true; }
 
   private:
     bool _continueListening;

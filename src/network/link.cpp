@@ -48,17 +48,21 @@ Link::Link(RootObject* root, const std::string& name, ChannelType channelType)
 }
 
 /*************/
-void Link::connectTo(const std::string& name)
+[[nodiscard]] bool Link::connectTo(const std::string& name)
 {
-    _channelOutput->connectTo(name);
-    _channelInput->connectTo(name);
+    if (_channelOutput->getConnectDirection() == ChannelOutput::ConnectDirection::OutToIn)
+        return _channelOutput->connectTo(name);
+    else
+        return _channelInput->connectTo(name);
 }
 
 /*************/
-void Link::disconnectFrom(const std::string& name)
+[[nodiscard]] bool Link::disconnectFrom(const std::string& name)
 {
-    _channelOutput->disconnectFrom(name);
-    _channelInput->disconnectFrom(name);
+    if (_channelOutput->getConnectDirection() == ChannelOutput::ConnectDirection::OutToIn)
+        return _channelOutput->disconnectFrom(name);
+    else
+        return _channelInput->disconnectFrom(name);
 }
 
 /*************/

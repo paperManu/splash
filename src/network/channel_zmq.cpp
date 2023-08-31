@@ -47,9 +47,9 @@ ChannelOutput_ZMQ::~ChannelOutput_ZMQ()
     if (!_ready)
         return;
 
-    int lingerValue = 0;
     try
     {
+        const int lingerValue = 0;
         _socketMessageOut->set(zmq::sockopt::linger, lingerValue);
         _socketBufferOut->set(zmq::sockopt::linger, lingerValue);
     }
@@ -60,7 +60,7 @@ ChannelOutput_ZMQ::~ChannelOutput_ZMQ()
 }
 
 /*************/
-bool ChannelOutput_ZMQ::connectTo(const std::string& target)
+[[nodiscard]] bool ChannelOutput_ZMQ::connectTo(const std::string& target)
 {
     if (!_ready)
         return false;

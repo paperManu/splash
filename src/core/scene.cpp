@@ -86,7 +86,12 @@ Scene::Scene(Context context)
 
     // Create the link and connect to the World
     _link = std::make_unique<Link>(this, _name, _context.channelType);
-    _link->connectTo("world");
+
+    if (!_link->connectTo("world"))
+    {
+        Log::get() << Log::ERROR << "Scene::Scene - Could not connect to world from scene " << _name << Log::endl;
+        _isRunning = false;
+    }
 }
 
 /*************/
