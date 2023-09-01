@@ -134,16 +134,16 @@ void Geometry::deactivateFeedback()
 #endif
 
     glEndQuery(GL_PRIMITIVES_GENERATED);
-    int drawnPrimitives = 0;
+    GLuint drawnPrimitives = 0;
     while (true)
     {
-        glGetQueryObjectiv(_feedbackQuery, GL_QUERY_RESULT_AVAILABLE, &drawnPrimitives);
+        glGetQueryObjectuiv(_feedbackQuery, GL_QUERY_RESULT_AVAILABLE, &drawnPrimitives);
         if (drawnPrimitives != 0)
             break;
         std::this_thread::sleep_for(chrono::microseconds(500));
     }
 
-    glGetQueryObjectiv(_feedbackQuery, GL_QUERY_RESULT, &drawnPrimitives);
+    glGetQueryObjectuiv(_feedbackQuery, GL_QUERY_RESULT, &drawnPrimitives);
     _feedbackMaxNbrPrimitives = std::max(_feedbackMaxNbrPrimitives, drawnPrimitives);
     _temporaryVerticesNumber = drawnPrimitives * 3;
 }

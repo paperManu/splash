@@ -189,15 +189,15 @@ class Geometry : public BufferObject
     bool _buffersResized{false}; // Holds whether the alternative buffers have been resized in the previous feedback
     bool _useAlternativeBuffers{false};
 
-    int _verticesNumber{0};
+    GLuint _verticesNumber{0};
     int _alternativeVerticesNumber{0};
     int _alternativeBufferSize{0};
-    int _temporaryVerticesNumber{0};
-    int _temporaryBufferSize{0};
+    GLuint _temporaryVerticesNumber{0};
+    GLuint _temporaryBufferSize{0};
 
     // Transform feedback
     GLuint _feedbackQuery;
-    int _feedbackMaxNbrPrimitives{0};
+    GLuint _feedbackMaxNbrPrimitives{0};
 
     /**
      * Initialization
