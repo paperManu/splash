@@ -275,12 +275,11 @@ void Texture_Image::reset(int width, int height, const std::string& pixelFormat,
     }
     else if (_cubemap == true)
     {
-        // TODO: Will probably crash
         glTexStorage2D(GL_TEXTURE_CUBE_MAP, _texLevels, _texInternalFormat, width, height);
     }
     else
     {
-        manualGlTexStorage2D(_texLevels, _texInternalFormat, _texFormat, _texType, width, height);
+        glTexStorage2D(GL_TEXTURE_2D, _texLevels, _texInternalFormat, width, height);
 
         if (data)
             glTexSubImage2D(textureType, 0, 0, 0, width, height, _texFormat, _texType, data);
@@ -480,7 +479,8 @@ void Texture_Image::update()
 #ifdef DEBUG
             Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Creating a new texture" << Log::endl;
 #endif
-            manualGlTexStorage2D(_texLevels, internalFormat, _texFormat, _texType, spec.width, spec.height);
+
+            glTexStorage2D(GL_TEXTURE_2D, _texLevels, internalFormat, spec.width, spec.height);
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, img->data());
         }
         else
@@ -489,7 +489,7 @@ void Texture_Image::update()
             Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Creating a new compressed texture" << Log::endl;
 #endif
 
-            manualGlCompressedTexStorage2D(_texLevels, internalFormat, imageDataSize, spec.width, spec.height);
+            glTexStorage2D(GL_TEXTURE_2D, _texLevels, internalFormat, spec.width, spec.height);
             glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, internalFormat, imageDataSize, img->data());
         }
 
@@ -503,8 +503,8 @@ void Texture_Image::update()
         {
             memcpy((void*)pixels, img->data(), imageDataSize);
         }
-	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+        glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
         // And copy it to the second PBO
         glBindBuffer(GL_COPY_READ_BUFFER, _pbos[0]);
@@ -529,12 +529,12 @@ void Texture_Image::update()
         _pboUploadIndex = (_pboUploadIndex + 1) % 2;
 
         // Fill the next PBO with the image pixels
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboUploadIndex]);
-	auto pixels = (GLubyte*)glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, imageDataSize, GL_MAP_WRITE_BIT);
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboUploadIndex]);
+        auto pixels = (GLubyte*)glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, imageDataSize, GL_MAP_WRITE_BIT);
         if (pixels != nullptr)
             memcpy(pixels, img->data(), imageDataSize);
-	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+        glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     }
 
     _spec.timestamp = spec.timestamp;
