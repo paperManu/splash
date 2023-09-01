@@ -564,13 +564,13 @@ struct ShaderSources
                     {
                         if (1.0 - maxDist < _blendWidth * blendDistFactorToSubdiv)
                         {
-                            const vec2 borderNormals[2] = {
+                            const vec2 borderNormals[2] = vec2[2](
                                 vec2(0.0, 1.0),
                                 vec2(1.0, 0.0)
-                            };
+                            );
 
                             float maxTessLevel = 1.0;
-                            float tessLevelOuter[3] = {1.0, 1.0, 1.0};
+                            float tessLevelOuter[3] = float[3](1.0, 1.0, 1.0);
 
                             for (int borderId = 0; borderId < 2; ++borderId)
                             {
@@ -675,14 +675,14 @@ struct ShaderSources
         layout (triangles) in;
         layout (triangle_strip, max_vertices = 9) out;
 
-        const int cutTable[6*9] = {
+        const int cutTable[6*9] = int[6*9](
             0, 3, 4, 3, 1, 4, 1, 2, 4,
             0, 3, 4, 3, 1, 4, 4, 2, 0,
             0, 1, 3, 3, 4, 0, 3, 2, 4,
             0, 1, 3, 3, 4, 0, 3, 2, 4,
             0, 3, 4, 3, 1, 4, 4, 2, 0,
             0, 3, 4, 3, 1, 4, 1, 2, 4
-        };
+        );
 
         uniform vec2 _fov;
         uniform mat4 _mv; // Model-view matrix
