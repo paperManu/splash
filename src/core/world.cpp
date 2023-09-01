@@ -137,7 +137,6 @@ void World::run()
 
         Timer::get() << "loop_world";
         Timer::get() << "loop_world_inner";
-        std::lock_guard<std::mutex> lockConfiguration(_configurationMutex);
 
         {
             // Process tree updates
@@ -244,8 +243,6 @@ void World::addToWorld(const std::string& type, const std::string& name)
 /*************/
 bool World::applyConfig()
 {
-    std::lock_guard<std::mutex> lockConfiguration(_configurationMutex);
-
     // We first destroy all scene and objects
     _scenes.clear();
     _objects.clear();

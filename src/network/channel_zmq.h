@@ -29,6 +29,7 @@
 #include <deque>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <string>
 #include <thread>
 #include <vector>
@@ -122,7 +123,7 @@ class ChannelOutput_ZMQ final : public ChannelOutput
     std::unique_ptr<zmq::socket_t> _socketMessageOut{nullptr};
     std::unique_ptr<zmq::socket_t> _socketBufferOut{nullptr};
 
-    std::vector<std::string> _targets;
+    std::set<std::string> _targets;
 
     static void freeSerializedBuffer(void* data, void* hint);
 };

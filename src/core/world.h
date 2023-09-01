@@ -94,7 +94,6 @@ class World : public RootObject
     bool _quit{false};         //!< True if the World should quit
     static World* _that;       //!< Pointer to the World
     struct sigaction _signals; //!< System signals
-    std::mutex _configurationMutex;
     bool _enforceCoreAffinity{false}; //!< If true, World and Scenes have their affinity fixed in specific, separate cores
     bool _enforceRealtime{false};     //!< If true, realtime scheduling is asked to the system, if possible
 
