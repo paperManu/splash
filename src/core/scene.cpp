@@ -704,7 +704,7 @@ void Scene::init(const std::string& name)
     _isInitialized = true;
 
     _mainWindow->setAsCurrentContext();
-    gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+    gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress);
 
     // Get hardware information
     _glVendor = std::string(reinterpret_cast<const char*>(glGetString(GL_VENDOR)));
