@@ -75,7 +75,6 @@ void Shader::activate()
 {
     if (_programType == prgGraphic)
     {
-        _mutex.lock();
         if (!_isLinked)
         {
             if (!linkProgram())
@@ -105,7 +104,6 @@ void Shader::activate()
     }
     else if (_programType == prgFeedback)
     {
-        _mutex.lock();
         if (!_isLinked)
         {
             if (!linkProgram())
@@ -143,8 +141,6 @@ void Shader::deactivate()
 
         _activated = false;
     }
-
-    _mutex.unlock();
 }
 
 /*************/

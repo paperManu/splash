@@ -175,7 +175,6 @@ class Geometry : public BufferObject
     bool linkIt(const std::shared_ptr<GraphObject>& obj) override;
 
   private:
-    mutable std::mutex _mutex;
     bool _onMasterScene{false};
 
     std::shared_ptr<Mesh> _mesh;

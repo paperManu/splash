@@ -71,7 +71,6 @@ include_directories(../external/hap/source)
 include_directories(../external/imgui)
 include_directories(../external/libltc/src)
 include_directories(../external/stb)
-include_directories(../external/syphon/build/Release/Syphon.framework/Headers)
 include_directories(../external/tracy/public)
 
 include_directories(${GLFW_INCLUDE_DIRS})

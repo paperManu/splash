@@ -1,5 +1,9 @@
 #include "./graphics/window.h"
 
+#include <functional>
+
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "./controller/controller_gui.h"
 #include "./core/scene.h"
 #include "./graphics/camera.h"
@@ -13,9 +17,6 @@
 #include "./utils/log.h"
 #include "./utils/timer.h"
 #include "./utils/scope_guard.h"
-
-#include <functional>
-#include <glm/gtc/matrix_transform.hpp>
 
 using namespace std::placeholders;
 
@@ -501,6 +502,7 @@ void Window::swapBuffers()
     if (!isWindowSynchronized)
         glDrawBuffer(GL_FRONT);
 
+    // If the render texture specs have changed
     if (_renderTextureUpdated)
     {
         if (_readFbo != 0)
@@ -518,6 +520,8 @@ void Window::swapBuffers()
 #endif
         _renderTextureUpdated = false;
     }
+
+    // Copy the rendered texture to the back/front buffer
     glBlitNamedFramebuffer(_readFbo, 0, 0, 0, _windowRect[2], _windowRect[3], 0, 0, _windowRect[2], _windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     if (isWindowSynchronized)
