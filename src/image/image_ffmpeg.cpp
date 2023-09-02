@@ -87,7 +87,7 @@ bool Image_FFmpeg::read(const std::string& filename)
         return false;
     }
 
-    if (avformat_find_stream_info(_avContext, NULL) < 0)
+    if (avformat_find_stream_info(_avContext, nullptr) < 0)
     {
         Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Couldn't retrieve information for file " << filepath << Log::endl;
         avformat_close_input(&_avContext);
@@ -390,8 +390,8 @@ void Image_FFmpeg::readLoop()
                     {
                         sws_scale(swsContext, (const uint8_t* const*)frame->data, frame->linesize, 0, videoCodecContext->height, rgbFrame->data, rgbFrame->linesize);
 
-                        ImageBufferSpec spec(videoCodecContext->width, videoCodecContext->height, 3, 16, ImageBufferSpec::Type::UINT8, "YUYV");
-                        img.reset(new ImageBuffer(spec));
+                        ImageBufferSpec spec(videoCodecContext->width, videoCodecContext->height, 2, 16, ImageBufferSpec::Type::UINT8, "YUYV");
+                        img = std::make_unique<ImageBuffer>(spec);
 
                         unsigned char* pixels = reinterpret_cast<unsigned char*>(img->data());
                         std::copy(buffer.begin(), buffer.end(), pixels);
@@ -439,7 +439,7 @@ void Image_FFmpeg::readLoop()
                         }
 
                         spec.format = {textureFormat};
-                        img.reset(new ImageBuffer(spec));
+                        img = std::make_unique<ImageBuffer>(spec);
 
                         unsigned long outputBufferBytes = spec.width * spec.height * spec.channels;
 

@@ -752,7 +752,7 @@ void Gui::renderSplashScreen()
         ImGui::Text("Splash, a modular video-mapping engine");
         ImGui::Text("Version %s", PACKAGE_VERSION);
         ImGui::Spacing();
-        ImGui::Text("https://splashmapper.gitlab.io");
+        ImGui::Text("https://splashmapper.xyz");
         ImGui::Columns(1);
 
         auto& io = ImGui::GetIO();
@@ -1094,11 +1094,7 @@ void Gui::initImGui(int width, int height)
     if (status == GL_FALSE)
     {
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
-
-        GLint length;
-        glGetProgramiv(_imGuiShaderHandle, GL_INFO_LOG_LENGTH, &length);
-        auto log = std::string(static_cast<size_t>(length), '0');
-        glGetProgramInfoLog(_imGuiShaderHandle, length, &length, log.data());
+        const auto log = Shader::getProgramInfoLog(_imGuiShaderHandle);
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error log: \n" << log << Log::endl;
 
         return;

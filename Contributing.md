@@ -15,11 +15,11 @@ By participating in this project, you agree to abide by the Splash [Code of Cond
 
 ## Important Resources
 
-* [README](index.md)
+* [README](README.md)
 * [Issue tracker](https://gitlab.com/splashmapper/splash/-/issues)
 
 
-## Contributing
+## Contributing, first steps
 
 Contributing to Splash is achieved through Gitlab's Merge Request (MR) system. This include contribution by the core team. We also welcome external contributions through the contribution process described here.
 
@@ -32,76 +32,18 @@ Splash has several issue types:
 - Default issue: for all issues that do not match with following issue types.
 - Bug report: inform of a newly discovered bug.
 - Feature request: ask for a new feature.
-- Request For Comment: propose a significant change , such as code refactoring, CI deployment, or any change in the repository that impacts the Splash community. See a more detailled description of the [RFC process](./RFC.md).
+- Request For Comment: propose a significant change , such as code refactoring, CI deployment, or any change in the repository that impacts the Splash community. See a more detailled description of the [RFC process](./docs/RFC.md).
 
 The preferred way of asking question to us is through opening a default issue on [Splash repository](https://gitlab.com/splashmapper/splash/-/issues). We'll get back to you as soon as possible!
 
-**If you find a security vulnerability, do NOT open an issue. Email metalab-dev@sat.qc.ca instead.**
-
-
-## Tests
-
-### Adding tests
-
-You are welcome to add unit tests if you spot some code that isn't covered by the existing tests.
-
-We do not expect you to add unit tests when doing only minor changes to the codebase. We expect, however, the tests to pass when you're finished with your work.
-
-When adding a new feature or doing major changes to the code, we expect you to add the relevant unit tests to the code.
-
-In any case, please run the tests on your computer first and ensure that they pass before pushing them to the repository. The CI pipeline will spot any broken tests, but we prefer that you make the necessary verifications beforehand rather than making the CI fail needlessly.
-
-Two types of test are used in this project:
-- unit tests, meant to check that single functions work as designed, are written in C++ and use the [doctest](https://github.com/onqtam/doctest) unit test framework.
-- integration tests, which test the overall behavior of Splash, are written in Python and use the [unittest](https://docs.python.org/3.7/library/unittest.html) module of Python.
-
-Unit tests are evaluated in the CI whenever a new commit is sent to Gitlab. Integration tests on the other hand, can (sadly, for now) not be ran in the CI as they require an OpenGL 4.5 context. They should be ran manually, at least before doing a new release.
-
-### Running Tests
-
-To run the unit tests locally, considering that Splash has already been built once by following the dedicated documentation:
-
-```bash
-cd build
-make check
-```
-
-Similarly to run the integration tests:
-```bash
-cd build
-make check_integration
-```
-
-It is also possible to select which tests to run based on their filename. For example to run all tests mentionning images:
-
-```bash
-cd tests/integration_tests
-splash -P integration_tests.py -- --pattern 'test*image*.py'
-```
-
-To run a single test:
-```bash
-cd tests/integration_tests
-splash -P integration_tests.py -- --pattern 'test_sample.py'
-```
-
-### Evaluating test coverage
-
-There is a specific build target meant to measure the test coverage:
-
-```bash
-cd build
-make check_coverage
-```
-
-A `coverage` subdirectory will be created, containing the results. You just have to open `coverage/index.html` in your favorite browser to navigate the analysis.
+**If you find a security vulnerability, do NOT open an issue. Email manu at lab148.xyz instead.**
 
 
 ## Improving Documentation
 
 Should you have a suggestion for the documentation, you can open an issue and outline the problem or improvement you have - however, creating the fix yourself is much better!
 
-All the documentation for Splash can be found [Splash website](https://splashmapper.gitlab.io), and in the [source repository](https://gitlab.com/splashmapper/splashmapper.gitlab.io). Please refer to this repository to help with improving the documentation.
+All the documentation for Splash can be found [Splash website](https://splashmapper.xyz), and in the [source repository](https://gitlab.com/splashmapper/splashmapper.gitlab.io). Please refer to this repository to help with improving the documentation.
 
 If you want to help improve the docs and it's a substantial change, create a new issue (or comment on a related existing one) in the documentation repository to let others know what you're working on. Small changes (typos, improvements to phrasing) do not need an issue.
 
@@ -169,6 +111,22 @@ The resulting file can be opened the svg with your browser. As of now, there is 
 
 The list of outstanding feature requests and bugs can be found on the [GitLab issue tracker](https://gitlab.com/splashmapper/splash/-/issues). Pick an unassigned issue that you think you can accomplish and add a comment that you are attempting to do it.
 
+### Testing without installing on the system
+
+Sometimes it is preferable to test Splash without installing it on the target system. Or we just do not have the administrator rights to do it, but we still need to do the tests because the issue cannot be reproduced elsewhere. Or Splash was never installed in the first place and our newly built binary cannot find some assets.
+
+In all these cases (non exhaustive list), a good workaround is to install Splash in a non-system directory, where we have write access. This is done by specifying a different installation prefix and install Splash without sudo rights:
+
+```bash
+mkdir -p build && cd build
+cmake -DCMAKE_INSTALL_PREFIX=${HOME}/splash_debug  # It can be any directory we have access to
+make -j$(nproc)
+make install
+# Then you can go to this directory and run Splash:
+cd ${HOME}/splash_debug/bin
+./splash
+```
+
 ### Debugging
 
 When debugging, the first step is to compile Splash in `Debug` mode. From the build directory, run:
@@ -213,6 +171,20 @@ Then run each process in `gdb` using the `run` command.
 
 ### Adding tests
 
+You are welcome to add unit tests if you spot some code that isn't covered by the existing tests.
+
+We do not expect you to add unit tests when doing only minor changes to the codebase. We expect, however, the tests to pass when you're finished with your work.
+
+When adding a new feature or doing major changes to the code, we expect you to add the relevant unit tests to the code.
+
+In any case, please run the tests on your computer first and ensure that they pass before pushing them to the repository. The CI pipeline will spot any broken tests, but we prefer that you make the necessary verifications beforehand rather than making the CI fail needlessly.
+
+Two types of test are used in this project:
+- unit tests, meant to check that single functions work as designed, are written in C++ and use the [doctest](https://github.com/onqtam/doctest) unit test framework.
+- integration tests, which test the overall behavior of Splash, are written in Python and use the [unittest](https://docs.python.org/3.7/library/unittest.html) module of Python.
+
+Unit tests are evaluated in the CI whenever a new commit is sent to Gitlab. Integration tests on the other hand, can (sadly, for now) not be ran in the CI as they require an OpenGL 4.5 context. They should be ran manually, at least before doing a new release.
+
 To add a unit test, the steps are:
 - add the source file for the test in `./tests/unit_tests/`, preferably keeping the same file structure as the source files in `./src` unless a very good reason is given
 - fill in the source file with the test, see the other tests for reference
@@ -224,6 +196,45 @@ To add an integration test, the steps are:
 - fill in the source file with a new class deriving from `SplashTestCase`. See the sample test file in `./tests/integration_tests/test_cases/test_sample.py` for reference.
 - the source file will be automatically detected by the `unittest` module
 - call `make check_integration` (after having built successfully Splash) to run all the integration tests.
+
+### Running Tests
+
+To run the unit tests locally, considering that Splash has already been built once by following the dedicated documentation:
+
+```bash
+cd build
+make check
+```
+
+Similarly to run the integration tests:
+```bash
+cd build
+make check_integration
+```
+
+It is also possible to select which tests to run based on their filename. For example to run all tests mentionning images:
+
+```bash
+cd tests/integration_tests
+splash -P integration_tests.py -- --pattern 'test*image*.py'
+```
+
+To run a single test:
+```bash
+cd tests/integration_tests
+splash -P integration_tests.py -- --pattern 'test_sample.py'
+```
+
+### Evaluating test coverage
+
+There is a specific build target meant to measure the test coverage:
+
+```bash
+cd build
+make check_coverage
+```
+
+A `coverage` subdirectory will be created, containing the results. You just have to open `coverage/index.html` in your favorite browser to navigate the analysis.
 
 ### Coding style
 
@@ -311,7 +322,7 @@ To release a new version of Splash, use the script provided in `./tools/release_
 
 The resulting branches will also be pushed to the repository. Note that you need to have write access to this repository for this to work.
 
-The website should be updated to match the new release. Also the [Flatpak package](https://github.com/flathub/com.gitlab.sat_metalab.Splash) should be updated separately.
+The website should be updated to match the new release. Also the [Flatpak package](https://github.com/flathub/xyz.splashmapper.Splash) should be updated separately.
 
 ### Addressing Feedback
 

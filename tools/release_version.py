@@ -22,7 +22,7 @@ from typing import List
 
 libs_root_path = os.path.join("/", "tmp", "releases")
 version_file = "CMakeLists.txt"
-metainfo_file = os.path.join("data", "share", "metainfo", "com.gitlab.sat_metalab.Splash.metainfo.xml")
+metainfo_file = os.path.join("data", "share", "metainfo", "xyz.splashmapper.Splash.metainfo.xml")
 desktop_file = os.path.join("data", "share", "applications", "splash.desktop")
 blender_addon_init_file = os.path.join("addons", "blender", "splash", "__init__.py")
 

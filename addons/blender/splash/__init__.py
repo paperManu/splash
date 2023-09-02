@@ -20,11 +20,11 @@
 bl_info = {
     "name": "Splash output",
     "author": "Emmanuel Durand",
-    "version": (0, 9, 36),
+    "version": (0, 9, 38),
     "blender": (2, 80, 0),
     "location": "3D View > Toolbox, File > Export",
     "description": "Utility tools to connect Blender to the Splash videomapper",
-    "wiki_url": "https://splashmapper.gitlab.io",
+    "wiki_url": "https://splashmapper.xyz",
     "category": "Object",
 }
 

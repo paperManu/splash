@@ -36,7 +36,6 @@ Texture_Image::~Texture_Image()
     Log::get() << Log::DEBUGGING << "Texture_Image::~Texture_Image - Destructor" << Log::endl;
 #endif
 
-    std::lock_guard<std::mutex> lock(_mutex);
     glDeleteTextures(1, &_glTex);
     glDeleteBuffers(2, _pbos);
 }
@@ -205,9 +204,9 @@ void Texture_Image::reset(int width, int height, const std::string& pixelFormat,
     else if (_pixelFormat == "YUYV" || _pixelFormat == "UYVY")
     {
         _spec = ImageBufferSpec(width, height, 3, 16, ImageBufferSpec::Type::UINT8, _pixelFormat);
-        _texInternalFormat = GL_RGBA8;
-        _texFormat = GL_RGBA;
-        _texType = GL_UNSIGNED_INT_8_8_8_8_REV;
+        _texInternalFormat = GL_RG8;
+        _texFormat = GL_RG;
+        _texType = GL_UNSIGNED_SHORT;
     }
     else if (_pixelFormat == "D")
     {
@@ -325,8 +324,6 @@ GLenum Texture_Image::getChannelOrder(const ImageBufferSpec& spec)
 /*************/
 void Texture_Image::update()
 {
-    std::lock_guard<std::mutex> lock(_mutex);
-
     // If _img is nullptr, this texture is not set from an Image
     if (_img.expired())
         return;
@@ -391,17 +388,17 @@ void Texture_Image::update()
             if (srgb[0].as<bool>())
                 internalFormat = GL_SRGB8_ALPHA8;
             else
-                internalFormat = GL_RGBA;
+                internalFormat = GL_RGBA8;
+        }
+        else if (spec.channels == 2 && spec.type == ImageBufferSpec::Type::UINT8)
+        {
+            dataFormat = GL_UNSIGNED_BYTE;
+            internalFormat = GL_RG8;
         }
         else if (spec.channels == 1 && spec.type == ImageBufferSpec::Type::UINT16)
         {
             dataFormat = GL_UNSIGNED_SHORT;
             internalFormat = GL_R16;
-        }
-        else if (spec.channels == 2 && spec.type == ImageBufferSpec::Type::UINT8)
-        {
-            dataFormat = GL_UNSIGNED_SHORT;
-            internalFormat = GL_RG;
         }
         else
         {

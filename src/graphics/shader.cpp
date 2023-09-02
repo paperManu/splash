@@ -75,7 +75,6 @@ void Shader::activate()
 {
     if (_programType == prgGraphic)
     {
-        _mutex.lock();
         if (!_isLinked)
         {
             if (!linkProgram())
@@ -105,7 +104,6 @@ void Shader::activate()
     }
     else if (_programType == prgFeedback)
     {
-        _mutex.lock();
         if (!_isLinked)
         {
             if (!linkProgram())
@@ -143,8 +141,6 @@ void Shader::deactivate()
 
         _activated = false;
     }
-
-    _mutex.unlock();
 }
 
 /*************/
@@ -178,12 +174,17 @@ std::map<std::string, Values> Shader::getUniforms() const
 /*************/
 bool Shader::setSource(const std::string& src, const ShaderType type)
 {
-    GLuint shader = _shaders[type];
+    const GLuint shader = glCreateShader(type);
+
+    if (glIsShader(_shaders[type]))
+        resetShader(type);
+
+    _shaders[type] = shader;
 
     auto parsedSources = src;
     parseIncludes(parsedSources);
     const char* shaderSrc = parsedSources.c_str();
-    glShaderSource(shader, 1, (const GLchar**)&shaderSrc, 0);
+    glShaderSource(shader, 1, &shaderSrc, nullptr);
     glCompileShader(shader);
 
     GLint status;
@@ -197,12 +198,8 @@ bool Shader::setSource(const std::string& src, const ShaderType type)
     else
     {
         Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling a shader of type " << stringFromShaderType(type) << Log::endl;
-        GLint length;
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
-        char* log = (char*)malloc(length);
-        glGetShaderInfoLog(shader, length, &length, log);
-        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
-        free(log);
+        const auto log = getShaderInfoLog(shader);
+        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << log << Log::endl;
     }
 
     _shadersSource[type] = parsedSources;
@@ -221,8 +218,8 @@ bool Shader::setSource(const std::map<ShaderType, std::string>& sources)
     bool status = true;
     if (sources.find(ShaderType::vertex) == sources.end())
         status = setSource(ShaderSources.VERSION_DIRECTIVE_GL4 + ShaderSources.VERTEX_SHADER_DEFAULT, ShaderType::vertex);
-    for (auto& source : sources)
-        status = status && setSource(source.second, source.first);
+    for (auto& [shaderType, source] : sources)
+        status = status && setSource(source, shaderType);
 
     compileProgram();
     return status;
@@ -308,19 +305,30 @@ void Shader::compileProgram()
         glDeleteProgram(_program);
 
     _program = glCreateProgram();
-    for (auto& shader : _shaders)
+    for (auto& [shader, shaderID] : _shaders)
     {
-        if (glIsShader(shader.second))
+        if (glIsShader(shaderID))
         {
-            glGetShaderiv(shader.second, GL_COMPILE_STATUS, &status);
+            glGetShaderiv(shaderID, GL_COMPILE_STATUS, &status);
             if (status == GL_TRUE)
             {
-                glAttachShader(_program, shader.second);
+                glAttachShader(_program, shaderID);
 #ifdef DEBUG
-                Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(shader.first) << " successfully attached to the program"
+                Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(shader) << " successfully attached to the program"
                            << Log::endl;
 #endif
             }
+            else
+            {
+                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling the " << stringFromShaderType(shader) << " shader in program "
+                           << _currentProgramName << Log::endl;
+                auto log = getShaderInfoLog(shaderID);
+                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << log << Log::endl;
+            }
+        }
+        else
+        {
+            Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - ID (" << shaderID << ") does not belong to a shader" << Log::endl;
         }
     }
 }
@@ -346,14 +354,8 @@ bool Shader::linkProgram()
     else
     {
         Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while linking the shader program " << _currentProgramName << Log::endl;
-
-        GLint length;
-        glGetProgramiv(_program, GL_INFO_LOG_LENGTH, &length);
-        char* log = (char*)malloc(length);
-        glGetProgramInfoLog(_program, length, &length, log);
-        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
-        free(log);
-
+        auto log = getProgramInfoLog(_program);
+        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << log << Log::endl;
         _isLinked = false;
         return false;
     }
@@ -709,18 +711,34 @@ void Shader::updateUniforms()
 }
 
 /*************/
+std::string Shader::getProgramInfoLog(GLint program)
+{
+    GLint length;
+    glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
+
+    auto str = std::string(static_cast<size_t>(length), '\0'); // To avoid printing a bunch of 0s
+    glGetProgramInfoLog(program, length, &length, str.data());
+
+    return str;
+}
+
+/*************/
+std::string Shader::getShaderInfoLog(GLint shader)
+{
+    GLint length;
+    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
+
+    auto str = std::string(static_cast<size_t>(length), '\0');
+    glGetProgramInfoLog(shader, length, &length, str.data());
+
+    return str;
+}
+
+/*************/
 void Shader::resetShader(ShaderType type)
 {
     glDeleteShader(_shaders[type]);
-
-    if (type == vertex)
-        _shaders[type] = glCreateShader(GL_VERTEX_SHADER);
-    else if (type == geometry)
-        _shaders[type] = glCreateShader(GL_GEOMETRY_SHADER);
-    else if (type == fragment)
-        _shaders[type] = glCreateShader(GL_FRAGMENT_SHADER);
-    else
-        return;
+    _shaders.erase(type);
 }
 
 /*************/

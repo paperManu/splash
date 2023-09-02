@@ -3,8 +3,8 @@
 #include <list>
 #include <utility>
 
-#include <Tracy.hpp>
-#include <TracyOpenGL.hpp>
+#include <tracy/Tracy.hpp>
+#include <tracy/TracyOpenGL.hpp>
 
 #include "./controller/controller_blender.h"
 #include "./controller/controller_gui.h"
@@ -86,7 +86,12 @@ Scene::Scene(Context context)
 
     // Create the link and connect to the World
     _link = std::make_unique<Link>(this, _name, _context.channelType);
-    _link->connectTo("world");
+
+    if (!_link->connectTo("world"))
+    {
+        Log::get() << Log::ERROR << "Scene::Scene - Could not connect to world from scene " << _name << Log::endl;
+        _isRunning = false;
+    }
 }
 
 /*************/
@@ -249,7 +254,10 @@ void Scene::remove(const std::string& name)
 /*************/
 void Scene::render()
 {
+#ifndef PROFILE_GPU
     PROFILEGL(Constants::GL_TIMING_TIME_PER_FRAME);
+#endif
+
     // We want to have as much time as possible for uploading the textures,
     // so we start it right now.
     bool expectedAtomicValue = false;
@@ -377,13 +385,13 @@ void Scene::render()
 
     TracyGpuCollect;
 
+#ifndef PROFILE_GPU
     ProfilerGL::get().gatherTimings();
     ProfilerGL::get().processTimings();
     const auto glTimings = ProfilerGL::get().getTimings();
     for (const auto& threadTimings : glTimings)
         for (const auto& glTiming : threadTimings.second)
             Timer::get().setDuration(Constants::GL_TIMING_PREFIX + glTiming.getScope(), glTiming.getDuration() / 1000.0);
-#ifndef PROFILE_GPU
     ProfilerGL::get().clearTimings();
 #endif
 }

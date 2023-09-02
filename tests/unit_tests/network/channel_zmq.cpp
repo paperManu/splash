@@ -15,7 +15,7 @@
  * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "./network/channel_shmdata.h"
+#include "./network/channel_zmq.h"
 
 #include <chrono>
 #include <iostream>
@@ -30,7 +30,7 @@
 using namespace Splash;
 
 /*************/
-TEST_CASE("Test sending a message and a buffer through a shmdata channel")
+TEST_CASE("Test sending a message and a buffer through a zmq channel")
 {
     auto root = RootObject();
 
@@ -40,32 +40,46 @@ TEST_CASE("Test sending a message and a buffer through a shmdata channel")
     std::vector<uint8_t> receivedMsg;
     SerializedObject receivedObj;
 
-    auto channelOutput = ChannelOutput_Shmdata(&root, "output");
-    auto channelInput = ChannelInput_Shmdata(
+    auto channelOutput = ChannelOutput_ZMQ(&root, "output");
+    auto channelInput = ChannelInput_ZMQ(
         &root,
         "input",
-        [&](const std::vector<uint8_t> msg) {
+        [&](const std::vector<uint8_t> msg)
+        {
             isMsgReceived = true;
             receivedMsg = msg;
         },
-        [&](SerializedObject&& obj) {
+        [&](SerializedObject&& obj)
+        {
             isBufferReceived = true;
             receivedObj = std::move(obj);
         });
 
-    CHECK(channelInput.connectTo("output"));
+    CHECK(channelOutput.connectTo("input"));
 
-    std::vector<uint8_t> msg = {1, 2, 3, 4};
+    // Connection through ZMQ takes some time to establish, and there is no
+    // way to know for sure that it is active without sending a message
+    const std::vector<uint8_t> dummyMsg = {42};
+    while (!isMsgReceived)
+    {
+        channelOutput.sendMessage(dummyMsg);
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    isMsgReceived = false;
+
+    // Messages and buffers are not sent instantly through ZMQ, so
+    // we wait for the message to arrive
+    const std::vector<uint8_t> msg = {1, 2, 3, 4};
     CHECK(channelOutput.sendMessage(msg));
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    CHECK(isMsgReceived);
+    while (!isMsgReceived)
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     CHECK_EQ(msg, receivedMsg);
 
     auto array = ResizableArray<uint8_t>({1, 2, 3});
     auto object = SerializedObject(std::move(array));
     CHECK(channelOutput.sendBuffer(std::move(object)));
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    CHECK(isBufferReceived);
+    while (!isBufferReceived)
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     CHECK_EQ(receivedObj.data()[0], 1);
     CHECK_EQ(receivedObj.data()[1], 2);
     CHECK_EQ(receivedObj.data()[2], 3);

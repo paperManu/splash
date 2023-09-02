@@ -108,23 +108,12 @@ class Texture : public GraphObject
     virtual void setTimestamp(int64_t timestamp) override { _spec.timestamp = timestamp; }
 
     /**
-     *  Lock the texture for read / write operations
-     */
-    void lock() const { _mutex.lock(); }
-
-    /**
-     *  Unlock the texture for read / write operations
-     */
-    void unlock() const { _mutex.unlock(); }
-
-    /**
      *  Set whether the texture should be resizable
      * \param resizable If true, the texture is resizable
      */
     void setResizable(bool resizable) { _resizable = resizable; }
 
   protected:
-    mutable std::mutex _mutex;
     ImageBufferSpec _spec;
 
     // Store some texture parameters
