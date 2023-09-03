@@ -147,10 +147,9 @@ class GpuBuffer
     GLint _elementSize{0}; // Number of components per vector
     GLenum _type{0};
     GLenum _usage{0};
-
     GLuint _copyBufferId{0};
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_GPU_BUFFER_H

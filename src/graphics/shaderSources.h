@@ -1407,7 +1407,7 @@ struct ShaderSources
     #ifdef VERTEXBLENDING
                 // Compute the distance to the camera, then compare it to the farthest
                 // vertex distance and adjust blending value based on this
-                const float vertexDistToCam = abs(_modelViewMatrix * vec4(_vertex.xyz, 1.0)).z;
+                float vertexDistToCam = abs(_modelViewMatrix * vec4(_vertex.xyz, 1.0)).z;
                 // The luminance diminishes with the square of the distance
                 // luminanceRatio should always be less than 1.0, as
                 // _farthestVertex is by definition the highest possible distance

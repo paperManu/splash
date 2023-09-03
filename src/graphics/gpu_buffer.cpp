@@ -114,8 +114,14 @@ std::vector<char> GpuBuffer::getBufferAsVector(size_t vertexNbr)
     // Read the copy buffer
     glBindBuffer(GL_ARRAY_BUFFER, _copyBufferId);
     auto* bufferPtr = static_cast<char*>(glMapBufferRange(GL_ARRAY_BUFFER, 0, vectorSize, GL_MAP_READ_BIT));
+
+    assert(bufferPtr != nullptr && "Mapped buffer returned a null pointer!");
+
     auto buffer = std::vector<char>();
+
+    // // Copies over the data when creating the vector, no worries about unmapping before returning.
     buffer.assign(bufferPtr, bufferPtr + vectorSize);
+    glUnmapBuffer(GL_ARRAY_BUFFER);
 
     return buffer;
 }
