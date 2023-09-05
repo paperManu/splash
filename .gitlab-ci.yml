@@ -228,6 +228,7 @@ coverage:
     - make -sC build -j$(nproc)
     - make -sC build check_coverage
     - zip -r coverage.zip build/coverage
+  coverage: '/  lines......: \d+\.\d+/'
   artifacts:
     name: "splash_coverage_${CI_BUILD_REF_NAME}"
     paths:
