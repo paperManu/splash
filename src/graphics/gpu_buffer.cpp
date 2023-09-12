@@ -119,10 +119,8 @@ std::vector<char> GpuBuffer::getBufferAsVector(size_t vertexNbr)
 
     assert(bufferPtr != nullptr && "Mapped buffer returned a null pointer!");
 
-    auto buffer = std::vector<char>();
+    auto buffer = std::vector<char>(bufferPtr, bufferPtr + vectorSize);
 
-    // // Copies over the data when creating the vector, no worries about unmapping before returning.
-    buffer.assign(bufferPtr, bufferPtr + vectorSize);
     glUnmapBuffer(GL_ARRAY_BUFFER);
 
     return buffer;
