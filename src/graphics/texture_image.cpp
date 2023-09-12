@@ -581,12 +581,12 @@ bool Texture_Image::updatePbos(int width, int height, int bytes)
     glDeleteBuffers(2, _pbos);
 
     // TODO: I think this is the most lenient option, might be worth it to see how others affect things
-    auto bufferUsageFlags = GL_STATIC_DRAW;
+    constexpr auto bufferUsageFlags = GL_STATIC_DRAW;
     auto imageDataSize = width * height * bytes;
 
     glGenBuffers(2, _pbos);
 
-    const GLenum bufferType = GL_PIXEL_UNPACK_BUFFER;
+    constexpr GLenum bufferType = GL_PIXEL_UNPACK_BUFFER;
 
     glBindBuffer(bufferType, _pbos[0]);
     glBufferData(bufferType, imageDataSize, 0, bufferUsageFlags);
