@@ -2010,6 +2010,8 @@ struct ShaderSources
         }
     )"};
 
+    const std::string FRAGMENT_SHADER_EMPTY = "void main() {}";
+
 } ShaderSources;
 
 } // namespace Splash

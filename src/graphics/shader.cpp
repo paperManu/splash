@@ -1049,8 +1049,8 @@ void Shader::registerFeedbackAttributes()
                 setSource(options + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_eval);
                 setSource(options + ShaderSources.GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, geometry);
 
-                const auto testFrag = "void main() {}";
-                setSource(options + testFrag, fragment);
+                // Need a fragment shader (even an empty one) for OpenGL ES 3.2.
+                setSource(options + ShaderSources.FRAGMENT_SHADER_EMPTY, fragment);
 
                 compileProgram();
             }
