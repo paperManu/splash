@@ -93,6 +93,7 @@ target_sources(unitTests PRIVATE
     unit_tests/core/serialize/serialize_mesh.cpp
     unit_tests/image/image.cpp
     unit_tests/image/image_list.cpp
+    unit_tests/network/channel_zmq.cpp
     unit_tests/utils/dense_deque.cpp
     unit_tests/utils/dense_map.cpp
     unit_tests/utils/dense_set.cpp

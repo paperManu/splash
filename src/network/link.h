@@ -78,13 +78,13 @@ class Link
      * Connect to a pair given its name
      * \param name Peer name
      */
-    void connectTo(const std::string& name);
+    [[nodiscard]] bool connectTo(const std::string& name);
 
     /**
      * Disconnect from a pair given its name
      * \param name Peer name
      */
-    void disconnectFrom(const std::string& name);
+    [[nodiscard]] bool disconnectFrom(const std::string& name);
 
     /**
      * Check whether the link, hence its channels, is ready

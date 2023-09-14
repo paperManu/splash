@@ -76,7 +76,6 @@ void Shader::activate()
 {
     if (_programType == prgGraphic)
     {
-        _mutex.lock();
         if (!_isLinked)
         {
             if (!linkProgram())
@@ -106,7 +105,6 @@ void Shader::activate()
     }
     else if (_programType == prgFeedback)
     {
-        _mutex.lock();
         if (!_isLinked)
         {
             if (!linkProgram())
@@ -144,8 +142,6 @@ void Shader::deactivate()
 
         _activated = false;
     }
-
-    _mutex.unlock();
 }
 
 /*************/
@@ -203,12 +199,8 @@ bool Shader::setSource(const std::string& src, const ShaderType type)
     else
     {
         Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling a shader of type " << stringFromShaderType(type) << Log::endl;
-        GLint length;
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
-        char* log = (char*)malloc(length);
-        glGetShaderInfoLog(shader, length, &length, log);
-        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
-        free(log);
+        const auto log = getShaderInfoLog(shader);
+        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << log << Log::endl;
     }
 
     _shadersSource[type] = parsedSources;
@@ -331,13 +323,8 @@ void Shader::compileProgram()
             {
                 Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling the " << stringFromShaderType(shader) << " shader in program "
                            << _currentProgramName << Log::endl;
-
-                GLint length;
-                glGetShaderiv(shaderID, GL_INFO_LOG_LENGTH, &length);
-                char* log = (char*)malloc(length);
-                glGetShaderInfoLog(shaderID, length, &length, log);
-
-                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
+                auto log = getShaderInfoLog(shaderID);
+                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << log << Log::endl;
             }
         }
         else
@@ -368,14 +355,8 @@ bool Shader::linkProgram()
     else
     {
         Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while linking the shader program " << _currentProgramName << Log::endl;
-
-        GLint length;
-        glGetProgramiv(_program, GL_INFO_LOG_LENGTH, &length);
-        char* log = (char*)malloc(length);
-        glGetProgramInfoLog(_program, length, &length, log);
-        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
-        free(log);
-
+        auto log = getProgramInfoLog(_program);
+        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << log << Log::endl;
         _isLinked = false;
         return false;
     }
@@ -738,6 +719,30 @@ void Shader::updateUniforms()
 
         _uniformsToUpdate.clear();
     }
+}
+
+/*************/
+std::string Shader::getProgramInfoLog(GLint program)
+{
+    GLint length;
+    glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
+
+    auto str = std::string(static_cast<size_t>(length), '\0'); // To avoid printing a bunch of 0s
+    glGetProgramInfoLog(program, length, &length, str.data());
+
+    return str;
+}
+
+/*************/
+std::string Shader::getShaderInfoLog(GLint shader)
+{
+    GLint length;
+    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
+
+    auto str = std::string(static_cast<size_t>(length), '\0');
+    glGetProgramInfoLog(shader, length, &length, str.data());
+
+    return str;
 }
 
 /*************/

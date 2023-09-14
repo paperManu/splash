@@ -18,7 +18,7 @@
 	url = https://github.com/onqtam/doctest
 [submodule "external/ffmpeg"]
 	path = external/ffmpeg
-	url = https://git.ffmpeg.org/ffmpeg.git
+	url = https://github.com/FFmpeg/FFmpeg.git
 [submodule "external/glfw"]
 	path = external/glfw
 	url = https://github.com/glfw/glfw.git

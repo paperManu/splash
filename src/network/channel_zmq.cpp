@@ -47,9 +47,9 @@ ChannelOutput_ZMQ::~ChannelOutput_ZMQ()
     if (!_ready)
         return;
 
-    int lingerValue = 0;
     try
     {
+        const int lingerValue = 0;
         _socketMessageOut->set(zmq::sockopt::linger, lingerValue);
         _socketBufferOut->set(zmq::sockopt::linger, lingerValue);
     }
@@ -60,15 +60,15 @@ ChannelOutput_ZMQ::~ChannelOutput_ZMQ()
 }
 
 /*************/
-bool ChannelOutput_ZMQ::connectTo(const std::string& target)
+[[nodiscard]] bool ChannelOutput_ZMQ::connectTo(const std::string& target)
 {
     if (!_ready)
         return false;
 
-    if (std::find(_targets.begin(), _targets.end(), target) != _targets.end())
+    if (_targets.find(target) != _targets.end())
         return false;
 
-    _targets.push_back(target);
+    _targets.insert(target);
 
     try
     {
@@ -88,12 +88,12 @@ bool ChannelOutput_ZMQ::connectTo(const std::string& target)
 }
 
 /*************/
-bool ChannelOutput_ZMQ::disconnectFrom(const std::string& target)
+[[nodiscard]] bool ChannelOutput_ZMQ::disconnectFrom(const std::string& target)
 {
     if (!_ready)
         return false;
 
-    if (std::find(_targets.begin(), _targets.end(), target) == _targets.end())
+    if (_targets.erase(target) == 0)
         return false;
 
     try
@@ -251,11 +251,11 @@ ChannelInput_ZMQ::ChannelInput_ZMQ(const RootObject* root, const std::string& na
         }
     }
 
-    _ready = true;
-
     _continueListening = true;
     _bufferInThread = std::thread([&]() { handleInputBuffers(); });
     _messageInThread = std::thread([&]() { handleInputMessages(); });
+
+    _ready = true;
 }
 
 /*************/
@@ -273,9 +273,6 @@ ChannelInput_ZMQ::~ChannelInput_ZMQ()
 /*************/
 void ChannelInput_ZMQ::handleInputMessages()
 {
-    if (!_ready)
-        return;
-
     try
     {
         while (_continueListening)
@@ -302,9 +299,6 @@ void ChannelInput_ZMQ::handleInputMessages()
 /*************/
 void ChannelInput_ZMQ::handleInputBuffers()
 {
-    if (!_ready)
-        return;
-
     try
     {
         while (_continueListening)
