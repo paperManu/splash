@@ -530,14 +530,19 @@ void Window::swapBuffers()
     // Copy the rendered texture to the back/front buffer
     glBlitFramebuffer(0, 0, _windowRect[2], _windowRect[3], 0, 0, _windowRect[2], _windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-    if (isWindowSynchronized)
+    if (isWindowSynchronized) 
+    {
         // If this window is synchronized, so we wait for the vsync and swap
         // front and back buffers
         glfwSwapBuffers(_window->get());
-    else
+    }
+    else 
+    {
         // If this window is not synchronized, we revert the draw buffer back
         // to drawing to the back buffer
-        glDrawBuffer(GL_BACK);
+        GLenum buffers[] = {GL_BACK};
+        glDrawBuffers(1, buffers);
+    }
 
     _frontBufferTimestamp = _backBufferTimestamp;
     _presentationDelay = Timer::getTime() - _frontBufferTimestamp;
