@@ -200,7 +200,10 @@ class Renderer
         return _glRenderer;
     }
 
-    std::shared_ptr<GlWindow> mainWindow()
+    /**
+     * \return Returns a `shared_ptr` to the main window.
+     */
+    std::shared_ptr<GlWindow> getMainWindow()
     {
         return _mainWindow;
     }

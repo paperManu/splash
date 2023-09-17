@@ -96,8 +96,7 @@ Scene::Scene(Context context)
 Scene::~Scene()
 {
     // Cleanup every object
-    auto mainWindow = _renderer->mainWindow();
-    if (mainWindow)
+    if (const auto mainWindow = _renderer->getMainWindow(); mainWindow)
     {
         mainWindow->setAsCurrentContext();
         std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex); // We don't want any friend to try accessing the objects
@@ -400,7 +399,7 @@ void Scene::run()
 {
     tracy::SetThreadName("Scene");
 
-    auto mainWindow = _renderer->mainWindow();
+    auto mainWindow = _renderer->getMainWindow();
     if (!mainWindow)
     {
         Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - No rendering context has been created" << Log::endl;
@@ -519,8 +518,7 @@ void Scene::setAsMaster(const std::string& configFilePath)
 
     _isMaster = true;
 
-    auto mainWindow = _renderer->mainWindow();
-    _gui = std::make_shared<Gui>(mainWindow, this);
+    _gui = std::make_shared<Gui>(_renderer->getMainWindow(), this);
     if (_gui)
     {
         _gui->setName("gui");
@@ -584,7 +582,7 @@ std::shared_ptr<GlWindow> Scene::getNewSharedWindow(const std::string& name)
     std::string windowName;
     name.size() == 0 ? windowName = "Splash::Window" : windowName = "Splash::" + name;
 
-    auto mainWindow = _renderer->mainWindow();
+    auto mainWindow = _renderer->getMainWindow();
     if (!mainWindow)
     {
         Log::get() << Log::WARNING << __FUNCTION__ << " - Main window does not exist, unable to create new shared window" << Log::endl;
