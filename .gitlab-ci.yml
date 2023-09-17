@@ -2,6 +2,7 @@ variables:
   DOCKER_DRIVER: overlay2
   GIT_STRATEGY: clone
   GIT_SUBMODULE_STRATEGY: recursive
+  TRACY_NO_INVARIANT_CHECK: 1
 
 stages:
   - build
@@ -13,31 +14,6 @@ cache:
   paths:
     - ccache/
 
-
-# ┏━╸╻ ╻┏┓╻┏━╸╺┳╸╻┏━┓┏┓╻┏━┓
-# ┣╸ ┃ ┃┃┗┫┃   ┃ ┃┃ ┃┃┗┫┗━┓
-# ╹  ┗━┛╹ ╹┗━╸ ╹ ╹┗━┛╹ ╹┗━┛
-.add_jammy_mpa: &add_jammy_mpa
-  - DEBIAN_FRONTEND=noninteractive apt install -y coreutils wget &&
-    wget -qO - https://sat-mtl.gitlab.io/distribution/mpa-jammy-amd64-nvidia/sat-metalab-mpa-keyring.gpg
-        | gpg --dearmor
-        | dd of=/usr/share/keyrings/sat-metalab-mpa-keyring.gpg &&
-    echo 'deb [ arch=amd64, signed-by=/usr/share/keyrings/sat-metalab-mpa-keyring.gpg ] https://sat-mtl.gitlab.io/distribution/mpa-jammy-amd64-nvidia/debs/ sat-metalab main'
-        | tee /etc/apt/sources.list.d/sat-metalab-mpa.list &&
-    echo 'deb [ arch=amd64, signed-by=/usr/share/keyrings/sat-metalab-mpa-keyring.gpg ] https://sat-mtl.gitlab.io/distribution/mpa-datasets/debs/ sat-metalab main main/debug'
-        | tee /etc/apt/sources.list.d/sat-metalab-mpa-datasets.list &&
-    apt update
-
-.add_focal_mpa: &add_focal_mpa
-  - DEBIAN_FRONTEND=noninteractive apt install -y coreutils wget &&
-    wget -qO - https://sat-mtl.gitlab.io/distribution/mpa-focal-amd64-nvidia/sat-metalab-mpa-keyring.gpg
-        | gpg --dearmor
-        | dd of=/usr/share/keyrings/sat-metalab-mpa-keyring.gpg &&
-    echo 'deb [ arch=amd64, signed-by=/usr/share/keyrings/sat-metalab-mpa-keyring.gpg ] https://sat-mtl.gitlab.io/distribution/mpa-focal-amd64-nvidia/debs/ sat-metalab main'
-        | tee /etc/apt/sources.list.d/sat-metalab-mpa.list &&
-    echo 'deb [ arch=amd64, signed-by=/usr/share/keyrings/sat-metalab-mpa-keyring.gpg ] https://sat-mtl.gitlab.io/distribution/mpa-datasets/debs/ sat-metalab main'
-        | tee /etc/apt/sources.list.d/sat-metalab-mpa-datasets.list &&
-    apt update
 
 #
 # ╺┳╸┏━╸┏━┓╺┳╸┏━┓
@@ -62,16 +38,12 @@ test:20.04:gcc-bundled-libs:
   stage: test
   image: ubuntu:20.04
   script: 
-    # Install Metalab packages
-    - *add_focal_mpa
-    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
-
     # Prepare bundled dependencies
     - ./make_deps.sh
 
     # Test using bundled libs
     - rm -rf build && mkdir build
-    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
     - make check -sC build
     - ./build/src/splash --child --prefix unittest &
@@ -83,17 +55,13 @@ test:20.04:clang-bundled-libs:
   stage: test
   image: ubuntu:20.04
   script: 
-    # Install Metalab packages
-    - *add_focal_mpa
-    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
-
     # Prepare bundled dependencies
     - ./make_deps.sh
 
     # Test using Clang
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends clang
     - rm -rf build && mkdir build
-    - CC=clang CXX=clang++ cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - CC=clang CXX=clang++ cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
     - make check -sC build
     - ./build/src/splash --child --prefix unittest &
@@ -105,15 +73,11 @@ test:20.04:gcc-system-libs:
   stage: test
   image: ubuntu:20.04
   script: 
-    # Install Metalab packages
-    - *add_focal_mpa
-    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
-
     # Test using system libs
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
       libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev
     - rm -rf build && mkdir build
-    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
+    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
     - make -sC build -j$(nproc)
     - make check -sC build
     - ./build/src/splash --child --prefix unittest &
@@ -126,16 +90,12 @@ test:22.04:gcc-bundled-libs:
   stage: test
   image: ubuntu:22.04
   script: 
-    # Install Metalab packages
-    - *add_jammy_mpa
-    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
-
     # Prepare bundled dependencies
     - ./make_deps.sh
 
     # Test using bundled libs
     - rm -rf build && mkdir build
-    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
     - make check -sC build
     - ./build/src/splash --child --prefix unittest &
@@ -147,17 +107,13 @@ test:22.04:clang-bundled-libs:
   stage: test
   image: ubuntu:22.04
   script: 
-    # Install Metalab packages
-    - *add_jammy_mpa
-    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
-
     # Prepare bundled dependencies
     - ./make_deps.sh
 
     # Test using Clang
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends clang
     - rm -rf build && mkdir build
-    - CC=clang CXX=clang++ cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - CC=clang CXX=clang++ cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
     - make check -sC build
     - ./build/src/splash --child --prefix unittest &
@@ -169,15 +125,11 @@ test:22.04:gcc-system-libs:
   stage: test
   image: ubuntu:22.04
   script: 
-    # Install Metalab packages
-    - *add_jammy_mpa
-    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
-
     # Test using system libs
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
       libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev
     - rm -rf build && mkdir build
-    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
+    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
     - make -sC build -j$(nproc)
     - make check -sC build
     - ./build/src/splash --child --prefix unittest &
@@ -202,7 +154,7 @@ test:archlinux:
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build
   script:
-    - cmake -DCMAKE_INSTALL_PREFIX=/usr ..
+    - cmake -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make check
   except:
@@ -215,10 +167,6 @@ coverage:
   stage: coverage
   image: ubuntu:20.04
   script: 
-    # Install Metalab packages
-    - *add_focal_mpa
-    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
-
     # Install coverage tools
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends lcov zip
     - ./make_deps.sh
@@ -227,6 +175,7 @@ coverage:
     - make -sC build -j$(nproc)
     - make -sC build check_coverage
     - zip -r coverage.zip build/coverage
+  coverage: '/  lines......: \d+\.\d+/'
   artifacts:
     name: "splash_coverage_${CI_BUILD_REF_NAME}"
     paths:

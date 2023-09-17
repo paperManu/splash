@@ -61,15 +61,12 @@ Geometry::~Geometry()
 /*************/
 void Geometry::activate()
 {
-    _mutex.lock();
     glBindVertexArray(_vertexArray[glfwGetCurrentContext()]);
 }
 
 /*************/
 void Geometry::activateAsSharedBuffer()
 {
-    _mutex.lock();
-
     if (_useAlternativeBuffers)
     {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _glAlternativeBuffers[0]->getId());
@@ -122,7 +119,6 @@ void Geometry::deactivate() const
 #if DEBUG
     glBindVertexArray(0);
 #endif
-    _mutex.unlock();
 }
 
 /*************/

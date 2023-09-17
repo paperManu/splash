@@ -1,6 +1,29 @@
 Splash release notes
 ====================
 
+splash 0.9.38 (2023-09-02)
+-------------------------
+Improvements:
+* Code cleanup: unused mutexes, GPU profiling conditions, Syphon sources
+* Updated Tracy to version 0.9.1
+* Move duplicate shader/program log getting code to a utility function
+* Added back inner Scene, renamed as embedded Scene
+* Changed FFmpeg submodule to point to their Github mirror, for faster checkout
+
+Bugs fixed:
+* Fixed V4L2 YUYV being transformed like sRGB data
+* Fixed configuration loading at runtime
+* Fixed long connection delay when using shmdata link backend
+* Fixed spawned Scene processes not getting a copy of environment variables
+* Fixed Shader giving empty error logs, due to geometry shaders without associated sources
+* Fixed YUV textures being stored as GL_RGBA, now correctly stored as GL_RG
+* Fixed ZMQ input channel eating (twice) 100% of a CPU core while waiting for messages
+
+Documentation:
+* Updated documentation
+* Added documentation to help with debugging without installing on the system 
+* Added documentation for Window::swapBuffers, and tuned the method a bit
+
 splash 0.9.36 (2023-08-03)
 -------------------------
 Improvements:

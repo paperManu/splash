@@ -36,7 +36,6 @@ Texture_Image::~Texture_Image()
     Log::get() << Log::DEBUGGING << "Texture_Image::~Texture_Image - Destructor" << Log::endl;
 #endif
 
-    std::lock_guard<std::mutex> lock(_mutex);
     glDeleteTextures(1, &_glTex);
     glDeleteBuffers(2, _pbos);
 }
@@ -335,8 +334,6 @@ GLenum Texture_Image::getChannelOrder(const ImageBufferSpec& spec)
 /*************/
 void Texture_Image::update()
 {
-    std::lock_guard<std::mutex> lock(_mutex);
-
     // If _img is nullptr, this texture is not set from an Image
     if (_img.expired())
         return;

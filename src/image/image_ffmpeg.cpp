@@ -87,7 +87,7 @@ bool Image_FFmpeg::read(const std::string& filename)
         return false;
     }
 
-    if (avformat_find_stream_info(_avContext, NULL) < 0)
+    if (avformat_find_stream_info(_avContext, nullptr) < 0)
     {
         Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Couldn't retrieve information for file " << filepath << Log::endl;
         avformat_close_input(&_avContext);

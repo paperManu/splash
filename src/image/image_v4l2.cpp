@@ -564,7 +564,7 @@ bool Image_V4L2::openCaptureDevice(const std::string& devicePath)
         _spec = ImageBufferSpec(_outputWidth, _outputHeight, 3, 24, ImageBufferSpec::Type::UINT8, "BGR");
         break;
     case V4L2_PIX_FMT_YUYV:
-        _spec = ImageBufferSpec(_outputWidth, _outputHeight, 3, 16, ImageBufferSpec::Type::UINT8, "YUYV");
+        _spec = ImageBufferSpec(_outputWidth, _outputHeight, 2, 16, ImageBufferSpec::Type::UINT8, "YUYV");
         break;
     }
 

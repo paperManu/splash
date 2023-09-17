@@ -45,6 +45,13 @@ class RootObject;
 class ChannelOutput
 {
   public:
+    enum class ConnectDirection : uint8_t
+    {
+        OutToIn,
+        InToOut
+    };
+
+  public:
     /**
      * Constructor
      * \param root Root object, used as context for this class
@@ -74,14 +81,22 @@ class ChannelOutput
      * \param target Target name
      * \return Return true if connection was successful
      */
-    virtual bool connectTo(const std::string& target) = 0;
+    [[nodiscard]] virtual bool connectTo(const std::string& target) = 0;
 
     /**
      * Disconnect from a target
      * \param target Target name
      * \return Return true if disconnection was successful, false otherwise or if no connection existed
      */
-    virtual bool disconnectFrom(const std::string& target) = 0;
+    [[nodiscard]] virtual bool disconnectFrom(const std::string& target) = 0;
+
+    /**
+     * Get the connect direction for this channel type
+     * Some channel types ask for the output to connect to the input,
+     * other types need that the input connects to the output
+     * \return Return the connect direction
+     */
+    virtual ConnectDirection getConnectDirection() const = 0;
 
     /**
      * Check whether the channe is ready
@@ -157,14 +172,14 @@ class ChannelInput
      * \param target Target name
      * \return Return true if connection was successful
      */
-    virtual bool connectTo(const std::string& target) = 0;
+    [[nodiscard]] virtual bool connectTo(const std::string& target) = 0;
 
     /**
      * Disconnect from the given target
      * \param target name
      * \return Return true if disconnection was successful, false otherwise or if no connection existed
      */
-    virtual bool disconnectFrom(const std::string& target) = 0;
+    [[nodiscard]] virtual bool disconnectFrom(const std::string& target) = 0;
 
     /**
      * Check whether the channe is ready

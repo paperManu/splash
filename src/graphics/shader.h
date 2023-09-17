@@ -197,7 +197,6 @@ class Shader final : public GraphObject
     static std::string getShaderInfoLog(GLint shader);
 
   private:
-    mutable std::mutex _mutex;
     std::atomic_bool _activated{false};
     ProgramType _programType{prgGraphic};
 
