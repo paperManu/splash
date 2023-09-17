@@ -46,6 +46,12 @@ struct ApiVersion
 class Renderer
 {
   public:
+
+    enum class Api {
+	OpenGL,
+	GLES
+    };
+
     /**
      *  Callback for GL errors and warnings
      *  TODO: Make private once `Scene::getNewSharedWindow` is moved to the renderer.
@@ -308,15 +314,11 @@ class OpenGLRenderer : public Renderer
     };
 };
 
-static inline std::shared_ptr<Renderer> createRenderer(bool gles)
+static inline std::shared_ptr<Renderer> createRenderer(Renderer::Api api)
 {
-    if (gles)
-    {
-        return std::make_shared<GLESRenderer>();
-    }
-    else
-    {
-        return std::make_shared<OpenGLRenderer>();
+    switch(api) {
+	case Renderer::Api::OpenGL: return std::make_shared<GLESRenderer>();
+	case Renderer::Api::GLES: return std::make_shared<OpenGLRenderer>();
     }
 }
 
