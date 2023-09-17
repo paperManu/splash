@@ -1,8 +1,9 @@
 #include "./graphics/virtual_probe.h"
 
-#include "./utils/scope_guard.h"
-#include "graphics/renderer.h"
 #include <glm/gtc/matrix_transform.hpp>
+
+#include "./utils/scope_guard.h"
+#include "./graphics/renderer.h"
 
 using namespace glm;
 

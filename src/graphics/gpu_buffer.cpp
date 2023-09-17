@@ -1,4 +1,5 @@
 #include "./graphics/gpu_buffer.h"
+
 #include "glad/glad.h"
 
 namespace Splash
