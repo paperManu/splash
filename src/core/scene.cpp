@@ -261,7 +261,6 @@ void Scene::render()
     bool expectedAtomicValue = false;
     if (!_doUploadTextures.compare_exchange_strong(expectedAtomicValue, false, std::memory_order_acq_rel))
     {
-        TracyGpuZone("Upload textures");
         ZoneScopedN("Upload textures");
 
         Timer::get() << "textureUpload";
@@ -271,7 +270,6 @@ void Scene::render()
             auto texture = std::dynamic_pointer_cast<Texture>(obj.second);
             if (texture)
             {
-                TracyGpuZone("Uploading a texture");
                 ZoneScopedN("Uploading a texture");
                 ZoneName(obj.first.c_str(), obj.first.size());
 
@@ -282,7 +280,6 @@ void Scene::render()
     }
 
     {
-        TracyGpuZone("Scene rendering");
         ZoneScopedN("Scene rendering");
 
         // Create lists of objects to update and to render
@@ -331,7 +328,6 @@ void Scene::render()
         // See GraphObject::getRenderingPriority() for precision about priorities
         for (const auto& objPriority : objectList)
         {
-            TracyGpuZone("Render bin");
             ZoneScopedN("Render bin");
 
             if (objPriority.second.size() != 0)
@@ -343,7 +339,6 @@ void Scene::render()
 
             for (auto& obj : objPriority.second)
             {
-                TracyGpuZone("Rendering an object");
                 ZoneScopedN("Rendering an object");
                 ZoneName(obj->getName().c_str(), obj->getName().size());
 
@@ -370,7 +365,6 @@ void Scene::render()
     }
 
     {
-        TracyGpuZone("Swap");
         ZoneScopedN("Swap");
 
         // Swap all buffers at once
@@ -381,7 +375,6 @@ void Scene::render()
         Timer::get() >> "swap";
     }
 
-    TracyGpuCollect;
 
 #ifndef PROFILE_GPU
     ProfilerGL::get().gatherTimings();
@@ -407,7 +400,6 @@ void Scene::run()
     }
 
     mainWindow->setAsCurrentContext();
-    TracyGpuContext;
 
     while (_isRunning)
     {
