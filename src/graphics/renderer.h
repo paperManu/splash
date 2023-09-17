@@ -234,8 +234,9 @@ class Renderer
 
     std::string _glVendor, _glRenderer;
 
-    virtual ApiVersion apiSpecificFlags() = 0;
-    virtual void loadApiSpecificGlFunctions() = 0;
+    virtual void setApiSpecificFlags() const = 0;
+    virtual ApiVersion getApiSpecificVersion() const = 0;
+    virtual void loadApiSpecificGlFunctions() const = 0;
 
     /**
      *  Callback for GLFW errors
@@ -249,7 +250,9 @@ class Renderer
 
     std::optional<ApiVersion> findGLVersion()
     {
-        auto apiVersion = apiSpecificFlags();
+        setApiSpecificFlags();
+
+	auto apiVersion = getApiSpecificVersion();
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, std::get<0>(apiVersion.version));
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, std::get<1>(apiVersion.version));
@@ -269,31 +272,40 @@ class Renderer
 
 class GLESRenderer : public Renderer
 {
-    virtual ApiVersion apiSpecificFlags() override
+    virtual void setApiSpecificFlags() const final
     {
-        std::pair<uint, uint> versionToCheck = {3, 2};
         glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-
-        return {versionToCheck, "GLES"};
     }
 
-    virtual void loadApiSpecificGlFunctions() override { gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress); }
+    virtual ApiVersion getApiSpecificVersion() const final 
+    {
+	return {{3, 2}, "OpenGL ES"};
+    }
+
+    virtual void loadApiSpecificGlFunctions() const final 
+    { 
+	gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress); 
+    }
 };
 
 class OpenGLRenderer : public Renderer
 {
-    virtual ApiVersion apiSpecificFlags() override
+    virtual void setApiSpecificFlags() const final
     {
-        std::pair<uint, uint> versionToCheck = {4, 5};
-
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
         glfwWindowHint(GLFW_DEPTH_BITS, 24);
-
-        return {versionToCheck, "OpenGL"};
     }
 
-    virtual void loadApiSpecificGlFunctions() override { gladLoadGLLoader((GLADloadproc)glfwGetProcAddress); };
+    virtual ApiVersion getApiSpecificVersion() const final 
+    {
+	return {{4, 5}, "OpenGL"};
+    }
+
+    virtual void loadApiSpecificGlFunctions() const final 
+    { 
+	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress); 
+    };
 };
 
 static inline std::shared_ptr<Renderer> createRenderer(bool gles)
