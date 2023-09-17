@@ -316,10 +316,15 @@ class OpenGLRenderer : public Renderer
 
 static inline std::shared_ptr<Renderer> createRenderer(Renderer::Api api)
 {
+    std::shared_ptr<Renderer> renderer;
     switch(api) {
-	case Renderer::Api::OpenGL: return std::make_shared<GLESRenderer>();
-	case Renderer::Api::GLES: return std::make_shared<OpenGLRenderer>();
+	case Renderer::Api::OpenGL: renderer = std::make_shared<GLESRenderer>(); break;
+	case Renderer::Api::GLES: renderer = std::make_shared<OpenGLRenderer>(); break;
     }
+
+    // Can't return in the switch, the compiler complains about
+    // "control reaches end of non-void function".
+    return renderer;
 }
 
 } // namespace Splash
