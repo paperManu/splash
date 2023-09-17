@@ -244,7 +244,7 @@ class Renderer
      */
     static void glfwErrorCallback(int /*code*/, const char* msg)
     {
-        Log::get() << Log::WARNING << "glfwErrorCallback - " << msg << Log::endl;
+        Log::get() << Log::ERROR << "glfwErrorCallback - " << msg << Log::endl;
     }
 
     std::optional<ApiVersion> findGLVersion()
