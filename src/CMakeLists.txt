@@ -158,6 +158,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/gpu_buffer.cpp
     graphics/object.cpp
     graphics/object_library.cpp
+    graphics/renderer.cpp
     graphics/shader.cpp
     graphics/texture.cpp
     graphics/texture_image.cpp
