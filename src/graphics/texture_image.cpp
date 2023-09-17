@@ -167,6 +167,7 @@ void Texture_Image::reset(int width, int height, const std::string& pixelFormat,
     _multisample = multisample;
     _cubemap = multisample == 0 ? cubemap : false;
 
+    // OpenGL ES 3.2 doesn't seem to support RGBA 16, so we treat it the same as RGBA (8 bit per channel).
     if (_pixelFormat == "RGBA" || _pixelFormat == "RGBA16")
     {
         _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
