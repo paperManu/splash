@@ -165,6 +165,8 @@ class Texture_Image : public Texture
 
     GLuint _glTex{0};
     GLuint _pbos[2];
+    // Can either be GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_2D, GL_TEXTURE_CUBE_MAP
+    GLuint _textureType{GL_TEXTURE_2D}; 
 
     int _multisample{0};
     bool _cubemap{false};

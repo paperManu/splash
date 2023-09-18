@@ -88,11 +88,13 @@ namespace Splash
 		    glDeleteTextures(1, &_glTex);
 
 		if (_multisample > 1)
-		    glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &_glTex);
+		    _textureType = GL_TEXTURE_2D_MULTISAMPLE;
 		else if (_cubemap)
-		    glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &_glTex);
+		    _textureType = GL_TEXTURE_CUBE_MAP;
 		else
-		    glCreateTextures(GL_TEXTURE_2D, 1, &_glTex);
+		    _textureType = GL_TEXTURE_2D;
+
+		glCreateTextures(_textureType, 1, &_glTex);
 
 		if (_texInternalFormat == GL_DEPTH_COMPONENT)
 		{
@@ -294,7 +296,7 @@ namespace Splash
 		{
 		    // glTexStorage2D is immutable, so we have to delete the texture first
 		    glDeleteTextures(1, &_glTex);
-		    glCreateTextures(GL_TEXTURE_2D, 1, &_glTex);
+		    glCreateTextures(_textureType, 1, &_glTex);
 
 		    glTextureParameteri(_glTex, GL_TEXTURE_WRAP_S, _glTextureWrap);
 		    glTextureParameteri(_glTex, GL_TEXTURE_WRAP_T, _glTextureWrap);

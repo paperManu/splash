@@ -87,48 +87,47 @@ namespace Splash {
 
 		    glGenTextures(1, &_glTex);
 
-		    GLenum textureType = GL_TEXTURE_2D;
 		    if (_multisample > 1)
 		    {
-			textureType = GL_TEXTURE_2D_MULTISAMPLE;
+			_textureType = GL_TEXTURE_2D_MULTISAMPLE;
 		    }
 		    else if (_cubemap)
 		    {
-			textureType = GL_TEXTURE_CUBE_MAP;
+			_textureType = GL_TEXTURE_CUBE_MAP;
 		    }
 		    else
 		    {
-			textureType = GL_TEXTURE_2D;
+			_textureType = GL_TEXTURE_2D;
 		    }
 
-		    glBindTexture(textureType, _glTex);
+		    glBindTexture(_textureType, _glTex);
 		    if (_texInternalFormat == GL_DEPTH_COMPONENT)
 		    {
-			glTexParameteri(textureType, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(textureType, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexParameteri(textureType, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(textureType, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(_textureType, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(_textureType, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(_textureType, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(_textureType, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		    }
 		    else
 		    {
-			glTexParameteri(textureType, GL_TEXTURE_WRAP_S, _glTextureWrap);
-			glTexParameteri(textureType, GL_TEXTURE_WRAP_T, _glTextureWrap);
+			glTexParameteri(_textureType, GL_TEXTURE_WRAP_S, _glTextureWrap);
+			glTexParameteri(_textureType, GL_TEXTURE_WRAP_T, _glTextureWrap);
 
 			// Anisotropic filtering. Not in core, but available on any GPU capable of running Splash
 			// See https://www.khronos.org/opengl/wiki/Sampler_Object#Anisotropic_filtering
 			float maxAnisoFiltering;
 			glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisoFiltering);
-			glTexParameterf(textureType, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisoFiltering);
+			glTexParameterf(_textureType, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisoFiltering);
 
 			if (_filtering)
 			{
-			    glTexParameteri(textureType, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-			    glTexParameteri(textureType, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			    glTexParameteri(_textureType, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			    glTexParameteri(_textureType, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			}
 			else
 			{
-			    glTexParameteri(textureType, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			    glTexParameteri(textureType, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			    glTexParameteri(_textureType, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			    glTexParameteri(_textureType, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			}
 
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
@@ -137,7 +136,7 @@ namespace Splash {
 
 		    if (_multisample > 1)
 		    {
-			glTexStorage2DMultisample(textureType, _multisample, _texInternalFormat, width, height, false);
+			glTexStorage2DMultisample(_textureType, _multisample, _texInternalFormat, width, height, false);
 		    }
 		    else if (_cubemap == true)
 		    {
@@ -148,7 +147,7 @@ namespace Splash {
 			glTexStorage2D(GL_TEXTURE_2D, _texLevels, _texInternalFormat, width, height);
 
 			if (data)
-			    glTexSubImage2D(textureType, 0, 0, 0, width, height, _texFormat, _texType, data);
+			    glTexSubImage2D(_textureType, 0, 0, 0, width, height, _texFormat, _texType, data);
 		    }
 
 #ifdef DEBUG
@@ -316,23 +315,23 @@ namespace Splash {
 		    // glTexStorage2D is immutable, so we have to delete the texture first
 		    glDeleteTextures(1, &_glTex);
 		    glGenTextures(1, &_glTex);
-		    glBindTexture(GL_TEXTURE_2D, _glTex);
+		    glBindTexture(_textureType, _glTex);
 
-		    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, _glTextureWrap);
-		    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, _glTextureWrap);
+		    glTexParameteri(_textureType, GL_TEXTURE_WRAP_S, _glTextureWrap);
+		    glTexParameteri(_textureType, GL_TEXTURE_WRAP_T, _glTextureWrap);
 
 		    if (_filtering)
 		    {
 			if (isCompressed)
-			    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			    glTexParameteri(_textureType, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			else
-			    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			    glTexParameteri(_textureType, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glTexParameteri(_textureType, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		    }
 		    else
 		    {
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(_textureType, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(_textureType, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		    }
 
 		    // Create or update the texture parameters
@@ -342,8 +341,8 @@ namespace Splash {
 			Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Creating a new texture" << Log::endl;
 #endif
 
-			glTexStorage2D(GL_TEXTURE_2D, _texLevels, internalFormat, spec.width, spec.height);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, img->data());
+			glTexStorage2D(_textureType, _texLevels, internalFormat, spec.width, spec.height);
+			glTexSubImage2D(_textureType, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, img->data());
 		    }
 		    else
 		    {
@@ -351,8 +350,8 @@ namespace Splash {
 			Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Creating a new compressed texture" << Log::endl;
 #endif
 
-			glTexStorage2D(GL_TEXTURE_2D, _texLevels, internalFormat, spec.width, spec.height);
-			glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, internalFormat, imageDataSize, img->data());
+			glTexStorage2D(_textureType, _texLevels, internalFormat, spec.width, spec.height);
+			glCompressedTexSubImage2D(_textureType, 0, 0, 0, spec.width, spec.height, internalFormat, imageDataSize, img->data());
 		    }
 
 		    if (!updatePbos(spec.width, spec.height, spec.pixelBytes()))
@@ -381,11 +380,11 @@ namespace Splash {
 		{
 		    // Copy the pixels from the current PBO to the texture
 		    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboUploadIndex]);
-		    glBindTexture(GL_TEXTURE_2D, _glTex);
+		    glBindTexture(_textureType, _glTex);
 		    if (!isCompressed)
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, 0);
+			glTexSubImage2D(_textureType, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, 0);
 		    else
-			glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, internalFormat, imageDataSize, 0);
+			glCompressedTexSubImage2D(_textureType, 0, 0, 0, spec.width, spec.height, internalFormat, imageDataSize, 0);
 		    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
 		    _pboUploadIndex = (_pboUploadIndex + 1) % 2;
