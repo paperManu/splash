@@ -44,11 +44,11 @@ RgbValue Texture_Image::getMeanValue() const
 {
     int level = _texLevels - 1;
     int width, height;
-    glGetTextureLevelParameteriv(_glTex, level, GL_TEXTURE_WIDTH, &width);
-    glGetTextureLevelParameteriv(_glTex, level, GL_TEXTURE_HEIGHT, &height);
+    getTextureLevelParameteriv(_glTex, level, GL_TEXTURE_WIDTH, &width);
+    getTextureLevelParameteriv(_glTex, level, GL_TEXTURE_HEIGHT, &height);
     auto size = width * height * 4;
     ResizableArray<uint8_t> buffer(size);
-    glGetTextureImage(_glTex, level, GL_RGBA, GL_UNSIGNED_BYTE, buffer.size(), buffer.data());
+    getTextureImage(_glTex, level, GL_RGBA, GL_UNSIGNED_BYTE, buffer.size(), buffer.data());
 
     RgbValue meanColor;
     for (int y = 0; y < height; ++y)
@@ -81,15 +81,15 @@ ImageBuffer Texture_Image::grabMipmap(unsigned int level) const
 {
     int mipmapLevel = std::min<int>(level, _texLevels);
     GLint width, height;
-    glGetTextureLevelParameteriv(_glTex, level, GL_TEXTURE_WIDTH, &width);
-    glGetTextureLevelParameteriv(_glTex, level, GL_TEXTURE_HEIGHT, &height);
+    getTextureLevelParameteriv(_glTex, level, GL_TEXTURE_WIDTH, &width);
+    getTextureLevelParameteriv(_glTex, level, GL_TEXTURE_HEIGHT, &height);
 
     auto spec = _spec;
     spec.width = width;
     spec.height = height;
 
     auto image = ImageBuffer(spec);
-    glGetTextureImage(_glTex, mipmapLevel, _texFormat, _texType, image.getSize(), image.data());
+    getTextureImage(_glTex, mipmapLevel, _texFormat, _texType, image.getSize(), image.data());
     return image;
 }
 
@@ -122,7 +122,7 @@ void Texture_Image::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 std::shared_ptr<Image> Texture_Image::read()
 {
     auto img = std::make_shared<Image>(_root, _spec);
-    glGetTextureImage(_glTex, 0, _texFormat, _texType, img->getSpec().rawSize(), (GLvoid*)img->data());
+    getTextureImage(_glTex, 0, _texFormat, _texType, img->getSpec().rawSize(), (GLvoid*)img->data());
     return img;
 }
 

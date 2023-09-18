@@ -119,6 +119,10 @@ class Texture_Image : public Texture
      */
     virtual void update() override = 0;
 
+    virtual void getTextureLevelParameteriv(GLenum target, GLint level, GLenum pname, GLint* params) const = 0;
+    virtual void getTextureParameteriv(GLenum target, GLenum pname, GLint* params) const = 0;
+    virtual void getTextureImage(GLuint texture, GLint level, GLenum format, GLenum type, GLsizei bufSize, void *pixels) const = 0;
+
   protected:
     explicit Texture_Image(RootObject* root);
 

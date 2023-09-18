@@ -189,10 +189,17 @@ namespace Splash {
 		(void)pixels;
 
 		// TODO: Figure out some way to replicate OpenGL 4.5's API call.
+		assert(false && "unimplemented yet!");
+	    }
+
+	    virtual void getTextureLevelParameteriv(GLenum target, GLint level, GLenum pname, GLint* params) const final {
+		glBindTexture(target, _glTex);
+		glGetTexLevelParameteriv(target, level, pname, params);
 	    }
 
 	    virtual void getTextureParameteriv(GLenum target, GLenum pname, GLint* params) const final
 	    {
+		glBindTexture(target, _glTex);
 		glGetTexParameteriv(target, pname, params);
 	    }
 

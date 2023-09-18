@@ -174,9 +174,13 @@ namespace Splash
 		glGetTextureImage(texture, level, format, type, bufSize, pixels);
 	    }
 
-	    virtual void getTextureParameteriv(GLenum target, GLenum pname, GLint* params) const final
+	    virtual void getTextureLevelParameteriv(GLenum /*target*/, GLint level, GLenum pname, GLint* params) const final {
+		glGetTextureLevelParameteriv(_glTex, level, pname, params);
+	    }
+
+	    virtual void getTextureParameteriv(GLenum /*target*/, GLenum pname, GLint* params) const final
 	    {
-		glGetTextureParameteriv(target, pname, params);
+		glGetTextureParameteriv(_glTex, pname, params);
 	    }
 
 
