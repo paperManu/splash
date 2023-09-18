@@ -424,10 +424,10 @@ void Window::setupFBOs()
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
 
-    _depthTexture = std::make_shared<Texture_Image>(_root, _windowRect[2], _windowRect[3], "D", nullptr);
+    _depthTexture = _root->getRenderer()->createTexture_Image(_root, _windowRect[2], _windowRect[3], "D", nullptr);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
 
-    _colorTexture = std::make_shared<Texture_Image>(_root);
+    _colorTexture = _root->getRenderer()->createTexture_Image(_root);
     _colorTexture->setAttribute("filtering", {false});
     _colorTexture->reset(_windowRect[2], _windowRect[3], "RGBA", nullptr);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);

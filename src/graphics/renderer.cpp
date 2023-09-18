@@ -1,6 +1,24 @@
 #include "./graphics/renderer.h"
 
+#include "./graphics/opengl_renderer.h"
+#include "./graphics/gles_renderer.h"
+
+
 namespace Splash {
+
+    std::shared_ptr<Renderer> Renderer::create(Renderer::Api api)
+    {
+	std::shared_ptr<Renderer> renderer;
+	switch(api) {
+	    case Renderer::Api::GLES: renderer = std::make_shared<GLESRenderer>(); break;
+	    case Renderer::Api::OpenGL: renderer = std::make_shared<OpenGLRenderer>(); break;
+	}
+
+	// Can't return in the switch, the compiler complains about
+	// "control reaches end of non-void function".
+	return renderer;
+    }
+
     void Renderer::glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* userParam)
     {
         const auto userParamsAsObj = reinterpret_cast<const BaseObject*>(userParam);
@@ -160,4 +178,11 @@ namespace Splash {
         return {};
     }
 
+
+    std::shared_ptr<Texture_Image> Renderer::createTexture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisample, bool cubemap) const {
+	auto tex = createTexture_Image(root);
+	tex->reset(width, height, pixelFormat, data, multisample, cubemap);
+
+	return tex;
+    }
 };

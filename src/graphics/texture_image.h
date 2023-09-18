@@ -41,55 +41,23 @@
 namespace Splash
 {
 
-class Texture_Image final : public Texture
+class Texture_Image : public Texture
 {
-  public:
-    /**
-     * Constructor
-     * \param root Root object
-     * \param width Width
-     * \param height Height
-     * \param pixelFormat String describing the pixel format. Accepted values are RGB, RGBA, sRGBA, RGBA16, R16, YUYV, UYVY, D
-     * \param data Pointer to data to use to initialize the texture
-     * \param multisample Sample count for MSAA
-     * \param cubemap True to request a cubemap
-     */
-    explicit Texture_Image(RootObject* root);
-    Texture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisample = 0, bool cubemap = false);
-
-    /**
-     * Destructor
-     */
-    ~Texture_Image() final;
-
-    /**
-     * Constructors/operators
-     */
-    Texture_Image(const Texture_Image&) = delete;
-    Texture_Image& operator=(const Texture_Image&) = delete;
-    Texture_Image(Texture_Image&&) = delete;
-    Texture_Image& operator=(Texture_Image&&) = delete;
-
-    /**
-     * Sets the specified buffer as the texture on the device
-     * \param img Image to set the texture from
-     */
-    Texture_Image& operator=(const std::shared_ptr<Image>& img);
-
+    public:
     /**
      * Bind this texture
      */
-    void bind() override;
+    virtual void bind() override = 0;
 
     /**
      * Unbind this texture
      */
-    void unbind() override;
+    virtual void unbind() override = 0;
 
     /**
      * Generate the mipmaps for the texture
      */
-    void generateMipmap() const;
+    virtual void generateMipmap() const = 0;
 
     /**
      * Computed the mean value for the image
@@ -131,7 +99,7 @@ class Texture_Image final : public Texture
      * \param multisample Sample count for MSAA
      * \param cubemap True to request a cubemap
      */
-    void reset(int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisampled = 0, bool cubemap = false);
+    virtual void reset(int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisampled = 0, bool cubemap = false) = 0;
 
     /**
      * Modify the size of the texture
@@ -149,9 +117,30 @@ class Texture_Image final : public Texture
     /**
      * Update the texture according to the owned Image
      */
-    void update() final;
+    virtual void update() override = 0;
 
   protected:
+    explicit Texture_Image(RootObject* root);
+
+    /**
+     * Destructor
+     */
+    ~Texture_Image();
+
+    /**
+     * Constructors/operators
+     */
+    Texture_Image(const Texture_Image&) = delete;
+    Texture_Image& operator=(const Texture_Image&) = delete;
+    Texture_Image(Texture_Image&&) = delete;
+    Texture_Image& operator=(Texture_Image&&) = delete;
+
+    /**
+     * Sets the specified buffer as the texture on the device
+     * \param img Image to set the texture from
+     */
+    Texture_Image& operator=(const std::shared_ptr<Image>& img);
+
     /**
      * Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
@@ -164,7 +153,7 @@ class Texture_Image final : public Texture
      */
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
-  private:
+  protected:
     enum ColorEncoding : int32_t
     {
         RGB=0,

@@ -413,7 +413,7 @@ void Factory::registerObjects()
         "Allows for creating a timed playlist of image sources.",
         true);
 
-    _objectBook["texture_image"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Texture_Image>(root)); },
+    _objectBook["texture_image"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(root->getRenderer()->createTexture_Image(root)); },
         GraphObject::Category::TEXTURE,
         "texture image",
         "Texture object created from an Image object.",

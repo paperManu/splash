@@ -17,6 +17,9 @@
  * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef SPLASH_RENDERER_H
+#define SPLASH_RENDERER_H
+
 #include <memory>
 #include <optional>
 #include <string>
@@ -29,6 +32,9 @@
 
 namespace Splash
 {
+
+    class RootObject;
+    class Texture_Image;
 
 struct ApiVersion
 {
@@ -51,6 +57,8 @@ class Renderer
 	OpenGL,
 	GLES
     };
+
+    static std::shared_ptr<Renderer> create(Renderer::Api api);
 
     /**
      *  Callback for GL errors and warnings
@@ -89,6 +97,18 @@ class Renderer
      */
     std::shared_ptr<GlWindow> getMainWindow() { return _mainWindow; }
 
+    /**
+     * Constructor
+     * \param root Root object
+     * \param width Width
+     * \param height Height
+     * \param pixelFormat String describing the pixel format. Accepted values are RGB, RGBA, sRGBA, RGBA16, R16, YUYV, UYVY, D
+     * \param data Pointer to data to use to initialize the texture
+     * \param multisample Sample count for MSAA
+     * \param cubemap True to request a cubemap
+     */
+    virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const = 0;
+    std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisample = 0, bool cubemap = false) const;
   protected:
     virtual void setApiSpecificFlags() const = 0;
     virtual ApiVersion getApiSpecificVersion() const = 0;
@@ -113,55 +133,6 @@ class Renderer
     std::optional<ApiVersion> findGLVersion();
 };
 
-class GLESRenderer : public Renderer
-{
-    virtual void setApiSpecificFlags() const final
-    {
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-    }
-
-    virtual ApiVersion getApiSpecificVersion() const final 
-    {
-	return {{3, 2}, "OpenGL ES"};
-    }
-
-    virtual void loadApiSpecificGlFunctions() const final 
-    { 
-	gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress); 
-    }
-};
-
-class OpenGLRenderer : public Renderer
-{
-    virtual void setApiSpecificFlags() const final
-    {
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
-        glfwWindowHint(GLFW_DEPTH_BITS, 24);
-    }
-
-    virtual ApiVersion getApiSpecificVersion() const final 
-    {
-	return {{4, 5}, "OpenGL"};
-    }
-
-    virtual void loadApiSpecificGlFunctions() const final 
-    { 
-	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress); 
-    };
-};
-
-static inline std::shared_ptr<Renderer> createRenderer(Renderer::Api api)
-{
-    std::shared_ptr<Renderer> renderer;
-    switch(api) {
-	case Renderer::Api::OpenGL: renderer = std::make_shared<GLESRenderer>(); break;
-	case Renderer::Api::GLES: renderer = std::make_shared<OpenGLRenderer>(); break;
-    }
-
-    // Can't return in the switch, the compiler complains about
-    // "control reaches end of non-void function".
-    return renderer;
-}
-
 } // namespace Splash
+
+#endif 

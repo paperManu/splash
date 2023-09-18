@@ -111,7 +111,7 @@ void Gui::loadIcon()
         return;
     }
 
-    _splashLogo = std::make_shared<Texture_Image>(_scene);
+    _splashLogo = _root->getRenderer()->createTexture_Image(_scene);
     _splashLogo->linkTo(image);
     _splashLogo->update();
 }

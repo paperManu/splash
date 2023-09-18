@@ -40,7 +40,6 @@
 #include "./core/spinlock.h"
 #include "./graphics/gl_window.h"
 #include "./graphics/object_library.h"
-#include "./graphics/renderer.h"
 
 namespace Splash
 {
@@ -236,7 +235,6 @@ class Scene : public RootObject
 
   private:
     ObjectLibrary _objectLibrary; //!< Library of 3D objects used by multiple GraphObjects
-    static inline std::shared_ptr<Renderer> _renderer = nullptr;
 
     static bool _hasNVSwapGroup; //!< If true, NV swap groups have been detected and are used
 
