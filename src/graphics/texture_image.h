@@ -99,7 +99,7 @@ class Texture_Image : public Texture
      * \param multisample Sample count for MSAA
      * \param cubemap True to request a cubemap
      */
-    virtual void reset(int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisampled = 0, bool cubemap = false) = 0;
+    void reset(int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisample = 0, bool cubemap = false);
 
     /**
      * Modify the size of the texture
@@ -118,10 +118,6 @@ class Texture_Image : public Texture
      * Update the texture according to the owned Image
      */
     virtual void update() override = 0;
-
-    virtual void getTextureLevelParameteriv(GLenum target, GLint level, GLenum pname, GLint* params) const = 0;
-    virtual void getTextureParameteriv(GLenum target, GLenum pname, GLint* params) const = 0;
-    virtual void getTextureImage(GLuint texture, GLint level, GLenum format, GLenum type, GLsizei bufSize, void *pixels) const = 0;
 
   protected:
     explicit Texture_Image(RootObject* root);
@@ -156,6 +152,14 @@ class Texture_Image : public Texture
      * \param obj Object to unlink from
      */
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
+
+    virtual void initFromPixelFormat(int width, int height) = 0;
+    virtual void setGLTextureParameters() const = 0;
+    virtual void initOpenGLTexture(const GLvoid* data) = 0;
+
+    virtual void getTextureLevelParameteriv(GLenum target, GLint level, GLenum pname, GLint* params) const = 0;
+    virtual void getTextureParameteriv(GLenum target, GLenum pname, GLint* params) const = 0;
+    virtual void getTextureImage(GLuint texture, GLint level, GLenum format, GLenum type, GLsizei bufSize, void *pixels) const = 0;
 
   protected:
     enum ColorEncoding : int32_t

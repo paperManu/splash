@@ -2,6 +2,8 @@
 #define SPLASH_OPENGL_TEXTURE_IMAGE_H
 
 #include "./graphics/texture_image.h"
+#include "core/imagebuffer.h"
+#include <unordered_map>
 
 namespace Splash 
 {
@@ -16,23 +18,10 @@ namespace Splash
 	    OpenGLTexture_Image(OpenGLTexture_Image&&) = delete;
 	    OpenGLTexture_Image& operator=(OpenGLTexture_Image&&) = delete;
 
-	    virtual void reset(int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisample = 0, bool cubemap = false) final 
-	    {
-		if (width == 0 || height == 0)
-		{
-#ifdef DEBUG
-		    Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Texture size is null" << Log::endl;
-#endif
-		    return;
-		}
-
-		// Fill texture parameters
-		_spec.width = width;
-		_spec.height = height;
-		_pixelFormat = pixelFormat.empty() ? "RGBA" : pixelFormat;
-		_multisample = multisample;
-		_cubemap = multisample == 0 ? cubemap : false;
-
+	    virtual void initFromPixelFormat(int width, int height) {
+		// Can probably be boiled down to a map of:
+		// 	pixelFormat -> { numChannels, bitPerChannel, channelType, formatName, texInternalFormat, texFormat, texType }
+		// But that's probably asking for trouble, let's keep it simple.
 		if (_pixelFormat == "RGBA")
 		{
 		    _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
@@ -81,21 +70,15 @@ namespace Splash
 		    _texInternalFormat = GL_DEPTH_COMPONENT24;
 		    _texFormat = GL_DEPTH_COMPONENT;
 		    _texType = GL_FLOAT;
+		} else {
+		    _spec.width = width;
+		    _spec.height = height;
+
+		    Log::get() << Log::WARNING << "OpenGLTexture_Image::" << __FUNCTION__ << " - The given pixel format (" << _pixelFormat << ") does not match any of the supported types. Will use default values." << Log::endl;
 		}
+	    }
 
-		// Create and initialize the texture
-		if (glIsTexture(_glTex))
-		    glDeleteTextures(1, &_glTex);
-
-		if (_multisample > 1)
-		    _textureType = GL_TEXTURE_2D_MULTISAMPLE;
-		else if (_cubemap)
-		    _textureType = GL_TEXTURE_CUBE_MAP;
-		else
-		    _textureType = GL_TEXTURE_2D;
-
-		glCreateTextures(_textureType, 1, &_glTex);
-
+	    virtual void setGLTextureParameters() const {
 		if (_texInternalFormat == GL_DEPTH_COMPONENT)
 		{
 		    glTextureParameteri(_glTex, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -129,24 +112,34 @@ namespace Splash
 		    glPixelStorei(GL_PACK_ALIGNMENT, 4);
 		}
 
+	    }
+
+	    virtual void initOpenGLTexture(const GLvoid* data) {
+		// Create and initialize the texture
+		if (glIsTexture(_glTex))
+		    glDeleteTextures(1, &_glTex);
+
 		if (_multisample > 1)
-		{
-		    glTextureStorage2DMultisample(_glTex, _multisample, _texInternalFormat, width, height, false);
-		}
+		    _textureType = GL_TEXTURE_2D_MULTISAMPLE;
+		else if (_cubemap)
+		    _textureType = GL_TEXTURE_CUBE_MAP;
+		else
+		    _textureType = GL_TEXTURE_2D;
+
+		glCreateTextures(_textureType, 1, &_glTex);
+
+		setGLTextureParameters();
+
+		if (_multisample > 1)
+		    glTextureStorage2DMultisample(_glTex, _multisample, _texInternalFormat, _spec.width, _spec.height, false);
 		else if (_cubemap == true)
-		{
-		    glTextureStorage2D(_glTex, _texLevels, _texInternalFormat, width, height);
-		}
+		    glTextureStorage2D(_glTex, _texLevels, _texInternalFormat, _spec.width, _spec.height);
 		else
 		{
-		    glTextureStorage2D(_glTex, _texLevels, _texInternalFormat, width, height);
+		    glTextureStorage2D(_glTex, _texLevels, _texInternalFormat, _spec.width, _spec.height);
 		    if (data)
-			glTextureSubImage2D(_glTex, 0, 0, 0, width, height, _texFormat, _texType, data);
+			glTextureSubImage2D(_glTex, 0, 0, 0, _spec.width, _spec.height, _texFormat, _texType, data);
 		}
-
-#ifdef DEBUG
-		Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Reset the texture to size " << width << "x" << height << Log::endl;
-#endif
 	    }
 
 	    virtual void bind() final

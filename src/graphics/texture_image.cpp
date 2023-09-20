@@ -80,7 +80,8 @@ std::unordered_map<std::string, Values> Texture_Image::getShaderUniforms() const
 ImageBuffer Texture_Image::grabMipmap(unsigned int level) const
 {
     int mipmapLevel = std::min<int>(level, _texLevels);
-    GLint width, height;
+    GLint width = 0, height = 0;
+
     getTextureLevelParameteriv(_glTex, level, GL_TEXTURE_WIDTH, &width);
     getTextureLevelParameteriv(_glTex, level, GL_TEXTURE_HEIGHT, &height);
 
@@ -124,6 +125,29 @@ std::shared_ptr<Image> Texture_Image::read()
     auto img = std::make_shared<Image>(_root, _spec);
     getTextureImage(_glTex, 0, _texFormat, _texType, img->getSpec().rawSize(), (GLvoid*)img->data());
     return img;
+}
+
+/*************/
+void Texture_Image::reset(int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisample, bool cubemap) {
+		if (width == 0 || height == 0)
+		{
+#ifdef DEBUG
+		    Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Texture size is null" << Log::endl;
+#endif
+		    return;
+		}
+
+		// Fill texture parameters
+		_pixelFormat = pixelFormat.empty() ? "RGBA" : pixelFormat;
+		_multisample = multisample;
+		_cubemap = multisample == 0 ? cubemap : false;
+
+		initFromPixelFormat(width, height);
+
+		initOpenGLTexture(data);
+#ifdef DEBUG
+		Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Reset the texture to size " << width << "x" << height << Log::endl;
+#endif
 }
 
 /*************/

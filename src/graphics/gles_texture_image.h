@@ -15,91 +15,66 @@ namespace Splash {
 	    GLESTexture_Image(GLESTexture_Image&&) = delete;
 	    GLESTexture_Image& operator=(GLESTexture_Image&&) = delete;
 
+	    // Lists the supported combinations of internal formats, formats, and texture types: https://docs.gl/es3/glTexStorage2D
+	    virtual void initFromPixelFormat(int width, int height) {
 
-	    virtual void reset(int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisample = 0, bool cubemap = false) final 
-	    {
+		// OpenGL ES doesn't support 16 bpc (bit per channel) RGBA textures, so we treat them as 8 bpc
+		if (_pixelFormat == "RGBA" || _pixelFormat == "RGBA16")
+		{
+		    _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
+		    _texInternalFormat = GL_RGBA8;
+		    _texFormat = GL_RGBA;
 
-		if (width == 0 || height == 0)
-		    {
-#ifdef DEBUG
-			Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Texture size is null" << Log::endl;
-#endif
-			return;
-		    }
-
-		    // Fill texture parameters
+		    // OpenGL 4 vs ES 3.1: GL_UNSIGNED_INT_8_8_8_8_REV seems to be unavailable
+		    // The docs say to use GL_RGBA8, GL_RGBA, and GL_UNSIGNED_BYTE for the internal format,
+		    // texture format, and type respectively.
+		    _texType = GL_UNSIGNED_BYTE;
+		}
+		else if (_pixelFormat == "sRGBA")
+		{
+		    _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
+		    _texInternalFormat = GL_SRGB8_ALPHA8;
+		    _texFormat = GL_RGBA;
+		    _texType = GL_UNSIGNED_BYTE;
+		}
+		else if (_pixelFormat == "RGB")
+		{
+		    _spec = ImageBufferSpec(width, height, 3, 24, ImageBufferSpec::Type::UINT8, "RGB");
+		    _texInternalFormat = GL_RGBA8;
+		    _texFormat = GL_RGB;
+		    _texType = GL_UNSIGNED_BYTE;
+		}
+		else if (_pixelFormat == "R16")
+		{
+		    _spec = ImageBufferSpec(width, height, 1, 16, ImageBufferSpec::Type::UINT16, "R");
+		    _texInternalFormat = GL_R16;
+		    _texFormat = GL_RED;
+		    _texType = GL_UNSIGNED_SHORT;
+		}
+		else if (_pixelFormat == "YUYV" || _pixelFormat == "UYVY")
+		{
+		    _spec = ImageBufferSpec(width, height, 3, 16, ImageBufferSpec::Type::UINT8, _pixelFormat);
+		    _texInternalFormat = GL_RG8;
+		    _texFormat = GL_RG;
+		    _texType = GL_UNSIGNED_SHORT;
+		}
+		else if (_pixelFormat == "D")
+		{
+		    // OpenGL ES supports only GL_DEPTH_COMPONENT32F for float values,
+		    // even though we're using 24bit float value, this works fine.
+		    _spec = ImageBufferSpec(width, height, 1, 24, ImageBufferSpec::Type::FLOAT, "R");
+		    _texInternalFormat = GL_DEPTH_COMPONENT32F;
+		    _texFormat = GL_DEPTH_COMPONENT;
+		    _texType = GL_FLOAT;
+		} else {
 		    _spec.width = width;
 		    _spec.height = height;
-		    _pixelFormat = pixelFormat.empty() ? "RGBA" : pixelFormat;
-		    _multisample = multisample;
-		    _cubemap = multisample == 0 ? cubemap : false;
 
-		    if (_pixelFormat == "RGBA" || _pixelFormat == "RGBA16")
-		    {
-			_spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
-			_texInternalFormat = GL_RGBA8;
-			_texFormat = GL_RGBA;
+		    Log::get() << Log::WARNING << "GLESTexture_Image::" << __FUNCTION__ << " - The given pixel format (" << _pixelFormat << ") does not match any of the supported types. Will use default values." << Log::endl;
+		}
+	    }
 
-			// OpenGL 4 vs ES 3.1: GL_UNSIGNED_INT_8_8_8_8_REV seems to be unavailable
-			// The docs say to use GL_RGBA8, GL_RGBA, and GL_UNSIGNED_BYTE for the internal format,
-			// texture format, and type respectively.
-			_texType = GL_UNSIGNED_BYTE;
-		    }
-		    else if (_pixelFormat == "sRGBA")
-		    {
-			_spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
-			_texInternalFormat = GL_SRGB8_ALPHA8;
-			_texFormat = GL_RGBA;
-			_texType = GL_UNSIGNED_BYTE;
-		    }
-		    else if (_pixelFormat == "RGB")
-		    {
-			_spec = ImageBufferSpec(width, height, 3, 24, ImageBufferSpec::Type::UINT8, "RGB");
-			_texInternalFormat = GL_RGBA8;
-			_texFormat = GL_RGB;
-			_texType = GL_UNSIGNED_BYTE;
-		    }
-		    else if (_pixelFormat == "R16")
-		    {
-			_spec = ImageBufferSpec(width, height, 1, 16, ImageBufferSpec::Type::UINT16, "R");
-			_texInternalFormat = GL_R16;
-			_texFormat = GL_RED;
-			_texType = GL_UNSIGNED_SHORT;
-		    }
-		    else if (_pixelFormat == "YUYV" || _pixelFormat == "UYVY")
-		    {
-			_spec = ImageBufferSpec(width, height, 3, 16, ImageBufferSpec::Type::UINT8, _pixelFormat);
-			_texInternalFormat = GL_RG8;
-			_texFormat = GL_RG;
-			_texType = GL_UNSIGNED_SHORT;
-		    }
-		    else if (_pixelFormat == "D")
-		    {
-			_spec = ImageBufferSpec(width, height, 1, 24, ImageBufferSpec::Type::FLOAT, "R");
-			_texInternalFormat = GL_DEPTH_COMPONENT32F;
-			_texFormat = GL_DEPTH_COMPONENT;
-			_texType = GL_FLOAT;
-		    }
-
-		    // Create and initialize the texture
-		    if (glIsTexture(_glTex))
-			glDeleteTextures(1, &_glTex);
-
-		    glGenTextures(1, &_glTex);
-
-		    if (_multisample > 1)
-		    {
-			_textureType = GL_TEXTURE_2D_MULTISAMPLE;
-		    }
-		    else if (_cubemap)
-		    {
-			_textureType = GL_TEXTURE_CUBE_MAP;
-		    }
-		    else
-		    {
-			_textureType = GL_TEXTURE_2D;
-		    }
-
+	    virtual void setGLTextureParameters() const {
 		    glBindTexture(_textureType, _glTex);
 		    if (_texInternalFormat == GL_DEPTH_COMPONENT)
 		    {
@@ -133,26 +108,35 @@ namespace Splash {
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 			glPixelStorei(GL_PACK_ALIGNMENT, 4);
 		    }
+	    }
+
+	    virtual void initOpenGLTexture(const GLvoid* data) {
+		    // Create and initialize the texture
+		    if (glIsTexture(_glTex))
+			glDeleteTextures(1, &_glTex);
+
+		    glGenTextures(1, &_glTex);
 
 		    if (_multisample > 1)
-		    {
-			glTexStorage2DMultisample(_textureType, _multisample, _texInternalFormat, width, height, false);
-		    }
+			_textureType = GL_TEXTURE_2D_MULTISAMPLE;
+		    else if (_cubemap)
+			_textureType = GL_TEXTURE_CUBE_MAP;
+		    else
+			_textureType = GL_TEXTURE_2D;
+
+		    setGLTextureParameters();
+
+		    if (_multisample > 1)
+			glTexStorage2DMultisample(_textureType, _multisample, _texInternalFormat, _spec.width, _spec.height, false);
 		    else if (_cubemap == true)
-		    {
-			glTexStorage2D(GL_TEXTURE_CUBE_MAP, _texLevels, _texInternalFormat, width, height);
-		    }
+			glTexStorage2D(GL_TEXTURE_CUBE_MAP, _texLevels, _texInternalFormat, _spec.width, _spec.height);
 		    else
 		    {
-			glTexStorage2D(GL_TEXTURE_2D, _texLevels, _texInternalFormat, width, height);
+			glTexStorage2D(GL_TEXTURE_2D, _texLevels, _texInternalFormat, _spec.width, _spec.height);
 
 			if (data)
-			    glTexSubImage2D(_textureType, 0, 0, 0, width, height, _texFormat, _texType, data);
+			    glTexSubImage2D(_textureType, 0, 0, 0, _spec.width, _spec.height, _texFormat, _texType, data);
 		    }
-
-#ifdef DEBUG
-		    Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Reset the texture to size " << width << "x" << height << Log::endl;
-#endif
 	    }
 
 	    virtual void bind() final
@@ -170,7 +154,6 @@ namespace Splash {
 #endif
 		_lastDrawnTimestamp = Timer::getTime();
 	    }
-
 
 	    virtual void generateMipmap() const final
 	    {
