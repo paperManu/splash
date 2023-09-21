@@ -628,7 +628,7 @@ std::shared_ptr<GlWindow> Scene::getNewSharedWindow(const std::string& name)
 /*************/
 void Scene::init(const std::string& name)
 {
-    static const Renderer::Api testingApi = Renderer::Api::OpenGL; // For testing purposes only.
+    static const Renderer::Api testingApi = Renderer::Api::GLES; // For testing purposes only.
     _renderer = Renderer::create(testingApi);
     _renderer->init(name);
 }
