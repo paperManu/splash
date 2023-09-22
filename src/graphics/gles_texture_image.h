@@ -237,10 +237,7 @@ namespace Splash {
 
 		_spec.timestamp = spec.timestamp;
 
-		Values flip, flop;
-		img->getAttribute("flip", flip);
-		img->getAttribute("flop", flop);
-		updateShaderUniforms(spec, flip, flop);
+		updateShaderUniforms(spec, img);
 
 		if (_filtering && !isCompressed)
 		    generateMipmap();
@@ -475,10 +472,14 @@ namespace Splash {
 		readFromPBOIntoImage(_pbos[_pboUploadIndex], imageDataSize, img);
 	    }
 
-	    void updateShaderUniforms(const ImageBufferSpec& spec, const Values& flip, const Values& flop)
+	    void updateShaderUniforms(const ImageBufferSpec& spec, const std::shared_ptr<Image> img)
 	    {
 		// If needed, specify some uniforms for the shader which will use this texture
 		_shaderUniforms.clear();
+
+		Values flip, flop;
+		img->getAttribute("flip", flip);
+		img->getAttribute("flop", flop);
 
 		// Presentation parameters
 		_shaderUniforms["flip"] = flip;
