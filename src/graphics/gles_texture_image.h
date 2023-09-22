@@ -211,6 +211,13 @@ namespace Splash {
 		// Gets the spec, if the image format is one of the compressed ones, updates some spec values,
 		// and returns true to indicate that the image is compressed.
 		auto spec = img->getSpec();
+		
+		// Must be called before `updateCompressedSpec`, as it will change the height, which is involved in `rawSize`.
+		// If you call `rawSize` after `updateCompressedSpec`, you might get an incorrect `imageDataSize` (depends on 
+		// the format, check the function for which formats update the height), causing you to read off the buffer in 
+		// `swapPBOs` and segfault.
+		const int imageDataSize = spec.rawSize(); 
+
 		const bool isCompressed = updateCompressedSpec(spec);
 		const auto internalAndDataFormat = updateInternalAndDataFormat(isCompressed, spec, img);
 
@@ -220,7 +227,6 @@ namespace Splash {
 		const auto [internalFormat, dataFormat] = internalAndDataFormat.value();
 
 		const GLenum glChannelOrder = getChannelOrder(spec);
-		const int imageDataSize = spec.rawSize();
 		// Update the textures if the format changed
 		if (spec != _spec || !spec.videoFrame)
 		{
