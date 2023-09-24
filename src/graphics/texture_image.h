@@ -117,7 +117,7 @@ class Texture_Image : public Texture
     /**
      * Update the texture according to the owned Image
      */
-    virtual void update() override = 0;
+    void update() final;
 
   protected:
     explicit Texture_Image(RootObject* root);
@@ -154,12 +154,41 @@ class Texture_Image : public Texture
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
     virtual void initFromPixelFormat(int width, int height) = 0;
-    virtual void setGLTextureParameters() const = 0;
-    virtual void initOpenGLTexture(const GLvoid* data) = 0;
 
     virtual void getTextureLevelParameteriv(GLenum target, GLint level, GLenum pname, GLint* params) const = 0;
     virtual void getTextureParameteriv(GLenum target, GLenum pname, GLint* params) const = 0;
     virtual void getTextureImage(GLuint texture, GLint level, GLenum format, GLenum type, GLsizei bufSize, void *pixels) const = 0;
+
+    // glBindTexture, glTexParameteri, and glPixelStorei are all supported by both OpenGL 4.5 and OpenGL ES 3.2, so no need to virtualize any of them.
+    virtual void setGLTextureParameters() const;
+
+    void setTextureTypeFromOptions();
+
+    void allocateGLTexture(const GLvoid* data);
+
+    void initOpenGLTexture(const GLvoid* data);
+
+    bool updateCompressedSpec(ImageBufferSpec& spec) const;
+    
+    virtual std::optional<std::pair<GLenum, GLenum>> updateCompressedInternalAndDataFormat(const ImageBufferSpec& spec, const Values& srgb) const;
+
+    virtual std::optional<std::pair<GLenum, GLenum>> updateUncompressedInternalAndDataFormat(const ImageBufferSpec& spec, const Values& srgb) = 0;
+
+    std::optional<std::pair<GLenum, GLenum>> updateInternalAndDataFormat(bool isCompressed, const ImageBufferSpec& spec, std::shared_ptr<Image> img);
+
+    void updateGLTextureParameters(bool isCompressed);
+
+    void reallocateAndInitGLTexture(bool isCompressed, GLenum internalFormat, const ImageBufferSpec& spec, GLenum glChannelOrder, GLenum dataFormat, std::shared_ptr<Image> img, int imageDataSize) const;
+
+    bool swapPBOs(const ImageBufferSpec& spec, int imageDataSize, std::shared_ptr<Image> img);
+
+    virtual void readFromImageIntoPBO(GLuint pboId, int imageDataSize, std::shared_ptr<Image> img) const = 0;
+
+    void updateTextureFromPBO(bool isCompressed, GLenum internalFormat, const ImageBufferSpec& spec, GLenum glChannelOrder, GLenum dataFormat, std::shared_ptr<Image> img, int imageDataSize);
+
+    virtual void copyPixelsBetweenPBOs(int imageDataSize) const = 0;
+
+    void updateShaderUniforms(const ImageBufferSpec& spec, const std::shared_ptr<Image> img);
 
   protected:
     enum ColorEncoding : int32_t
@@ -216,7 +245,7 @@ class Texture_Image : public Texture
      * \param bytes Bytes per pixel
      * \return Return true if all went well
      */
-    bool updatePbos(int width, int height, int bytes);
+    virtual bool updatePbos(int width, int height, int bytes) = 0;
 
     /**
      * Register new functors to modify attributes
