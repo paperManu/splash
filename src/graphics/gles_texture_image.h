@@ -79,7 +79,7 @@ namespace Splash {
 	    {
 		glGetIntegerv(GL_ACTIVE_TEXTURE, &_activeTexture);
 		glActiveTexture(_activeTexture);
-		glBindTexture(GL_TEXTURE_2D, _glTex);
+		glBindTexture(_textureType, _glTex);
 	    }
 
 	    void unbind() final
@@ -97,28 +97,36 @@ namespace Splash {
 		glGenerateMipmap(GL_TEXTURE_2D);
 	    }
 
-	    virtual void getTextureImage(GLuint texture, GLint level, GLenum format, GLenum type, GLsizei bufSize, void *pixels) const final 
+	    virtual void getTextureImage(GLuint textureId, GLenum textureType, GLint level, GLenum format, GLenum type, GLsizei /*bufSize*/, void *pixels) const final 
 	    {
-		// Silence "unused parameter" warnings/errors.
-		(void)texture;
-		(void)level;
-		(void)format;
-		(void)type;
-		(void)bufSize;
-		(void)pixels;
+		// Source: https://stackoverflow.com/a/53993894
 
-		// TODO: Figure out some way to replicate OpenGL 4.5's API call.
-		assert(false && "unimplemented yet!");
+		GLuint fbo;
+		glGenFramebuffers(1, &fbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+		glBindTexture(textureType, textureId);
+
+		// Probably won't work for cubemaps?
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureType, textureId, level);
+
+		GLint width, height;
+		getTextureLevelParameteriv(textureType, level, GL_TEXTURE_WIDTH, &width);
+		getTextureLevelParameteriv(textureType, level, GL_TEXTURE_HEIGHT, &height);
+
+		glReadPixels(0, 0, width, height, format, type, pixels);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDeleteFramebuffers(1, &fbo);
 	    }
 
-	    virtual void getTextureLevelParameteriv(GLenum target, GLint level, GLenum pname, GLint* params) const final {
-		glBindTexture(target, _glTex);
+	    virtual void getTextureLevelParameteriv(GLenum target, GLint level, GLenum pname, GLint* params) const final 
+	    {
 		glGetTexLevelParameteriv(target, level, pname, params);
 	    }
 
 	    virtual void getTextureParameteriv(GLenum target, GLenum pname, GLint* params) const final
 	    {
-		glBindTexture(target, _glTex);
 		glGetTexParameteriv(target, pname, params);
 	    }
 

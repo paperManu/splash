@@ -44,11 +44,14 @@ RgbValue Texture_Image::getMeanValue() const
 {
     int level = _texLevels - 1;
     int width, height;
-    getTextureLevelParameteriv(_glTex, level, GL_TEXTURE_WIDTH, &width);
-    getTextureLevelParameteriv(_glTex, level, GL_TEXTURE_HEIGHT, &height);
+
+    glBindTexture(_textureType, _glTex);
+    getTextureLevelParameteriv(_textureType, level, GL_TEXTURE_WIDTH, &width);
+    getTextureLevelParameteriv(_textureType, level, GL_TEXTURE_HEIGHT, &height);
+
     auto size = width * height * 4;
     ResizableArray<uint8_t> buffer(size);
-    getTextureImage(_glTex, level, GL_RGBA, GL_UNSIGNED_BYTE, buffer.size(), buffer.data());
+    getTextureImage(_glTex, _textureType, level, GL_RGBA, GL_UNSIGNED_BYTE, buffer.size(), buffer.data());
 
     RgbValue meanColor;
     for (int y = 0; y < height; ++y)
@@ -82,15 +85,16 @@ ImageBuffer Texture_Image::grabMipmap(unsigned int level) const
     int mipmapLevel = std::min<int>(level, _texLevels);
     GLint width = 0, height = 0;
 
-    getTextureLevelParameteriv(_glTex, level, GL_TEXTURE_WIDTH, &width);
-    getTextureLevelParameteriv(_glTex, level, GL_TEXTURE_HEIGHT, &height);
+    glBindTexture(_textureType, _glTex);
+    getTextureLevelParameteriv(_textureType, level, GL_TEXTURE_WIDTH, &width);
+    getTextureLevelParameteriv(_textureType, level, GL_TEXTURE_HEIGHT, &height);
 
     auto spec = _spec;
     spec.width = width;
     spec.height = height;
 
     auto image = ImageBuffer(spec);
-    getTextureImage(_glTex, mipmapLevel, _texFormat, _texType, image.getSize(), image.data());
+    getTextureImage(_glTex, _textureType, mipmapLevel, _texFormat, _texType, image.getSize(), image.data());
     return image;
 }
 
@@ -123,7 +127,7 @@ void Texture_Image::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 std::shared_ptr<Image> Texture_Image::read()
 {
     auto img = std::make_shared<Image>(_root, _spec);
-    getTextureImage(_glTex, 0, _texFormat, _texType, img->getSpec().rawSize(), (GLvoid*)img->data());
+    getTextureImage(_glTex, _textureType, 0, _texFormat, _texType, img->getSpec().rawSize(), (GLvoid*)img->data());
     return img;
 }
 

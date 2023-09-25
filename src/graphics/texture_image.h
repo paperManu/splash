@@ -157,7 +157,10 @@ class Texture_Image : public Texture
 
     virtual void getTextureLevelParameteriv(GLenum target, GLint level, GLenum pname, GLint* params) const = 0;
     virtual void getTextureParameteriv(GLenum target, GLenum pname, GLint* params) const = 0;
-    virtual void getTextureImage(GLuint texture, GLint level, GLenum format, GLenum type, GLsizei bufSize, void *pixels) const = 0;
+
+    // Assumes that `pixels` points to a buffer with enough space to house all the texture's data.
+    // Also, deviates from the OpenGL API by taking both the texture ID and texture type. This is needed to accomodate OpenGL ES.
+    virtual void getTextureImage(GLuint textureId, GLenum textureType, GLint level, GLenum format, GLenum type, GLsizei bufSize, void *pixels) const = 0; 
 
     // glBindTexture, glTexParameteri, and glPixelStorei are all supported by both OpenGL 4.5 and OpenGL ES 3.2, so no need to virtualize any of them.
     virtual void setGLTextureParameters() const;

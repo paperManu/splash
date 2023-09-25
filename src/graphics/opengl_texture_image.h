@@ -97,9 +97,9 @@ namespace Splash
 		glGenerateTextureMipmap(_glTex);
 	    }
 
-	    virtual void getTextureImage(GLuint texture, GLint level, GLenum format, GLenum type, GLsizei bufSize, void *pixels) const final 
+	    virtual void getTextureImage(GLuint textureId, GLenum /*textureType*/, GLint level, GLenum format, GLenum type, GLsizei bufSize, void *pixels) const final 
 	    {
-		glGetTextureImage(texture, level, format, type, bufSize, pixels);
+		glGetTextureImage(textureId, level, format, type, bufSize, pixels);
 	    }
 
 	    virtual void getTextureLevelParameteriv(GLenum /*target*/, GLint level, GLenum pname, GLint* params) const final {
