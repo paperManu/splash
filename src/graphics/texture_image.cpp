@@ -286,7 +286,7 @@ std::optional<std::pair<GLenum, GLenum>> Texture_Image::updateCompressedInternal
     }
     else
     {
-	Log::get() << Log::WARNING << "GLESTexture_Image::" << __FUNCTION__ << " - Unknown compressed format" << Log::endl;
+	Log::get() << Log::WARNING << "Texture_Image::" << __FUNCTION__ << " - Unknown compressed format" << Log::endl;
 	return {};
     }
 
@@ -338,7 +338,7 @@ void Texture_Image::reallocateAndInitGLTexture(bool isCompressed, GLenum interna
     if (!isCompressed)
     {
 #ifdef DEBUG
-	Log::get() << Log::DEBUGGING << "GLESTexture_Image::" << __FUNCTION__ << " - Creating a new texture" << Log::endl;
+	Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Creating a new texture" << Log::endl;
 #endif
 
 	glTexStorage2D(_textureType, _texLevels, internalFormat, spec.width, spec.height);
@@ -347,7 +347,7 @@ void Texture_Image::reallocateAndInitGLTexture(bool isCompressed, GLenum interna
     else
     {
 #ifdef DEBUG
-	Log::get() << Log::DEBUGGING << "TGLESexture_Image::" << __FUNCTION__ << " - Creating a new compressed texture" << Log::endl;
+	Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Creating a new compressed texture" << Log::endl;
 #endif
 
 	glTexStorage2D(_textureType, _texLevels, internalFormat, spec.width, spec.height);
@@ -435,7 +435,7 @@ void Texture_Image::update()
 
     if (_multisample > 1)
     {
-	Log::get() << Log::ERROR << "GLESTexture_Image::" << __FUNCTION__ << " - Texture " << _name << " is multisampled, and can not be set from an image" << Log::endl;
+	Log::get() << Log::ERROR << "Texture_Image::" << __FUNCTION__ << " - Texture " << _name << " is multisampled, and can not be set from an image" << Log::endl;
 	return;
     }
 
@@ -550,7 +550,7 @@ void Texture_Image::initFromPixelFormat(int width, int height)
 	_spec.width = width;
 	_spec.height = height;
 
-	Log::get() << Log::WARNING << "GLESTexture_Image::" << __FUNCTION__ 
+	Log::get() << Log::WARNING << "Texture_Image::" << __FUNCTION__ 
 	    << " - The given pixel format (" << _pixelFormat << ") does not match any of the supported types. Will use default values." << Log::endl;
     }
 }
