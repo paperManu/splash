@@ -153,7 +153,10 @@ class Texture_Image : public Texture
      */
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
-    virtual void initFromPixelFormat(int width, int height) = 0;
+    void initFromPixelFormat(int width, int height);
+    
+    struct InitTuple;
+    virtual const std::unordered_map<std::string, InitTuple> getPixelFormatToInitTable() const = 0;
 
     virtual void getTextureLevelParameteriv(GLenum target, GLint level, GLenum pname, GLint* params) const = 0;
     virtual void getTextureParameteriv(GLenum target, GLenum pname, GLint* params) const = 0;
@@ -254,6 +257,13 @@ class Texture_Image : public Texture
      * Register new functors to modify attributes
      */
     void registerAttributes();
+
+    struct InitTuple {
+	uint numChannels, bitsPerChannel;
+	ImageBufferSpec::Type pixelBitFormat;
+	std::string stringName;
+	GLenum texInternalFormat, texFormat, texType;
+    };
 };
 
 } // namespace Splash

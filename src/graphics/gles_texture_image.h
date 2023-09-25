@@ -15,66 +15,30 @@ namespace Splash {
 	    GLESTexture_Image(GLESTexture_Image&&) = delete;
 	    GLESTexture_Image& operator=(GLESTexture_Image&&) = delete;
 
-	    // Lists the supported combinations of internal formats, formats, and texture types: https://docs.gl/es3/glTexStorage2D
-	    virtual void initFromPixelFormat(int width, int height) 
+	    virtual const std::unordered_map<std::string, InitTuple> getPixelFormatToInitTable() const final 
 	    {
-
-		// OpenGL ES doesn't support 16 bpc (bit per channel) RGBA textures, so we treat them as 8 bpc
-		if (_pixelFormat == "RGBA" || _pixelFormat == "RGBA16")
-		{
-		    _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
-		    _texInternalFormat = GL_RGBA8;
-		    _texFormat = GL_RGBA;
-
+		// Lists the supported combinations of internal formats, formats, and texture types: https://docs.gl/es3/glTexStorage2D
+		return {
+		    // OpenGL ES doesn't support 16 bpc (bit per channel) RGBA textures, so we treat them as 8 bpc
 		    // OpenGL 4 vs ES 3.1: GL_UNSIGNED_INT_8_8_8_8_REV seems to be unavailable
 		    // The docs say to use GL_RGBA8, GL_RGBA, and GL_UNSIGNED_BYTE for the internal format,
 		    // texture format, and type respectively.
-		    _texType = GL_UNSIGNED_BYTE;
-		}
-		else if (_pixelFormat == "sRGBA")
-		{
-		    _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
-		    _texInternalFormat = GL_SRGB8_ALPHA8;
-		    _texFormat = GL_RGBA;
-		    _texType = GL_UNSIGNED_BYTE;
-		}
-		else if (_pixelFormat == "RGB")
-		{
-		    _spec = ImageBufferSpec(width, height, 3, 24, ImageBufferSpec::Type::UINT8, "RGB");
-		    _texInternalFormat = GL_RGBA8;
-		    _texFormat = GL_RGB;
-		    _texType = GL_UNSIGNED_BYTE;
-		}
-		else if (_pixelFormat == "R16")
-		{
-		    _spec = ImageBufferSpec(width, height, 1, 16, ImageBufferSpec::Type::UINT16, "R");
-		    _texInternalFormat = GL_R16;
-		    _texFormat = GL_RED;
-		    _texType = GL_UNSIGNED_SHORT;
-		}
-		else if (_pixelFormat == "YUYV" || _pixelFormat == "UYVY")
-		{
-		    _spec = ImageBufferSpec(width, height, 3, 16, ImageBufferSpec::Type::UINT8, _pixelFormat);
-		    _texInternalFormat = GL_RG8;
-		    _texFormat = GL_RG;
-		    _texType = GL_UNSIGNED_SHORT;
-		}
-		else if (_pixelFormat == "D")
-		{
+		    {"RGBA", { 4, 32, ImageBufferSpec::Type::UINT8, "RGBA", GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE }}, 
+		    {"RGBA16", { 4, 32, ImageBufferSpec::Type::UINT8, "RGBA", GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE }}, 
+
+		    {"sRGBA", { 4, 32, ImageBufferSpec::Type::UINT8, "RGBA", GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE } },
+		    {"RGB", { 3, 32, ImageBufferSpec::Type::UINT8, "RGB", GL_RGBA8, GL_RGB, GL_UNSIGNED_BYTE } },
+		    {"R16", { 1, 16, ImageBufferSpec::Type::UINT16, "R", GL_R16, GL_RED, GL_UNSIGNED_SHORT } },
+
+		    {"YUYV", { 3, 16, ImageBufferSpec::Type::UINT8, _pixelFormat, GL_RG8, GL_RG, GL_UNSIGNED_SHORT, }},
+		    {"UYVY", { 3, 16, ImageBufferSpec::Type::UINT8, _pixelFormat, GL_RG8, GL_RG, GL_UNSIGNED_SHORT, }},
+
 		    // OpenGL ES supports only GL_DEPTH_COMPONENT32F for float values,
 		    // even though we're using 24bit float value, this works fine.
-		    _spec = ImageBufferSpec(width, height, 1, 24, ImageBufferSpec::Type::FLOAT, "R");
-		    _texInternalFormat = GL_DEPTH_COMPONENT32F;
-		    _texFormat = GL_DEPTH_COMPONENT;
-		    _texType = GL_FLOAT;
-		} else {
-		    _spec.width = width;
-		    _spec.height = height;
-
-		    Log::get() << Log::WARNING << "GLESTexture_Image::" << __FUNCTION__ << " - The given pixel format (" << _pixelFormat << ") does not match any of the supported types. Will use default values." << Log::endl;
-		}
+		    {"D", { 1, 24, ImageBufferSpec::Type::FLOAT, "R", GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT } } 
+		};
 	    }
-
+	    
 	    virtual void bind() final
 	    {
 		glGetIntegerv(GL_ACTIVE_TEXTURE, &_activeTexture);

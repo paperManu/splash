@@ -16,65 +16,18 @@ namespace Splash
 	    OpenGLTexture_Image(OpenGLTexture_Image&&) = delete;
 	    OpenGLTexture_Image& operator=(OpenGLTexture_Image&&) = delete;
 
-	    virtual void initFromPixelFormat(int width, int height) 
+	    virtual const std::unordered_map<std::string, InitTuple> getPixelFormatToInitTable() const final 
 	    {
-		// Can probably be boiled down to a map of:
-		// 	pixelFormat -> { numChannels, bitPerChannel, channelType, formatName, texInternalFormat, texFormat, texType }
-		// But that's probably asking for trouble, let's keep it simple.
-		if (_pixelFormat == "RGBA")
-		{
-		    _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
-		    _texInternalFormat = GL_RGBA8;
-		    _texFormat = GL_RGBA;
-		    _texType = GL_UNSIGNED_INT_8_8_8_8_REV;
-		}
-		else if (_pixelFormat == "sRGBA")
-		{
-		    _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
-		    _texInternalFormat = GL_SRGB8_ALPHA8;
-		    _texFormat = GL_RGBA;
-		    _texType = GL_UNSIGNED_INT_8_8_8_8_REV;
-		}
-		else if (_pixelFormat == "RGBA16")
-		{
-		    _spec = ImageBufferSpec(width, height, 4, 64, ImageBufferSpec::Type::UINT16, "RGBA");
-		    _texInternalFormat = GL_RGBA16;
-		    _texFormat = GL_RGBA;
-		    _texType = GL_UNSIGNED_SHORT;
-		}
-		else if (_pixelFormat == "RGB")
-		{
-		    _spec = ImageBufferSpec(width, height, 3, 24, ImageBufferSpec::Type::UINT8, "RGB");
-		    _texInternalFormat = GL_RGBA8;
-		    _texFormat = GL_RGB;
-		    _texType = GL_UNSIGNED_BYTE;
-		}
-		else if (_pixelFormat == "R16")
-		{
-		    _spec = ImageBufferSpec(width, height, 1, 16, ImageBufferSpec::Type::UINT16, "R");
-		    _texInternalFormat = GL_R16;
-		    _texFormat = GL_RED;
-		    _texType = GL_UNSIGNED_SHORT;
-		}
-		else if (_pixelFormat == "YUYV" || _pixelFormat == "UYVY")
-		{
-		    _spec = ImageBufferSpec(width, height, 3, 16, ImageBufferSpec::Type::UINT8, _pixelFormat);
-		    _texInternalFormat = GL_RG8;
-		    _texFormat = GL_RG;
-		    _texType = GL_UNSIGNED_SHORT;
-		}
-		else if (_pixelFormat == "D")
-		{
-		    _spec = ImageBufferSpec(width, height, 1, 24, ImageBufferSpec::Type::FLOAT, "R");
-		    _texInternalFormat = GL_DEPTH_COMPONENT24;
-		    _texFormat = GL_DEPTH_COMPONENT;
-		    _texType = GL_FLOAT;
-		} else {
-		    _spec.width = width;
-		    _spec.height = height;
-
-		    Log::get() << Log::WARNING << "OpenGLTexture_Image::" << __FUNCTION__ << " - The given pixel format (" << _pixelFormat << ") does not match any of the supported types. Will use default values." << Log::endl;
-		}
+		return {
+		    {"RGBA", {4, 32, ImageBufferSpec::Type::UINT8, "RGBA", GL_RGBA8, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV}},
+		    {"sRGBA", {4, 32, ImageBufferSpec::Type::UINT8, "RGBA", GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV}},
+		    {"RGBA16", {4, 64, ImageBufferSpec::Type::UINT16, "RGBA", GL_RGBA16, GL_RGBA, GL_UNSIGNED_SHORT}},
+		    {"RGB", {3, 24, ImageBufferSpec::Type::UINT8, "RGB", GL_RGBA8, GL_RGB, GL_UNSIGNED_BYTE}},
+		    {"R16", {1, 16, ImageBufferSpec::Type::UINT16, "R", GL_R16, GL_RED, GL_UNSIGNED_SHORT}},
+		    {"YUYV", {3, 16, ImageBufferSpec::Type::UINT8, _pixelFormat, GL_RG8, GL_RG, GL_UNSIGNED_SHORT}},
+		    {"UYVY", {3, 16, ImageBufferSpec::Type::UINT8, _pixelFormat, GL_RG8, GL_RG, GL_UNSIGNED_SHORT}},
+		    {"D", {1, 24, ImageBufferSpec::Type::FLOAT, "R", GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_FLOAT}},
+		};
 	    }
 
 	    virtual void bind() final

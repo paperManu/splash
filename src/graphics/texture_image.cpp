@@ -533,6 +533,29 @@ void Texture_Image::setGLTextureParameters() const {
 }
 
 /*************/
+void Texture_Image::initFromPixelFormat(int width, int height) 
+{
+    const auto pixelFormatToInit = getPixelFormatToInitTable();
+    const bool containsPixelFormat = pixelFormatToInit.find(_pixelFormat) != pixelFormatToInit.end();
+    if (containsPixelFormat) 
+    {
+	const auto initTuple = pixelFormatToInit.at(_pixelFormat);
+	_spec = ImageBufferSpec(width, height, initTuple.numChannels, initTuple.bitsPerChannel, initTuple.pixelBitFormat, initTuple.stringName);
+	_texInternalFormat = initTuple.texInternalFormat;
+	_texFormat = initTuple.texFormat;
+	_texType = initTuple.texType;
+    } 
+    else 
+    {
+	_spec.width = width;
+	_spec.height = height;
+
+	Log::get() << Log::WARNING << "GLESTexture_Image::" << __FUNCTION__ 
+	    << " - The given pixel format (" << _pixelFormat << ") does not match any of the supported types. Will use default values." << Log::endl;
+    }
+}
+
+/*************/
 void Texture_Image::registerAttributes()
 {
     Texture::registerAttributes();
