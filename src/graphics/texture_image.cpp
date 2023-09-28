@@ -372,13 +372,12 @@ bool Texture_Image::swapPBOs(const ImageBufferSpec& spec, int imageDataSize, std
     return true;
 }
 
-void Texture_Image::updateTextureFromPBO(bool isCompressed, GLenum internalFormat, const ImageBufferSpec& spec, GLenum glChannelOrder, GLenum dataFormat, std::shared_ptr<Image> img, int imageDataSize) 
+void Texture_Image::updateTextureFromImage(bool isCompressed, GLenum internalFormat, const ImageBufferSpec& spec, GLenum glChannelOrder, GLenum dataFormat, std::shared_ptr<Image> img, int imageDataSize) 
 {
-
-    // Copy the pixels from the current PBO to the texture
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboUploadIndex]);
     glBindTexture(_textureType, _glTex);
 
+    // (Re-)allocate space for the texture
     if (!isCompressed)
 	glTexSubImage2D(_textureType, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, 0);
     else
@@ -472,7 +471,7 @@ void Texture_Image::update()
     // Update the content of the texture, i.e the image
     else
     {
-	updateTextureFromPBO(isCompressed, internalFormat, spec, glChannelOrder, dataFormat,  img, imageDataSize);
+	updateTextureFromImage(isCompressed, internalFormat, spec, glChannelOrder, dataFormat,  img, imageDataSize);
     }
 
     _spec.timestamp = spec.timestamp;

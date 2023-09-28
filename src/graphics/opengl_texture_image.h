@@ -1,3 +1,27 @@
+/*
+ * Copyright (C) 2023 Emmanuel Durand
+ *
+ * This file is part of Splash.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Splash is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
+ * @opengl_texture_image.h
+ * Contains OpenGL 4.5 specific functionality for textures.
+ */
+
 #ifndef SPLASH_OPENGL_TEXTURE_IMAGE_H
 #define SPLASH_OPENGL_TEXTURE_IMAGE_H
 
@@ -8,8 +32,7 @@ namespace Splash
     class OpenGLTexture_Image final: public Texture_Image 
     {
 	public:
-	    explicit OpenGLTexture_Image(RootObject* root): Texture_Image(root) 
-	{ }
+	    explicit OpenGLTexture_Image(RootObject* root): Texture_Image(root) { }
 
 	    OpenGLTexture_Image(const OpenGLTexture_Image&) = delete;
 	    OpenGLTexture_Image& operator=(const OpenGLTexture_Image&) = delete;
@@ -20,7 +43,7 @@ namespace Splash
 
 	    virtual void bind() final;
 
-	    void unbind() final;
+	    virtual void unbind() final;
 
 	    virtual void generateMipmap() const final;
 
@@ -32,9 +55,9 @@ namespace Splash
 
 	    virtual bool updatePbos(int width, int height, int bytes) final;
 
-	    std::optional<std::pair<GLenum, GLenum>> updateUncompressedInternalAndDataFormat(const ImageBufferSpec& spec, const Values& srgb);
+	    virtual std::optional<std::pair<GLenum, GLenum>> updateUncompressedInternalAndDataFormat(const ImageBufferSpec& spec, const Values& srgb);
 
-	    void readFromImageIntoPBO(GLuint pboId, int imageDataSize, std::shared_ptr<Image> img) const;
+	    virtual void readFromImageIntoPBO(GLuint pboId, int imageDataSize, std::shared_ptr<Image> img) const;
 
 	    virtual void copyPixelsBetweenPBOs(int imageDataSize) const final;
 	private:

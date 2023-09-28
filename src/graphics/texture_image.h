@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Emmanuel Durand
+ * Copyright (C) 2023 Emmanuel Durand
  *
  * This file is part of Splash.
  *
@@ -18,8 +18,8 @@
  */
 
 /*
- * @texture.h
- * The Texture_Image base class
+ * @texture_image.h
+ * The Texture_Image base class. Contains normal and virtual functions needed to use both OpenGL 4.5 and OpenGL ES textures.
  */
 
 #ifndef SPLASH_TEXTURE_IMAGE_H
@@ -227,8 +227,6 @@ class Texture_Image : public Texture
      * \return Whether the format is a compressed one, can potentially indicate that `spec` was updated.
      */
     bool updateCompressedSpec(ImageBufferSpec& spec) const;
-    
-    virtual std::optional<std::pair<GLenum, GLenum>> updateCompressedInternalAndDataFormat(const ImageBufferSpec& spec, const Values& srgb) const;
 
     /**
      * \return Given a spec (more specifically, its format), returns a pair of `{internalFormat, dataFormat}` if the spec is supported. Otherwise, returns an empty optional.
@@ -271,11 +269,11 @@ class Texture_Image : public Texture
      */
     virtual void readFromImageIntoPBO(GLuint pboId, int imageDataSize, std::shared_ptr<Image> img) const = 0;
 
-    void updateTextureFromPBO(bool isCompressed, GLenum internalFormat, const ImageBufferSpec& spec, GLenum glChannelOrder, GLenum dataFormat, std::shared_ptr<Image> img, int imageDataSize);
     /**
      * Reads the data from the given image and uploads it to the GPU through PBOs, reallocating space if needed.
      * \sa updateTextureFromImage().
      */
+    void updateTextureFromImage(bool isCompressed, GLenum internalFormat, const ImageBufferSpec& spec, GLenum glChannelOrder, GLenum dataFormat, std::shared_ptr<Image> img, int imageDataSize);
 
     /**
      * Copies the data between `_pbos[0]` and `_pbos[1]`.
