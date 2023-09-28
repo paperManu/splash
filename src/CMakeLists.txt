@@ -155,6 +155,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/filter_custom.cpp
     graphics/framebuffer.cpp
     graphics/geometry.cpp
+    graphics/gles_texture_image.cpp
     graphics/gpu_buffer.cpp
     graphics/object.cpp
     graphics/object_library.cpp

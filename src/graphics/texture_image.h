@@ -156,7 +156,7 @@ class Texture_Image : public Texture
     void initFromPixelFormat(int width, int height);
     
     struct InitTuple;
-    virtual const std::unordered_map<std::string, InitTuple> getPixelFormatToInitTable() const = 0;
+    virtual std::unordered_map<std::string, InitTuple> getPixelFormatToInitTable() const = 0;
 
     virtual void getTextureLevelParameteriv(GLenum target, GLint level, GLenum pname, GLint* params) const = 0;
     virtual void getTextureParameteriv(GLenum target, GLenum pname, GLint* params) const = 0;

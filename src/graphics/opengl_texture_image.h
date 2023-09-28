@@ -16,7 +16,7 @@ namespace Splash
 	    OpenGLTexture_Image(OpenGLTexture_Image&&) = delete;
 	    OpenGLTexture_Image& operator=(OpenGLTexture_Image&&) = delete;
 
-	    virtual const std::unordered_map<std::string, InitTuple> getPixelFormatToInitTable() const final 
+	    virtual std::unordered_map<std::string, InitTuple> getPixelFormatToInitTable() const final 
 	    {
 		return {
 		    {"RGBA", {4, 32, ImageBufferSpec::Type::UINT8, "RGBA", GL_RGBA8, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV}},
