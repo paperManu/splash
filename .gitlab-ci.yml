@@ -15,31 +15,6 @@ cache:
     - ccache/
 
 
-# ┏━╸╻ ╻┏┓╻┏━╸╺┳╸╻┏━┓┏┓╻┏━┓
-# ┣╸ ┃ ┃┃┗┫┃   ┃ ┃┃ ┃┃┗┫┗━┓
-# ╹  ┗━┛╹ ╹┗━╸ ╹ ╹┗━┛╹ ╹┗━┛
-.add_jammy_mpa: &add_jammy_mpa
-  - DEBIAN_FRONTEND=noninteractive apt install -y coreutils wget &&
-    wget -qO - https://sat-mtl.gitlab.io/distribution/mpa-jammy-amd64-nvidia/sat-metalab-mpa-keyring.gpg
-        | gpg --dearmor
-        | dd of=/usr/share/keyrings/sat-metalab-mpa-keyring.gpg &&
-    echo 'deb [ arch=amd64, signed-by=/usr/share/keyrings/sat-metalab-mpa-keyring.gpg ] https://sat-mtl.gitlab.io/distribution/mpa-jammy-amd64-nvidia/debs/ sat-metalab main'
-        | tee /etc/apt/sources.list.d/sat-metalab-mpa.list &&
-    echo 'deb [ arch=amd64, signed-by=/usr/share/keyrings/sat-metalab-mpa-keyring.gpg ] https://sat-mtl.gitlab.io/distribution/mpa-datasets/debs/ sat-metalab main main/debug'
-        | tee /etc/apt/sources.list.d/sat-metalab-mpa-datasets.list &&
-    apt update
-
-.add_focal_mpa: &add_focal_mpa
-  - DEBIAN_FRONTEND=noninteractive apt install -y coreutils wget &&
-    wget -qO - https://sat-mtl.gitlab.io/distribution/mpa-focal-amd64-nvidia/sat-metalab-mpa-keyring.gpg
-        | gpg --dearmor
-        | dd of=/usr/share/keyrings/sat-metalab-mpa-keyring.gpg &&
-    echo 'deb [ arch=amd64, signed-by=/usr/share/keyrings/sat-metalab-mpa-keyring.gpg ] https://sat-mtl.gitlab.io/distribution/mpa-focal-amd64-nvidia/debs/ sat-metalab main'
-        | tee /etc/apt/sources.list.d/sat-metalab-mpa.list &&
-    echo 'deb [ arch=amd64, signed-by=/usr/share/keyrings/sat-metalab-mpa-keyring.gpg ] https://sat-mtl.gitlab.io/distribution/mpa-datasets/debs/ sat-metalab main'
-        | tee /etc/apt/sources.list.d/sat-metalab-mpa-datasets.list &&
-    apt update
-
 #
 # ╺┳╸┏━╸┏━┓╺┳╸┏━┓
 #  ┃ ┣╸ ┗━┓ ┃ ┗━┓
@@ -63,10 +38,6 @@ test:20.04:gcc-bundled-libs:
   stage: test
   image: ubuntu:20.04
   script: 
-    # Install Metalab packages
-    - *add_focal_mpa
-    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
-
     # Prepare bundled dependencies
     - ./make_deps.sh
 
@@ -84,10 +55,6 @@ test:20.04:clang-bundled-libs:
   stage: test
   image: ubuntu:20.04
   script: 
-    # Install Metalab packages
-    - *add_focal_mpa
-    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
-
     # Prepare bundled dependencies
     - ./make_deps.sh
 
@@ -106,10 +73,6 @@ test:20.04:gcc-system-libs:
   stage: test
   image: ubuntu:20.04
   script: 
-    # Install Metalab packages
-    - *add_focal_mpa
-    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
-
     # Test using system libs
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
       libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev
@@ -127,10 +90,6 @@ test:22.04:gcc-bundled-libs:
   stage: test
   image: ubuntu:22.04
   script: 
-    # Install Metalab packages
-    - *add_jammy_mpa
-    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
-
     # Prepare bundled dependencies
     - ./make_deps.sh
 
@@ -148,10 +107,6 @@ test:22.04:clang-bundled-libs:
   stage: test
   image: ubuntu:22.04
   script: 
-    # Install Metalab packages
-    - *add_jammy_mpa
-    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
-
     # Prepare bundled dependencies
     - ./make_deps.sh
 
@@ -170,10 +125,6 @@ test:22.04:gcc-system-libs:
   stage: test
   image: ubuntu:22.04
   script: 
-    # Install Metalab packages
-    - *add_jammy_mpa
-    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
-
     # Test using system libs
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
       libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev
@@ -216,10 +167,6 @@ coverage:
   stage: coverage
   image: ubuntu:20.04
   script: 
-    # Install Metalab packages
-    - *add_focal_mpa
-    - DEBIAN_FRONTEND=noninteractive apt install -y libshmdata-dev
-
     # Install coverage tools
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends lcov zip
     - ./make_deps.sh
@@ -228,6 +175,7 @@ coverage:
     - make -sC build -j$(nproc)
     - make -sC build check_coverage
     - zip -r coverage.zip build/coverage
+  coverage: '/  lines......: \d+\.\d+/'
   artifacts:
     name: "splash_coverage_${CI_BUILD_REF_NAME}"
     paths:
