@@ -184,6 +184,8 @@ namespace Splash {
 
     std::shared_ptr<Renderer> Renderer::findCompatibleApi() 
     {
+	Log::get() << Log::MESSAGE << "No rendering API specified, will try finding a compatible one" << Log::endl;
+
 	const std::vector<std::shared_ptr<Renderer>> renderers = {
 	     std::make_shared<OpenGLRenderer>(),
 	     std::make_shared<GLESRenderer>()
@@ -191,10 +193,15 @@ namespace Splash {
 
 	for(auto& renderer: renderers) 
 	{
+	    Log::get() << Log::MESSAGE << "Trying API: " << renderer->getApiSpecificVersion().toString() << Log::endl;
 	    if(tryCreateWindow(renderer)) 
+	    {
+		Log::get() << Log::MESSAGE << "Window created succesfully!" << Log::endl;
 		return renderer;
+	    }
 	}
 	
+	Log::get() << Log::MESSAGE << "Failed to create a window with any rendering API!" << Log::endl;
 	return {};
     }
 

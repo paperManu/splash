@@ -392,13 +392,13 @@ void Scene::run()
 {
     tracy::SetThreadName("Scene");
 
-    auto mainWindow = _renderer->getMainWindow();
-    if (!mainWindow)
+    if (!_isInitialized)
     {
         Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - No rendering context has been created" << Log::endl;
         return;
     }
 
+    auto mainWindow = _renderer->getMainWindow();
     mainWindow->setAsCurrentContext();
 
     while (_isRunning)
@@ -634,9 +634,12 @@ void Scene::init(const std::string& name)
     {
 	_isInitialized = false;
 	return;
+    } 
+    else 
+    {
+	_isInitialized = true;
+	_renderer->init(name);
     }
-
-    _renderer->init(name);
 }
 
 /*************/
