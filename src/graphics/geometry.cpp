@@ -93,7 +93,7 @@ void Geometry::activateForFeedback()
         for (size_t i = 0; i < _glBuffers.size(); ++i)
         {
             // This creates a copy of the buffer
-            auto altBuffer = std::make_shared<GpuBuffer>(*_glBuffers[i]);
+            auto altBuffer = _glBuffers[i]->copyBuffer();
             altBuffer->resize(_temporaryBufferSize);
             _glTemporaryBuffers[i] = altBuffer;
         }
@@ -273,26 +273,26 @@ void Geometry::update()
             return;
 
         _verticesNumber = vertices.size() / 4;
-        _glBuffers[0] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, vertices.data());
+        _glBuffers[0] = _root->getRenderer()->createGpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, vertices.data());
 
         std::vector<float> texcoords = _mesh->getUVCoordsFlat();
         if (!texcoords.empty())
-            _glBuffers[1] = std::make_shared<GpuBuffer>(2, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, texcoords.data());
+            _glBuffers[1] = _root->getRenderer()->createGpuBuffer(2, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, texcoords.data());
         else
-            _glBuffers[1] = std::make_shared<GpuBuffer>(2, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr);
+            _glBuffers[1] = _root->getRenderer()->createGpuBuffer(2, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr);
 
         std::vector<float> normals = _mesh->getNormalsFlat();
         if (!normals.empty())
-            _glBuffers[2] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, normals.data());
+            _glBuffers[2] = _root->getRenderer()->createGpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, normals.data());
         else
-            _glBuffers[2] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr);
+            _glBuffers[2] = _root->getRenderer()->createGpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr);
 
         // An additional annexe buffer, to be filled by compute shaders. Contains a vec4 for each vertex
         std::vector<float> annexe = _mesh->getAnnexeFlat();
         if (!annexe.empty())
-            _glBuffers[3] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, annexe.data());
+            _glBuffers[3] = _root->getRenderer()->createGpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, annexe.data());
         else
-            _glBuffers[3] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr);
+            _glBuffers[3] = _root->getRenderer()->createGpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr);
 
         for (auto& v : _vertexArray)
             glDeleteVertexArrays(1, &(v.second));
@@ -317,7 +317,7 @@ void Geometry::update()
         if (!_glTemporaryBuffers[0])
         {
             _glTemporaryBuffers[0] =
-                std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, reinterpret_cast<GLvoid*>(_deserializedMesh->vertices.data()));
+                _root->getRenderer()->createGpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, reinterpret_cast<GLvoid*>(_deserializedMesh->vertices.data()));
         }
         else
         {
@@ -327,7 +327,7 @@ void Geometry::update()
 
         if (!_glTemporaryBuffers[1])
         {
-            _glTemporaryBuffers[1] = std::make_shared<GpuBuffer>(2, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, reinterpret_cast<GLvoid*>(_deserializedMesh->uvs.data()));
+            _glTemporaryBuffers[1] = _root->getRenderer()->createGpuBuffer(2, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, reinterpret_cast<GLvoid*>(_deserializedMesh->uvs.data()));
         }
         else
         {
@@ -338,7 +338,7 @@ void Geometry::update()
         if (!_glTemporaryBuffers[2])
         {
             _glTemporaryBuffers[2] =
-                std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, reinterpret_cast<GLvoid*>(_deserializedMesh->normals.data()));
+                _root->getRenderer()->createGpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, reinterpret_cast<GLvoid*>(_deserializedMesh->normals.data()));
         }
         else
         {
@@ -348,7 +348,7 @@ void Geometry::update()
 
         if (!_glTemporaryBuffers[3])
         {
-            _glTemporaryBuffers[3] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _deserializedMesh->annexe.data());
+            _glTemporaryBuffers[3] = _root->getRenderer()->createGpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _deserializedMesh->annexe.data());
         }
         else
         {

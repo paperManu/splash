@@ -1,11 +1,9 @@
 #ifndef SPLASH_GLES_RENDERER_H
 #define SPLASH_GLES_RENDERER_H
 
-// TODO: Change to an include guard to match splash's coding conventions
-#pragma once
-
 #include "./graphics/renderer.h"
 #include "./graphics/gles_texture_image.h"
+#include "graphics/gles_gpu_buffer.h"
 
 namespace Splash {
 
@@ -29,6 +27,11 @@ namespace Splash {
 	virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const final {
 	    return std::make_shared<GLESTexture_Image>(root);
 	};
+
+	virtual std::shared_ptr<GpuBuffer> createGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data) const override final 
+	{
+	    return std::make_shared<GLESGpuBuffer>(elementSize, type, usage, size, data);
+	}
     };
 
 }

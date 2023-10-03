@@ -156,10 +156,12 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/framebuffer.cpp
     graphics/geometry.cpp
     graphics/gles_texture_image.cpp
+    graphics/gles_gpu_buffer.cpp
     graphics/gpu_buffer.cpp
     graphics/object.cpp
     graphics/object_library.cpp
     graphics/opengl_texture_image.cpp
+    graphics/opengl_gpu_buffer.cpp
     graphics/renderer.cpp
     graphics/shader.cpp
     graphics/texture.cpp
