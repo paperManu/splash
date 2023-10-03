@@ -83,6 +83,7 @@ class RootObject : public BaseObject
 #else
         Link::ChannelType channelType{Link::ChannelType::zmq};
 #endif
+	Renderer::Api renderingApi{Renderer::Api::OpenGL};
     };
 
     enum Command

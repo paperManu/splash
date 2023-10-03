@@ -69,11 +69,12 @@ RootObject::Context parseArguments(int argc, char** argv)
             {"child", no_argument, 0, 'c'},
             {"ipc", required_argument, 0, 'C'},
             {"doNotSpawn", no_argument, 0, 'x'},
+            {"renderingApi", required_argument, 0, 'r'},
             {0, 0, 0, 0}
         };
 
         int optionIndex = 0;
-        auto ret = getopt_long(argc, argv, "+cdD:S:hHilC:o:p:P:stx", longOptions, &optionIndex);
+        auto ret = getopt_long(argc, argv, "+cdD:S:hHilC:o:p:P:stxr:", longOptions, &optionIndex);
 
         if (ret == -1)
             break;
@@ -102,6 +103,7 @@ RootObject::Context parseArguments(int argc, char** argv)
             std::cout << "\t-c (--child): run as a child controlled by a master Splash process\n";
             std::cout << "\t-C (--ipc): specify the interprocess communication channel (defaults to shmdata if active, otherwise zmq)\n";
             std::cout << "\t-x (--doNotSpawn): do not spawn subprocesses, which have to be ran manually\n";
+            std::cout << "\t-r (--renderingApi): specify the rendering API to use (defaults to OpenGL 4.5)\n";
             std::cout << "\n";
             exit(0);
         }
@@ -239,6 +241,18 @@ RootObject::Context parseArguments(int argc, char** argv)
             context.spawnSubprocesses = false;
             break;
         }
+	case 'r': 
+	{
+	    const auto argString = std::string(optarg);
+	    if (argString == "opengl")
+		context.renderingApi = Renderer::Api::OpenGL;
+	    else if (argString == "gles")
+		context.renderingApi = Renderer::Api::GLES;
+	    else 
+                Log::get() << Log::WARNING << "Splash::" << __FUNCTION__ << " - Wrong argument for --renderer, got " << argString << Log::endl;
+
+	    break;
+	}
         }
     }
 
