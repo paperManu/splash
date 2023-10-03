@@ -629,6 +629,13 @@ std::shared_ptr<GlWindow> Scene::getNewSharedWindow(const std::string& name)
 void Scene::init(const std::string& name)
 {
     _renderer = Renderer::create(_context.renderingApi);
+
+    if(!_renderer) 
+    {
+	_isInitialized = false;
+	return;
+    }
+
     _renderer->init(name);
 }
 

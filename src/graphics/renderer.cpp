@@ -6,7 +6,7 @@
 
 namespace Splash {
 
-    std::shared_ptr<Renderer> Renderer::create(Renderer::Api api)
+    std::shared_ptr<Renderer> Renderer::fromApi(Renderer::Api api)
     {
 	std::shared_ptr<Renderer> renderer;
 	switch(api) {
@@ -16,6 +16,36 @@ namespace Splash {
 
 	// Can't return in the switch, the compiler complains about
 	// "control reaches end of non-void function".
+	return renderer;
+    }
+
+    std::shared_ptr<Renderer> Renderer::create(std::optional<Renderer::Api> api)
+    {
+        glfwSetErrorCallback(glfwErrorCallback);
+
+        // GLFW stuff
+        if (!glfwInit())
+        {
+            Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
+            return nullptr;
+        }
+
+        const auto renderer = findGLVersion(api);
+        if (!renderer)
+        {
+            Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to find a suitable GL version (OpenGL 4.5 or OpenGL ES 3.2)" << Log::endl;
+            return nullptr;
+        }
+
+	const auto apiVersion = renderer->getApiSpecificVersion().toString();
+        Log::get() << Log::MESSAGE << "Renderer::" << __FUNCTION__ << " - GL version: " << apiVersion << Log::endl;
+
+#ifdef DEBUGGL
+        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+#else
+        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
+#endif
+
 	return renderer;
     }
 
@@ -84,32 +114,6 @@ namespace Splash {
 
     void Renderer::init(const std::string& name)
     {
-        glfwSetErrorCallback(glfwErrorCallback);
-
-        // GLFW stuff
-        if (!glfwInit())
-        {
-            Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
-            _isInitialized = false;
-            return;
-        }
-
-        const auto glVersion = findGLVersion();
-        if (!glVersion)
-        {
-            Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to find a suitable GL version (higher than 4.3)" << Log::endl;
-            _isInitialized = false;
-            return;
-        }
-
-        Log::get() << Log::MESSAGE << "Renderer::" << __FUNCTION__ << " - GL version: " << glVersion.value().toString() << Log::endl;
-
-#ifdef DEBUGGL
-        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
-#else
-        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
-#endif
-
         // Should already have most flags set by `findGLVersion`.
         GLFWwindow* window = glfwCreateWindow(512, 512, name.c_str(), NULL, NULL);
 
@@ -157,27 +161,57 @@ namespace Splash {
         _mainWindow->releaseContext();
     }
 
-    std::optional<ApiVersion> Renderer::findGLVersion()
+    bool Renderer::tryCreateWindow(std::shared_ptr<Renderer> renderer)
     {
-        setApiSpecificFlags();
+	renderer->setApiSpecificFlags();
 
-	auto apiVersion = getApiSpecificVersion();
+	auto apiVersion = renderer->getApiSpecificVersion();
 
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, std::get<0>(apiVersion.version));
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, std::get<1>(apiVersion.version));
-        glfwWindowHint(GLFW_VISIBLE, false);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, std::get<0>(apiVersion.version));
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, std::get<1>(apiVersion.version));
+	glfwWindowHint(GLFW_VISIBLE, false);
 
-        GLFWwindow* window = glfwCreateWindow(512, 512, "test_window", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(512, 512, "test_window", NULL, NULL);
 
-        if (window)
-        {
-            glfwDestroyWindow(window);
-            return apiVersion;
-        }
+	if (window)
+	{
+	    glfwDestroyWindow(window);
+	    return true;
+	}
 
-        return {};
+	return false;
     }
 
+    std::shared_ptr<Renderer> Renderer::findCompatibleApi() 
+    {
+	const std::vector<std::shared_ptr<Renderer>> renderers = {
+	     std::make_shared<OpenGLRenderer>(),
+	     std::make_shared<GLESRenderer>()
+	};
+
+	for(auto& renderer: renderers) 
+	{
+	    if(tryCreateWindow(renderer)) 
+		return renderer;
+	}
+	
+	return {};
+    }
+
+    std::shared_ptr<Renderer> Renderer::findGLVersion(std::optional<Renderer::Api> api)
+    {
+	if(api) 
+	{
+	    auto renderer = Renderer::fromApi(api.value());
+
+	    if(tryCreateWindow(renderer)) 
+		return renderer;
+	    else 
+		return {};
+	}
+	else 
+	    return findCompatibleApi();
+    }
 
     std::shared_ptr<Texture_Image> Renderer::createTexture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisample, bool cubemap) const {
 	auto tex = createTexture_Image(root);
