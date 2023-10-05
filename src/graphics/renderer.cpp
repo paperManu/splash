@@ -202,12 +202,12 @@ std::shared_ptr<Renderer> Renderer::findCompatibleApi()
 	Log::get() << Log::MESSAGE << "Trying API: " << renderer->getApiSpecificVersion().toString() << Log::endl;
 	if(tryCreateWindow(renderer)) 
 	{
-	    Log::get() << Log::MESSAGE << "Window created succesfully!" << Log::endl;
+	    Log::get() << Log::MESSAGE << "Context created succesfully!" << Log::endl;
 	    return renderer;
 	}
     }
     
-    Log::get() << Log::MESSAGE << "Failed to create a window with any rendering API!" << Log::endl;
+    Log::get() << Log::MESSAGE << "Failed to create a context with any rendering API!" << Log::endl;
     return {};
 }
 
