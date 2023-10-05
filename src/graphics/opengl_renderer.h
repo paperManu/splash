@@ -8,24 +8,24 @@
 namespace Splash {
     class OpenGLRenderer : public Renderer
     {
-	virtual void setApiSpecificFlags() const final
+	virtual void setApiSpecificFlags() const override final
 	{
 	    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	    glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
 	    glfwWindowHint(GLFW_DEPTH_BITS, 24);
 	}
 
-	virtual ApiVersion getApiSpecificVersion() const final 
+	virtual ApiVersion getApiSpecificVersion() const override final 
 	{
 	    return {{4, 5}, "OpenGL"};
 	}
 
-	virtual void loadApiSpecificGlFunctions() const final 
+	virtual void loadApiSpecificGlFunctions() const override final 
 	{ 
 	    gladLoadGLLoader((GLADloadproc)glfwGetProcAddress); 
 	};
 
-	virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const final 
+	virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const override final 
 	{
 	    return std::make_shared<OpenGLTexture_Image>(root);
 	};

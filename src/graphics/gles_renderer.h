@@ -9,22 +9,22 @@ namespace Splash {
 
     class GLESRenderer : public Renderer
     {
-	virtual void setApiSpecificFlags() const final
+	virtual void setApiSpecificFlags() const override final
 	{
 	    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
 	}
 
-	virtual ApiVersion getApiSpecificVersion() const final 
+	virtual ApiVersion getApiSpecificVersion() const override final 
 	{
 	    return {{3, 2}, "OpenGL ES"};
 	}
 
-	virtual void loadApiSpecificGlFunctions() const final 
+	virtual void loadApiSpecificGlFunctions() const override final 
 	{ 
 	    gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress); 
 	}
 
-	virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const final {
+	virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const override final {
 	    return std::make_shared<GLESTexture_Image>(root);
 	};
 
