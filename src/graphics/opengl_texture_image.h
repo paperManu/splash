@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Emmanuel Durand
+ * Copyright (C) 2023 Tarek Yasser
  *
  * This file is part of Splash.
  *
