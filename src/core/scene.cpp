@@ -30,7 +30,6 @@
 #include "./utils/osutils.h"
 #include "./utils/scope_guard.h"
 #include "./utils/timer.h"
-#include "glad/glad.h"
 
 #if HAVE_GPHOTO and HAVE_OPENCV
 #include "./controller/colorcalibrator.h"
