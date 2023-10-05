@@ -147,19 +147,25 @@ class Renderer
         Log::get() << Log::ERROR << "glfwErrorCallback - " << msg << Log::endl;
     }
 
-    // If `api` contains a value, tries creating a window with only the given API, which can fail.
-    // If `api` is none, tries OpenGL 4.5, followed by GLES 3.2. This can also fail if the device does not support either.
+    /**
+     * If `api` contains a value, tries creating a window with only the given API, which can fail.
+     * If `api` is none, tries OpenGL 4.5, followed by GLES 3.2. This can also fail if the device does not support either.
+     * \return a specific renderer implementation if creating a context succeeds, nullptr if it fails.
+     */
     static std::shared_ptr<Renderer> findGLVersion(std::optional<Renderer::Api> api);
 
-    // Loops through a list of predetermined renderers with different APIs, returns the first
-    // renderer that works.
+    /*
+     * Loops through a list of predetermined renderers with different APIs.
+     * \return The first  renderer that works.
+     */
     static std::shared_ptr<Renderer> findCompatibleApi();
 
-    // Creates a test GLFW window with the given renderer
-    // The renderer sets window flags and hints.
-    // Can fail if the given renderer's API is not supported. For example: creating an OpenGL 4.5
-    // context on the raspberry pi which doesn't support it.
-    static bool tryCreateWindow(std::shared_ptr<Renderer> renderer);
+    /**
+     * Creates a hidden test GLFW window with the given renderer, the renderer sets window flags and hints specific to the API it implements.
+     * Can fail if the given renderer's API is not supported. For example: creating an OpenGL 4.5 context on the raspberry pi which doesn't support it.
+     * \return true if a context was successfully created, false otherwise.
+     */
+    static bool tryCreateContext(std::shared_ptr<Renderer> renderer);
 };
 
 } // namespace Splash

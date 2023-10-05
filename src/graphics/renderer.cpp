@@ -166,7 +166,7 @@ void Renderer::init(const std::string& name)
 }
 
 /*************/
-bool Renderer::tryCreateWindow(std::shared_ptr<Renderer> renderer)
+bool Renderer::tryCreateContext(std::shared_ptr<Renderer> renderer)
 {
     renderer->setApiSpecificFlags();
 
@@ -200,7 +200,7 @@ std::shared_ptr<Renderer> Renderer::findCompatibleApi()
     for(auto& renderer: renderers) 
     {
 	Log::get() << Log::MESSAGE << "Trying API: " << renderer->getApiSpecificVersion().toString() << Log::endl;
-	if(tryCreateWindow(renderer)) 
+	if(tryCreateContext(renderer)) 
 	{
 	    Log::get() << Log::MESSAGE << "Context created succesfully!" << Log::endl;
 	    return renderer;
@@ -218,7 +218,7 @@ std::shared_ptr<Renderer> Renderer::findGLVersion(std::optional<Renderer::Api> a
     {
 	auto renderer = Renderer::fromApi(api.value());
 
-	if(tryCreateWindow(renderer)) 
+	if(tryCreateContext(renderer)) 
 	    return renderer;
 	else 
 	    return {};
