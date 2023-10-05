@@ -136,7 +136,7 @@ void GpuBuffer::resizeBuffer(GLuint& bufferId, GLsizeiptr size)
 {
     int bufferSize = 0;
     getBufferParameteriv(bufferId, GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &bufferSize);
-    if (static_cast<uint32_t>(bufferSize) < size)
+    if (static_cast<GLsizeiptr>(bufferSize) < size)
     {
 	glDeleteBuffers(1, &bufferId);
 	bufferId = generateAndBindBuffer();
