@@ -13,8 +13,8 @@ GLESGpuBuffer::GLESGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_
 /*************/
 void GLESGpuBuffer::zeroBuffer() 
 {
-    // Previously used `glClearBufferData` with the data set to `nullptr`, this causes the buffer to be filled with zeros. Unfortunately, this function is not available in OpenGL
-    // ES, so we make do with a manual upload.
+    // Previously used `glClearBufferData` with the data set to `nullptr`, this causes the buffer to be filled with zeros. Unfortunately, this function is not available in OpenGL ES, 
+    // so we make do with a manual upload.
     const auto zerosSize = _size * _elementSize * _baseSize;
     const auto zeroBuffer = std::vector<char>(zerosSize, 0);
 
