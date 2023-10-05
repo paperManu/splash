@@ -103,7 +103,7 @@ RootObject::Context parseArguments(int argc, char** argv)
             std::cout << "\t-c (--child): run as a child controlled by a master Splash process\n";
             std::cout << "\t-C (--ipc): specify the interprocess communication channel (defaults to shmdata if active, otherwise zmq)\n";
             std::cout << "\t-x (--doNotSpawn): do not spawn subprocesses, which have to be ran manually\n";
-            std::cout << "\t-r (--renderingApi): specify the rendering API to use (defaults to OpenGL 4.5)\n";
+            std::cout << "\t-r (--renderingApi): specify the rendering API to use: opengl (default), gles\n";
             std::cout << "\n";
             exit(0);
         }
