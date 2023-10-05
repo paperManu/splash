@@ -34,8 +34,8 @@
 namespace Splash
 {
 
-    class RootObject;
-    class Texture_Image;
+class RootObject;
+class Texture_Image;
 
 struct ApiVersion
 {

@@ -25,35 +25,37 @@
 #include "./graphics/opengl_gpu_buffer.h"
 
 namespace Splash {
-    class OpenGLRenderer : public Renderer
+
+class OpenGLRenderer : public Renderer
+{
+    virtual void setApiSpecificFlags() const override final
     {
-	virtual void setApiSpecificFlags() const override final
-	{
-	    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	    glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
-	    glfwWindowHint(GLFW_DEPTH_BITS, 24);
-	}
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
+	glfwWindowHint(GLFW_DEPTH_BITS, 24);
+    }
 
-	virtual ApiVersion getApiSpecificVersion() const override final 
-	{
-	    return {{4, 5}, "OpenGL"};
-	}
+    virtual ApiVersion getApiSpecificVersion() const override final 
+    {
+	return {{4, 5}, "OpenGL"};
+    }
 
-	virtual void loadApiSpecificGlFunctions() const override final 
-	{ 
-	    gladLoadGLLoader((GLADloadproc)glfwGetProcAddress); 
-	};
-
-	virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const override final 
-	{
-	    return std::make_shared<OpenGLTexture_Image>(root);
-	};
-
-	virtual std::shared_ptr<GpuBuffer> createGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data) const override final 
-	{
-	    return std::make_shared<OpenGLGpuBuffer>(elementSize, type, usage, size, data);
-	}
+    virtual void loadApiSpecificGlFunctions() const override final 
+    { 
+	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress); 
     };
+
+    virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const override final 
+    {
+	return std::make_shared<OpenGLTexture_Image>(root);
+    };
+
+    virtual std::shared_ptr<GpuBuffer> createGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data) const override final 
+    {
+	return std::make_shared<OpenGLGpuBuffer>(elementSize, type, usage, size, data);
+    }
+};
+
 }
 
 #endif
