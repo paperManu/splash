@@ -115,8 +115,20 @@ class Renderer
     virtual std::shared_ptr<GpuBuffer> createGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data) const = 0;
 
   protected:
+    /**
+     * Sets API specific flags for OpenGL or OpenGL ES. For example, enables sRGB for OpenGL, or explicitly requests an OpenGL ES context.
+     */
     virtual void setApiSpecificFlags() const = 0;
+
+    /**
+     * \return A simple struct containing the major and minor OpenGL versions, along with a string name.
+     */
     virtual ApiVersion getApiSpecificVersion() const = 0;
+
+    /**
+     * \return Calls the appropriate loader for each API. Calls `gladLoadGLES2Loader` for OpenGL ES, and `gladLoadGLLoader`. Note that calling an incorrect loader might lead to
+     * segfaults due to API specific function not getting loaded, leaving the pointers as null.
+     */
     virtual void loadApiSpecificGlFunctions() const = 0;
 
   private:
