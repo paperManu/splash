@@ -160,7 +160,7 @@ void Texture_Image::resize(int width, int height)
     if (!_resizable)
         return;
     if (static_cast<uint32_t>(width) != _spec.width || static_cast<uint32_t>(height) != _spec.height)
-        reset(width, height, _pixelFormat, 0, _multisample, _cubemap);
+        reset(width, height, _pixelFormat, nullptr, _multisample, _cubemap);
 }
 
 /*************/
