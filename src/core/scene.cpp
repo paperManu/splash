@@ -630,15 +630,10 @@ void Scene::init(const std::string& name)
     _renderer = Renderer::create(_context.renderingApi);
 
     if(!_renderer) 
-    {
-	_isInitialized = false;
 	return;
-    } 
-    else 
-    {
-	_isInitialized = true;
-	_renderer->init(name);
-    }
+
+    _isInitialized = true;
+    _renderer->init(name);
 }
 
 /*************/
