@@ -3,8 +3,8 @@
 #include <sstream>
 #include <unordered_map>
 
-#include "graphics/gles_gpu_buffer.h"
-#include "graphics/opengl_gpu_buffer.h"
+#include "./graphics/gles_gpu_buffer.h"
+#include "./graphics/opengl_gpu_buffer.h"
 
 namespace Splash
 {

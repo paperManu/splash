@@ -3,7 +3,7 @@
 
 #include "./graphics/renderer.h"
 #include "./graphics/gles_texture_image.h"
-#include "graphics/gles_gpu_buffer.h"
+#include "./graphics/gles_gpu_buffer.h"
 
 namespace Splash {
 

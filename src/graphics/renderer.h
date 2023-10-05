@@ -29,7 +29,7 @@
 #include "./core/graph_object.h"
 #include "./utils/log.h"
 #include "./graphics/gl_window.h"
-#include "graphics/gpu_buffer.h"
+#include "./graphics/gpu_buffer.h"
 
 namespace Splash
 {

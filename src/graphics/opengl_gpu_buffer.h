@@ -1,7 +1,7 @@
 #ifndef SPLASH_OpenGL_GPU_BUFFER_H
 #define SPLASH_OpenGL_GPU_BUFFER_H
 
-#include "graphics/gpu_buffer.h"
+#include "./graphics/gpu_buffer.h"
 
 namespace Splash 
 {

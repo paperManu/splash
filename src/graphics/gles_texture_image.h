@@ -25,7 +25,7 @@
 #ifndef SPLASH_GLES_TEXTURE_IMAGE_H
 #define SPLASH_GLES_TEXTURE_IMAGE_H
 
-#include "graphics/texture_image.h"
+#include "./graphics/texture_image.h"
 
 namespace Splash 
 {
