@@ -90,8 +90,7 @@ float Framebuffer::getDepthAt(float x, float y)
 {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
 
-    GLfloat depth = -1;
-    glReadBuffer(GL_NONE);
+    GLfloat depth = 0.f;
     glReadPixels(x, y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
