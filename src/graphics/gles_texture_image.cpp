@@ -8,7 +8,8 @@ std::unordered_map<std::string, Texture_Image::InitTuple> GLESTexture_Image::get
 {
     // Lists the supported combinations of internal formats, formats, and texture types: https://docs.gl/es3/glTexStorage2D
     return {
-	// OpenGL ES doesn't support 16 bpc (bit per channel) RGBA textures, so we treat them as 8 bpc
+	// OpenGL ES doesn't support 16 bpc (bit per channel) RGBA textures, so we treat them as 8 bpc.
+	//
 	// OpenGL 4 vs ES 3.1: GL_UNSIGNED_INT_8_8_8_8_REV seems to be unavailable
 	// The docs say to use GL_RGBA8, GL_RGBA, and GL_UNSIGNED_BYTE for the internal format,
 	// texture format, and type respectively.
