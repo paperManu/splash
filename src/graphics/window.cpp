@@ -624,7 +624,7 @@ void Window::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
     std::lock_guard<std::mutex> lock(_callbackMutex);
     std::vector<double> pos{xpos, ypos};
     _mousePos.first = win;
-    _mousePos.second = move(pos);
+    _mousePos.second = std::move(pos);
 }
 
 /*************/
