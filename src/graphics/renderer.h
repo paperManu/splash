@@ -62,6 +62,8 @@ class Renderer
     static std::shared_ptr<Renderer> fromApi(Renderer::Api api);
     static std::shared_ptr<Renderer> create(std::optional<Renderer::Api> api);
 
+    virtual ~Renderer() = default;
+
     /**
      *  Callback for GL errors and warnings
      *  TODO: Make private once `Scene::getNewSharedWindow` is moved to the renderer.

@@ -125,7 +125,7 @@ class Texture_Image : public Texture
     /**
      * Destructor
      */
-    ~Texture_Image();
+    virtual ~Texture_Image();
 
     /**
      * Constructors/operators

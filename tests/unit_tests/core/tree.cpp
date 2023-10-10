@@ -183,8 +183,8 @@ TEST_CASE("Testing adding and cutting existing branches and leaves")
     CHECK(leaf.get() != nullptr);
     oakSeeds = oak.getUpdateSeedList();
 
-    maple.addBranchAt("/", move(branch));
-    maple.addLeafAt("/", move(leaf));
+    maple.addBranchAt("/", std::move(branch));
+    maple.addLeafAt("/", std::move(leaf));
     CHECK(maple == beech);
     CHECK(oak != beech);
 
