@@ -1,6 +1,16 @@
 Splash release notes
 ====================
 
+splash 0.9.40 (2023-10-02)
+-------------------------
+Improvements:
+* Updated ZMQ version
+* Removed use of Metalab package archive for (soon-to-be-submoduled) shmdata
+
+Bugs fixed:
+* Fixed coverage extraction for Gitlab
+* Fixed ChannelInput_ZMQ to poll sockets before receiving messages/buffers
+
 splash 0.9.38 (2023-09-02)
 -------------------------
 Improvements:
