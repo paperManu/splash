@@ -94,6 +94,10 @@ Scene::Scene(Context context)
 /*************/
 Scene::~Scene()
 {
+    // No renderer, probably means we failed to init anyway so no clean up is needed.
+    if (!_renderer) 
+	return;
+
     // Cleanup every object
     if (const auto mainWindow = _renderer->getMainWindow(); mainWindow)
     {
