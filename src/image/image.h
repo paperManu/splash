@@ -180,8 +180,9 @@ class Image : public BufferObject
     bool _srgb{true};
     bool _benchmark{false};
 
-    void createDefaultImage(); //< Create a default black image
-    void createPattern();      //< Create a default pattern
+    void initFromSpec(const ImageBufferSpec& spec); //< Create an unintialized image with the passed spec.
+    void createDefaultImage();                      //< Create a default black image
+    void createPattern();                           //< Create a default pattern
 
     /**
      * Update the _mediaInfo member
@@ -221,7 +222,7 @@ class Image : public BufferObject
     /**
      * Base init for the class
      */
-    void init();
+    void init(std::optional<const ImageBufferSpec> spec = std::nullopt);
 };
 
 } // namespace Splash

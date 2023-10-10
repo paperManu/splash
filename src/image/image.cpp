@@ -24,7 +24,7 @@ Image::Image(RootObject* root)
     , _image(std::make_unique<ImageBuffer>())
     , _bufferImage(std::make_unique<ImageBuffer>())
 {
-    init();
+    init(std::nullopt);
     _renderingPriority = Priority::MEDIA;
 }
 
@@ -34,12 +34,12 @@ Image::Image(RootObject* root, const ImageBufferSpec& spec)
     , _image(std::make_unique<ImageBuffer>())
     , _bufferImage(std::make_unique<ImageBuffer>())
 {
-    init();
+    init(spec);
     set(spec.width, spec.height, spec.channels, spec.type);
 }
 
 /*************/
-void Image::init()
+void Image::init(std::optional<const ImageBufferSpec> spec)
 {
     _type = "image";
     registerAttributes();
@@ -48,7 +48,11 @@ void Image::init()
     if (!_root)
         return;
 
-    createDefaultImage();
+    if(spec) 
+	initFromSpec(*spec);
+    else 
+	createDefaultImage();
+
     update();
 }
 
@@ -307,9 +311,8 @@ bool Image::write(const std::string& filename)
 }
 
 /*************/
-void Image::createDefaultImage()
+void Image::initFromSpec(const ImageBufferSpec& spec)
 {
-    ImageBufferSpec spec(128, 128, 4, 32, ImageBufferSpec::Type::UINT8);
     ImageBuffer img(spec);
     img.zero();
 
@@ -317,6 +320,12 @@ void Image::createDefaultImage()
     std::swap(*_bufferImage, img);
     _bufferImageUpdated = true;
     updateTimestamp();
+}
+
+/*************/
+void Image::createDefaultImage()
+{
+    initFromSpec(ImageBufferSpec(128, 128, 4, 32, ImageBufferSpec::Type::UINT8));
 }
 
 /*************/
