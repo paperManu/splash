@@ -42,6 +42,7 @@ test:20.04:gcc-bundled-libs:
     - ./make_deps.sh
 
     # Test using bundled libs
+    - sleep 3600
     - rm -rf build && mkdir build
     - cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
