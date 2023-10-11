@@ -44,15 +44,9 @@ class Image : public BufferObject
     /**
      * Constructor
      * \param root Root object
-     */
-    Image(RootObject* root);
-
-    /**
-     * Constructor
-     * \param root Root object
      * \param spec Image specifications
      */
-    Image(RootObject* root, const ImageBufferSpec& spec);
+    Image(RootObject* root, const std::optional<ImageBufferSpec> spec = std::nullopt);
 
     /**
      * Destructor
@@ -181,7 +175,6 @@ class Image : public BufferObject
     bool _benchmark{false};
 
     void initFromSpec(const ImageBufferSpec& spec); //< Create an unintialized image with the passed spec.
-    void createDefaultImage();                      //< Create a default black image
     void createPattern();                           //< Create a default pattern
 
     /**

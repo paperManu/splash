@@ -18,28 +18,12 @@
 namespace Splash
 {
 
+
 /*************/
-Image::Image(RootObject* root)
+Image::Image(RootObject* root, const std::optional<ImageBufferSpec> spec)
     : BufferObject(root)
     , _image(std::make_unique<ImageBuffer>())
     , _bufferImage(std::make_unique<ImageBuffer>())
-{
-    init(std::nullopt);
-    _renderingPriority = Priority::MEDIA;
-}
-
-/*************/
-Image::Image(RootObject* root, const ImageBufferSpec& spec)
-    : BufferObject(root)
-    , _image(std::make_unique<ImageBuffer>())
-    , _bufferImage(std::make_unique<ImageBuffer>())
-{
-    init(spec);
-    set(spec.width, spec.height, spec.channels, spec.type);
-}
-
-/*************/
-void Image::init(std::optional<const ImageBufferSpec> spec)
 {
     _type = "image";
     registerAttributes();
@@ -49,9 +33,15 @@ void Image::init(std::optional<const ImageBufferSpec> spec)
         return;
 
     if(spec) 
+    {
 	initFromSpec(*spec);
-    else 
-	createDefaultImage();
+    }
+    else  
+    {
+	// No spec passed, create an image with the default spec.
+	initFromSpec(ImageBufferSpec(128, 128, 4, 32, ImageBufferSpec::Type::UINT8));
+	_renderingPriority = Priority::MEDIA;
+    }
 
     update();
 }
@@ -320,12 +310,6 @@ void Image::initFromSpec(const ImageBufferSpec& spec)
     std::swap(*_bufferImage, img);
     _bufferImageUpdated = true;
     updateTimestamp();
-}
-
-/*************/
-void Image::createDefaultImage()
-{
-    initFromSpec(ImageBufferSpec(128, 128, 4, 32, ImageBufferSpec::Type::UINT8));
 }
 
 /*************/
