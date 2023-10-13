@@ -166,6 +166,8 @@ void GLESTexture_Image::readFromImageIntoPBO(GLuint pboId, int imageDataSize, st
 
     if (pixels != nullptr)
 	memcpy((void*)pixels, img->data(), imageDataSize);
+    else 
+	Log::get() << Log::ERROR << "GLESTexture_Image::" << __FUNCTION__ << " - Unable to initialize upload PBOs" << Log::endl;
 
     glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
