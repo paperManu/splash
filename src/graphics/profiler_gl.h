@@ -116,13 +116,13 @@ class ProfilerGL
             ProfilerGL::get().increaseDepth(_data._content);
 
             // Get the timer at the start of the section
-            // glBeginQuery(GL_TIME_ELAPSED_EXT, _data._timeElapsedQueryObj);
+            glBeginQuery(GL_TIME_ELAPSED_EXT, _data._timeElapsedQueryObj);
         }
 
         ~Section()
         {
             // Get the timer at the end of the section
-            // glEndQuery(GL_TIME_ELAPSED_EXT);
+            glEndQuery(GL_TIME_ELAPSED_EXT);
 
             // We keep the current code scope depth updated.
             ProfilerGL::get().decreaseDepth(_data._content);
@@ -262,26 +262,26 @@ class ProfilerGL
             return;
         }
 
-        // for (auto& timing : timings->second)
-        // {
-        //     // If the counter is not available (which should not happen if buffer swapping was
-        //     // called beforehand), we skip this counter and do not wait for it to be updated
-        //     unsigned int timerAvailable = 0;
-        //     glGetQueryObjectuiv(timing._timeElapsedQueryObj, GL_QUERY_RESULT_AVAILABLE, &timerAvailable);
-        //     if (!timerAvailable)
-        //         continue;
+        for (auto& timing : timings->second)
+        {
+            // If the counter is not available (which should not happen if buffer swapping was
+            // called beforehand), we skip this counter and do not wait for it to be updated
+            unsigned int timerAvailable = 0;
+            glGetQueryObjectuiv(timing._timeElapsedQueryObj, GL_QUERY_RESULT_AVAILABLE, &timerAvailable);
+            if (!timerAvailable)
+                continue;
 
-        //     // Compute the elapsed time and store it in the section content
-        //     GLuint elapsedTime = 0;
-        //     glGetQueryObjectuiv(timing._timeElapsedQueryObj, GL_QUERY_RESULT, &elapsedTime);
-        //     timing._content.setDuration(elapsedTime);
+            // Compute the elapsed time and store it in the section content
+            GLuint elapsedTime = 0;
+            glGetQueryObjectuiv(timing._timeElapsedQueryObj, GL_QUERY_RESULT, &elapsedTime);
+            timing._content.setDuration(elapsedTime);
 
-        //     // Cleanup
-        //     glDeleteQueries(1, &timing._timeElapsedQueryObj);
+            // Cleanup
+            glDeleteQueries(1, &timing._timeElapsedQueryObj);
 
-        //     // Record the section data  for postprocessing
-        //     ProfilerGL::get().commitSection(timing._content);
-        // }
+            // Record the section data  for postprocessing
+            ProfilerGL::get().commitSection(timing._content);
+        }
 
         timings->second.clear();
     }
