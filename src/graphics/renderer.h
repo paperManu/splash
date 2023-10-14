@@ -112,7 +112,7 @@ class Renderer
      * \param cubemap True to request a cubemap
      */
     virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const = 0;
-    std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisample = 0, bool cubemap = false) const;
+    std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, int multisample = 0, bool cubemap = false) const;
 
     virtual std::shared_ptr<GpuBuffer> createGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data) const = 0;
 

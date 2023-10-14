@@ -132,7 +132,7 @@ std::shared_ptr<Image> Texture_Image::read()
 }
 
 /*************/
-void Texture_Image::reset(int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisample, bool cubemap) {
+void Texture_Image::reset(int width, int height, const std::string& pixelFormat, int multisample, bool cubemap) {
 		if (width == 0 || height == 0)
 		{
 #ifdef DEBUG
@@ -148,7 +148,7 @@ void Texture_Image::reset(int width, int height, const std::string& pixelFormat,
 
 		initFromPixelFormat(width, height);
 
-		initOpenGLTexture(data);
+		initOpenGLTexture();
 #ifdef DEBUG
 		Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Reset the texture to size " << width << "x" << height << Log::endl;
 #endif
@@ -160,7 +160,7 @@ void Texture_Image::resize(int width, int height)
     if (!_resizable)
         return;
     if (static_cast<uint32_t>(width) != _spec.width || static_cast<uint32_t>(height) != _spec.height)
-        reset(width, height, _pixelFormat, nullptr, _multisample, _cubemap);
+        reset(width, height, _pixelFormat, _multisample, _cubemap);
 }
 
 /*************/
@@ -174,9 +174,8 @@ void Texture_Image::setTextureTypeFromOptions() {
 }
 
 /*************/
-void Texture_Image::allocateGLTexture(const GLvoid* data) {
+void Texture_Image::allocateGLTexture() {
     switch(_textureType) {
-
 	case GL_TEXTURE_2D_MULTISAMPLE: 
 	    glTexStorage2DMultisample(_textureType, _multisample, _texInternalFormat, _spec.width, _spec.height, false); 
 	    break;
@@ -187,16 +186,12 @@ void Texture_Image::allocateGLTexture(const GLvoid* data) {
 
 	default:
 	    glTexStorage2D(GL_TEXTURE_2D, _texLevels, _texInternalFormat, _spec.width, _spec.height);
-
-	    if (data)
-		glTexSubImage2D(_textureType, 0, 0, 0, _spec.width, _spec.height, _texFormat, _texType, data);
-
 	    break;
     }
 }
 
 /*************/
-void Texture_Image::initOpenGLTexture(const GLvoid* data) 
+void Texture_Image::initOpenGLTexture() 
 {
     // Create and initialize the texture
     if (glIsTexture(_glTex))
@@ -208,7 +203,7 @@ void Texture_Image::initOpenGLTexture(const GLvoid* data)
 
     setGLTextureParameters();
 
-    allocateGLTexture(data);
+    allocateGLTexture();
 }
 
 /*************/

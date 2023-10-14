@@ -14,7 +14,7 @@ Framebuffer::Framebuffer(RootObject* root)
 
     if (!_depthTexture)
     {
-        _depthTexture = root->getRenderer()->createTexture_Image(_root, _width, _height, "D", nullptr, _multisample);
+        _depthTexture = root->getRenderer()->createTexture_Image(_root, _width, _height, "D", _multisample);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
 
@@ -23,7 +23,7 @@ Framebuffer::Framebuffer(RootObject* root)
         _colorTexture = root->getRenderer()->createTexture_Image(_root);
         _colorTexture->setAttribute("clampToEdge", {true});
         _colorTexture->setAttribute("filtering", {false});
-        _colorTexture->reset(_width, _height,  "RGBA", nullptr, _multisample);
+        _colorTexture->reset(_width, _height,  "RGBA", _multisample);
         glFramebufferTexture2D(	
             GL_DRAW_FRAMEBUFFER,
             GL_COLOR_ATTACHMENT0,
@@ -142,12 +142,12 @@ void Framebuffer::setRenderingParameters()
 {
     auto spec = _colorTexture->getSpec();
 
-    _depthTexture->reset(spec.width, spec.height, "D", nullptr, _multisample, _cubemap);
+    _depthTexture->reset(spec.width, spec.height, "D", _multisample, _cubemap);
 
     if (_srgb)
-        _colorTexture->reset(spec.width, spec.height, "sRGBA", nullptr, _multisample, _cubemap);
+        _colorTexture->reset(spec.width, spec.height, "sRGBA", _multisample, _cubemap);
     else
-        _colorTexture->reset(spec.width, spec.height, "RGBA", nullptr, _multisample, _cubemap);
+        _colorTexture->reset(spec.width, spec.height, "RGBA", _multisample, _cubemap);
 
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);

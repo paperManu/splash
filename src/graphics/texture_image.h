@@ -99,7 +99,7 @@ class Texture_Image : public Texture
      * \param multisample Sample count for MSAA
      * \param cubemap True to request a cubemap
      */
-    void reset(int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisample = 0, bool cubemap = false);
+    void reset(int width, int height, const std::string& pixelFormat, int multisample = 0, bool cubemap = false);
 
     /**
      * Modify the size of the texture
@@ -209,17 +209,14 @@ class Texture_Image : public Texture
 
     /**
      * Allocates the texture on the GPU depending on its type (multisampled, cubemap, 2D). Can optionally initialize 2D textures through `data`.
-     * \param data Buffer pointing to texture data. The layout and type of each pixel is the programmer's responsibility to ensure they're compatible with the spec and texture
-     * format, internal format, and type.
      */
-    void allocateGLTexture(const GLvoid* data);
+    void allocateGLTexture();
 
     /**
-     * Deletes the texture if it already exists, initializes `_textureType`, generates and sets the OpenGL texture parameters, then allocates space on the GPU for the texture. Can
-     * optionally init the texture with `data`.
+     * Deletes the texture if it already exists, initializes `_textureType`, generates and sets the OpenGL texture parameters, then allocates space on the GPU for the texture. 
      * \sa setTextureTypeFromOptions(), setGLTextureParameters(), and allocateGLTexture().
      */
-    void initOpenGLTexture(const GLvoid* data);
+    void initOpenGLTexture();
 
     /**
      * Given an `ImageBufferSpec`, updates its channels and/or height depending on the spec's format. Supports `RGB_DXT1`, `RGBA_DXT5`, and `YCoCg_DXT5` formats.

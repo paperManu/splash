@@ -55,6 +55,7 @@ std::shared_ptr<Renderer> Renderer::create(std::optional<Renderer::Api> api)
 void Renderer::glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* userParam)
 {
     const auto userParamsAsObj = reinterpret_cast<const BaseObject*>(userParam);
+
     std::string typeString{"GL::other"};
     std::string messageString;
     Log::Priority logType{Log::MESSAGE};
@@ -228,9 +229,9 @@ std::shared_ptr<Renderer> Renderer::findGLVersion(std::optional<Renderer::Api> a
 }
 
 /*************/
-std::shared_ptr<Texture_Image> Renderer::createTexture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisample, bool cubemap) const {
+std::shared_ptr<Texture_Image> Renderer::createTexture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, int multisample, bool cubemap) const {
     auto tex = createTexture_Image(root);
-    tex->reset(width, height, pixelFormat, data, multisample, cubemap);
+    tex->reset(width, height, pixelFormat, multisample, cubemap);
 
     return tex;
 }
