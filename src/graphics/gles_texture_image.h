@@ -54,7 +54,7 @@ class GLESTexture_Image final: public Texture_Image
 
 	virtual void getTextureParameteriv(GLenum target, GLenum pname, GLint* params) const final;
 
-	virtual bool updatePbos(int width, int height, int bytes) final;
+	virtual bool reallocatePBOs(int width, int height, int bytes) final;
 
 	virtual std::optional<std::pair<GLenum, GLenum>> updateUncompressedInternalAndDataFormat(const ImageBufferSpec& spec, const Values& srgb);
 

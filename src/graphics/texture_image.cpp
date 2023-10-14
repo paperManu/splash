@@ -356,9 +356,9 @@ void Texture_Image::reallocateAndInitGLTexture(bool isCompressed, GLenum interna
 }
 
 /*************/
-bool Texture_Image::swapPBOs(const ImageBufferSpec& spec, int imageDataSize, std::shared_ptr<Image> img) 
+bool Texture_Image::updatePBOs(const ImageBufferSpec& spec, int imageDataSize, std::shared_ptr<Image> img) 
 {
-    if (!updatePbos(spec.width, spec.height, spec.pixelBytes()))
+    if (!reallocatePBOs(spec.width, spec.height, spec.pixelBytes()))
 	return false;
 
     // Fill one of the PBOs right now
@@ -465,7 +465,7 @@ void Texture_Image::update()
     {
 	updateGLTextureParameters(isCompressed);
 	reallocateAndInitGLTexture(isCompressed, internalFormat, spec, glChannelOrder, dataFormat,  img, imageDataSize);
-	if(!swapPBOs(spec, imageDataSize, img))
+	if(!updatePBOs(spec, imageDataSize, img))
 	    return;
     }
     // Update the content of the texture, i.e the image

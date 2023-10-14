@@ -91,7 +91,7 @@ void GLESTexture_Image::getTextureParameteriv(GLenum target, GLenum pname, GLint
 }
 
 /*************/
-bool GLESTexture_Image::updatePbos(int width, int height, int bytes) 
+bool GLESTexture_Image::reallocatePBOs(int width, int height, int bytes) 
 {
     glDeleteBuffers(2, _pbos);
 

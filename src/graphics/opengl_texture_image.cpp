@@ -62,7 +62,7 @@ void OpenGLTexture_Image::getTextureParameteriv(GLenum /*target*/, GLenum pname,
 }
 
 /*************/
-bool OpenGLTexture_Image::updatePbos(int width, int height, int bytes)
+bool OpenGLTexture_Image::reallocatePBOs(int width, int height, int bytes)
 {
     glDeleteBuffers(2, _pbos);
     auto flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;

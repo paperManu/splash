@@ -262,7 +262,7 @@ class Texture_Image : public Texture
      * \return true if updating the PBOs went well, false otherwise.
      * \sa updatePBOs(), readFromImageIntoPBO(), copyPixelsBetweenPBOs().
      */
-    bool swapPBOs(const ImageBufferSpec& spec, int imageDataSize, std::shared_ptr<Image> img);
+    bool updatePBOs(const ImageBufferSpec& spec, int imageDataSize, std::shared_ptr<Image> img);
 
     /**
      * Updates the specified PBO with the data of the given image.
@@ -340,7 +340,7 @@ class Texture_Image : public Texture
      * \param bytes Bytes per pixel
      * \return Return true if all went well
      */
-    virtual bool updatePbos(int width, int height, int bytes) = 0;
+    virtual bool reallocatePBOs(int width, int height, int bytes) = 0;
 
     /**
      * Register new functors to modify attributes
