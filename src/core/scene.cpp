@@ -254,7 +254,7 @@ void Scene::remove(const std::string& name)
 /*************/
 void Scene::render()
 {
-#ifndef PROFILE_GPU
+#ifdef PROFILE_GPU
     PROFILEGL(Constants::GL_TIMING_TIME_PER_FRAME);
 #endif
 
@@ -385,7 +385,7 @@ void Scene::render()
 
     TracyGpuCollect;
 
-#ifndef PROFILE_GPU
+#ifdef PROFILE_GPU
     ProfilerGL::get().gatherTimings();
     ProfilerGL::get().processTimings();
     const auto glTimings = ProfilerGL::get().getTimings();
