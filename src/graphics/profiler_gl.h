@@ -110,7 +110,7 @@ class ProfilerGL
             : _data(scope)
         {
             // We generate the two timers for start and end of section
-            // glGenQueries(1, &_data._timeElapsedQueryObj);
+            glGenQueries(1, &_data._timeElapsedQueryObj);
 
             // We keep the current code scope depth updated.
             ProfilerGL::get().increaseDepth(_data._content);
