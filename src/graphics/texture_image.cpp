@@ -371,7 +371,7 @@ bool Texture_Image::swapPBOs(const ImageBufferSpec& spec, int imageDataSize, std
 
     return true;
 }
-
+/**************/
 void Texture_Image::updateTextureFromImage(bool isCompressed, GLenum internalFormat, const ImageBufferSpec& spec, GLenum glChannelOrder, GLenum dataFormat, std::shared_ptr<Image> img, int imageDataSize) 
 {
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboUploadIndex]);
