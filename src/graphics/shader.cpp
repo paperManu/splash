@@ -759,7 +759,8 @@ void Shader::resetShader(ShaderType type)
 void Shader::registerAttributes()
 {
     addAttribute("uniform",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             if (args.size() < 2)
                 return false;
 
@@ -794,8 +795,10 @@ void Shader::registerAttributes()
 /*************/
 void Shader::registerGraphicAttributes()
 {
-    addAttribute("fill", 
-	[&](const Values& args) {
+    addAttribute(
+        "fill",
+        [&](const Values& args)
+        {
             // Get additionnal shading options
             std::string options = ShaderSources.VERSION_DIRECTIVE_GL32_ES;
             for (uint32_t i = 1; i < args.size(); ++i)
@@ -945,7 +948,8 @@ void Shader::registerGraphicAttributes()
             }
             return true;
         },
-        [&]() -> Values {
+        [&]() -> Values
+        {
             std::string fill;
             if (_fill == texture)
                 fill = "texture";
@@ -964,8 +968,10 @@ void Shader::registerGraphicAttributes()
         {'s'});
     setAttributeDescription("fill", "Set the filling mode");
 
-    addAttribute("sideness",
-        [&](const Values& args) {
+    addAttribute(
+        "sideness",
+        [&](const Values& args)
+        {
             _sideness = (Shader::Sideness)args[0].as<int>();
             return true;
         },
@@ -978,7 +984,8 @@ void Shader::registerGraphicAttributes()
 void Shader::registerComputeAttributes()
 {
     addAttribute("computePhase",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             if (args.size() < 1)
                 return false;
 
@@ -1023,7 +1030,8 @@ void Shader::registerFeedbackAttributes()
     GraphObject::registerAttributes();
 
     addAttribute("feedbackPhase",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             if (args.size() < 1)
                 return false;
 
@@ -1051,7 +1059,8 @@ void Shader::registerFeedbackAttributes()
         {});
 
     addAttribute("feedbackVaryings",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             if (args.size() < 1)
                 return false;
 

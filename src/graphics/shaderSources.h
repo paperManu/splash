@@ -1060,12 +1060,12 @@ struct ShaderSources
                 color.rgb = color.bgr;
 
             // Color balance
-	    
-	    vec2 colorBalance = _colorBalance;
+        
+        vec2 colorBalance = _colorBalance;
 
-	    if(colorBalance.x == 0.0f && colorBalance.y == 0.0f) {
-		colorBalance = vec2(1.0f, 1.0f);
-	    }
+        if(colorBalance.x == 0.0f && colorBalance.y == 0.0f) {
+        colorBalance = vec2(1.0f, 1.0f);
+        }
 
             float maxBalanceRatio = max(colorBalance.r, _colorBalance.g);
             color.r *= colorBalance.r / maxBalanceRatio;
@@ -2000,10 +2000,10 @@ struct ShaderSources
                 #endif
             }
 
-	        if(_gamma.x == 0.0) {
+            if(_gamma.x == 0.0) {
                 float gamma = clamp(_gamma.y, 1.0 , 3.0);
-	            fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / gamma));
-	        }
+                fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / gamma));
+            }
         }
     )"};
 

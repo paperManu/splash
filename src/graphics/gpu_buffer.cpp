@@ -10,20 +10,19 @@ namespace Splash
 {
 
 /*************/
-void GpuBuffer::init(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data) 
+void GpuBuffer::init(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data)
 {
     const bool typeInTable = typeToSize.find(type) != typeToSize.end();
 
-    if (!typeInTable) 
+    if (!typeInTable)
     {
-	// Print the type in hex for quick searching through GLAD's headers.
-	std::stringstream ss; 
-	ss << std::hex << type;
+        // Print the type in hex for quick searching through GLAD's headers.
+        std::stringstream ss;
+        ss << std::hex << type;
 
-	Log::get() << "Cannot find type (" << ss.str() << ") in the types supported by GpuBuffer" << Log::endl;
-	return;
+        Log::get() << "Cannot find type (" << ss.str() << ") in the types supported by GpuBuffer" << Log::endl;
+        return;
     }
-
 
     _baseSize = typeToSize.at(type);
     _size = size;
@@ -37,7 +36,7 @@ void GpuBuffer::init(GLint elementSize, GLenum type, GLenum usage, size_t size, 
     // If data is null, no data is copied. The buffer is just allocated and left uninitialized.
     // Otherwise, we allocate and copy in one move.
     if (data == nullptr)
-	zeroBuffer();
+        zeroBuffer();
 }
 
 /*************/
@@ -53,7 +52,7 @@ GpuBuffer::~GpuBuffer()
 void GpuBuffer::clear()
 {
     if (!_glId)
-	return;
+        return;
 
     zeroBuffer();
 }
@@ -62,21 +61,21 @@ void GpuBuffer::clear()
 std::vector<char> GpuBuffer::getBufferAsVector(size_t vertexNbr)
 {
     if (!_glId || !_type || !_usage || !_elementSize)
-	return {};
+        return {};
 
     // Initialize / resize the copy buffer
     if (!_copyBufferId)
     {
-	_copyBufferId = generateAndBindBuffer();
-	if (!_copyBufferId)
-	    return {};
+        _copyBufferId = generateAndBindBuffer();
+        if (!_copyBufferId)
+            return {};
     }
 
     size_t vectorSize = 0;
     if (vertexNbr)
-	vectorSize = _baseSize * _elementSize * vertexNbr;
+        vectorSize = _baseSize * _elementSize * vertexNbr;
     else
-	vectorSize = _baseSize * _elementSize * _size;
+        vectorSize = _baseSize * _elementSize * _size;
 
     // Resize the copy buffer if needed
     resizeBuffer(_copyBufferId, vectorSize);
@@ -92,10 +91,10 @@ std::vector<char> GpuBuffer::getBufferAsVector(size_t vertexNbr)
 void GpuBuffer::setBufferFromVector(const std::vector<char>& buffer)
 {
     if (!_glId || !_type || !_usage || !_elementSize)
-	return;
+        return;
 
     if (buffer.size() > _baseSize * _elementSize * _size)
-	resize(buffer.size());
+        resize(buffer.size());
 
     setBufferData(_glId, GL_ARRAY_BUFFER, buffer.size(), buffer.data());
 }
@@ -104,7 +103,7 @@ void GpuBuffer::setBufferFromVector(const std::vector<char>& buffer)
 void GpuBuffer::resize(size_t size)
 {
     if (!_type || !_usage || !_elementSize)
-	return;
+        return;
 
     const auto totalSize = size * _elementSize * _baseSize;
     resizeBuffer(_glId, totalSize);
@@ -113,21 +112,21 @@ void GpuBuffer::resize(size_t size)
 }
 
 /*************/
-std::shared_ptr<GpuBuffer> GpuBuffer::copyBuffer() const 
+std::shared_ptr<GpuBuffer> GpuBuffer::copyBuffer() const
 {
     std::shared_ptr<GpuBuffer> newBuffer;
-    if (const auto ptr = dynamic_cast<const GLESGpuBuffer*>(this)) 
+    if (const auto ptr = dynamic_cast<const GLESGpuBuffer*>(this))
     {
-	return std::make_shared<GLESGpuBuffer>(this->_elementSize, this->_type, this->_usage, this->_size, nullptr);
-    } 
+        return std::make_shared<GLESGpuBuffer>(this->_elementSize, this->_type, this->_usage, this->_size, nullptr);
+    }
     else if (const auto ptr = dynamic_cast<const OpenGLGpuBuffer*>(this))
     {
-	return std::make_shared<OpenGLGpuBuffer>(this->_elementSize, this->_type, this->_usage, this->_size, nullptr);
-    } 
-    else 
+        return std::make_shared<OpenGLGpuBuffer>(this->_elementSize, this->_type, this->_usage, this->_size, nullptr);
+    }
+    else
     {
-	assert(false && "Forgot to add support for this new GPU buffer type!");
-	return nullptr;
+        assert(false && "Forgot to add support for this new GPU buffer type!");
+        return nullptr;
     }
 }
 
@@ -138,15 +137,15 @@ void GpuBuffer::resizeBuffer(GLuint& bufferId, GLsizeiptr size)
     getBufferParameteriv(bufferId, GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &bufferSize);
     if (static_cast<GLsizeiptr>(bufferSize) < size)
     {
-	glDeleteBuffers(1, &bufferId);
-	bufferId = generateAndBindBuffer();
+        glDeleteBuffers(1, &bufferId);
+        bufferId = generateAndBindBuffer();
 
-	allocateBufferData(bufferId, GL_ARRAY_BUFFER, size, nullptr, GL_STREAM_COPY);
+        allocateBufferData(bufferId, GL_ARRAY_BUFFER, size, nullptr, GL_STREAM_COPY);
     }
 }
 
 /*************/
-GLuint GpuBuffer::generateAndBindBuffer() 
+GLuint GpuBuffer::generateAndBindBuffer()
 {
     GLuint newBuffer = 0;
     glGenBuffers(1, &newBuffer);

@@ -1,4 +1,4 @@
-#version 320 es 
+#version 320 es
 precision mediump float;
 
 uniform sampler2D _tex0; // black texture
@@ -9,11 +9,12 @@ uniform int subdivs = 0;
 uniform ivec4 texLayout = ivec4(0);
 
 in VertexData
-        {
-            vec4 position;
-            vec2 texCoord;
-            vec4 normal;
-        } vertexIn;
+{
+    vec4 position;
+    vec2 texCoord;
+    vec4 normal;
+}
+vertexIn;
 out vec4 fragColor;
 
 void main(void)

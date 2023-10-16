@@ -327,7 +327,8 @@ void Geometry::update()
 
         if (!_glTemporaryBuffers[1])
         {
-            _glTemporaryBuffers[1] = _root->getRenderer()->createGpuBuffer(2, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, reinterpret_cast<GLvoid*>(_deserializedMesh->uvs.data()));
+            _glTemporaryBuffers[1] =
+                _root->getRenderer()->createGpuBuffer(2, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, reinterpret_cast<GLvoid*>(_deserializedMesh->uvs.data()));
         }
         else
         {

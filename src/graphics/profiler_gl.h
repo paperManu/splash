@@ -156,9 +156,9 @@ class ProfilerGL
     ProfilerGL& operator=(const ProfilerGL&) = delete;
 
     /**
-    * Get the singleton
-    * \return Return the ProfilerGL singleton
-    */
+     * Get the singleton
+     * \return Return the ProfilerGL singleton
+     */
     static ProfilerGL& get()
     {
         static auto instance = new ProfilerGL();

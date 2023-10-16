@@ -29,8 +29,8 @@
 #include <condition_variable>
 #include <json/json.h>
 #include <list>
-#include <string>
 #include <map>
+#include <string>
 #include <unordered_map>
 
 #include "./core/base_object.h"
@@ -83,7 +83,7 @@ class RootObject : public BaseObject
 #else
         Link::ChannelType channelType{Link::ChannelType::zmq};
 #endif
-	std::optional<Renderer::Api> renderingApi{};
+        std::optional<Renderer::Api> renderingApi{};
     };
 
     enum Command
@@ -156,7 +156,10 @@ class RootObject : public BaseObject
      * Get the socket prefix
      * \return Return the socket prefx
      */
-    std::string getSocketPrefix() const { return _context.socketPrefix; }
+    std::string getSocketPrefix() const
+    {
+        return _context.socketPrefix;
+    }
 
     /**
      * Get the configuration path
@@ -188,7 +191,10 @@ class RootObject : public BaseObject
      * Get a reference to the root tree
      * \return Return the Tree::Root
      */
-    Tree::RootHandle getTree() { return _tree.getHandle(); }
+    Tree::RootHandle getTree()
+    {
+        return _tree.getHandle();
+    }
 
     /**
      * Set the attribute of the named object with the given args
@@ -223,14 +229,20 @@ class RootObject : public BaseObject
      * Return a lock object list modifications (addition, deletion)
      * \return Return a lock object which unlocks the mutex upon deletion
      */
-    std::unique_lock<std::recursive_mutex> getLockOnObjects() { return std::unique_lock<std::recursive_mutex>(_objectsMutex); }
+    std::unique_lock<std::recursive_mutex> getLockOnObjects()
+    {
+        return std::unique_lock<std::recursive_mutex>(_objectsMutex);
+    }
 
     /**
      * Signals that a BufferObject has been updated
      */
     void signalBufferObjectUpdated();
 
-    std::shared_ptr<Renderer> getRenderer() { return _renderer; }
+    std::shared_ptr<Renderer> getRenderer()
+    {
+        return _renderer;
+    }
 
   protected:
     Context _context{};
@@ -256,7 +268,7 @@ class RootObject : public BaseObject
     std::atomic_bool _objectsCurrentlyUpdated{false};               //!< Prevents modification of objects from multiple places at the same time
     DenseMap<std::string, std::shared_ptr<GraphObject>> _objects{}; //!< Map of all the objects
 
-    std::unique_ptr<Link> _link{};       //!< Link object for communicatin between World and Scene
+    std::unique_ptr<Link> _link{};                               //!< Link object for communicatin between World and Scene
     static inline std::shared_ptr<Renderer> _renderer = nullptr; // Must be static due to usage inside static functions in Scene.
 
     /**
@@ -334,7 +346,10 @@ class RootObject : public BaseObject
      * \param attribute Attribute name
      * \param message Message
      */
-    void sendMessage(const std::string& name, const std::string& attribute, const Values& message = {}) { _link->sendMessage(name, attribute, message); }
+    void sendMessage(const std::string& name, const std::string& attribute, const Values& message = {})
+    {
+        _link->sendMessage(name, attribute, message);
+    }
 
     /**
      * Send a message to another root object, and wait for an answer. Can specify a timeout for the answer, in microseconds.

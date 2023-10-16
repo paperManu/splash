@@ -31,8 +31,8 @@
 #include <memory>
 #include <vector>
 
-#include "./core/constants.h"
 #include "./core/attribute.h"
+#include "./core/constants.h"
 #include "./mesh/mesh.h"
 
 namespace Splash
@@ -115,7 +115,6 @@ class GpuBuffer
      */
     void setBufferFromVector(const std::vector<char>& buffer);
 
-
   protected:
     /**
      * Constructor
@@ -123,13 +122,12 @@ class GpuBuffer
     GpuBuffer() = default;
 
     void init(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data);
-    
+
     // `bufferId` is passed by reference as it may be changed. This change needs to be propagated.
     void resizeBuffer(GLuint& bufferId, GLsizeiptr size);
-    
+
     // Calls `glGen` and `glBindBuffer`. Convinence function.
     GLuint generateAndBindBuffer();
-
 
     // Assumes an already allocated buffer on the GPU.
     virtual void zeroBuffer() = 0;
@@ -139,7 +137,7 @@ class GpuBuffer
     virtual std::vector<char> readBufferFromGpu(GLuint bufferId, GLsizeiptr bytesToRead) = 0;
 
     // Different `value`s return different lengths of `data`. You need to pre-allocate some array and pass the pointer.
-    virtual void getBufferParameteriv(GLuint bufferId, GLenum target, GLenum value, GLint * data) = 0;
+    virtual void getBufferParameteriv(GLuint bufferId, GLenum target, GLenum value, GLint* data) = 0;
 
     // Assumes an already allocated buffer on the GPU.
     virtual void setBufferData(GLuint bufferId, GLenum target, GLsizeiptr size, const GLvoid* data) = 0;
@@ -153,15 +151,12 @@ class GpuBuffer
     GLenum _usage{0};
     GLuint _copyBufferId{0};
 
-    const static inline std::unordered_map<GLenum, size_t> typeToSize = {
-	{GL_FLOAT, sizeof(float)},
-	{GL_INT, sizeof(int)},
-	{GL_UNSIGNED_INT, sizeof(unsigned int)},
-	{GL_SHORT, sizeof(short)},
-	{GL_UNSIGNED_BYTE, sizeof(unsigned char)},
-	{GL_BYTE, sizeof(char)}
-    };
-
+    const static inline std::unordered_map<GLenum, size_t> typeToSize = {{GL_FLOAT, sizeof(float)},
+        {GL_INT, sizeof(int)},
+        {GL_UNSIGNED_INT, sizeof(unsigned int)},
+        {GL_SHORT, sizeof(short)},
+        {GL_UNSIGNED_BYTE, sizeof(unsigned char)},
+        {GL_BYTE, sizeof(char)}};
 };
 
 } // namespace Splash

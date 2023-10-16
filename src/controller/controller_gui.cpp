@@ -2,7 +2,6 @@
 
 #include <fstream>
 
-#include "./core/constants.h"
 #include "./controller/controller.h"
 #include "./controller/widget/widget_calibration.h"
 #include "./controller/widget/widget_camera.h"
@@ -16,6 +15,7 @@
 #include "./controller/widget/widget_textures_view.h"
 #include "./controller/widget/widget_tree.h"
 #include "./controller/widget/widget_warp.h"
+#include "./core/constants.h"
 #include "./core/scene.h"
 #include "./graphics/camera.h"
 #include "./graphics/object.h"
@@ -1312,90 +1312,96 @@ void Gui::initImWidgets()
     // Bottom widgets
     // FPS and timings
     auto timingBox = std::make_shared<GuiTextBox>(_scene, "Timings");
-    timingBox->setTextFunc([this]() {
-        static std::unordered_map<std::string, float> stats;
-        std::ostringstream stream;
-        auto tree = _root->getTree();
-
-        auto runningAverage = [](float a, float b) { return a * 0.9 + 0.001 * b * 0.1; };
-        auto getLeafValue = [&](const std::string& path) {
-            Value value;
-            if (!tree->getValueForLeafAt(path, value))
-                return 0.f;
-            return value[0].as<float>();
-        };
-
-        // We process the world before the scenes
+    timingBox->setTextFunc(
+        [this]()
         {
-            assert(tree->hasBranchAt("/world/durations"));
+            static std::unordered_map<std::string, float> stats;
+            std::ostringstream stream;
+            auto tree = _root->getTree();
 
-            stats["world_loop_world"] = runningAverage(stats["world_loop_world"], getLeafValue("/world/durations/loop_world"));
-            stats["world_loop_world_fps"] = 1e3 / std::max(1.f, stats["world_loop_world"]);
-            stats["world_upload"] = runningAverage(stats["world_upload"], getLeafValue("/world/durations/upload"));
-
-            stream << "World:\n";
-            stream << "  World framerate: " << std::setprecision(4) << stats["world_loop_world_fps"] << " fps\n";
-            stream << "  Time per world frame: " << stats["world_loop_world"] << " ms\n";
-            stream << "  Sending buffers to Scenes: " << std::setprecision(4) << stats["world_upload"] << " ms\n";
-        }
-
-        // Then the scenes
-        stream << "Scenes:\n";
-        for (const auto& branchName : tree->getBranchList())
-        {
-            if (branchName == "world")
-                continue;
-            auto durationPath = "/" + branchName + "/durations";
-
-            stats[branchName + "_loop_scene"] = runningAverage(stats[branchName + "_loop_scene"], getLeafValue(durationPath + "/loop_scene"));
-            stats[branchName + "_loop_scene_fps"] = 1e3 / std::max(1.f, stats[branchName + "_loop_scene"]);
-            stats[branchName + "_textureUpload"] = runningAverage(stats[branchName + "_textureUpload"], getLeafValue(durationPath + "/textureUpload"));
-            stats[branchName + "_blender"] = runningAverage(stats[branchName + "_blender"], getLeafValue(durationPath + "/blender"));
-            stats[branchName + "_filter"] = runningAverage(stats[branchName + "_filter"], getLeafValue(durationPath + "/filter"));
-            stats[branchName + "_camera"] = runningAverage(stats[branchName + "_camera"], getLeafValue(durationPath + "/camera"));
-            stats[branchName + "_warp"] = runningAverage(stats[branchName + "_warp"], getLeafValue(durationPath + "/warp"));
-            stats[branchName + "_glWindow"] = runningAverage(stats[branchName + "_glWindow"], getLeafValue(durationPath + "/window"));
-            stats[branchName + "_swap"] = runningAverage(stats[branchName + "_swap"], getLeafValue(durationPath + "/swap"));
-            stats[branchName + "_gl_time_per_frame"] = runningAverage(stats[branchName + "_gl_time_per_frame"], getLeafValue(durationPath + "/" + Constants::GL_TIMING_PREFIX + Constants::GL_TIMING_TIME_PER_FRAME));
-
-            stream << "- " + branchName + ":\n";
-            stream << "    GPU:\n";
-            stream << "        Framerate: " << 1000.0 / stats[branchName + "_gl_time_per_frame"] << " fps\n";
-            stream << "        Time per frame: " << stats[branchName + "_gl_time_per_frame"] << " ms\n";
-            stream << "    CPU:\n";
-            stream << "        Framerate: " << std::setprecision(4) << stats[branchName + "_loop_scene_fps"] << " fps\n";
-            stream << "        Time per frame: " << stats[branchName + "_loop_scene"] << " ms\n";
-            if (tree->hasLeafAt(durationPath + "/gui"))
+            auto runningAverage = [](float a, float b) { return a * 0.9 + 0.001 * b * 0.1; };
+            auto getLeafValue = [&](const std::string& path)
             {
-                stats[branchName + "_gui"] = runningAverage(stats[branchName + "_gui"], getLeafValue(durationPath + "/gui"));
-                stream << "        GUI rendering: " << std::setprecision(4) << stats[branchName + "_gui"] << " ms\n";
-            }
-            stream << "        Texture upload: " << std::setprecision(4) << stats[branchName + "_textureUpload"] << " ms\n";
-            stream << "        Blending: " << std::setprecision(4) << stats[branchName + "_blender"] << " ms\n";
-            stream << "        Filters: " << std::setprecision(4) << stats[branchName + "_filter"] << " ms\n";
-            stream << "        Cameras: " << std::setprecision(4) << stats[branchName + "_camera"] << " ms\n";
-            stream << "        Warps: " << std::setprecision(4) << stats[branchName + "_warp"] << " ms\n";
-            stream << "        Windows: " << std::setprecision(4) << stats[branchName + "_glWindow"] << " ms\n";
-            stream << "        Swapping: " << std::setprecision(4) << stats[branchName + "_swap"] << " ms\n";
-        }
+                Value value;
+                if (!tree->getValueForLeafAt(path, value))
+                    return 0.f;
+                return value[0].as<float>();
+            };
 
-        return stream.str();
-    });
+            // We process the world before the scenes
+            {
+                assert(tree->hasBranchAt("/world/durations"));
+
+                stats["world_loop_world"] = runningAverage(stats["world_loop_world"], getLeafValue("/world/durations/loop_world"));
+                stats["world_loop_world_fps"] = 1e3 / std::max(1.f, stats["world_loop_world"]);
+                stats["world_upload"] = runningAverage(stats["world_upload"], getLeafValue("/world/durations/upload"));
+
+                stream << "World:\n";
+                stream << "  World framerate: " << std::setprecision(4) << stats["world_loop_world_fps"] << " fps\n";
+                stream << "  Time per world frame: " << stats["world_loop_world"] << " ms\n";
+                stream << "  Sending buffers to Scenes: " << std::setprecision(4) << stats["world_upload"] << " ms\n";
+            }
+
+            // Then the scenes
+            stream << "Scenes:\n";
+            for (const auto& branchName : tree->getBranchList())
+            {
+                if (branchName == "world")
+                    continue;
+                auto durationPath = "/" + branchName + "/durations";
+
+                stats[branchName + "_loop_scene"] = runningAverage(stats[branchName + "_loop_scene"], getLeafValue(durationPath + "/loop_scene"));
+                stats[branchName + "_loop_scene_fps"] = 1e3 / std::max(1.f, stats[branchName + "_loop_scene"]);
+                stats[branchName + "_textureUpload"] = runningAverage(stats[branchName + "_textureUpload"], getLeafValue(durationPath + "/textureUpload"));
+                stats[branchName + "_blender"] = runningAverage(stats[branchName + "_blender"], getLeafValue(durationPath + "/blender"));
+                stats[branchName + "_filter"] = runningAverage(stats[branchName + "_filter"], getLeafValue(durationPath + "/filter"));
+                stats[branchName + "_camera"] = runningAverage(stats[branchName + "_camera"], getLeafValue(durationPath + "/camera"));
+                stats[branchName + "_warp"] = runningAverage(stats[branchName + "_warp"], getLeafValue(durationPath + "/warp"));
+                stats[branchName + "_glWindow"] = runningAverage(stats[branchName + "_glWindow"], getLeafValue(durationPath + "/window"));
+                stats[branchName + "_swap"] = runningAverage(stats[branchName + "_swap"], getLeafValue(durationPath + "/swap"));
+                stats[branchName + "_gl_time_per_frame"] =
+                    runningAverage(stats[branchName + "_gl_time_per_frame"], getLeafValue(durationPath + "/" + Constants::GL_TIMING_PREFIX + Constants::GL_TIMING_TIME_PER_FRAME));
+
+                stream << "- " + branchName + ":\n";
+                stream << "    GPU:\n";
+                stream << "        Framerate: " << 1000.0 / stats[branchName + "_gl_time_per_frame"] << " fps\n";
+                stream << "        Time per frame: " << stats[branchName + "_gl_time_per_frame"] << " ms\n";
+                stream << "    CPU:\n";
+                stream << "        Framerate: " << std::setprecision(4) << stats[branchName + "_loop_scene_fps"] << " fps\n";
+                stream << "        Time per frame: " << stats[branchName + "_loop_scene"] << " ms\n";
+                if (tree->hasLeafAt(durationPath + "/gui"))
+                {
+                    stats[branchName + "_gui"] = runningAverage(stats[branchName + "_gui"], getLeafValue(durationPath + "/gui"));
+                    stream << "        GUI rendering: " << std::setprecision(4) << stats[branchName + "_gui"] << " ms\n";
+                }
+                stream << "        Texture upload: " << std::setprecision(4) << stats[branchName + "_textureUpload"] << " ms\n";
+                stream << "        Blending: " << std::setprecision(4) << stats[branchName + "_blender"] << " ms\n";
+                stream << "        Filters: " << std::setprecision(4) << stats[branchName + "_filter"] << " ms\n";
+                stream << "        Cameras: " << std::setprecision(4) << stats[branchName + "_camera"] << " ms\n";
+                stream << "        Warps: " << std::setprecision(4) << stats[branchName + "_warp"] << " ms\n";
+                stream << "        Windows: " << std::setprecision(4) << stats[branchName + "_glWindow"] << " ms\n";
+                stream << "        Swapping: " << std::setprecision(4) << stats[branchName + "_swap"] << " ms\n";
+            }
+
+            return stream.str();
+        });
     _guiBottomWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(timingBox));
 
     // Log display
     auto logBox = std::make_shared<GuiTextBox>(_scene, "Logs");
-    logBox->setTextFunc([]() {
-        int nbrLines = 10;
-        // Convert the last lines of the text log
-        std::vector<std::string> logs = Log::get().getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
-        std::string text;
-        uint32_t start = std::max(0, static_cast<int>(logs.size()) - nbrLines);
-        for (uint32_t i = start; i < logs.size(); ++i)
-            text += logs[i] + std::string("\n");
+    logBox->setTextFunc(
+        []()
+        {
+            int nbrLines = 10;
+            // Convert the last lines of the text log
+            std::vector<std::string> logs = Log::get().getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
+            std::string text;
+            uint32_t start = std::max(0, static_cast<int>(logs.size()) - nbrLines);
+            for (uint32_t i = start; i < logs.size(); ++i)
+                text += logs[i] + std::string("\n");
 
-        return text;
-    });
+            return text;
+        });
     _guiBottomWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(logBox));
 }
 
@@ -1476,7 +1482,8 @@ void Gui::registerAttributes()
     ControllerObject::registerAttributes();
 
     addAttribute("size",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             setOutputSize(args[0].as<int>(), args[1].as<int>());
             return true;
         },
@@ -1484,7 +1491,8 @@ void Gui::registerAttributes()
     setAttributeDescription("size", "Set the GUI render resolution");
 
     addAttribute("hide",
-        [&](const Values&) {
+        [&](const Values&)
+        {
             _isVisible = false;
             return true;
         },
@@ -1492,7 +1500,8 @@ void Gui::registerAttributes()
     setAttributeDescription("hide", "Hide the GUI");
 
     addAttribute("show",
-        [&](const Values&) {
+        [&](const Values&)
+        {
             _isVisible = true;
             return true;
         },
@@ -1501,7 +1510,8 @@ void Gui::registerAttributes()
 
     addAttribute(
         "fullscreen",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _fullscreen = args[0].as<bool>();
             if (_fullscreen)
                 _isVisible = true;

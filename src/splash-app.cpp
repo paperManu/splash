@@ -129,8 +129,8 @@ RootObject::Context parseArguments(int argc, char** argv)
             }
             else
             {
-                Log::get() << Log::WARNING << "Splash::" << __FUNCTION__ << " - " << std::string(optarg) << ": argument expects a positive integer, or a string in the form of \":x.y\""
-                           << Log::endl;
+                Log::get() << Log::WARNING << "Splash::" << __FUNCTION__ << " - " << std::string(optarg)
+                           << ": argument expects a positive integer, or a string in the form of \":x.y\"" << Log::endl;
                 exit(0);
             }
             break;
@@ -241,18 +241,18 @@ RootObject::Context parseArguments(int argc, char** argv)
             context.spawnSubprocesses = false;
             break;
         }
-	case 'r': 
-	{
-	    const auto argString = std::string(optarg);
-	    if (argString == "opengl")
-		context.renderingApi = Renderer::Api::OpenGL;
-	    else if (argString == "gles")
-		context.renderingApi = Renderer::Api::GLES;
-	    else 
+        case 'r':
+        {
+            const auto argString = std::string(optarg);
+            if (argString == "opengl")
+                context.renderingApi = Renderer::Api::OpenGL;
+            else if (argString == "gles")
+                context.renderingApi = Renderer::Api::GLES;
+            else
                 Log::get() << Log::WARNING << "Splash::" << __FUNCTION__ << " - Wrong argument for --renderer, got " << argString << Log::endl;
 
-	    break;
-	}
+            break;
+        }
         }
     }
 

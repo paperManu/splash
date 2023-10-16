@@ -31,7 +31,7 @@ set_source_files_properties(
     ../external/imgui/imgui_tables.cpp
     ../external/imgui/imgui_widgets.cpp
     ../external/imgui/imgui.cpp
-	../external/hap/source/hap.c
+    ../external/hap/source/hap.c
     PROPERTIES COMPILE_FLAGS "-Wno-error -Wno-all -Wno-extra -Wno-sign-compare -Wno-deprecated-declarations"
 )
 
@@ -196,7 +196,7 @@ target_sources(splash-${API_VERSION} PRIVATE
 )
 
     target_sources(splash-${API_VERSION} PRIVATE
-	    ../external/glad/core/src/glad_core.c
+        ../external/glad/core/src/glad_core.c
         image/image_v4l2.cpp
     )
 
@@ -256,13 +256,13 @@ if (HAVE_PYTHON)
         set_source_files_properties(
             controller/controller_pythonembedded.cpp
             controller/python/python_sink.cpp
-	    PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-cast-function-type"
+        PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-cast-function-type"
         )
     elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         set_source_files_properties(
             controller/controller_pythonembedded.cpp
             controller/python/python_sink.cpp
-	    PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers"
+        PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers"
         )
     endif()
 

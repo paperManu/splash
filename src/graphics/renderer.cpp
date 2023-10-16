@@ -1,18 +1,23 @@
 #include "./graphics/renderer.h"
 
-#include "./graphics/opengl_renderer.h"
 #include "./graphics/gles_renderer.h"
+#include "./graphics/opengl_renderer.h"
 
-
-namespace Splash {
+namespace Splash
+{
 
 /*************/
 std::shared_ptr<Renderer> Renderer::fromApi(Renderer::Api api)
 {
     std::shared_ptr<Renderer> renderer;
-    switch(api) {
-	case Renderer::Api::GLES: renderer = std::make_shared<GLESRenderer>(); break;
-	case Renderer::Api::OpenGL: renderer = std::make_shared<OpenGLRenderer>(); break;
+    switch (api)
+    {
+    case Renderer::Api::GLES:
+        renderer = std::make_shared<GLESRenderer>();
+        break;
+    case Renderer::Api::OpenGL:
+        renderer = std::make_shared<OpenGLRenderer>();
+        break;
     }
 
     // Can't return in the switch, the compiler complains about
@@ -28,15 +33,15 @@ std::shared_ptr<Renderer> Renderer::create(std::optional<Renderer::Api> api)
     // GLFW stuff
     if (!glfwInit())
     {
-	Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
-	return nullptr;
+        Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
+        return nullptr;
     }
 
     const auto renderer = findGLVersion(api);
     if (!renderer)
     {
-	Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to find a suitable GL version (OpenGL 4.5 or OpenGL ES 3.2)" << Log::endl;
-	return nullptr;
+        Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to find a suitable GL version (OpenGL 4.5 or OpenGL ES 3.2)" << Log::endl;
+        return nullptr;
     }
 
     const auto apiVersion = renderer->getApiSpecificVersion().toString();
@@ -63,57 +68,57 @@ void Renderer::glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLen
     switch (type)
     {
     case GL_DEBUG_TYPE_ERROR:
-	typeString = "GL::Error";
-	logType = Log::ERROR;
-	break;
+        typeString = "GL::Error";
+        logType = Log::ERROR;
+        break;
     case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-	typeString = "GL::Deprecated behavior";
-	logType = Log::WARNING;
-	break;
+        typeString = "GL::Deprecated behavior";
+        logType = Log::WARNING;
+        break;
     case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-	typeString = "GL::Undefined behavior";
-	logType = Log::ERROR;
-	break;
+        typeString = "GL::Undefined behavior";
+        logType = Log::ERROR;
+        break;
     case GL_DEBUG_TYPE_PORTABILITY:
-	typeString = "GL::Portability";
-	logType = Log::WARNING;
-	break;
+        typeString = "GL::Portability";
+        logType = Log::WARNING;
+        break;
     case GL_DEBUG_TYPE_PERFORMANCE:
-	typeString = "GL::Performance";
-	logType = Log::WARNING;
-	break;
+        typeString = "GL::Performance";
+        logType = Log::WARNING;
+        break;
     case GL_DEBUG_TYPE_OTHER:
-	typeString = "GL::Other";
-	logType = Log::MESSAGE;
-	break;
+        typeString = "GL::Other";
+        logType = Log::MESSAGE;
+        break;
     }
 
     switch (severity)
     {
     case GL_DEBUG_SEVERITY_LOW:
-	messageString = typeString + "::low";
-	break;
+        messageString = typeString + "::low";
+        break;
     case GL_DEBUG_SEVERITY_MEDIUM:
-	messageString = typeString + "::medium";
-	break;
+        messageString = typeString + "::medium";
+        break;
     case GL_DEBUG_SEVERITY_HIGH:
-	messageString = typeString + "::high";
-	break;
+        messageString = typeString + "::high";
+        break;
     case GL_DEBUG_SEVERITY_NOTIFICATION:
-	// Disable notifications, they are far too verbose
-	return;
-	// messageString = "\033[32;1m[" + typeString + "::notification]\033[0m";
-	// break;
+        // Disable notifications, they are far too verbose
+        return;
+        // messageString = "\033[32;1m[" + typeString + "::notification]\033[0m";
+        // break;
     }
 
     if (userParam == nullptr)
-	Log::get() << logType << messageString << " - Object: unknown"
-		   << " - " << message << Log::endl;
+        Log::get() << logType << messageString << " - Object: unknown"
+                   << " - " << message << Log::endl;
     else if (const auto userParamsAsGraphObject = dynamic_cast<const GraphObject*>(userParamsAsObj); userParamsAsGraphObject != nullptr)
-	Log::get() << logType << messageString << " - Object " << userParamsAsGraphObject->getName() << " of type " << userParamsAsGraphObject->getType() << " - " << message
-		   << Log::endl;
+        Log::get() << logType << messageString << " - Object " << userParamsAsGraphObject->getName() << " of type " << userParamsAsGraphObject->getType() << " - " << message
+                   << Log::endl;
     else
-	Log::get() << logType << messageString << " - Object " << userParamsAsObj->getName() << " - " << message << Log::endl;
+        Log::get() << logType << messageString << " - Object " << userParamsAsObj->getName() << " - " << message << Log::endl;
 }
 
 /*************/
@@ -124,9 +129,9 @@ void Renderer::init(const std::string& name)
 
     if (!window)
     {
-	Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - Unable to create a GLFW window" << Log::endl;
-	_isInitialized = false;
-	return;
+        Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - Unable to create a GLFW window" << Log::endl;
+        _isInitialized = false;
+        return;
     }
 
     _mainWindow = std::make_shared<GlWindow>(window, window);
@@ -153,14 +158,14 @@ void Renderer::init(const std::string& name)
 #ifdef GLX_NV_swap_group
     if (glfwExtensionSupported("GLX_NV_swap_group"))
     {
-	PFNGLXQUERYMAXSWAPGROUPSNVPROC nvGLQueryMaxSwapGroups = (PFNGLXQUERYMAXSWAPGROUPSNVPROC)glfwGetProcAddress("glXQueryMaxSwapGroupsNV");
-	if (!nvGLQueryMaxSwapGroups(glfwGetX11Display(), 0, &_maxSwapGroups, &_maxSwapBarriers))
-	    Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Unable to get NV max swap groups / barriers" << Log::endl;
-	else
-	    Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - NV max swap groups: " << _maxSwapGroups << " / barriers: " << _maxSwapBarriers << Log::endl;
+        PFNGLXQUERYMAXSWAPGROUPSNVPROC nvGLQueryMaxSwapGroups = (PFNGLXQUERYMAXSWAPGROUPSNVPROC)glfwGetProcAddress("glXQueryMaxSwapGroupsNV");
+        if (!nvGLQueryMaxSwapGroups(glfwGetX11Display(), 0, &_maxSwapGroups, &_maxSwapBarriers))
+            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Unable to get NV max swap groups / barriers" << Log::endl;
+        else
+            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - NV max swap groups: " << _maxSwapGroups << " / barriers: " << _maxSwapBarriers << Log::endl;
 
-	if (_maxSwapGroups != 0)
-	    _hasNVSwapGroup = true;
+        if (_maxSwapGroups != 0)
+            _hasNVSwapGroup = true;
     }
 #endif
     _mainWindow->releaseContext();
@@ -181,33 +186,30 @@ bool Renderer::tryCreateContext(std::shared_ptr<Renderer> renderer)
 
     if (window)
     {
-	glfwDestroyWindow(window);
-	return true;
+        glfwDestroyWindow(window);
+        return true;
     }
 
     return false;
 }
 
 /*************/
-std::shared_ptr<Renderer> Renderer::findCompatibleApi() 
+std::shared_ptr<Renderer> Renderer::findCompatibleApi()
 {
     Log::get() << Log::MESSAGE << "No rendering API specified, will try finding a compatible one" << Log::endl;
 
-    const std::vector<std::shared_ptr<Renderer>> renderers = {
-	 std::make_shared<OpenGLRenderer>(),
-	 std::make_shared<GLESRenderer>()
-    };
+    const std::vector<std::shared_ptr<Renderer>> renderers = {std::make_shared<OpenGLRenderer>(), std::make_shared<GLESRenderer>()};
 
-    for(auto& renderer: renderers) 
+    for (auto& renderer : renderers)
     {
-	Log::get() << Log::MESSAGE << "Trying API: " << renderer->getApiSpecificVersion().toString() << Log::endl;
-	if(tryCreateContext(renderer)) 
-	{
-	    Log::get() << Log::MESSAGE << "Context created succesfully!" << Log::endl;
-	    return renderer;
-	}
+        Log::get() << Log::MESSAGE << "Trying API: " << renderer->getApiSpecificVersion().toString() << Log::endl;
+        if (tryCreateContext(renderer))
+        {
+            Log::get() << Log::MESSAGE << "Context created succesfully!" << Log::endl;
+            return renderer;
+        }
     }
-    
+
     Log::get() << Log::MESSAGE << "Failed to create a context with any rendering API!" << Log::endl;
     return {};
 }
@@ -215,25 +217,26 @@ std::shared_ptr<Renderer> Renderer::findCompatibleApi()
 /*************/
 std::shared_ptr<Renderer> Renderer::findGLVersion(std::optional<Renderer::Api> api)
 {
-    if(api) 
+    if (api)
     {
-	auto renderer = Renderer::fromApi(api.value());
+        auto renderer = Renderer::fromApi(api.value());
 
-	if(tryCreateContext(renderer)) 
-	    return renderer;
-	else 
-	    return {};
+        if (tryCreateContext(renderer))
+            return renderer;
+        else
+            return {};
     }
-    else 
-	return findCompatibleApi();
+    else
+        return findCompatibleApi();
 }
 
 /*************/
-std::shared_ptr<Texture_Image> Renderer::createTexture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, int multisample, bool cubemap) const {
+std::shared_ptr<Texture_Image> Renderer::createTexture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, int multisample, bool cubemap) const
+{
     auto tex = createTexture_Image(root);
     tex->reset(width, height, pixelFormat, multisample, cubemap);
 
     return tex;
 }
 
-};
+}; // namespace Splash

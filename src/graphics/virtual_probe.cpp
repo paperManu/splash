@@ -2,8 +2,8 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "./utils/scope_guard.h"
 #include "./graphics/renderer.h"
+#include "./utils/scope_guard.h"
 
 using namespace glm;
 
@@ -72,14 +72,17 @@ bool VirtualProbe::linkIt(const std::shared_ptr<GraphObject>& obj)
 /*************/
 void VirtualProbe::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    auto objIterator = find_if(_objects.begin(), _objects.end(), [&](const std::weak_ptr<Object> o) {
-        if (o.expired())
+    auto objIterator = find_if(_objects.begin(),
+        _objects.end(),
+        [&](const std::weak_ptr<Object> o)
+        {
+            if (o.expired())
+                return false;
+            auto object = o.lock();
+            if (object == obj)
+                return true;
             return false;
-        auto object = o.lock();
-        if (object == obj)
-            return true;
-        return false;
-    });
+        });
 
     if (objIterator != _objects.end())
         _objects.erase(objIterator);
@@ -223,8 +226,10 @@ void VirtualProbe::setOutputSize(int width, int height)
 /*************/
 void VirtualProbe::registerAttributes()
 {
-    addAttribute("position",
-        [&](const Values& args) {
+    addAttribute(
+        "position",
+        [&](const Values& args)
+        {
             _position = dvec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
             return true;
         },
@@ -234,8 +239,10 @@ void VirtualProbe::registerAttributes()
         {'r', 'r', 'r'});
     setAttributeDescription("position", "Set the virtual probe position");
 
-    addAttribute("projection",
-        [&](const Values& args) {
+    addAttribute(
+        "projection",
+        [&](const Values& args)
+        {
             auto type = args[0].as<std::string>();
             if (type == "equirectangular")
                 _projectionType = Equirectangular;
@@ -250,7 +257,8 @@ void VirtualProbe::registerAttributes()
 
             return true;
         },
-        [&]() -> Values {
+        [&]() -> Values
+        {
             switch (_projectionType)
             {
             case Equirectangular:
@@ -264,8 +272,10 @@ void VirtualProbe::registerAttributes()
         {'s'});
     setAttributeDescription("projection", "Projection type, can be equirectangular or spherical");
 
-    addAttribute("rotation",
-        [&](const Values& args) {
+    addAttribute(
+        "rotation",
+        [&](const Values& args)
+        {
             _rotation = dvec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
             return true;
         },
@@ -275,8 +285,10 @@ void VirtualProbe::registerAttributes()
         {'r', 'r', 'r'});
     setAttributeDescription("rotation", "Set the virtual probe rotation");
 
-    addAttribute("size",
-        [&](const Values& args) {
+    addAttribute(
+        "size",
+        [&](const Values& args)
+        {
             _newWidth = args[0].as<int>();
             _newHeight = args[1].as<int>();
             return true;
@@ -287,8 +299,10 @@ void VirtualProbe::registerAttributes()
         {'i', 'i'});
     setAttributeDescription("size", "Set the render size");
 
-    addAttribute("sphericalFov",
-        [&](const Values& args) {
+    addAttribute(
+        "sphericalFov",
+        [&](const Values& args)
+        {
             auto value = args[0].as<float>();
             if (value < 1.0 || value > 360.0)
                 return false;

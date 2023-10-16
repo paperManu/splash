@@ -415,7 +415,8 @@ void Window::render()
 void Window::setupFBOs()
 {
     // Render FBO
-    if (glIsFramebuffer(_renderFbo) == GL_FALSE) {
+    if (glIsFramebuffer(_renderFbo) == GL_FALSE)
+    {
         glGenFramebuffers(1, &_renderFbo);
     }
 
@@ -534,13 +535,13 @@ void Window::swapBuffers()
     if (_srgb)
         glDisable(GL_FRAMEBUFFER_SRGB);
 
-    if (isWindowSynchronized) 
+    if (isWindowSynchronized)
     {
         // If this window is synchronized, so we wait for the vsync and swap
         // front and back buffers
         glfwSwapBuffers(_window->get());
     }
-    else 
+    else
     {
         // If this window is not synchronized, we revert the draw buffer back
         // to drawing to the back buffer
@@ -566,14 +567,17 @@ void Window::showCursor(bool visibility)
 /*************/
 void Window::setTexture(const std::shared_ptr<Texture>& tex)
 {
-    auto textureIt = find_if(_inTextures.begin(), _inTextures.end(), [&](const std::weak_ptr<Texture>& t) {
-        if (t.expired())
+    auto textureIt = find_if(_inTextures.begin(),
+        _inTextures.end(),
+        [&](const std::weak_ptr<Texture>& t)
+        {
+            if (t.expired())
+                return false;
+            auto texture = t.lock();
+            if (texture == tex)
+                return true;
             return false;
-        auto texture = t.lock();
-        if (texture == tex)
-            return true;
-        return false;
-    });
+        });
 
     if (textureIt != _inTextures.end())
         return;
@@ -585,14 +589,17 @@ void Window::setTexture(const std::shared_ptr<Texture>& tex)
 /*************/
 void Window::unsetTexture(const std::shared_ptr<Texture>& tex)
 {
-    auto textureIt = find_if(_inTextures.begin(), _inTextures.end(), [&](const std::weak_ptr<Texture>& t) {
-        if (t.expired())
+    auto textureIt = find_if(_inTextures.begin(),
+        _inTextures.end(),
+        [&](const std::weak_ptr<Texture>& t)
+        {
+            if (t.expired())
+                return false;
+            auto texture = t.lock();
+            if (texture == tex)
+                return true;
             return false;
-        auto texture = t.lock();
-        if (texture == tex)
-            return true;
-        return false;
-    });
+        });
 
     if (textureIt != _inTextures.end())
     {
@@ -778,7 +785,8 @@ void Window::registerAttributes()
 
     addAttribute(
         "decorated",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _withDecoration = args[0].as<bool>();
             setWindowDecoration(_withDecoration);
             updateWindowShape();
@@ -790,7 +798,8 @@ void Window::registerAttributes()
 
     addAttribute(
         "guiOnly",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _guiOnly = args[0].as<bool>();
             return true;
         },
@@ -800,7 +809,8 @@ void Window::registerAttributes()
 
     addAttribute(
         "srgb",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _srgb = args[0].as<bool>();
             return true;
         },
@@ -810,7 +820,8 @@ void Window::registerAttributes()
 
     addAttribute(
         "gamma",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _gammaCorrection = args[0].as<float>();
             return true;
         },
@@ -821,7 +832,8 @@ void Window::registerAttributes()
     // Attribute to configure the placement of the various texture input
     addAttribute(
         "layout",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _layout.clear();
             for (auto& arg : args)
                 _layout.push_back(arg.as<int>());
@@ -840,7 +852,8 @@ void Window::registerAttributes()
 
     addAttribute(
         "position",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _windowRect[0] = args[0].as<int>();
             _windowRect[1] = args[1].as<int>();
             updateWindowShape();
@@ -853,7 +866,8 @@ void Window::registerAttributes()
     setAttributeDescription("position", "Set the window position");
 
     addAttribute("showCursor",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             showCursor(args[0].as<bool>());
             return true;
         },
@@ -861,7 +875,8 @@ void Window::registerAttributes()
 
     addAttribute(
         "size",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _windowRect[2] = args[0].as<int>();
             _windowRect[3] = args[1].as<int>();
             _resized = true;
@@ -875,7 +890,8 @@ void Window::registerAttributes()
     setAttributeDescription("size", "Set the window dimensions");
 
     addAttribute("swapInterval",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             updateSwapInterval(args[0].as<int>());
             return true;
         },
@@ -883,7 +899,8 @@ void Window::registerAttributes()
     setAttributeDescription("swapInterval", "Set the window swap interval");
 
     addAttribute("swapTest",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _swapSynchronizationTesting = args[0].as<bool>();
             return true;
         },
@@ -891,32 +908,35 @@ void Window::registerAttributes()
     setAttributeDescription("swapTest", "Activate video swap test if true");
 
     addAttribute("swapTestColor",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _swapSynchronizationColor = glm::vec4(args[0].as<float>(), args[1].as<float>(), args[2].as<float>(), args[3].as<float>());
             return true;
         },
         {'r', 'r', 'r', 'r'});
     setAttributeDescription("swapTestColor", "Set the swap test color");
 
-    addAttribute("textureList", [&]() -> Values {
-        Values textureList;
-        for (const auto& layout_index : _layout)
+    addAttribute("textureList",
+        [&]() -> Values
         {
-            auto index = layout_index.as<size_t>();
-            if (index >= _inTextures.size())
-                continue;
-
-            auto texture = _inTextures[index].lock();
-            if (!texture)
+            Values textureList;
+            for (const auto& layout_index : _layout)
             {
-                textureList.push_back("");
-                continue;
-            }
+                auto index = layout_index.as<size_t>();
+                if (index >= _inTextures.size())
+                    continue;
 
-            textureList.push_back(texture->getName());
-        }
-        return textureList;
-    });
+                auto texture = _inTextures[index].lock();
+                if (!texture)
+                {
+                    textureList.push_back("");
+                    continue;
+                }
+
+                textureList.push_back(texture->getName());
+            }
+            return textureList;
+        });
     setAttributeDescription("textureList", "Get the list of the textures linked to the window");
 
     addAttribute("presentationDelay", [&]() -> Values { return {_presentationDelay}; });

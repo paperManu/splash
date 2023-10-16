@@ -27,9 +27,9 @@
 
 #include "./core/base_object.h"
 #include "./core/graph_object.h"
-#include "./utils/log.h"
 #include "./graphics/gl_window.h"
 #include "./graphics/gpu_buffer.h"
+#include "./utils/log.h"
 
 namespace Splash
 {
@@ -53,10 +53,10 @@ struct ApiVersion
 class Renderer
 {
   public:
-
-    enum class Api {
-	OpenGL,
-	GLES
+    enum class Api
+    {
+        OpenGL,
+        GLES
     };
 
     static std::shared_ptr<Renderer> fromApi(Renderer::Api api);
@@ -68,7 +68,7 @@ class Renderer
      *  Callback for GL errors and warnings
      *  TODO: Make private once `Scene::getNewSharedWindow` is moved to the renderer.
      */
-    static void glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* userParam); 
+    static void glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* userParam);
 
     // NOTE: Sometimes you can use `const std::string_view` (pointer + length, trivially and cheaply copied) instead of `const std::string&`, but
     // it is not guaranteed that the view will be null terminated, which we need when interfacing with glfw's C API.
@@ -144,10 +144,7 @@ class Renderer
      * \param code Error code
      * \param msg Associated error message
      */
-    static void glfwErrorCallback(int /*code*/, const char* msg)
-    {
-        Log::get() << Log::ERROR << "glfwErrorCallback - " << msg << Log::endl;
-    }
+    static void glfwErrorCallback(int /*code*/, const char* msg) { Log::get() << Log::ERROR << "glfwErrorCallback - " << msg << Log::endl; }
 
     /**
      * If `api` contains a value, tries creating a window with only the given API, which can fail.
@@ -172,4 +169,4 @@ class Renderer
 
 } // namespace Splash
 
-#endif 
+#endif

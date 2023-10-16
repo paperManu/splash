@@ -27,44 +27,48 @@
 
 #include "./graphics/texture_image.h"
 
-namespace Splash 
+namespace Splash
 {
 
-class OpenGLTexture_Image final: public Texture_Image 
+class OpenGLTexture_Image final : public Texture_Image
 {
-    public:
-	explicit OpenGLTexture_Image(RootObject* root): Texture_Image(root) { }
+  public:
+    explicit OpenGLTexture_Image(RootObject* root)
+        : Texture_Image(root)
+    {
+    }
 
-	OpenGLTexture_Image(const OpenGLTexture_Image&) = delete;
-	OpenGLTexture_Image& operator=(const OpenGLTexture_Image&) = delete;
-	OpenGLTexture_Image(OpenGLTexture_Image&&) = delete;
-	OpenGLTexture_Image& operator=(OpenGLTexture_Image&&) = delete;
+    OpenGLTexture_Image(const OpenGLTexture_Image&) = delete;
+    OpenGLTexture_Image& operator=(const OpenGLTexture_Image&) = delete;
+    OpenGLTexture_Image(OpenGLTexture_Image&&) = delete;
+    OpenGLTexture_Image& operator=(OpenGLTexture_Image&&) = delete;
 
-	virtual std::unordered_map<std::string, InitTuple> getPixelFormatToInitTable() const final;
+    virtual std::unordered_map<std::string, InitTuple> getPixelFormatToInitTable() const final;
 
-	virtual void bind() final;
+    virtual void bind() final;
 
-	virtual void unbind() final;
+    virtual void unbind() final;
 
-	virtual void generateMipmap() const final;
+    virtual void generateMipmap() const final;
 
-	virtual void getTextureImage(GLuint textureId, GLenum /*textureType*/, GLint level, GLenum format, GLenum type, GLsizei bufSize, void *pixels) const final;
+    virtual void getTextureImage(GLuint textureId, GLenum /*textureType*/, GLint level, GLenum format, GLenum type, GLsizei bufSize, void* pixels) const final;
 
-	virtual void getTextureLevelParameteriv(GLenum /*target*/, GLint level, GLenum pname, GLint* params) const final;
+    virtual void getTextureLevelParameteriv(GLenum /*target*/, GLint level, GLenum pname, GLint* params) const final;
 
-	virtual void getTextureParameteriv(GLenum /*target*/, GLenum pname, GLint* params) const final;
+    virtual void getTextureParameteriv(GLenum /*target*/, GLenum pname, GLint* params) const final;
 
-	virtual bool reallocatePBOs(int width, int height, int bytes) final;
+    virtual bool reallocatePBOs(int width, int height, int bytes) final;
 
-	virtual std::optional<std::pair<GLenum, GLenum>> updateUncompressedInternalAndDataFormat(const ImageBufferSpec& spec, const Values& srgb);
+    virtual std::optional<std::pair<GLenum, GLenum>> updateUncompressedInternalAndDataFormat(const ImageBufferSpec& spec, const Values& srgb);
 
-	virtual void readFromImageIntoPBO(GLuint pboId, int imageDataSize, std::shared_ptr<Image> img) const;
+    virtual void readFromImageIntoPBO(GLuint pboId, int imageDataSize, std::shared_ptr<Image> img) const;
 
-	virtual void copyPixelsBetweenPBOs(int imageDataSize) const final;
-    private:
-	GLubyte* _pbosPixels[2];
+    virtual void copyPixelsBetweenPBOs(int imageDataSize) const final;
+
+  private:
+    GLubyte* _pbosPixels[2];
 };
 
-}
+} // namespace Splash
 
 #endif

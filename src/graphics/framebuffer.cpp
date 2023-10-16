@@ -23,14 +23,8 @@ Framebuffer::Framebuffer(RootObject* root)
         _colorTexture = root->getRenderer()->createTexture_Image(_root);
         _colorTexture->setAttribute("clampToEdge", {true});
         _colorTexture->setAttribute("filtering", {false});
-        _colorTexture->reset(_width, _height,  "RGBA", _multisample);
-        glFramebufferTexture2D(	
-            GL_DRAW_FRAMEBUFFER,
-            GL_COLOR_ATTACHMENT0,
-            GL_TEXTURE_2D,
-            _colorTexture->getTexId(),
-            0
-        );
+        _colorTexture->reset(_width, _height, "RGBA", _multisample);
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
     }
 
     GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};

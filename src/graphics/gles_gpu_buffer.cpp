@@ -1,6 +1,6 @@
 #include "./graphics/gles_gpu_buffer.h"
 
-namespace Splash 
+namespace Splash
 {
 
 /*************/
@@ -11,10 +11,10 @@ GLESGpuBuffer::GLESGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_
 }
 
 /*************/
-void GLESGpuBuffer::zeroBuffer() 
+void GLESGpuBuffer::zeroBuffer()
 {
-    // Previously used `glClearBufferData` with the data set to `nullptr`, this causes the buffer to be filled with zeros. Unfortunately, this function is not available in OpenGL ES, 
-    // so we make do with a manual upload.
+    // Previously used `glClearBufferData` with the data set to `nullptr`, this causes the buffer to be filled with zeros. Unfortunately, this function is not available in OpenGL
+    // ES, so we make do with a manual upload.
     const auto zerosSize = _size * _elementSize * _baseSize;
     const auto zeroBuffer = std::vector<char>(zerosSize, 0);
 
@@ -29,7 +29,7 @@ void GLESGpuBuffer::allocateBufferData(GLuint bufferId, GLenum target, GLsizeipt
 }
 
 /*************/
-void GLESGpuBuffer::copyBetweenBuffers(GLuint fromId, GLuint toId, GLsizeiptr size) 
+void GLESGpuBuffer::copyBetweenBuffers(GLuint fromId, GLuint toId, GLsizeiptr size)
 {
     glBindBuffer(GL_COPY_READ_BUFFER, fromId);
     glBindBuffer(GL_COPY_WRITE_BUFFER, toId);
@@ -37,7 +37,7 @@ void GLESGpuBuffer::copyBetweenBuffers(GLuint fromId, GLuint toId, GLsizeiptr si
 }
 
 /*************/
-std::vector<char> GLESGpuBuffer::readBufferFromGpu(GLuint bufferId, GLsizeiptr bytesToRead) 
+std::vector<char> GLESGpuBuffer::readBufferFromGpu(GLuint bufferId, GLsizeiptr bytesToRead)
 {
     glBindBuffer(GL_ARRAY_BUFFER, bufferId);
     auto* bufferPtr = static_cast<char*>(glMapBufferRange(GL_ARRAY_BUFFER, 0, bytesToRead, GL_MAP_READ_BIT));
@@ -59,10 +59,10 @@ void GLESGpuBuffer::getBufferParameteriv(GLenum bufferId, GLenum target, GLenum 
 }
 
 /*************/
-void GLESGpuBuffer::setBufferData(GLuint bufferId, GLenum target, GLsizeiptr size, const GLvoid* data) 
+void GLESGpuBuffer::setBufferData(GLuint bufferId, GLenum target, GLsizeiptr size, const GLvoid* data)
 {
     glBindBuffer(target, bufferId);
     glBufferSubData(target, 0, size, data);
 }
 
-}
+} // namespace Splash

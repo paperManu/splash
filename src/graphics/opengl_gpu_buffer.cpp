@@ -1,6 +1,6 @@
 #include "./graphics/opengl_gpu_buffer.h"
 
-namespace Splash 
+namespace Splash
 {
 
 /*************/
@@ -11,7 +11,7 @@ OpenGLGpuBuffer::OpenGLGpuBuffer(GLint elementSize, GLenum type, GLenum usage, s
 }
 
 /*************/
-void OpenGLGpuBuffer::zeroBuffer() 
+void OpenGLGpuBuffer::zeroBuffer()
 {
     glClearNamedBufferData(_glId, GL_R8, GL_RED, _type, NULL);
 }
@@ -29,7 +29,7 @@ void OpenGLGpuBuffer::copyBetweenBuffers(GLuint fromId, GLuint toId, GLsizeiptr 
 }
 
 /*************/
-std::vector<char> OpenGLGpuBuffer::readBufferFromGpu(GLuint bufferId, GLsizeiptr bytesToRead) 
+std::vector<char> OpenGLGpuBuffer::readBufferFromGpu(GLuint bufferId, GLsizeiptr bytesToRead)
 {
     auto buffer = std::vector<char>(bytesToRead);
     glGetNamedBufferSubData(bufferId, 0, buffer.size(), buffer.data());
@@ -44,9 +44,9 @@ void OpenGLGpuBuffer::getBufferParameteriv(GLenum bufferId, GLenum /*target*/, G
 }
 
 /*************/
-void OpenGLGpuBuffer::setBufferData(GLuint bufferId, GLenum /*target*/, GLsizeiptr size, const GLvoid* data) 
+void OpenGLGpuBuffer::setBufferData(GLuint bufferId, GLenum /*target*/, GLsizeiptr size, const GLvoid* data)
 {
     glNamedBufferSubData(bufferId, 0, size, data);
 }
 
-};
+}; // namespace Splash

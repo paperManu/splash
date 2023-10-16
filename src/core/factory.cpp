@@ -2,7 +2,6 @@
 
 #include "./controller/controller_blender.h"
 #include "./core/constants.h"
-#include "./network/link.h"
 #include "./core/scene.h"
 #include "./graphics/camera.h"
 #include "./graphics/filter.h"
@@ -21,6 +20,7 @@
 #include "./image/image_list.h"
 #include "./image/queue.h"
 #include "./mesh/mesh.h"
+#include "./network/link.h"
 #include "./sink/sink.h"
 #include "./utils/jsonutils.h"
 #include "./utils/log.h"
@@ -237,7 +237,8 @@ void Factory::registerObjects()
         true);
 
     _objectBook["image_list"] = Page(
-        [&](RootObject* root) {
+        [&](RootObject* root)
+        {
             std::shared_ptr<GraphObject> object;
             if (!_scene)
                 object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image_List>(root));
@@ -252,7 +253,8 @@ void Factory::registerObjects()
 
 #if HAVE_LINUX
     _objectBook["image_v4l2"] = Page(
-        [&](RootObject* root) {
+        [&](RootObject* root)
+        {
             std::shared_ptr<GraphObject> object;
             if (!_scene)
                 object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image_V4L2>(root));
@@ -267,7 +269,8 @@ void Factory::registerObjects()
 #endif
 
     _objectBook["image_ffmpeg"] = Page(
-        [&](RootObject* root) {
+        [&](RootObject* root)
+        {
             std::shared_ptr<GraphObject> object;
             if (!_scene)
                 object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image_FFmpeg>(root));
@@ -282,7 +285,8 @@ void Factory::registerObjects()
 
 #if HAVE_GPHOTO and HAVE_OPENCV
     _objectBook["image_gphoto"] = Page(
-        [&](RootObject* root) {
+        [&](RootObject* root)
+        {
             std::shared_ptr<GraphObject> object;
             if (!_scene)
                 object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image_GPhoto>(root));
@@ -298,7 +302,8 @@ void Factory::registerObjects()
 
 #if HAVE_SHMDATA
     _objectBook["image_ndi"] = Page(
-        [&](RootObject* root) {
+        [&](RootObject* root)
+        {
             std::shared_ptr<GraphObject> object;
             if (!_scene)
                 object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image_NDI>(root));
@@ -312,7 +317,8 @@ void Factory::registerObjects()
         true);
 
     _objectBook["image_shmdata"] = Page(
-        [&](RootObject* root) {
+        [&](RootObject* root)
+        {
             std::shared_ptr<GraphObject> object;
             if (!_scene)
                 object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image_Shmdata>(root));
@@ -328,7 +334,8 @@ void Factory::registerObjects()
 
 #if HAVE_OPENCV
     _objectBook["image_opencv"] = Page(
-        [&](RootObject* root) {
+        [&](RootObject* root)
+        {
             std::shared_ptr<GraphObject> object;
             if (!_scene)
                 object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image_OpenCV>(root));
@@ -350,7 +357,8 @@ void Factory::registerObjects()
 
 #if HAVE_SHMDATA
     _objectBook["mesh_shmdata"] = Page(
-        [&](RootObject* root) {
+        [&](RootObject* root)
+        {
             std::shared_ptr<GraphObject> object;
             if (!_scene)
                 object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Mesh_Shmdata>(root));
@@ -389,7 +397,8 @@ void Factory::registerObjects()
 
 #if HAVE_PYTHON
     _objectBook["python"] = Page(
-        [&](RootObject* root) {
+        [&](RootObject* root)
+        {
             if (!root || (_scene && !_scene->isMaster()))
                 return std::shared_ptr<GraphObject>(nullptr);
             return std::dynamic_pointer_cast<GraphObject>(std::make_shared<PythonEmbedded>(root));
@@ -400,7 +409,8 @@ void Factory::registerObjects()
 #endif
 
     _objectBook["queue"] = Page(
-        [&](RootObject* root) {
+        [&](RootObject* root)
+        {
             std::shared_ptr<GraphObject> object;
             if (!_scene)
                 object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Queue>(root));
@@ -413,20 +423,23 @@ void Factory::registerObjects()
         "Allows for creating a timed playlist of image sources.",
         true);
 
-    _objectBook["texture_image"] = Page([&](RootObject* root) { 
-	    // Root must exist for the renderer to work (indicates normal operation, root is null for tests)
-	    if(root)
-		return std::dynamic_pointer_cast<GraphObject>(root->getRenderer()->createTexture_Image(root));
-	    
-	    return std::shared_ptr<GraphObject>(nullptr);
-	},
+    _objectBook["texture_image"] = Page(
+        [&](RootObject* root)
+        {
+            // Root must exist for the renderer to work (indicates normal operation, root is null for tests)
+            if (root)
+                return std::dynamic_pointer_cast<GraphObject>(root->getRenderer()->createTexture_Image(root));
+
+            return std::shared_ptr<GraphObject>(nullptr);
+        },
         GraphObject::Category::TEXTURE,
         "texture image",
         "Texture object created from an Image object.",
         true);
 
     _objectBook["virtual_probe"] = Page(
-        [&](RootObject* root) {
+        [&](RootObject* root)
+        {
             if (!_scene)
                 return std::dynamic_pointer_cast<GraphObject>(std::make_shared<VirtualProbe>(nullptr));
             else

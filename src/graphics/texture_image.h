@@ -43,7 +43,7 @@ namespace Splash
 
 class Texture_Image : public Texture
 {
-    public:
+  public:
     /**
      * Bind this texture
      */
@@ -165,16 +165,17 @@ class Texture_Image : public Texture
     /**
      * Used only in `getPixelFormatToInitTable` at the moment. Can be replaced by an `std::tuple`, but the field names might be helpful.
      */
-    struct InitTuple {
-	uint numChannels, bitsPerChannel;
-	ImageBufferSpec::Type pixelBitFormat;
-	std::string stringName;
-	GLenum texInternalFormat, texFormat, texType;
+    struct InitTuple
+    {
+        uint numChannels, bitsPerChannel;
+        ImageBufferSpec::Type pixelBitFormat;
+        std::string stringName;
+        GLenum texInternalFormat, texFormat, texType;
     };
 
     /**
      * Note that this table is constant throughout the life of the program, so it might be opimized further if it proves to be a bottleneck.
-     * \return A graphics API specific table to initialize `_spec`, `_texInternalFormat`, `_texFormat`, and `_texType` depending on `_pixelFormat`.      
+     * \return A graphics API specific table to initialize `_spec`, `_texInternalFormat`, `_texFormat`, and `_texType` depending on `_pixelFormat`.
      * \sa https://docs.gl/es3/glTexStorage2D
      * \sa https://docs.gl/gl4/glTexStorage2D
      */
@@ -194,7 +195,7 @@ class Texture_Image : public Texture
      * Reads an  OpenGL texture into a pre-allocated buffer on the CPU. Deviates from the OpenGL API by taking both the texture ID and texture type. This is needed to accomodate
      * OpenGL ES.
      */
-    virtual void getTextureImage(GLuint textureId, GLenum textureType, GLint level, GLenum format, GLenum type, GLsizei bufSize, void *pixels) const = 0; 
+    virtual void getTextureImage(GLuint textureId, GLenum textureType, GLint level, GLenum format, GLenum type, GLsizei bufSize, void* pixels) const = 0;
 
     /**
      * Sets up texture wrapping, minification and magnification filters, anistropy, and packing/unpacking alignment. Note that all of the OpenGL calls used in this function are
@@ -213,7 +214,7 @@ class Texture_Image : public Texture
     void allocateGLTexture();
 
     /**
-     * Deletes the texture if it already exists, initializes `_textureType`, generates and sets the OpenGL texture parameters, then allocates space on the GPU for the texture. 
+     * Deletes the texture if it already exists, initializes `_textureType`, generates and sets the OpenGL texture parameters, then allocates space on the GPU for the texture.
      * \sa setTextureTypeFromOptions(), setGLTextureParameters(), and allocateGLTexture().
      */
     void initOpenGLTexture();
@@ -252,7 +253,8 @@ class Texture_Image : public Texture
     /**
      * Reallocates space on the GPU for the texture and initializes its contents with the given image's.
      */
-    void reallocateAndInitGLTexture(bool isCompressed, GLenum internalFormat, const ImageBufferSpec& spec, GLenum glChannelOrder, GLenum dataFormat, std::shared_ptr<Image> img, int imageDataSize) const;
+    void reallocateAndInitGLTexture(
+        bool isCompressed, GLenum internalFormat, const ImageBufferSpec& spec, GLenum glChannelOrder, GLenum dataFormat, std::shared_ptr<Image> img, int imageDataSize) const;
 
     /**
      * Updates PBO sizes if needed, reads from the given image into one, and copies the data into the second.
@@ -270,7 +272,8 @@ class Texture_Image : public Texture
      * Reads the data from the given image and uploads it to the GPU through PBOs, reallocating space if needed.
      * \sa updateTextureFromImage().
      */
-    void updateTextureFromImage(bool isCompressed, GLenum internalFormat, const ImageBufferSpec& spec, GLenum glChannelOrder, GLenum dataFormat, std::shared_ptr<Image> img, int imageDataSize);
+    void updateTextureFromImage(
+        bool isCompressed, GLenum internalFormat, const ImageBufferSpec& spec, GLenum glChannelOrder, GLenum dataFormat, std::shared_ptr<Image> img, int imageDataSize);
 
     /**
      * Copies the data between `_pbos[0]` and `_pbos[1]`.
@@ -285,17 +288,17 @@ class Texture_Image : public Texture
   protected:
     enum ColorEncoding : int32_t
     {
-        RGB=0,
-        BGR=1,
-        UYVY=2,
-        YUYV=3,
-        YCoCg=4
+        RGB = 0,
+        BGR = 1,
+        UYVY = 2,
+        YUYV = 3,
+        YCoCg = 4
     };
 
     GLuint _glTex{0};
     GLuint _pbos[2];
     // Can either be GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_2D, GL_TEXTURE_CUBE_MAP
-    GLuint _textureType{GL_TEXTURE_2D}; 
+    GLuint _textureType{GL_TEXTURE_2D};
 
     int _multisample{0};
     bool _cubemap{false};

@@ -95,8 +95,8 @@ Scene::Scene(Context context)
 Scene::~Scene()
 {
     // No renderer, probably means we failed to init anyway so no clean up is needed.
-    if (!_renderer) 
-	return;
+    if (!_renderer)
+        return;
 
     // Cleanup every object
     if (const auto mainWindow = _renderer->getMainWindow(); mainWindow)
@@ -378,7 +378,6 @@ void Scene::render()
         Timer::get() >> "swap";
     }
 
-
 #ifndef PROFILE_GPU
     ProfilerGL::get().gatherTimings();
     ProfilerGL::get().processTimings();
@@ -633,8 +632,8 @@ void Scene::init(const std::string& name)
 {
     _renderer = Renderer::create(_context.renderingApi);
 
-    if(!_renderer) 
-	return;
+    if (!_renderer)
+        return;
 
     _isInitialized = true;
     _renderer->init(name);
@@ -719,28 +718,33 @@ void glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severit
     }
 
     if (userParam == nullptr)
-        Log::get() << logType << messageString << " - Object: unknown" << " - " << message << Log::endl;
+        Log::get() << logType << messageString << " - Object: unknown"
+                   << " - " << message << Log::endl;
     else if (const auto userParamsAsGraphObject = dynamic_cast<const GraphObject*>(userParamsAsObj); userParamsAsGraphObject != nullptr)
-        Log::get() << logType << messageString << " - Object "  << userParamsAsGraphObject->getName() << " of type " << userParamsAsGraphObject->getType() << " - " << message << Log::endl;
+        Log::get() << logType << messageString << " - Object " << userParamsAsGraphObject->getName() << " of type " << userParamsAsGraphObject->getType() << " - " << message
+                   << Log::endl;
     else
-        Log::get() << logType << messageString << " - Object "  << userParamsAsObj->getName() << " - " << message << Log::endl;
+        Log::get() << logType << messageString << " - Object " << userParamsAsObj->getName() << " - " << message << Log::endl;
 }
 
 /*************/
 void Scene::registerAttributes()
 {
     addAttribute("addObject",
-        [&](const Values& args) {
-            addTask([=]() {
-                std::string type = args[0].as<std::string>();
-                std::string name = args[1].as<std::string>();
-                std::string sceneName = args.size() > 2 ? args[2].as<std::string>() : "";
+        [&](const Values& args)
+        {
+            addTask(
+                [=]()
+                {
+                    std::string type = args[0].as<std::string>();
+                    std::string name = args[1].as<std::string>();
+                    std::string sceneName = args.size() > 2 ? args[2].as<std::string>() : "";
 
-                if (sceneName == _name)
-                    addObject(type, name);
-                else if (_isMaster)
-                    addGhost(type, name);
-            });
+                    if (sceneName == _name)
+                        addObject(type, name);
+                    else if (_isMaster)
+                        addGhost(type, name);
+                });
 
             return true;
         },
@@ -748,7 +752,8 @@ void Scene::registerAttributes()
     setAttributeDescription("addObject", "Add an object of the given name, type, and optionally the target scene");
 
     addAttribute("checkSceneRunning",
-        [&](const Values&) {
+        [&](const Values&)
+        {
             sendMessageToWorld("sceneLaunched", {});
             return true;
         },
@@ -756,25 +761,31 @@ void Scene::registerAttributes()
     setAttributeDescription("checkSceneLaunched", "Asks the scene to notify the World that it is running");
 
     addAttribute("deleteObject",
-        [&](const Values& args) {
-            addTask([=]() -> void {
-                // We wait until we can indeed delete the object
-                bool expectedAtomicValue = false;
-                while (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true, std::memory_order_acquire))
-                    std::this_thread::sleep_for(chrono::milliseconds(1));
-                OnScopeExit { _objectsCurrentlyUpdated.store(false, std::memory_order_release); };
+        [&](const Values& args)
+        {
+            addTask(
+                [=]() -> void
+                {
+                    // We wait until we can indeed delete the object
+                    bool expectedAtomicValue = false;
+                    while (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true, std::memory_order_acquire))
+                        std::this_thread::sleep_for(chrono::milliseconds(1));
+                    OnScopeExit
+                    {
+                        _objectsCurrentlyUpdated.store(false, std::memory_order_release);
+                    };
 
-                std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
+                    std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
 
-                auto objectName = args[0].as<std::string>();
-                auto object = getObject(objectName);
-                if (!object)
-                    return;
+                    auto objectName = args[0].as<std::string>();
+                    auto object = getObject(objectName);
+                    if (!object)
+                        return;
 
-                for (auto& localObject : _objects)
-                    unlink(object, localObject.second);
-                _objects.erase(objectName);
-            });
+                    for (auto& localObject : _objects)
+                        unlink(object, localObject.second);
+                    _objects.erase(objectName);
+                });
 
             return true;
         },
@@ -782,7 +793,8 @@ void Scene::registerAttributes()
     setAttributeDescription("deleteObject", "Delete an object given its name");
 
     addAttribute("duration",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             Timer::get().setDuration(args[0].as<std::string>(), args[1].as<int>());
             return true;
         },
@@ -790,7 +802,8 @@ void Scene::registerAttributes()
     setAttributeDescription("duration", "Set the duration of the given timer");
 
     addAttribute("masterClock",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             Timer::Point clock;
             clock.years = args[0].as<uint32_t>();
             clock.months = args[1].as<uint32_t>();
@@ -807,12 +820,15 @@ void Scene::registerAttributes()
     setAttributeDescription("masterClock", "Set the timing of the master clock");
 
     addAttribute("link",
-        [&](const Values& args) {
-            addTask([=]() {
-                std::string src = args[0].as<std::string>();
-                std::string dst = args[1].as<std::string>();
-                link(src, dst);
-            });
+        [&](const Values& args)
+        {
+            addTask(
+                [=]()
+                {
+                    std::string src = args[0].as<std::string>();
+                    std::string dst = args[1].as<std::string>();
+                    link(src, dst);
+                });
 
             return true;
         },
@@ -820,7 +836,8 @@ void Scene::registerAttributes()
     setAttributeDescription("link", "Link the two given objects");
 
     addAttribute("log",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             Log::get().setLog(args[0].as<uint64_t>(), args[1].as<std::string>(), (Log::Priority)args[2].as<int>());
             return true;
         },
@@ -828,7 +845,8 @@ void Scene::registerAttributes()
     setAttributeDescription("log", "Add an entry to the logs, given its message and priority");
 
     addAttribute("logToFile",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             Log::get().logToFile(args[0].as<bool>());
             return true;
         },
@@ -836,7 +854,8 @@ void Scene::registerAttributes()
     setAttributeDescription("logToFile", "If true, the process holding the Scene will try to write log to file");
 
     addAttribute("ping",
-        [&](const Values&) {
+        [&](const Values&)
+        {
             signalBufferObjectUpdated();
             sendMessageToWorld("pong", {_name});
             return true;
@@ -845,20 +864,23 @@ void Scene::registerAttributes()
     setAttributeDescription("ping", "Ping the World");
 
     addAttribute("sync",
-        [&](const Values&) {
-            addTask([=]() { 
-            sendMessageToWorld("answerMessage", {"sync", _name}); });
+        [&](const Values&)
+        {
+            addTask([=]() { sendMessageToWorld("answerMessage", {"sync", _name}); });
             return true;
         },
         {});
     setAttributeDescription("sync", "Dummy message to make sure all previous messages have been processed by the Scene.");
 
     addAttribute("remove",
-        [&](const Values& args) {
-            addTask([=]() {
-                std::string name = args[1].as<std::string>();
-                remove(name);
-            });
+        [&](const Values& args)
+        {
+            addTask(
+                [=]()
+                {
+                    std::string name = args[1].as<std::string>();
+                    remove(name);
+                });
 
             return true;
         },
@@ -866,20 +888,24 @@ void Scene::registerAttributes()
     setAttributeDescription("remove", "Remove the object of the given name");
 
     addAttribute("setMaster",
-        [&](const Values& args) {
-            addTask([=]() {
-                if (args.empty())
-                    setAsMaster();
-                else
-                    setAsMaster(args[0].as<std::string>());
-            });
+        [&](const Values& args)
+        {
+            addTask(
+                [=]()
+                {
+                    if (args.empty())
+                        setAsMaster();
+                    else
+                        setAsMaster(args[0].as<std::string>());
+                });
             return true;
         },
         {});
     setAttributeDescription("setMaster", "Set this Scene as master, can give the configuration file path as a parameter");
 
     addAttribute("start",
-        [&](const Values&) {
+        [&](const Values&)
+        {
             _started = true;
             sendMessageToWorld("answerMessage", {"start", _name});
             return true;
@@ -888,7 +914,8 @@ void Scene::registerAttributes()
     setAttributeDescription("start", "Start the Scene main loop");
 
     addAttribute("stop",
-        [&](const Values&) {
+        [&](const Values&)
+        {
             _started = false;
             return true;
         },
@@ -896,33 +923,40 @@ void Scene::registerAttributes()
     setAttributeDescription("stop", "Stop the Scene main loop");
 
     addAttribute("swapTest",
-        [&](const Values& args) {
-            addTask([=]() {
-                std::lock_guard<std::recursive_mutex> lock(_objectsMutex);
-                for (auto& obj : _objects)
-                    if (obj.second->getType() == "window")
-                        std::dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTest", {args[0].as<bool>()});
-            });
+        [&](const Values& args)
+        {
+            addTask(
+                [=]()
+                {
+                    std::lock_guard<std::recursive_mutex> lock(_objectsMutex);
+                    for (auto& obj : _objects)
+                        if (obj.second->getType() == "window")
+                            std::dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTest", {args[0].as<bool>()});
+                });
             return true;
         },
         {'i'});
     setAttributeDescription("swapTest", "Activate video swap test if set to anything but 0");
 
     addAttribute("swapTestColor",
-        [&](const Values& args) {
-            addTask([=]() {
-                std::lock_guard<std::recursive_mutex> lock(_objectsMutex);
-                for (auto& obj : _objects)
-                    if (obj.second->getType() == "window")
-                        std::dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTestColor", args);
-            });
+        [&](const Values& args)
+        {
+            addTask(
+                [=]()
+                {
+                    std::lock_guard<std::recursive_mutex> lock(_objectsMutex);
+                    for (auto& obj : _objects)
+                        if (obj.second->getType() == "window")
+                            std::dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTestColor", args);
+                });
             return true;
         },
         {});
     setAttributeDescription("swapTestColor", "Set the swap test color");
 
     addAttribute("syncScenes",
-        [&](const Values& /*args*/) {
+        [&](const Values& /*args*/)
+        {
             _doUploadTextures = true;
             _lastSyncMessageDate = Timer::getTime();
             return true;
@@ -931,23 +965,29 @@ void Scene::registerAttributes()
     setAttributeDescription("uploadTextures", "Signal that textures should be uploaded right away");
 
     addAttribute("quit",
-        [&](const Values&) {
-            addTask([=]() {
-                _started = false;
-                _isRunning = false;
-            });
+        [&](const Values&)
+        {
+            addTask(
+                [=]()
+                {
+                    _started = false;
+                    _isRunning = false;
+                });
             return true;
         },
         {});
     setAttributeDescription("quit", "Ask the Scene to quit");
 
     addAttribute("unlink",
-        [&](const Values& args) {
-            addTask([=]() {
-                std::string src = args[0].as<std::string>();
-                std::string dst = args[1].as<std::string>();
-                unlink(src, dst);
-            });
+        [&](const Values& args)
+        {
+            addTask(
+                [=]()
+                {
+                    std::string src = args[0].as<std::string>();
+                    std::string dst = args[1].as<std::string>();
+                    unlink(src, dst);
+                });
 
             return true;
         },
@@ -955,13 +995,16 @@ void Scene::registerAttributes()
     setAttributeDescription("unlink", "Unlink the two given objects");
 
     addAttribute("wireframe",
-        [&](const Values& args) {
-            addTask([=]() {
-                std::lock_guard<std::recursive_mutex> lock(_objectsMutex);
-                for (auto& obj : _objects)
-                    if (obj.second->getType() == "camera")
-                        std::dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", args);
-            });
+        [&](const Values& args)
+        {
+            addTask(
+                [=]()
+                {
+                    std::lock_guard<std::recursive_mutex> lock(_objectsMutex);
+                    for (auto& obj : _objects)
+                        if (obj.second->getType() == "camera")
+                            std::dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", args);
+                });
 
             return true;
         },
@@ -970,7 +1013,8 @@ void Scene::registerAttributes()
 
 #if HAVE_GPHOTO and HAVE_OPENCV
     addAttribute("calibrateColor",
-        [&](const Values&) {
+        [&](const Values&)
+        {
             auto calibrator = std::dynamic_pointer_cast<ColorCalibrator>(_colorCalibrator);
             if (calibrator)
                 calibrator->update();
@@ -980,7 +1024,8 @@ void Scene::registerAttributes()
     setAttributeDescription("calibrateColor", "Launch projectors color calibration");
 
     addAttribute("calibrateColorResponseFunction",
-        [&](const Values&) {
+        [&](const Values&)
+        {
             auto calibrator = std::dynamic_pointer_cast<ColorCalibrator>(_colorCalibrator);
             if (calibrator)
                 calibrator->updateCRF();
@@ -992,7 +1037,8 @@ void Scene::registerAttributes()
 
 #if HAVE_CALIMIRO
     addAttribute("calibrateGeometry",
-        [&](const Values&) {
+        [&](const Values&)
+        {
             auto calibrator = std::dynamic_pointer_cast<GeometricCalibrator>(_geometricCalibrator);
             if (calibrator)
                 calibrator->calibrate();
@@ -1002,7 +1048,8 @@ void Scene::registerAttributes()
 #endif
 
     addAttribute("runInBackground",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _runInBackground = args[0].as<bool>();
             return true;
         },
@@ -1011,7 +1058,8 @@ void Scene::registerAttributes()
 
     addAttribute(
         "swapInterval",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _swapInterval = std::max(-1, args[0].as<int>());
             _targetFrameDuration = updateTargetFrameDuration();
             return true;
@@ -1026,7 +1074,8 @@ void Scene::initializeTree()
 {
     _tree.addCallbackToLeafAt(
         "/world/attributes/masterClock",
-        [](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
+        [](const Value& value, const chrono::system_clock::time_point& /*timestamp*/)
+        {
             auto args = value.as<Values>();
             Timer::Point clock;
             clock.years = args[0].as<uint32_t>();
