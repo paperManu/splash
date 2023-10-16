@@ -330,8 +330,6 @@ void Window::render()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
-    if (_srgb)
-        glEnable(GL_FRAMEBUFFER_SRGB);
 
     // If we are in synchronization testing mode
     if (_swapSynchronizationTesting)
@@ -408,7 +406,6 @@ void Window::render()
 #endif
 
     glDisable(GL_BLEND);
-    glDisable(GL_FRAMEBUFFER_SRGB);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     return;
@@ -505,6 +502,9 @@ void Window::swapBuffers()
         glfwSwapBuffers(_window->get());
     }
 
+    if (_srgb)
+        glEnable(GL_FRAMEBUFFER_SRGB);
+
     // If the render texture specs have changed
     if (_renderTextureUpdated)
     {
@@ -522,11 +522,17 @@ void Window::swapBuffers()
         else
             Log::get() << Log::DEBUGGING << "Window::" << __FUNCTION__ << " - Read framebuffer object successfully initialized" << Log::endl;
 #endif
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
         _renderTextureUpdated = false;
     }
 
     // Copy the rendered texture to the back/front buffer
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, _readFbo);
     glBlitFramebuffer(0, 0, _windowRect[2], _windowRect[3], 0, 0, _windowRect[2], _windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+    if (_srgb)
+        glDisable(GL_FRAMEBUFFER_SRGB);
 
     if (isWindowSynchronized) 
     {

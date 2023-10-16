@@ -477,7 +477,7 @@ void Shader::parseUniforms(const std::string& src)
                 // If a uniform is unused (perhaps due to its code path being removed by an ifdef), the compiler removes it from the shader altogether, as if it's never been there.
                 // I think renderdoc can be helpful with debugging this kind of stuff. Anyway, it might not be strictly an error depending on how you structure the code.
                 // In Splash, the ifdef trick is used a lot to enable/disable features, so some uniforms are removed between different shader versions.
-                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << "- Uniform \"" << name << "\" with type \"" << type << "\" "
+                Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Uniform \"" << name << "\" with type \"" << type << "\" "
                            << "was not found in the shader. You might have forgotten it or it might have been optimized out" << Log::endl;
 
                 continue;

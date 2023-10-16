@@ -2000,13 +2000,10 @@ struct ShaderSources
                 #endif
             }
 
-	    // vec2 gamma = _gamma;
-	    // if(length(gamma) == 0.0) {
-	    // 	gamma = vec2(0.0, 2.2);
-	    // }
-
-	    // fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / gamma.y));
-
+	        if(_gamma.x == 0.0) {
+                float gamma = clamp(_gamma.y, 1.0 , 3.0);
+	            fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / gamma));
+	        }
         }
     )"};
 
