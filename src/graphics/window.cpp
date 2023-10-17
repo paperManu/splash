@@ -15,15 +15,13 @@
 #include "./graphics/warp.h"
 #include "./image/image.h"
 #include "./utils/log.h"
-#include "./utils/timer.h"
 #include "./utils/scope_guard.h"
+#include "./utils/timer.h"
 
 using namespace std::placeholders;
 
 namespace Splash
 {
-
-extern void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
 
 /*************/
 std::mutex Window::_callbackMutex;
@@ -302,11 +300,11 @@ void Window::updateSizeAndPos()
 void Window::render()
 {
 #ifdef DEBUGGL
-    glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(this));
+    glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<void*>(this));
 
     OnScopeExit
     {
-        glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(_root));
+        glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<void*>(_root));
     };
 #endif
 
@@ -332,8 +330,6 @@ void Window::render()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
-    if (_srgb)
-        glEnable(GL_FRAMEBUFFER_SRGB);
 
     // If we are in synchronization testing mode
     if (_swapSynchronizationTesting)
@@ -410,7 +406,6 @@ void Window::render()
 #endif
 
     glDisable(GL_BLEND);
-    glDisable(GL_FRAMEBUFFER_SRGB);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     return;
@@ -421,22 +416,24 @@ void Window::setupFBOs()
 {
     // Render FBO
     if (glIsFramebuffer(_renderFbo) == GL_FALSE)
-        glCreateFramebuffers(1, &_renderFbo);
+    {
+        glGenFramebuffers(1, &_renderFbo);
+    }
 
-    glNamedFramebufferTexture(_renderFbo, GL_DEPTH_ATTACHMENT, 0, 0);
-    _depthTexture = std::make_shared<Texture_Image>(_root, _windowRect[2], _windowRect[3], "D", nullptr);
-    glNamedFramebufferTexture(_renderFbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
 
-    glNamedFramebufferTexture(_renderFbo, GL_COLOR_ATTACHMENT0, 0, 0);
-    _colorTexture = std::make_shared<Texture_Image>(_root);
+    _depthTexture = _root->getRenderer()->createTexture_Image(_root, _windowRect[2], _windowRect[3], "D");
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
+
+    _colorTexture = _root->getRenderer()->createTexture_Image(_root);
     _colorTexture->setAttribute("filtering", {false});
-    _colorTexture->reset(_windowRect[2], _windowRect[3], "sRGBA", nullptr);
-    glNamedFramebufferTexture(_renderFbo, GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
+    _colorTexture->reset(_windowRect[2], _windowRect[3], "RGBA");
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
 
     GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    glNamedFramebufferDrawBuffers(_renderFbo, 1, fboBuffers);
+    glDrawBuffers(1, fboBuffers);
 
-    GLenum _status = glCheckNamedFramebufferStatus(_renderFbo, GL_FRAMEBUFFER);
+    const auto _status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing render framebuffer object: " << _status << Log::endl;
 #ifdef DEBUG
@@ -444,12 +441,10 @@ void Window::setupFBOs()
         Log::get() << Log::DEBUGGING << "Window::" << __FUNCTION__ << " - Render framebuffer object successfully initialized" << Log::endl;
 #endif
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-    // Read FBO
     // It has to be created in the context where it is used, so its (re)creation will be triggered
     // in Window::swapBuffers if needed, depending on the following flag
     _renderTextureUpdated = true;
@@ -500,7 +495,16 @@ void Window::swapBuffers()
 
     // If the window is not synchronized, draw directly to front buffer
     if (!isWindowSynchronized)
-        glDrawBuffer(GL_FRONT);
+    {
+        // Since we can't draw to the front buffer directly in OpenGL ES,
+        // we draw to the back buffer, then immediately present it
+        GLenum buffers[] = {GL_BACK};
+        glDrawBuffers(1, buffers);
+        glfwSwapBuffers(_window->get());
+    }
+
+    if (_srgb)
+        glEnable(GL_FRAMEBUFFER_SRGB);
 
     // If the render texture specs have changed
     if (_renderTextureUpdated)
@@ -508,30 +512,42 @@ void Window::swapBuffers()
         if (_readFbo != 0)
             glDeleteFramebuffers(1, &_readFbo);
 
-        glCreateFramebuffers(1, &_readFbo);
+        glGenFramebuffers(1, &_readFbo);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, _readFbo);
 
-        glNamedFramebufferTexture(_readFbo, GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
-        const auto status = glCheckNamedFramebufferStatus(_readFbo, GL_FRAMEBUFFER);
+        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
+        const auto status = glCheckFramebufferStatus(GL_READ_FRAMEBUFFER);
         if (status != GL_FRAMEBUFFER_COMPLETE)
             Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing read framebuffer object: " << status << Log::endl;
 #ifdef DEBUG
         else
             Log::get() << Log::DEBUGGING << "Window::" << __FUNCTION__ << " - Read framebuffer object successfully initialized" << Log::endl;
 #endif
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
         _renderTextureUpdated = false;
     }
 
     // Copy the rendered texture to the back/front buffer
-    glBlitNamedFramebuffer(_readFbo, 0, 0, 0, _windowRect[2], _windowRect[3], 0, 0, _windowRect[2], _windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, _readFbo);
+    glBlitFramebuffer(0, 0, _windowRect[2], _windowRect[3], 0, 0, _windowRect[2], _windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+    if (_srgb)
+        glDisable(GL_FRAMEBUFFER_SRGB);
 
     if (isWindowSynchronized)
+    {
         // If this window is synchronized, so we wait for the vsync and swap
         // front and back buffers
         glfwSwapBuffers(_window->get());
+    }
     else
+    {
         // If this window is not synchronized, we revert the draw buffer back
         // to drawing to the back buffer
-        glDrawBuffer(GL_BACK);
+        GLenum buffers[] = {GL_BACK};
+        glDrawBuffers(1, buffers);
+    }
 
     _frontBufferTimestamp = _backBufferTimestamp;
     _presentationDelay = Timer::getTime() - _frontBufferTimestamp;
@@ -551,14 +567,17 @@ void Window::showCursor(bool visibility)
 /*************/
 void Window::setTexture(const std::shared_ptr<Texture>& tex)
 {
-    auto textureIt = find_if(_inTextures.begin(), _inTextures.end(), [&](const std::weak_ptr<Texture>& t) {
-        if (t.expired())
+    auto textureIt = find_if(_inTextures.begin(),
+        _inTextures.end(),
+        [&](const std::weak_ptr<Texture>& t)
+        {
+            if (t.expired())
+                return false;
+            auto texture = t.lock();
+            if (texture == tex)
+                return true;
             return false;
-        auto texture = t.lock();
-        if (texture == tex)
-            return true;
-        return false;
-    });
+        });
 
     if (textureIt != _inTextures.end())
         return;
@@ -570,14 +589,17 @@ void Window::setTexture(const std::shared_ptr<Texture>& tex)
 /*************/
 void Window::unsetTexture(const std::shared_ptr<Texture>& tex)
 {
-    auto textureIt = find_if(_inTextures.begin(), _inTextures.end(), [&](const std::weak_ptr<Texture>& t) {
-        if (t.expired())
+    auto textureIt = find_if(_inTextures.begin(),
+        _inTextures.end(),
+        [&](const std::weak_ptr<Texture>& t)
+        {
+            if (t.expired())
+                return false;
+            auto texture = t.lock();
+            if (texture == tex)
+                return true;
             return false;
-        auto texture = t.lock();
-        if (texture == tex)
-            return true;
-        return false;
-    });
+        });
 
     if (textureIt != _inTextures.end())
     {
@@ -615,7 +637,7 @@ void Window::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
     std::lock_guard<std::mutex> lock(_callbackMutex);
     std::vector<double> pos{xpos, ypos};
     _mousePos.first = win;
-    _mousePos.second = move(pos);
+    _mousePos.second = std::move(pos);
 }
 
 /*************/
@@ -763,7 +785,8 @@ void Window::registerAttributes()
 
     addAttribute(
         "decorated",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _withDecoration = args[0].as<bool>();
             setWindowDecoration(_withDecoration);
             updateWindowShape();
@@ -775,7 +798,8 @@ void Window::registerAttributes()
 
     addAttribute(
         "guiOnly",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _guiOnly = args[0].as<bool>();
             return true;
         },
@@ -785,7 +809,8 @@ void Window::registerAttributes()
 
     addAttribute(
         "srgb",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _srgb = args[0].as<bool>();
             return true;
         },
@@ -795,7 +820,8 @@ void Window::registerAttributes()
 
     addAttribute(
         "gamma",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _gammaCorrection = args[0].as<float>();
             return true;
         },
@@ -806,7 +832,8 @@ void Window::registerAttributes()
     // Attribute to configure the placement of the various texture input
     addAttribute(
         "layout",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _layout.clear();
             for (auto& arg : args)
                 _layout.push_back(arg.as<int>());
@@ -825,7 +852,8 @@ void Window::registerAttributes()
 
     addAttribute(
         "position",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _windowRect[0] = args[0].as<int>();
             _windowRect[1] = args[1].as<int>();
             updateWindowShape();
@@ -838,7 +866,8 @@ void Window::registerAttributes()
     setAttributeDescription("position", "Set the window position");
 
     addAttribute("showCursor",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             showCursor(args[0].as<bool>());
             return true;
         },
@@ -846,7 +875,8 @@ void Window::registerAttributes()
 
     addAttribute(
         "size",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _windowRect[2] = args[0].as<int>();
             _windowRect[3] = args[1].as<int>();
             _resized = true;
@@ -860,7 +890,8 @@ void Window::registerAttributes()
     setAttributeDescription("size", "Set the window dimensions");
 
     addAttribute("swapInterval",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             updateSwapInterval(args[0].as<int>());
             return true;
         },
@@ -868,7 +899,8 @@ void Window::registerAttributes()
     setAttributeDescription("swapInterval", "Set the window swap interval");
 
     addAttribute("swapTest",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _swapSynchronizationTesting = args[0].as<bool>();
             return true;
         },
@@ -876,32 +908,35 @@ void Window::registerAttributes()
     setAttributeDescription("swapTest", "Activate video swap test if true");
 
     addAttribute("swapTestColor",
-        [&](const Values& args) {
+        [&](const Values& args)
+        {
             _swapSynchronizationColor = glm::vec4(args[0].as<float>(), args[1].as<float>(), args[2].as<float>(), args[3].as<float>());
             return true;
         },
         {'r', 'r', 'r', 'r'});
     setAttributeDescription("swapTestColor", "Set the swap test color");
 
-    addAttribute("textureList", [&]() -> Values {
-        Values textureList;
-        for (const auto& layout_index : _layout)
+    addAttribute("textureList",
+        [&]() -> Values
         {
-            auto index = layout_index.as<size_t>();
-            if (index >= _inTextures.size())
-                continue;
-
-            auto texture = _inTextures[index].lock();
-            if (!texture)
+            Values textureList;
+            for (const auto& layout_index : _layout)
             {
-                textureList.push_back("");
-                continue;
-            }
+                auto index = layout_index.as<size_t>();
+                if (index >= _inTextures.size())
+                    continue;
 
-            textureList.push_back(texture->getName());
-        }
-        return textureList;
-    });
+                auto texture = _inTextures[index].lock();
+                if (!texture)
+                {
+                    textureList.push_back("");
+                    continue;
+                }
+
+                textureList.push_back(texture->getName());
+            }
+            return textureList;
+        });
     setAttributeDescription("textureList", "Get the list of the textures linked to the window");
 
     addAttribute("presentationDelay", [&]() -> Values { return {_presentationDelay}; });

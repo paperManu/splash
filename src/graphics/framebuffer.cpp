@@ -9,26 +9,27 @@ namespace Splash
 Framebuffer::Framebuffer(RootObject* root)
     : GraphObject(root)
 {
-    glCreateFramebuffers(1, &_fbo);
+    glGenFramebuffers(1, &_fbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
 
     if (!_depthTexture)
     {
-        _depthTexture = std::make_shared<Texture_Image>(_root, _width, _height, "D", nullptr, _multisample);
-        glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
+        _depthTexture = root->getRenderer()->createTexture_Image(_root, _width, _height, "D", _multisample);
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
 
     if (!_colorTexture)
     {
-        _colorTexture = std::make_shared<Texture_Image>(_root);
+        _colorTexture = root->getRenderer()->createTexture_Image(_root);
         _colorTexture->setAttribute("clampToEdge", {true});
         _colorTexture->setAttribute("filtering", {false});
-        _colorTexture->reset(_width, _height, _16bits ? "RGBA16" : "RGBA", nullptr, _multisample);
-        glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
+        _colorTexture->reset(_width, _height, "RGBA", _multisample);
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
     }
 
     GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    glNamedFramebufferDrawBuffers(_fbo, 1, fboBuffers);
-    GLenum status = glCheckNamedFramebufferStatus(_fbo, GL_DRAW_FRAMEBUFFER);
+    glDrawBuffers(1, fboBuffers);
+    const auto status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
         Log::get() << Log::ERROR << "Framebuffer::" << __FUNCTION__ << " - Error while initializing render framebuffer object: " << status << Log::endl;
@@ -82,8 +83,10 @@ void Framebuffer::blit(const Framebuffer& src, const Framebuffer& dst)
 float Framebuffer::getDepthAt(float x, float y)
 {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
-    float depth = 0.f;
+
+    GLfloat depth = 0.f;
     glReadPixels(x, y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     return depth;
 }
@@ -133,17 +136,15 @@ void Framebuffer::setRenderingParameters()
 {
     auto spec = _colorTexture->getSpec();
 
-    _depthTexture->reset(spec.width, spec.height, "D", nullptr, _multisample, _cubemap);
+    _depthTexture->reset(spec.width, spec.height, "D", _multisample, _cubemap);
 
     if (_srgb)
-        _colorTexture->reset(spec.width, spec.height, "sRGBA", nullptr, _multisample, _cubemap);
-    else if (_16bits)
-        _colorTexture->reset(spec.width, spec.height, "RGBA16", nullptr, _multisample, _cubemap);
+        _colorTexture->reset(spec.width, spec.height, "sRGBA", _multisample, _cubemap);
     else
-        _colorTexture->reset(spec.width, spec.height, "RGBA", nullptr, _multisample, _cubemap);
+        _colorTexture->reset(spec.width, spec.height, "RGBA", _multisample, _cubemap);
 
-    glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
-    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
 }
 
 /*************/
@@ -155,12 +156,14 @@ void Framebuffer::setSize(int width, int height)
     _depthTexture->setResizable(true);
     _depthTexture->setAttribute("size", {width, height});
     _depthTexture->setResizable(_automaticResize);
-    glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
 
     _colorTexture->setResizable(true);
     _colorTexture->setAttribute("size", {width, height});
     _colorTexture->setResizable(_automaticResize);
-    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
 
     _width = width;
     _height = height;

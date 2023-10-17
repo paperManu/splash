@@ -162,6 +162,6 @@ class VirtualProbe final : public Texture
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

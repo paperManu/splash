@@ -29,6 +29,7 @@
 #include <cstddef>
 #include <future>
 #include <list>
+#include <memory>
 #include <vector>
 
 #include "./core/constants.h"
@@ -100,19 +101,19 @@ class Scene : public RootObject
      * Get the found OpenGL version
      * \return Return the version as a vector of {MAJOR, MINOR}
      */
-    static std::vector<int> getGLVersion() { return _glVersion; }
+    static std::pair<uint, uint> getGLVersion() { return _renderer->getGLVersion(); }
 
     /**
      * Get the vendor of the OpenGL renderer
      * \return Return the vendor of the OpenGL renderer
      */
-    static std::string getGLVendor() { return _glVendor; }
+    static std::string getGLVendor() { return _renderer->getGLVendor(); }
 
     /**
      * Get the name of the OpenGL renderer
      * \return Return the name of the OpenGL renderer
      */
-    static std::string getGLRenderer() { return _glRenderer; }
+    static std::string getGLRenderer() { return _renderer->getGLRenderer(); }
 
     /**
      * Get whether NV swap groups are available
@@ -224,7 +225,6 @@ class Scene : public RootObject
     Values sendMessageToWorldWithAnswer(const std::string& message, const Values& value = {}, const unsigned long long timeout = 0);
 
   protected:
-    std::shared_ptr<GlWindow> _mainWindow;
     std::atomic_bool _isRunning{false};
 
     // Gui exists in master scene whatever the configuration
@@ -251,9 +251,6 @@ class Scene : public RootObject
     ObjectLibrary _objectLibrary; //!< Library of 3D objects used by multiple GraphObjects
 
     static bool _hasNVSwapGroup; //!< If true, NV swap groups have been detected and are used
-    static std::vector<int> _glVersion;
-    static std::string _glVendor;
-    static std::string _glRenderer;
 
     bool _runInBackground{false}; //!< If true, no window will be created
     std::atomic_bool _started{false};
@@ -305,18 +302,6 @@ class Scene : public RootObject
      */
     void updateInputs();
 };
-
-/**
- *  Callback for GLFW errors
- * \param code Error code
- * \param msg Associated error message
- */
-void glfwErrorCallback(int code, const char* msg);
-
-/**
- *  Callback for GL errors and warnings
- */
-void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
 
 } // namespace Splash
 

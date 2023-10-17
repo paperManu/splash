@@ -201,10 +201,14 @@ struct ShaderSources
         )"}};
 
     /**
-     * Version directive, included at the start of all shaders
+     * Version directives, included at the start of all shaders
      */
     const std::string VERSION_DIRECTIVE_GL4{R"(
         #version 450 core
+    )"};
+
+    const std::string VERSION_DIRECTIVE_GL32_ES{R"(
+        #version 320 es
     )"};
 
     /**************************/
@@ -217,6 +221,7 @@ struct ShaderSources
     const std::string COMPUTE_SHADER_DEFAULT{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
+        precision mediump float;
 
         layout(local_size_x = 32, local_size_y = 32) in;
 
@@ -262,6 +267,7 @@ struct ShaderSources
     const std::string COMPUTE_SHADER_RESET_VISIBILITY{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
+        precision mediump float;
 
         layout(local_size_x = 128) in;
 
@@ -271,7 +277,7 @@ struct ShaderSources
         };
 
         uniform int _vertexNbr;
-        uniform int _primitiveIdShift = 0;
+        uniform int _primitiveIdShift;
 
         void main(void)
         {
@@ -295,6 +301,7 @@ struct ShaderSources
     const std::string COMPUTE_SHADER_RESET_BLENDING{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
+        precision mediump float;
 
         layout(local_size_x = 128) in;
 
@@ -327,6 +334,7 @@ struct ShaderSources
     const std::string COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
+        precision mediump float;
 
         layout(local_size_x = 32, local_size_y = 32) in;
 
@@ -337,7 +345,7 @@ struct ShaderSources
         };
 
         uniform vec2 _texSize;
-        uniform int _idShift = 0;
+        uniform int _idShift;
 
         void main(void)
         {
@@ -361,6 +369,7 @@ struct ShaderSources
     const std::string COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
+        precision mediump float;
 
         #include getSmoothBlendFromVertex
         #include normalVector
@@ -387,7 +396,7 @@ struct ShaderSources
         uniform mat4 _mv; // Model View matrix
         uniform mat4 _mvp; // Model View Projection matrix
         uniform mat4 _mNormal; // Normal matrix
-        uniform float _blendWidth = 0.1;
+        uniform float _blendWidth;
 
         void main(void)
         {
@@ -448,6 +457,8 @@ struct ShaderSources
      * Default vertex shader with feedback
      */
     const std::string VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
+        precision mediump float;
+
         layout (location = 0) in vec4 _vertex;
         layout (location = 1) in vec2 _texCoord;
         layout (location = 2) in vec4 _normal;
@@ -477,6 +488,8 @@ struct ShaderSources
      * Default feedback tessellation shader
      */
     const std::string TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
+        precision mediump float;
+
         #include normalVector
         #include projectAndCheckVisibility
 
@@ -500,8 +513,8 @@ struct ShaderSources
 
         uniform mat4 _mvp;
         uniform mat4 _mNormal;
-        uniform float _blendWidth = 0.1;
-        uniform float _blendPrecision = 0.1;
+        uniform float _blendWidth;
+        uniform float _blendPrecision;
 
         const float blendDistFactorToSubdiv = 2.0;
 
@@ -551,13 +564,13 @@ struct ShaderSources
                     {
                         if (1.0 - maxDist < _blendWidth * blendDistFactorToSubdiv)
                         {
-                            const vec2 borderNormals[2] = {
+                            const vec2 borderNormals[2] = vec2[2](
                                 vec2(0.0, 1.0),
                                 vec2(1.0, 0.0)
-                            };
+                            );
 
                             float maxTessLevel = 1.0;
-                            float tessLevelOuter[3] = {1.0, 1.0, 1.0};
+                            float tessLevelOuter[3] = float[3](1.0, 1.0, 1.0);
 
                             for (int borderId = 0; borderId < 2; ++borderId)
                             {
@@ -594,6 +607,8 @@ struct ShaderSources
     )"};
 
     const std::string TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
+        precision mediump float;
+
         //layout (triangles, fractional_odd_spacing) in;
         layout (triangles) in;
 
@@ -636,6 +651,8 @@ struct ShaderSources
      * Feedback geometry shader for handling camera borders
      */
     const std::string GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
+        precision mediump float;
+
         #include normalVector
         #include projectAndCheckVisibility
 
@@ -658,14 +675,14 @@ struct ShaderSources
         layout (triangles) in;
         layout (triangle_strip, max_vertices = 9) out;
 
-        const int cutTable[6*9] = {
+        const int cutTable[6*9] = int[6*9](
             0, 3, 4, 3, 1, 4, 1, 2, 4,
             0, 3, 4, 3, 1, 4, 4, 2, 0,
             0, 1, 3, 3, 4, 0, 3, 2, 4,
             0, 1, 3, 3, 4, 0, 3, 2, 4,
             0, 3, 4, 3, 1, 4, 4, 2, 0,
             0, 3, 4, 3, 1, 4, 1, 2, 4
-        };
+        );
 
         uniform vec2 _fov;
         uniform mat4 _mv; // Model-view matrix
@@ -832,6 +849,8 @@ struct ShaderSources
      * Vertex shader which transmits the vertex attributes as-is
      */
     const std::string VERTEX_SHADER_DEFAULT{R"(
+        precision mediump float;
+
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texCoord;
         layout(location = 2) in vec4 _normal;
@@ -856,6 +875,8 @@ struct ShaderSources
      * Vertex shader which projects the vertices using the modelview matrix
      */
     const std::string VERTEX_SHADER_MODELVIEW{R"(
+        precision mediump float;
+
         #include getSmoothBlendFromVertex
 
         layout(location = 0) in vec4 _vertex;
@@ -865,7 +886,8 @@ struct ShaderSources
 
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
-        uniform vec4 _cameraAttributes = vec4(0.05, 1.0, 1.0, 1.0); // blendWidth, brightness, saturation, contrast
+        // TODO: OpenGL ES doesn't allow this initialization, make sure it doesn't break anything.
+        uniform vec4 _cameraAttributes; // blendWidth, brightness, saturation, contrast
 
         out VertexData
         {
@@ -890,6 +912,8 @@ struct ShaderSources
      * Filter vertex shader
      */
     const std::string VERTEX_SHADER_FILTER{R"(
+        precision mediump float;
+
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texCoord;
         out vec2 texCoord;
@@ -906,6 +930,8 @@ struct ShaderSources
      * Does not do much except for applying the intput texture
      */
     const std::string FRAGMENT_SHADER_DEFAULT_FILTER{R"(
+        precision mediump float;
+
     #ifdef TEXTURE_RECT
         uniform sampler2DRect _tex0;
     #else
@@ -915,9 +941,9 @@ struct ShaderSources
         in vec2 texCoord;
         out vec4 fragColor;
 
-        uniform vec2 _tex0_size = vec2(1.0);
+        uniform vec2 _tex0_size;
 
-        uniform float _blackLevel = 0.f;
+        uniform float _blackLevel;
 
         void main()
         {
@@ -937,6 +963,8 @@ struct ShaderSources
      * also able to convert from YUYV to RGB
      */
     const std::string FRAGMENT_SHADER_IMAGE_FILTER{R"(
+        precision mediump float;
+
         #include colorEncoding
         #include srgb
         #include hsv
@@ -954,24 +982,24 @@ struct ShaderSources
         in vec2 texCoord;
         out vec4 fragColor;
 
-        uniform vec2 _tex0_size = vec2(1.0);
+        uniform vec2 _tex0_size;
         // Texture transformation
-        uniform int _tex0_flip = 0;
-        uniform int _tex0_flop = 0;
+        uniform int _tex0_flip;
+        uniform int _tex0_flop;
         // Format specific parameters
-        uniform int _tex0_encoding = COLOR_RGB;
+        uniform int _tex0_encoding;
 
         // Film uniforms
-        uniform float _filmDuration = 0.f;
-        uniform float _filmRemaining = 0.f;
+        /* uniform float _filmDuration; */
+        /* uniform float _filmRemaining; */
 
         // Filter parameters
-        uniform float _brightness = 1.f;
-        uniform float _contrast = 1.f;
-        uniform float _saturation = 1.f;
-        uniform int _invertChannels = 0;
-        uniform vec2 _colorBalance = vec2(1.f, 1.f);
-        uniform vec2 _scale = vec2(1.f, 1.f);
+        uniform float _brightness;
+        uniform float _contrast;
+        uniform float _saturation;
+        uniform int _invertChannels;
+        uniform vec2 _colorBalance;
+        uniform vec2 _scale;
 
         void main(void)
         {
@@ -1032,10 +1060,17 @@ struct ShaderSources
                 color.rgb = color.bgr;
 
             // Color balance
-            float maxBalanceRatio = max(_colorBalance.r, _colorBalance.g);
-            color.r *= _colorBalance.r / maxBalanceRatio;
+        
+        vec2 colorBalance = _colorBalance;
+
+        if(colorBalance.x == 0.0f && colorBalance.y == 0.0f) {
+        colorBalance = vec2(1.0f, 1.0f);
+        }
+
+            float maxBalanceRatio = max(colorBalance.r, _colorBalance.g);
+            color.r *= colorBalance.r / maxBalanceRatio;
             color.g *= 1.0 / maxBalanceRatio;
-            color.b *= _colorBalance.g / maxBalanceRatio;
+            color.b *= colorBalance.g / maxBalanceRatio;
 
             color = correctColor(color, _brightness, _saturation, _contrast);
             fragColor = color;
@@ -1046,6 +1081,8 @@ struct ShaderSources
      * Black level fragment shader for filters
      */
     const std::string FRAGMENT_SHADER_BLACKLEVEL_FILTER{R"(
+        precision mediump float;
+
     #ifdef TEXTURE_RECT
         uniform sampler2DRect _tex0;
     #else
@@ -1055,9 +1092,9 @@ struct ShaderSources
         in vec2 texCoord;
         out vec4 fragColor;
 
-        uniform vec2 _tex0_size = vec2(1.0);
+        uniform vec2 _tex0_size;
 
-        uniform float _blackLevel = 0.f;
+        uniform float _blackLevel;
 
         void main()
         {
@@ -1076,6 +1113,8 @@ struct ShaderSources
      * This filter applies a transformation curve to RGB colors
      */
     const std::string FRAGMENT_SHADER_COLOR_CURVES_FILTER{R"(
+        precision mediump float;
+
     #ifdef TEXTURE_RECT
         uniform sampler2DRect _tex0;
     #else
@@ -1085,7 +1124,7 @@ struct ShaderSources
         in vec2 texCoord;
         out vec4 fragColor;
 
-        uniform vec2 _tex0_size = vec2(1.0);
+        uniform vec2 _tex0_size;
 
     #ifdef COLOR_CURVE_COUNT
         // This is set if Filter::_colorCurves is not empty, by Filter::updateShaderParameters
@@ -1141,6 +1180,8 @@ struct ShaderSources
      * Warp vertex shader
      */
     const std::string VERTEX_SHADER_WARP{R"(
+        precision mediump float;
+
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texCoord;
         out vec2 texCoord;
@@ -1156,7 +1197,7 @@ struct ShaderSources
      * Fragment shader for warp
      */
     const std::string FRAGMENT_SHADER_WARP{R"(
-
+        precision mediump float;
         #define PI 3.14159265359
 
     #ifdef TEXTURE_RECT
@@ -1168,10 +1209,10 @@ struct ShaderSources
         in vec2 texCoord;
         out vec4 fragColor;
 
-        uniform vec2 _tex0_size = vec2(1.0);
+        uniform vec2 _tex0_size;
         // Texture transformation
-        uniform int _tex0_flip = 0;
-        uniform int _tex0_flop = 0;
+        uniform int _tex0_flip;
+        uniform int _tex0_flop;
 
         void main(void)
         {
@@ -1200,6 +1241,8 @@ struct ShaderSources
      * Cubemap objects rendering (used by the virtual screens)
      */
     const std::string VERTEX_SHADER_OBJECT_CUBEMAP{R"(
+        precision mediump float;
+
         #include getSmoothBlendFromVertex
 
         layout(location = 0) in vec4 _vertex;
@@ -1223,6 +1266,8 @@ struct ShaderSources
     )"};
 
     const std::string GEOMETRY_SHADER_OBJECT_CUBEMAP{R"(
+        precision mediump float;
+
         layout(triangles) in;
         layout(triangle_strip, max_vertices = 18) out;
 
@@ -1286,13 +1331,15 @@ struct ShaderSources
     )"};
 
     const std::string FRAGMENT_SHADER_OBJECT_CUBEMAP{R"(
+        precision mediump float;
+
         #ifdef TEXTURE_RECT
             uniform sampler2DRect _tex0;
         #else
             uniform sampler2D _tex0;
         #endif
 
-            uniform vec2 _tex0_size = vec2(1.0);
+            uniform vec2 _tex0_size;
 
             in VertexData
             {
@@ -1318,6 +1365,8 @@ struct ShaderSources
      * Vertex shader for textured rendering
      */
     const std::string VERTEX_SHADER_TEXTURE{R"(
+        precision mediump float;
+
         #include getSmoothBlendFromVertex
 
         layout(location = 0) in vec4 _vertex;
@@ -1328,10 +1377,10 @@ struct ShaderSources
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _modelViewMatrix;
         uniform mat4 _normalMatrix;
-        uniform vec4 _cameraAttributes = vec4(0.05, 1.0, 1.0, 1.0); // blendWidth, brightness, saturation, contrast
+        uniform vec4 _cameraAttributes; // blendWidth, brightness, saturation, contrast
 
     #ifdef VERTEXBLENDING
-        uniform float _farthestVertex = 0.0;
+        uniform float _farthestVertex;
     #endif
 
         out VertexData
@@ -1352,13 +1401,13 @@ struct ShaderSources
             vertexOut.texCoord = _texCoord;
             vertexOut.annexe = _annexe;
 
-            const vec4 projectedVertex = vertexOut.position / vertexOut.position.w;
+            vec4 projectedVertex = vertexOut.position / vertexOut.position.w;
             if (projectedVertex.z >= 0.0)
             {
     #ifdef VERTEXBLENDING
                 // Compute the distance to the camera, then compare it to the farthest
                 // vertex distance and adjust blending value based on this
-                const float vertexDistToCam = abs(_modelViewMatrix * vec4(_vertex.xyz, 1.0)).z;
+                float vertexDistToCam = abs(_modelViewMatrix * vec4(_vertex.xyz, 1.0)).z;
                 // The luminance diminishes with the square of the distance
                 // luminanceRatio should always be less than 1.0, as
                 // _farthestVertex is by definition the highest possible distance
@@ -1380,6 +1429,8 @@ struct ShaderSources
      * Textured fragment shader
      */
     const std::string FRAGMENT_SHADER_TEXTURE{R"(
+        precision mediump float;
+
         #include hsv
         #include correctColor
 
@@ -1397,21 +1448,25 @@ struct ShaderSources
         uniform sampler2D _tex1;
     #endif
 
-        uniform vec2 _tex0_size = vec2(1.0);
-        uniform vec2 _tex1_size = vec2(1.0);
+        // TODO: Make sure the removed initializations don't break anything.
+        uniform vec2 _tex0_size;
+        uniform vec2 _tex1_size;
 
-        uniform int _showCameraCount = 0;
-        uniform int _sideness = 0;
-        uniform vec4 _cameraAttributes = vec4(0.05, 1.0, 1.0, 1.0); // blendWidth, brightness, saturation, contrast
-        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
-        uniform int _isColorLUT = 0;
-        uniform vec4 _color = vec4(0.0, 0.0, 0.0, 1.0);
-        uniform int _colorLUTSize = 0;
+        uniform int _showCameraCount;
+        uniform int _sideness;
+        
+        // blendWidth, brightness, saturation, contrast
+        uniform vec4 _cameraAttributes;
+
+        // fovX and fovY, r/g and b/g
+        uniform vec4 _fovAndColorBalance;
+
+        uniform int _isColorLUT;
+        uniform vec4 _color;
+        uniform int _colorLUTSize;
         uniform vec3 _colorLUT[256];
-        uniform mat3 _colorMixMatrix = mat3(1.0, 0.0, 0.0,
-                                            0.0, 1.0, 0.0,
-                                            0.0, 0.0, 1.0);
-        uniform float _normalExp = 0.0;
+        uniform mat3 _colorMixMatrix;
+        uniform float _normalExp;
 
         in VertexData
         {
@@ -1471,14 +1526,14 @@ struct ShaderSources
             // Color correction through a LUT
             if (_isColorLUT != 0)
             {
-                float maxValue = float(_colorLUTSize - 1);
-                ivec3 fcolor = ivec3(floor(color.rgb * maxValue));
-                ivec3 ccolor = ivec3(ceil(color.rgb * maxValue));
+                vec3 maxValue = vec3(_colorLUTSize - 1);
+                vec3 fcolor = vec3(floor(color.rgb * maxValue));
+                vec3 ccolor = vec3(ceil(color.rgb * maxValue));
                 vec3 alpha = color.rgb * maxValue - fcolor.rgb;
                 // Linear interpolation
-                color.r = _colorLUT[fcolor.r].r * (1.f - alpha.r) + _colorLUT[ccolor.r].r * alpha.r; 
-                color.g = _colorLUT[fcolor.g].g * (1.f - alpha.g) + _colorLUT[ccolor.g].g * alpha.g;
-                color.b = _colorLUT[fcolor.b].b * (1.f - alpha.b) + _colorLUT[ccolor.b].b * alpha.b;
+                color.r = _colorLUT[int(fcolor.r)].r * (1.f - alpha.r) + _colorLUT[int(ccolor.r)].r * alpha.r; 
+                color.g = _colorLUT[int(fcolor.g)].g * (1.f - alpha.g) + _colorLUT[int(ccolor.g)].g * alpha.g;
+                color.b = _colorLUT[int(fcolor.b)].b * (1.f - alpha.b) + _colorLUT[int(ccolor.b)].b * alpha.b;
                 //color.rgb = clamp(_colorMixMatrix * color.rgb, vec3(0.0), vec3(1.0));
             }
 
@@ -1509,11 +1564,13 @@ struct ShaderSources
      * Single color fragment shader
      */
     const std::string FRAGMENT_SHADER_COLOR{R"(
+        precision mediump float;
+
         #define PI 3.14159265359
 
-        uniform int _sideness = 0;
-        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
-        uniform vec4 _color = vec4(0.0, 1.0, 0.0, 1.0);
+        uniform int _sideness;
+        uniform vec4 _fovAndColorBalance; // fovX and fovY, r/g and b/g
+        uniform vec4 _color;
 
         in VertexData
         {
@@ -1541,10 +1598,12 @@ struct ShaderSources
      * UV coordinates are encoded on 2 channels each, to get 16bits precision
      */
     const std::string FRAGMENT_SHADER_UV{R"(
+        precision mediump float;
+
         #define PI 3.14159265359
 
-        uniform int _sideness = 0;
-        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
+        uniform int _sideness;
+        uniform vec4 _fovAndColorBalance; // fovX and fovY, r/g and b/g
 
         in VertexData
         {
@@ -1575,6 +1634,8 @@ struct ShaderSources
      * This shader has to be used after a pass of COMPUTE_SHADER_RESET_VISIBILITY
      */
     const std::string FRAGMENT_SHADER_PRIMITIVEID{R"(
+        precision mediump float;
+
         in VertexData
         {
             vec4 position;
@@ -1599,6 +1660,8 @@ struct ShaderSources
      * Wireframe rendering
      */
     const std::string VERTEX_SHADER_WIREFRAME{R"(
+        precision mediump float;
+
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texCoord;
         layout(location = 2) in vec4 _normal;
@@ -1617,6 +1680,8 @@ struct ShaderSources
     )"};
 
     const std::string GEOMETRY_SHADER_WIREFRAME{R"(
+        precision mediump float;
+
         layout(triangles) in;
         layout(triangle_strip, max_vertices = 3) out;
         uniform mat4 _modelViewProjectionMatrix;
@@ -1662,6 +1727,8 @@ struct ShaderSources
     )"};
 
     const std::string FRAGMENT_SHADER_WIREFRAME{R"(
+        precision mediump float;
+
         #define PI 3.14159265359
 
         in VertexData
@@ -1671,9 +1738,9 @@ struct ShaderSources
             vec4 position;
         } vertexIn;
 
-        uniform vec4 _wireframeColor = vec4(1.0, 0.0, 0.0, 1.0);
-        uniform int _sideness = 0;
-        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
+        uniform vec4 _wireframeColor;
+        uniform int _sideness;
+        uniform vec4 _fovAndColorBalance; // fovX and fovY, r/g and b/g
         out vec4 fragColor;
 
         float edgeFactor()
@@ -1698,6 +1765,8 @@ struct ShaderSources
      * Cubemap projection to spherical, equirectangular, or "single layer cubemap"
      */
     const std::string VERTEX_SHADER_CUBEMAP_PROJECTION{R"(
+        precision mediump float;
+
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texCoord;
         out vec2 texCoord;
@@ -1710,14 +1779,16 @@ struct ShaderSources
     )"};
 
     const std::string FRAGMENT_SHADER_CUBEMAP_PROJECTION{R"(
+        precision mediump float;
+
         #define PI 3.141592653589793
         #define HALFPI 1.5707963268 
 
         uniform samplerCube _tex0;
-        uniform vec2 _tex0_size = vec2(1.0);
+        uniform vec2 _tex0_size;
 
-        uniform int _projectionType = 1; // 0 = equirectangular, 1 = spherical
-        uniform float _sphericalFov = 180.0;
+        uniform int _projectionType; // 0 = equirectangular, 1 = spherical
+        uniform float _sphericalFov;
 
         in vec2 texCoord;
         out vec4 fragColor;
@@ -1775,6 +1846,8 @@ struct ShaderSources
      * Wireframe rendering for Warps
      */
     const std::string VERTEX_SHADER_WARP_WIREFRAME{R"(
+        precision mediump float;
+
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texCoord;
 
@@ -1792,6 +1865,8 @@ struct ShaderSources
     )"};
 
     const std::string GEOMETRY_SHADER_WARP_WIREFRAME{R"(
+        precision mediump float;
+
         layout(triangles) in;
         layout(triangle_strip, max_vertices = 3) out;
 
@@ -1828,6 +1903,8 @@ struct ShaderSources
     )"};
 
     const std::string FRAGMENT_SHADER_WARP_WIREFRAME{R"(
+        precision mediump float;
+
         #define PI 3.14159265359
 
         in VertexData
@@ -1835,8 +1912,8 @@ struct ShaderSources
             vec3 bcoord;
         } vertexIn;
 
-        uniform int _sideness = 0;
-        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
+        uniform int _sideness;
+        uniform vec4 _fovAndColorBalance; // fovX and fovY, r/g and b/g
         out vec4 fragColor;
 
         void main(void)
@@ -1855,6 +1932,8 @@ struct ShaderSources
      * Rendering of the output windows
      */
     const std::string VERTEX_SHADER_WINDOW{R"(
+        precision mediump float;
+
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texCoord;
         //layout(location = 2) in vec3 _normal;
@@ -1869,9 +1948,13 @@ struct ShaderSources
     )"};
 
     const std::string FRAGMENT_SHADER_WINDOW{R"(
+        precision mediump float;
+
         #define PI 3.14159265359
 
     #ifdef TEX_1
+        uniform ivec4 _layout;
+
         uniform sampler2D _tex0;
     #ifdef TEX_2
         uniform sampler2D _tex1;
@@ -1883,8 +1966,7 @@ struct ShaderSources
     #endif
     #endif
     #endif
-        uniform ivec4 _layout = ivec4(0, 1, 2, 3);
-        uniform vec2 _gamma = vec2(1.0, 2.2);
+        uniform vec2 _gamma;
         in vec2 texCoord;
         out vec4 fragColor;
 
@@ -1918,10 +2000,14 @@ struct ShaderSources
                 #endif
             }
 
-            if (_gamma.x != 1.0)
-                fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / _gamma.y));
+            if(_gamma.x == 0.0) {
+                float gamma = clamp(_gamma.y, 1.0 , 3.0);
+                fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / gamma));
+            }
         }
     )"};
+
+    const std::string FRAGMENT_SHADER_EMPTY = "void main() {}";
 
 } ShaderSources;
 

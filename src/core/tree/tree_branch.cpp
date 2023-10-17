@@ -58,7 +58,7 @@ bool Branch::addBranch(std::unique_ptr<Branch>&& branch)
         return false;
 
     branch->setParent(this);
-    _branches.emplace(branchName, move(branch));
+    _branches.emplace(branchName, std::move(branch));
 
     for (const auto& id : _callbackTargetIds[Task::AddBranch])
         _callbacks[id](*this, branchName);
@@ -77,7 +77,7 @@ bool Branch::addLeaf(std::unique_ptr<Leaf>&& leaf)
         return false;
 
     leaf->setParent(this);
-    _leaves.emplace(leafName, move(leaf));
+    _leaves.emplace(leafName, std::move(leaf));
 
     for (const auto& id : _callbackTargetIds[Task::AddLeaf])
         _callbacks[id](*this, leafName);
@@ -240,7 +240,7 @@ bool Branch::renameBranch(const std::string& name, const std::string& newName)
 
     auto branchIt = _branches.find(name);
     branchIt->second->setName(newName);
-    _branches.emplace(newName, move(branchIt->second));
+    _branches.emplace(newName, std::move(branchIt->second));
     _branches.erase(name);
     return true;
 }
@@ -253,7 +253,7 @@ bool Branch::renameLeaf(const std::string& name, const std::string& newName)
 
     auto leafIt = _leaves.find(name);
     leafIt->second->setName(newName);
-    _leaves.emplace(newName, move(leafIt->second));
+    _leaves.emplace(newName, std::move(leafIt->second));
     _leaves.erase(leafIt);
     return true;
 }
