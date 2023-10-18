@@ -563,8 +563,7 @@ void Texture_Image::registerAttributes()
 
     addAttribute(
         "filtering",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             _filtering = args[0].as<bool>();
             return true;
         },
@@ -573,8 +572,7 @@ void Texture_Image::registerAttributes()
     setAttributeDescription("filtering", "Activate the mipmaps for this texture");
 
     addAttribute("clampToEdge",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             _glTextureWrap = args[0].as<bool>() ? GL_CLAMP_TO_EDGE : GL_REPEAT;
             return true;
         },
@@ -583,8 +581,7 @@ void Texture_Image::registerAttributes()
 
     addAttribute(
         "size",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             resize(args[0].as<int>(), args[1].as<int>());
             return true;
         },

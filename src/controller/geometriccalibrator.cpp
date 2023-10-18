@@ -10,8 +10,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/euler_angles.hpp>
 
-#include "./image/image.h"
 #include "./controller/texcoordgenerator.h"
+#include "./image/image.h"
 
 using namespace std::chrono;
 

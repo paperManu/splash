@@ -59,6 +59,6 @@ class Keyboard final : public UserInput
     void updateMethod() final;
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_USERINPUT_KEYBOARD_H

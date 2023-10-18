@@ -315,8 +315,7 @@ void Filter::registerAttributes()
     addAttribute(
         "size",
         [&](const Values&) { return true; },
-        [&]() -> Values
-        {
+        [&]() -> Values {
             if (_inTextures.empty())
                 return {0, 0};
 
@@ -332,16 +331,13 @@ void Filter::registerAttributes()
 
     addAttribute(
         "sizeOverride",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             auto width = args[0].as<int>();
             auto height = args[1].as<int>();
-            addTask(
-                [=]()
-                {
-                    _sizeOverride[0] = width;
-                    _sizeOverride[1] = height;
-                });
+            addTask([=]() {
+                _sizeOverride[0] = width;
+                _sizeOverride[1] = height;
+            });
             return true;
         },
         [&]() -> Values {
@@ -354,8 +350,7 @@ void Filter::registerAttributes()
     // Mipmap capture
     addAttribute(
         "grabMipmapLevel",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             _grabMipmapLevel = args[0].as<int>();
             return true;
         },
@@ -377,15 +372,13 @@ void Filter::registerDefaultShaderAttributes()
 {
     addAttribute(
         "brightness",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             auto brightness = args[0].as<float>();
             brightness = std::max(0.f, std::min(2.f, brightness));
             _filterUniforms["_brightness"] = {brightness};
             return true;
         },
-        [&]() -> Values
-        {
+        [&]() -> Values {
             auto it = _filterUniforms.find("_brightness");
             if (it == _filterUniforms.end())
                 _filterUniforms["_brightness"] = {1.f}; // Default value
@@ -396,15 +389,13 @@ void Filter::registerDefaultShaderAttributes()
 
     addAttribute(
         "contrast",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             auto contrast = args[0].as<float>();
             contrast = std::max(0.f, std::min(2.f, contrast));
             _filterUniforms["_contrast"] = {contrast};
             return true;
         },
-        [&]() -> Values
-        {
+        [&]() -> Values {
             auto it = _filterUniforms.find("_contrast");
             if (it == _filterUniforms.end())
                 _filterUniforms["_contrast"] = {1.f}; // Default value
@@ -415,8 +406,7 @@ void Filter::registerDefaultShaderAttributes()
 
     addAttribute(
         "colorTemperature",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             auto colorTemperature = args[0].as<float>();
             colorTemperature = std::max(0.f, std::min(16000.f, colorTemperature));
             _filterUniforms["_colorTemperature"] = {colorTemperature};
@@ -424,8 +414,7 @@ void Filter::registerDefaultShaderAttributes()
             _filterUniforms["_colorBalance"] = {colorBalance.x, colorBalance.y};
             return true;
         },
-        [&]() -> Values
-        {
+        [&]() -> Values {
             auto it = _filterUniforms.find("_colorTemperature");
             if (it == _filterUniforms.end())
                 _filterUniforms["_colorTemperature"] = {6600.f}; // Default value. 6600K corresponds exactly to no color adjustement.
@@ -436,14 +425,12 @@ void Filter::registerDefaultShaderAttributes()
 
     addAttribute(
         "invertChannels",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             auto enable = args[0].as<bool>();
             _filterUniforms["_invertChannels"] = {enable};
             return true;
         },
-        [&]() -> Values
-        {
+        [&]() -> Values {
             auto it = _filterUniforms.find("_invertChannels");
             if (it == _filterUniforms.end())
                 _filterUniforms["_invertChannels"] = {false};
@@ -454,8 +441,7 @@ void Filter::registerDefaultShaderAttributes()
 
     addAttribute(
         "keepRatio",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             setKeepRatio(args[0].as<bool>());
             return true;
         },
@@ -465,15 +451,13 @@ void Filter::registerDefaultShaderAttributes()
 
     addAttribute(
         "saturation",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             auto saturation = args[0].as<float>();
             saturation = std::max(0.f, std::min(2.f, saturation));
             _filterUniforms["_saturation"] = {saturation};
             return true;
         },
-        [&]() -> Values
-        {
+        [&]() -> Values {
             auto it = _filterUniforms.find("_saturation");
             if (it == _filterUniforms.end())
                 _filterUniforms["_saturation"] = {1.f}; // Default value
@@ -484,15 +468,13 @@ void Filter::registerDefaultShaderAttributes()
 
     addAttribute(
         "scale",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             auto scale_x = args[0].as<float>();
             auto scale_y = args[1].as<float>();
             _filterUniforms["_scale"] = {scale_x, scale_y};
             return true;
         },
-        [&]() -> Values
-        {
+        [&]() -> Values {
             auto it = _filterUniforms.find("_scale");
             if (it == _filterUniforms.end())
                 _filterUniforms["_scale"] = {1.0, 1.0}; // Default value

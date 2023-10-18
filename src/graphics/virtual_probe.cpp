@@ -72,17 +72,14 @@ bool VirtualProbe::linkIt(const std::shared_ptr<GraphObject>& obj)
 /*************/
 void VirtualProbe::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
-    auto objIterator = find_if(_objects.begin(),
-        _objects.end(),
-        [&](const std::weak_ptr<Object> o)
-        {
-            if (o.expired())
-                return false;
-            auto object = o.lock();
-            if (object == obj)
-                return true;
+    auto objIterator = find_if(_objects.begin(), _objects.end(), [&](const std::weak_ptr<Object> o) {
+        if (o.expired())
             return false;
-        });
+        auto object = o.lock();
+        if (object == obj)
+            return true;
+        return false;
+    });
 
     if (objIterator != _objects.end())
         _objects.erase(objIterator);
@@ -228,8 +225,7 @@ void VirtualProbe::registerAttributes()
 {
     addAttribute(
         "position",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             _position = dvec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
             return true;
         },
@@ -241,8 +237,7 @@ void VirtualProbe::registerAttributes()
 
     addAttribute(
         "projection",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             auto type = args[0].as<std::string>();
             if (type == "equirectangular")
                 _projectionType = Equirectangular;
@@ -257,8 +252,7 @@ void VirtualProbe::registerAttributes()
 
             return true;
         },
-        [&]() -> Values
-        {
+        [&]() -> Values {
             switch (_projectionType)
             {
             case Equirectangular:
@@ -274,8 +268,7 @@ void VirtualProbe::registerAttributes()
 
     addAttribute(
         "rotation",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             _rotation = dvec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
             return true;
         },
@@ -287,8 +280,7 @@ void VirtualProbe::registerAttributes()
 
     addAttribute(
         "size",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             _newWidth = args[0].as<int>();
             _newHeight = args[1].as<int>();
             return true;
@@ -301,8 +293,7 @@ void VirtualProbe::registerAttributes()
 
     addAttribute(
         "sphericalFov",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             auto value = args[0].as<float>();
             if (value < 1.0 || value > 360.0)
                 return false;

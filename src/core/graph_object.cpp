@@ -283,14 +283,13 @@ void GraphObject::registerAttributes()
         },
         {'s'});
 
-    addAttribute("lockedAttributes",
-        [&]() -> Values{
-            std::unique_lock<std::recursive_mutex> lock(_attribMutex);
-            Values lockedAttributes;
-            for (const auto& attr : _lockedAttributes)
-                lockedAttributes.push_back(Value(attr));
-            return lockedAttributes;
-        });
+    addAttribute("lockedAttributes", [&]() -> Values {
+        std::unique_lock<std::recursive_mutex> lock(_attribMutex);
+        Values lockedAttributes;
+        for (const auto& attr : _lockedAttributes)
+            lockedAttributes.push_back(Value(attr));
+        return lockedAttributes;
+    });
 
     addAttribute(
         "timestamp", [](const Values&) { return true; }, [&]() -> Values { return {getTimestamp()}; }, {'i'});

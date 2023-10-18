@@ -9,8 +9,8 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 
-#include "./core/serializer.h"
 #include "./core/serialize/serialize_imagebuffer.h"
+#include "./core/serializer.h"
 #include "./utils/log.h"
 #include "./utils/osutils.h"
 #include "./utils/timer.h"
@@ -348,7 +348,8 @@ void Image::registerAttributes()
 {
     BufferObject::registerAttributes();
 
-    addAttribute("flip",
+    addAttribute(
+        "flip",
         [&](const Values& args) {
             _flip = args[0].as<bool>();
             return true;
@@ -357,7 +358,8 @@ void Image::registerAttributes()
         {'b'});
     setAttributeDescription("flip", "Mirrors the image on the Y axis");
 
-    addAttribute("flop",
+    addAttribute(
+        "flop",
         [&](const Values& args) {
             _flop = args[0].as<bool>();
             return true;
@@ -366,7 +368,8 @@ void Image::registerAttributes()
         {'b'});
     setAttributeDescription("flop", "Mirrors the image on the X axis");
 
-    addAttribute("file",
+    addAttribute(
+        "file",
         [&](const Values& args) {
             _filepath = args[0].as<std::string>();
             if (_filepath.empty())
@@ -377,7 +380,8 @@ void Image::registerAttributes()
         {'s'});
     setAttributeDescription("file", "Image file to load");
 
-    addAttribute("reload",
+    addAttribute(
+        "reload",
         [&](const Values&) {
             read(_filepath);
             return true;
@@ -386,7 +390,8 @@ void Image::registerAttributes()
         {});
     setAttributeDescription("reload", "Reload the file");
 
-    addAttribute("srgb",
+    addAttribute(
+        "srgb",
         [&](const Values& args) {
             _srgb = args[0].as<bool>();
             return true;
@@ -403,7 +408,8 @@ void Image::registerAttributes()
         {'b'});
     setAttributeDescription("benchmark", "Set to true to resend the image even when not updated");
 
-    addAttribute("pattern",
+    addAttribute(
+        "pattern",
         [&](const Values& args) {
             if (_showPattern != args[0].as<bool>())
             {
@@ -419,7 +425,8 @@ void Image::registerAttributes()
         {'b'});
     setAttributeDescription("pattern", "Set to true to replace the image with a pattern");
 
-    addAttribute("mediaInfo",
+    addAttribute(
+        "mediaInfo",
         [&](const Values& args) {
             std::lock_guard<std::mutex> lock(_mediaInfoMutex);
             _mediaInfo = args;

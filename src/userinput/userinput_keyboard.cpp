@@ -10,9 +10,7 @@ Keyboard::Keyboard(RootObject* root)
 }
 
 /*************/
-Keyboard::~Keyboard()
-{
-}
+Keyboard::~Keyboard() {}
 
 /*************/
 void Keyboard::updateMethod()
@@ -60,4 +58,4 @@ void Keyboard::updateMethod()
     }
 }
 
-} // end of namespace
+} // namespace Splash

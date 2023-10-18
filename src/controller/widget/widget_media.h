@@ -56,6 +56,6 @@ class GuiMedia : public GuiWidget
     void replaceMedia(const std::string& previousMedia, const std::string& alias, const std::string& type);
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

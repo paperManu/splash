@@ -275,10 +275,7 @@ class Log
     /**
      * Get whether the logger is locked by the current thread
      */
-    bool isLockedByCurrentThread()
-    {
-        return std::this_thread::get_id() == _lockedThreadId;
-    }
+    bool isLockedByCurrentThread() { return std::this_thread::get_id() == _lockedThreadId; }
 
     /**
      * Unlock the logger, if it is locked by the current thread

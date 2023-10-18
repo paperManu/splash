@@ -50,10 +50,10 @@ bool Image_List::read(const std::string& dirname)
 bool Image_List::capture()
 {
     if (_filenameSeq.empty())
-            return false;
+        return false;
 
     readFile(_filenameSeq.back());
-     _filenameSeq.pop_back();
+    _filenameSeq.pop_back();
     return true;
 }
 

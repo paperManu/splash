@@ -98,6 +98,6 @@ class Mesh_Shmdata final : public Mesh
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_MESH_SHMDATA_H

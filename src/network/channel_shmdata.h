@@ -29,8 +29,8 @@
 #include <memory>
 #include <mutex>
 #include <string>
-#include <unordered_map>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 #include <shmdata/follower.hpp>

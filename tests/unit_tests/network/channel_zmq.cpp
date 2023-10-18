@@ -44,13 +44,11 @@ TEST_CASE("Test sending a message and a buffer through a zmq channel")
     auto channelInput = ChannelInput_ZMQ(
         &root,
         "input",
-        [&](const std::vector<uint8_t> msg)
-        {
+        [&](const std::vector<uint8_t> msg) {
             isMsgReceived = true;
             receivedMsg = msg;
         },
-        [&](SerializedObject&& obj)
-        {
+        [&](SerializedObject&& obj) {
             isBufferReceived = true;
             receivedObj = std::move(obj);
         });

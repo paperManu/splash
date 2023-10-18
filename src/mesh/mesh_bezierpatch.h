@@ -143,6 +143,6 @@ class Mesh_BezierPatch final : public Mesh
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_MESH_BEZIERPATCH_H

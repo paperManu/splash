@@ -50,6 +50,6 @@ class GuiMeshes : public GuiWidget
     void replaceMesh(const std::string& previousMedia, const std::string& media, const std::string& type);
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

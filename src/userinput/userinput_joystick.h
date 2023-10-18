@@ -82,6 +82,6 @@ class Joystick final : public UserInput
     void readState() final;
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_USERINPUT_JOYSTICK_H

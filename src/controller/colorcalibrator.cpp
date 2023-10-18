@@ -90,7 +90,6 @@ void ColorCalibrator::update()
         _calibrationThread.wait();
 
     _calibrationThread = std::async(std::launch::async, [&]() {
-
         OnScopeExit
         {
             _calibrationMutex.unlock();
@@ -278,7 +277,6 @@ void ColorCalibrator::updateCRF()
         _calibrationThread.wait();
 
     _calibrationThread = std::async(std::launch::async, [&]() {
-
         OnScopeExit
         {
             _calibrationMutex.unlock();
@@ -1087,7 +1085,8 @@ void ColorCalibrator::registerAttributes()
         {'i'});
     setAttributeDescription("colorSamples", "Set the number of color samples");
 
-    addAttribute("detectionThresholdFactor",
+    addAttribute(
+        "detectionThresholdFactor",
         [&](const Values& args) {
             _displayDetectionThreshold = std::max(0.5f, args[0].as<float>());
             return true;
@@ -1096,7 +1095,8 @@ void ColorCalibrator::registerAttributes()
         {'r'});
     setAttributeDescription("detectionThresholdFactor", "Set the threshold for projection detection");
 
-    addAttribute("imagePerHDR",
+    addAttribute(
+        "imagePerHDR",
         [&](const Values& args) {
             _imagePerHDR = std::max(1, args[0].as<int>());
             return true;
@@ -1105,7 +1105,8 @@ void ColorCalibrator::registerAttributes()
         {'i'});
     setAttributeDescription("imagePerHDR", "Set the number of image per HDRI to shoot");
 
-    addAttribute("hdrStep",
+    addAttribute(
+        "hdrStep",
         [&](const Values& args) {
             _hdrStep = std::max(0.3f, args[0].as<float>());
             return true;
@@ -1114,7 +1115,8 @@ void ColorCalibrator::registerAttributes()
         {'r'});
     setAttributeDescription("hdrStep", "Set the step between two images for HDRI");
 
-    addAttribute("equalizeMethod",
+    addAttribute(
+        "equalizeMethod",
         [&](const Values& args) {
             _equalizationMethod = std::max(0, std::min(2, args[0].as<int>()));
             if (_equalizationMethod == 0)
@@ -1142,4 +1144,4 @@ void ColorCalibrator::registerAttributes()
     setAttributeDescription("colorLUTSize", "Size per channel of the LUT");
 }
 
-} // end of namespace
+} // namespace Splash

@@ -29,7 +29,8 @@
 
 #include <shmdata/writer.hpp>
 
-extern "C" {
+extern "C"
+{
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/imgutils.h>
@@ -37,8 +38,8 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-#include "./utils/osutils.h"
 #include "./sink/sink.h"
+#include "./utils/osutils.h"
 
 namespace Splash
 {
@@ -136,6 +137,6 @@ class Sink_Shmdata_Encoded final : public Sink
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

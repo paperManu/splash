@@ -69,6 +69,6 @@ class Blender final : public ControllerObject
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_CONTROLLER_BLENDER_H

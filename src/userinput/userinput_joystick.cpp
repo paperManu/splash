@@ -13,9 +13,7 @@ Joystick::Joystick(RootObject* root)
 }
 
 /*************/
-Joystick::~Joystick()
-{
-}
+Joystick::~Joystick() {}
 
 /*************/
 void Joystick::detectJoysticks()
@@ -136,4 +134,4 @@ void Joystick::readState()
     }
 }
 
-} // end of namespace
+} // namespace Splash

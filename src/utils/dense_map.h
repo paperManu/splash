@@ -67,7 +67,10 @@ class DenseMap
         {
         }
 
-        iterator(const iterator& rhs) { operator=(rhs); }
+        iterator(const iterator& rhs)
+        {
+            operator=(rhs);
+        }
         iterator& operator=(const iterator& rhs)
         {
             if (&rhs == this)
@@ -104,9 +107,18 @@ class DenseMap
             return retval;
         }
 
-        bool operator==(const iterator& other) const { return _map == other._map && _index == other._index; }
-        bool operator!=(const iterator& other) const { return !operator==(other); }
-        const std::pair<const Key&, T&> operator*() const { return std::pair<const Key&, T&>(*(_map->_keys.begin() + _index), _map->_values[_index]); }
+        bool operator==(const iterator& other) const
+        {
+            return _map == other._map && _index == other._index;
+        }
+        bool operator!=(const iterator& other) const
+        {
+            return !operator==(other);
+        }
+        const std::pair<const Key&, T&> operator*() const
+        {
+            return std::pair<const Key&, T&>(*(_map->_keys.begin() + _index), _map->_values[_index]);
+        }
         std::pair<const Key&, T&>* operator->() const
         {
             _entry.reset(new std::pair<const Key&, T&>(*(_map->_keys.begin() + _index), _map->_values[_index]));
@@ -140,7 +152,10 @@ class DenseMap
         {
         }
 
-        const_iterator(const const_iterator& rhs) { operator=(rhs); }
+        const_iterator(const const_iterator& rhs)
+        {
+            operator=(rhs);
+        }
         const_iterator& operator=(const const_iterator& rhs)
         {
             if (&rhs == this)
@@ -151,7 +166,10 @@ class DenseMap
             return *this;
         }
 
-        const_iterator(const iterator& rhs) { operator=(rhs); }
+        const_iterator(const iterator& rhs)
+        {
+            operator=(rhs);
+        }
         const_iterator& operator=(const iterator& rhs)
         {
             _index = rhs._index;
@@ -185,9 +203,18 @@ class DenseMap
             return retval;
         }
 
-        bool operator==(const const_iterator& other) const { return _map == other._map && _index == other._index; }
-        bool operator!=(const const_iterator& other) const { return !operator==(other); }
-        const std::pair<const Key&, const T&> operator*() const { return std::pair<const Key&, const T&>(*(_map->_keys.begin() + _index), _map->_values[_index]); }
+        bool operator==(const const_iterator& other) const
+        {
+            return _map == other._map && _index == other._index;
+        }
+        bool operator!=(const const_iterator& other) const
+        {
+            return !operator==(other);
+        }
+        const std::pair<const Key&, const T&> operator*() const
+        {
+            return std::pair<const Key&, const T&>(*(_map->_keys.begin() + _index), _map->_values[_index]);
+        }
         std::pair<const Key&, const T&>* operator->() const
         {
             _entry.reset(new std::pair<const Key&, const T&>(*(_map->_keys.begin() + _index), _map->_values[_index]));
@@ -224,7 +251,10 @@ class DenseMap
         {
         }
 
-        reverse_iterator(const reverse_iterator& rhs) { operator=(rhs); }
+        reverse_iterator(const reverse_iterator& rhs)
+        {
+            operator=(rhs);
+        }
         reverse_iterator& operator=(const reverse_iterator& rhs)
         {
             if (&rhs == this)
@@ -260,9 +290,18 @@ class DenseMap
             return retval;
         }
 
-        bool operator==(const reverse_iterator& other) const { return _map == other._map && _index == other._index; }
-        bool operator!=(const reverse_iterator& other) const { return !operator==(other); }
-        const std::pair<const Key&, T&> operator*() const { return std::pair<const Key&, T&>(*(_map->_keys.rbegin() + _index), _map->_values[_map->_values.size() - 1 - _index]); }
+        bool operator==(const reverse_iterator& other) const
+        {
+            return _map == other._map && _index == other._index;
+        }
+        bool operator!=(const reverse_iterator& other) const
+        {
+            return !operator==(other);
+        }
+        const std::pair<const Key&, T&> operator*() const
+        {
+            return std::pair<const Key&, T&>(*(_map->_keys.rbegin() + _index), _map->_values[_map->_values.size() - 1 - _index]);
+        }
         std::pair<const Key&, T&>* operator->() const
         {
             _entry.reset(new std::pair<const Key&, T&>(*(_map->_keys.begin() + _index), _map->_values[_index]));
@@ -297,7 +336,10 @@ class DenseMap
         {
         }
 
-        const_reverse_iterator(const const_reverse_iterator& rhs) { operator=(rhs); }
+        const_reverse_iterator(const const_reverse_iterator& rhs)
+        {
+            operator=(rhs);
+        }
         const_reverse_iterator& operator=(const const_reverse_iterator& rhs)
         {
             if (&rhs == this)
@@ -307,7 +349,10 @@ class DenseMap
             return *this;
         }
 
-        const_reverse_iterator(const reverse_iterator& rhs) { operator=(rhs); }
+        const_reverse_iterator(const reverse_iterator& rhs)
+        {
+            operator=(rhs);
+        }
         const_reverse_iterator& operator=(const reverse_iterator& rhs)
         {
             _index = rhs._index;
@@ -340,8 +385,14 @@ class DenseMap
             return retval;
         }
 
-        bool operator==(const const_reverse_iterator& other) const { return _map == other._map && _index == other._index; }
-        bool operator!=(const const_reverse_iterator& other) const { return !operator==(other); }
+        bool operator==(const const_reverse_iterator& other) const
+        {
+            return _map == other._map && _index == other._index;
+        }
+        bool operator!=(const const_reverse_iterator& other) const
+        {
+            return !operator==(other);
+        }
         const std::pair<const Key&, const T&> operator*() const
         {
             return std::pair<const Key&, const T&>(*(_map->_keys.rbegin() + _index), _map->_values[_map->_values.size() - 1 - _index]);
@@ -369,7 +420,10 @@ class DenseMap
             insert(*it);
     }
 
-    DenseMap(const DenseMap<Key, T>& other) { operator=(other); }
+    DenseMap(const DenseMap<Key, T>& other)
+    {
+        operator=(other);
+    }
     DenseMap<Key, T>& operator=(const DenseMap<Key, T>& other)
     {
         _keys = other._keys;
@@ -377,7 +431,10 @@ class DenseMap
         return *this;
     }
 
-    DenseMap(const DenseMap<Key, T>&& other) { operator=(other); }
+    DenseMap(const DenseMap<Key, T>&& other)
+    {
+        operator=(other);
+    }
     DenseMap<Key, T>& operator=(DenseMap<Key, T>&& other) noexcept
     {
         _keys = other._keys;
@@ -385,7 +442,10 @@ class DenseMap
         return *this;
     }
 
-    DenseMap(std::initializer_list<std::pair<Key, T>> init) { operator=(init); }
+    DenseMap(std::initializer_list<std::pair<Key, T>> init)
+    {
+        operator=(init);
+    }
     DenseMap<Key, T>& operator=(std::initializer_list<std::pair<Key, T>> init)
     {
         _keys.clear();
@@ -451,33 +511,93 @@ class DenseMap
         }
         return true;
     }
-    bool operator!=(const DenseMap<Key, T>& rhs) const { return !operator==(rhs); }
-    bool operator<(const DenseMap<Key, T>& rhs) const { return std::lexicographical_compare(cbegin(), cend(), rhs.cbegin(), rhs.cend()); }
-    bool operator<=(const DenseMap<Key, T>& rhs) const { return !operator>(rhs); }
-    bool operator>(const DenseMap<Key, T>& rhs) const { return std::lexicographical_compare(rhs.cbegin(), rhs.cend(), cbegin(), cend()); }
-    bool operator>=(const DenseMap<Key, T>& rhs) const { return !operator<(rhs); }
+    bool operator!=(const DenseMap<Key, T>& rhs) const
+    {
+        return !operator==(rhs);
+    }
+    bool operator<(const DenseMap<Key, T>& rhs) const
+    {
+        return std::lexicographical_compare(cbegin(), cend(), rhs.cbegin(), rhs.cend());
+    }
+    bool operator<=(const DenseMap<Key, T>& rhs) const
+    {
+        return !operator>(rhs);
+    }
+    bool operator>(const DenseMap<Key, T>& rhs) const
+    {
+        return std::lexicographical_compare(rhs.cbegin(), rhs.cend(), cbegin(), cend());
+    }
+    bool operator>=(const DenseMap<Key, T>& rhs) const
+    {
+        return !operator<(rhs);
+    }
 
     // Iterators
-    iterator begin() noexcept { return iterator(0, *this); }
-    const_iterator begin() const noexcept { return const_iterator(0, *this); }
-    const_iterator cbegin() const noexcept { return const_iterator(0, *this); }
+    iterator begin() noexcept
+    {
+        return iterator(0, *this);
+    }
+    const_iterator begin() const noexcept
+    {
+        return const_iterator(0, *this);
+    }
+    const_iterator cbegin() const noexcept
+    {
+        return const_iterator(0, *this);
+    }
 
-    iterator end() noexcept { return iterator(_keys.size(), *this); }
-    const_iterator end() const noexcept { return const_iterator(_keys.size(), *this); }
-    const_iterator cend() const noexcept { return const_iterator(_keys.size(), *this); }
+    iterator end() noexcept
+    {
+        return iterator(_keys.size(), *this);
+    }
+    const_iterator end() const noexcept
+    {
+        return const_iterator(_keys.size(), *this);
+    }
+    const_iterator cend() const noexcept
+    {
+        return const_iterator(_keys.size(), *this);
+    }
 
-    iterator rbegin() noexcept { return iterator(_keys.size(), *this); }
-    const_iterator rbegin() const noexcept { return const_iterator(_keys.size(), *this); }
-    const_iterator crbegin() const noexcept { return const_iterator(_keys.size(), *this); }
+    iterator rbegin() noexcept
+    {
+        return iterator(_keys.size(), *this);
+    }
+    const_iterator rbegin() const noexcept
+    {
+        return const_iterator(_keys.size(), *this);
+    }
+    const_iterator crbegin() const noexcept
+    {
+        return const_iterator(_keys.size(), *this);
+    }
 
-    iterator rend() noexcept { return iterator(0, *this); }
-    const_iterator rend() const noexcept { return const_iterator(0, *this); }
-    const_iterator crend() const noexcept { return const_iterator(0, *this); }
+    iterator rend() noexcept
+    {
+        return iterator(0, *this);
+    }
+    const_iterator rend() const noexcept
+    {
+        return const_iterator(0, *this);
+    }
+    const_iterator crend() const noexcept
+    {
+        return const_iterator(0, *this);
+    }
 
     // Capacity
-    bool empty() const noexcept { return _keys.empty(); }
-    size_t size() const noexcept { return _keys.size(); }
-    size_t max_size() const noexcept { return std::min(_keys.max_size(), _values.max_size()); }
+    bool empty() const noexcept
+    {
+        return _keys.empty();
+    }
+    size_t size() const noexcept
+    {
+        return _keys.size();
+    }
+    size_t max_size() const noexcept
+    {
+        return std::min(_keys.max_size(), _values.max_size());
+    }
     void reserve(size_t size)
     {
         _keys.reserve(size);

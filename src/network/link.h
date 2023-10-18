@@ -169,6 +169,6 @@ bool Link::sendMessage(const std::string& name, const std::string& attribute, co
     return sendMessage(name, attribute, convertedMsg);
 }
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_LINK_H

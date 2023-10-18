@@ -187,4 +187,4 @@ bool Sound_Engine::startStream(PaStreamCallback* callback, void* userData)
 
     return true;
 }
-}
+} // namespace Splash

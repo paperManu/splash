@@ -190,6 +190,6 @@ bool Speaker::addToQueue(const ResizableArray<T>& buffer)
     return true;
 }
 
-} // end of namespace
+} // namespace Splash
 
 #endif

@@ -356,7 +356,7 @@ class Obj final : public Base
     std::vector<std::vector<FaceVertex>> _faces;
 };
 
-} // end of namespace
-} // end of namespace
+} // namespace Loader
+} // namespace Splash
 
 #endif

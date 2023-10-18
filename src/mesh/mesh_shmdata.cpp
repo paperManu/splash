@@ -1,8 +1,8 @@
 #include "./mesh/mesh_shmdata.h"
 
 #include "./core/root_object.h"
-#include "./utils/osutils.h"
 #include "./utils/log.h"
+#include "./utils/osutils.h"
 #include "./utils/timer.h"
 
 namespace Splash
@@ -16,14 +16,13 @@ Mesh_Shmdata::Mesh_Shmdata(RootObject* root)
 }
 
 /*************/
-Mesh_Shmdata::~Mesh_Shmdata()
-{
-}
+Mesh_Shmdata::~Mesh_Shmdata() {}
 
 /*************/
 bool Mesh_Shmdata::read(const std::string& filename)
 {
-    _reader = std::make_unique<shmdata::Follower>(filename, [&](void* data, size_t size) { onData(data, size); }, [&](const std::string& caps) { onCaps(caps); }, [&]() {}, &_logger);
+    _reader = std::make_unique<shmdata::Follower>(
+        filename, [&](void* data, size_t size) { onData(data, size); }, [&](const std::string& caps) { onCaps(caps); }, [&]() {}, &_logger);
 
     return true;
 }
@@ -130,4 +129,4 @@ void Mesh_Shmdata::registerAttributes()
     Mesh::registerAttributes();
 }
 
-} // end of namespace
+} // namespace Splash

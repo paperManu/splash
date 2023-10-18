@@ -47,6 +47,6 @@ class GuiControl : public GuiWidget
     std::string _targetObjectName{};
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

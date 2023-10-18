@@ -12,95 +12,95 @@ using namespace Splash;
 
 namespace BaseObjectTests
 {
-    /*************/
-    class BaseObjectMock : public BaseObject
+/*************/
+class BaseObjectMock : public BaseObject
+{
+  public:
+    BaseObjectMock()
+        : BaseObject()
     {
-      public:
-        BaseObjectMock()
-            : BaseObject()
-        {
-            registerAttributes();
-        }
-    
-        void removeAttributeProxy(const std::string& name) { removeAttribute(name); }
-    
-        void setupTasks()
-        {
-            addTask([this]() -> void { _float = 128.f; });
-    
-            addPeriodicTask("counterTask", [this]() -> void { ++_integer; });
-            addPeriodicTask("counterTask", [this]() -> void { _integer += 2; });
-        }
-    
-        void cleanPeriodicTask() { removePeriodicTask("counterTask"); }
-    
-        void setupImbricatedPeriodicTasks()
-        {
-            addPeriodicTask("periodicTask", [this]() -> void {
-                addPeriodicTask("periodicerTaks", [this]() -> void {
-                    _string = "Yo dawg!";
-                    return;
-                });
+        registerAttributes();
+    }
+
+    void removeAttributeProxy(const std::string& name) { removeAttribute(name); }
+
+    void setupTasks()
+    {
+        addTask([this]() -> void { _float = 128.f; });
+
+        addPeriodicTask("counterTask", [this]() -> void { ++_integer; });
+        addPeriodicTask("counterTask", [this]() -> void { _integer += 2; });
+    }
+
+    void cleanPeriodicTask() { removePeriodicTask("counterTask"); }
+
+    void setupImbricatedPeriodicTasks()
+    {
+        addPeriodicTask("periodicTask", [this]() -> void {
+            addPeriodicTask("periodicerTaks", [this]() -> void {
+                _string = "Yo dawg!";
+                return;
             });
-        }
-    
-        void setupAsyncTasks()
-        {
-            runAsyncTask([this]() -> void { _string = "Async task finished!"; });
-        }
-    
-      private:
-        int _integer{0};
-        float _float{0.f};
-        std::string _string{""};
-    
-        void registerAttributes()
-        {
-            addAttribute(
-                "integer",
-                [&](const Values& args) {
-                    _integer = args[0].as<int>();
-                    return true;
-                },
-                [&]() -> Values { return {_integer}; },
-                {'i'});
-            setAttributeDescription("integer", "An integer attribute");
-    
-            addAttribute(
-                "float",
-                [&](const Values& args) {
-                    _float = args[0].as<float>();
-                    return true;
-                },
-                [&]() -> Values { return {_float}; },
-                {'r'});
-            setAttributeDescription("float", "A float attribute");
-            setAttributeSyncMethod("float", Attribute::Sync::force_async);
-    
-            addAttribute(
-                "string",
-                [&](const Values& args) {
-                    _string = args[0].as<std::string>();
-                    return true;
-                },
-                [&]() -> Values { return {_string}; },
-                {'s'});
-            setAttributeDescription("string", "A string attribute");
-            setAttributeSyncMethod("string", Attribute::Sync::force_sync);
-    
-            addAttribute("noGetterAttrib",
-                [&](const Values& args) {
-                    _integer = 0;
-                    _float = 0.f;
-                    _string = "zero";
-                    return true;
-                },
-                {});
-    
-            addAttribute("noSetterAttrib", [&]() -> Values { return {"A getter but no setter"}; });
-        }
-    };
-}
+        });
+    }
+
+    void setupAsyncTasks()
+    {
+        runAsyncTask([this]() -> void { _string = "Async task finished!"; });
+    }
+
+  private:
+    int _integer{0};
+    float _float{0.f};
+    std::string _string{""};
+
+    void registerAttributes()
+    {
+        addAttribute(
+            "integer",
+            [&](const Values& args) {
+                _integer = args[0].as<int>();
+                return true;
+            },
+            [&]() -> Values { return {_integer}; },
+            {'i'});
+        setAttributeDescription("integer", "An integer attribute");
+
+        addAttribute(
+            "float",
+            [&](const Values& args) {
+                _float = args[0].as<float>();
+                return true;
+            },
+            [&]() -> Values { return {_float}; },
+            {'r'});
+        setAttributeDescription("float", "A float attribute");
+        setAttributeSyncMethod("float", Attribute::Sync::force_async);
+
+        addAttribute(
+            "string",
+            [&](const Values& args) {
+                _string = args[0].as<std::string>();
+                return true;
+            },
+            [&]() -> Values { return {_string}; },
+            {'s'});
+        setAttributeDescription("string", "A string attribute");
+        setAttributeSyncMethod("string", Attribute::Sync::force_sync);
+
+        addAttribute("noGetterAttrib",
+            [&](const Values& args) {
+                _integer = 0;
+                _float = 0.f;
+                _string = "zero";
+                return true;
+            },
+            {});
+
+        addAttribute("noSetterAttrib", [&]() -> Values { return {"A getter but no setter"}; });
+    }
+};
+} // namespace BaseObjectTests
 
 /*************/
 TEST_CASE("Testing BaseObject class")

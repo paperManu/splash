@@ -36,8 +36,8 @@
 
 #include <zmq.hpp>
 
-#include "./network/channel.h"
 #include "./core/spinlock.h"
+#include "./network/channel.h"
 
 namespace Splash
 {
@@ -116,7 +116,7 @@ class ChannelOutput_ZMQ final : public ChannelOutput
     uint32_t _sendQueueBufferCount{0};
     std::condition_variable _bufferTransmittedCondition{};
     std::mutex _bufferTransmittedMutex{};
-    
+
     std::string _pathPrefix;
 
     zmq::context_t _context{1};
@@ -186,4 +186,3 @@ class ChannelInput_ZMQ final : public ChannelInput
 } // namespace Splash
 
 #endif // SPLASH_CHANNEL_SHMDATA_H
-

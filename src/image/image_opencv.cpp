@@ -185,7 +185,8 @@ void Image_OpenCV::registerAttributes()
 {
     Image::registerAttributes();
 
-    addAttribute("size",
+    addAttribute(
+        "size",
         [&](const Values& args) {
             _width = args[0].as<int>();
             _height = args[1].as<int>();
@@ -201,7 +202,8 @@ void Image_OpenCV::registerAttributes()
         {'i', 'i'});
     setAttributeDescription("size", "Set the desired capture resolution");
 
-    addAttribute("framerate",
+    addAttribute(
+        "framerate",
         [&](const Values& args) {
             _framerate = (args[0].as<float>() == 0) ? 60 : args[0].as<float>();
             return true;
@@ -210,7 +212,8 @@ void Image_OpenCV::registerAttributes()
         {'r'});
     setAttributeDescription("framerate", "Set the desired capture framerate");
 
-    addAttribute("exposure",
+    addAttribute(
+        "exposure",
         [&](const Values& args) {
             _exposure = args[0].as<float>();
             return true;
@@ -222,7 +225,8 @@ void Image_OpenCV::registerAttributes()
     addAttribute("capturing", [&]() -> Values { return {_capturing}; });
     setAttributeDescription("capturing", "Ask whether the camera is grabbing images");
 
-    addAttribute("cvOptions",
+    addAttribute(
+        "cvOptions",
         [&](const Values& args) {
             _cvOptions = args[0].as<std::string>();
             _cvOptionsUpdated = true;

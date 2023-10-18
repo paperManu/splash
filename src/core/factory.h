@@ -167,6 +167,6 @@ bool Factory::isSubtype(const std::string& type)
     return static_cast<bool>(std::dynamic_pointer_cast<T>(object));
 }
 
-} // end of namespace
+} // namespace Splash
 
 #endif

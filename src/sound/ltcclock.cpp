@@ -107,7 +107,6 @@ LtcClock::LtcClock(bool masterClock, const std::string& deviceName)
                 if (_masterClock)
                     Timer::get().setMasterClock(_clock);
             }
-
         }
 
         ltc_decoder_free(ltcDecoder);

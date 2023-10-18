@@ -221,6 +221,6 @@ class QueueSurrogate final : public Texture
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_QUEUE_H

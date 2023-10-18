@@ -148,14 +148,14 @@ bool Image_GPhoto::capture()
                 gp_file_new_from_fd(&destination, handle);
                 if (gp_camera_file_get(camera.cam, filePath.folder, filePath.name, GP_FILE_TYPE_NORMAL, destination, _gpContext) != GP_OK)
                 {
-                    Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Unable to download file " << std::string(filePath.folder) << "/" << std::string(filePath.name)
-                               << Log::endl;
+                    Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Unable to download file " << std::string(filePath.folder) << "/"
+                               << std::string(filePath.name) << Log::endl;
                 }
 #ifdef DEBUG
                 else
                 {
-                    Log::get() << Log::DEBUGGING << "Image_GPhoto::" << __FUNCTION__ << " - Sucessfully downloaded file " << std::string(filePath.folder) << "/" << std::string(filePath.name)
-                               << Log::endl;
+                    Log::get() << Log::DEBUGGING << "Image_GPhoto::" << __FUNCTION__ << " - Sucessfully downloaded file " << std::string(filePath.folder) << "/"
+                               << std::string(filePath.name) << Log::endl;
                 }
 #endif
                 close(handle);
@@ -199,7 +199,10 @@ bool Image_GPhoto::doSetProperty(const std::string& name, const std::string& val
     GPhotoCamera& camera = _cameras[_selectedCameraIndex];
     CameraWidget* cameraConfig;
     gp_camera_get_config(camera.cam, &cameraConfig, _gpContext);
-    OnScopeExit { gp_widget_free(cameraConfig); };
+    OnScopeExit
+    {
+        gp_widget_free(cameraConfig);
+    };
 
     CameraWidget* widget;
     if (gp_widget_get_child_by_name(cameraConfig, name.c_str(), &widget) == GP_OK)
@@ -238,7 +241,10 @@ bool Image_GPhoto::doGetProperty(const std::string& name, std::string& value)
     GPhotoCamera& camera = _cameras[_selectedCameraIndex];
     CameraWidget* cameraConfig;
     gp_camera_get_config(camera.cam, &cameraConfig, _gpContext);
-    OnScopeExit { gp_widget_free(cameraConfig); };
+    OnScopeExit
+    {
+        gp_widget_free(cameraConfig);
+    };
 
     CameraWidget* widget;
     if (gp_widget_get_child_by_name(cameraConfig, name.c_str(), &widget) == GP_OK)
@@ -405,7 +411,8 @@ void Image_GPhoto::registerAttributes()
 {
     Image::registerAttributes();
 
-    addAttribute("aperture",
+    addAttribute(
+        "aperture",
         [&](const Values& args) { return doSetProperty("aperture", args[0].as<std::string>()); },
         [&]() -> Values {
             std::string value;
@@ -417,7 +424,8 @@ void Image_GPhoto::registerAttributes()
         {});
     setAttributeDescription("aperture", "Set the aperture of the lens");
 
-    addAttribute("isospeed",
+    addAttribute(
+        "isospeed",
         [&](const Values& args) { return doSetProperty("iso", args[0].as<std::string>()); },
         [&]() -> Values {
             std::string value;
@@ -429,7 +437,8 @@ void Image_GPhoto::registerAttributes()
         {});
     setAttributeDescription("isospeed", "Set the ISO value of the camera");
 
-    addAttribute("shutterspeed",
+    addAttribute(
+        "shutterspeed",
         [&](const Values& args) {
             doSetProperty("shutterspeed", getShutterspeedStringFromFloat(args[0].as<float>()));
             return true;
@@ -453,28 +462,27 @@ void Image_GPhoto::registerAttributes()
     setAttributeDescription("detect", "Ask for camera detection");
 
     // Status
-    addAttribute("ready",
-        [&]() -> Values {
-            std::lock_guard<std::recursive_mutex> lock(_gpMutex);
-            if (_selectedCameraIndex == -1)
-                return {false};
-            else
-                return {true};
-        });
+    addAttribute("ready", [&]() -> Values {
+        std::lock_guard<std::recursive_mutex> lock(_gpMutex);
+        if (_selectedCameraIndex == -1)
+            return {false};
+        else
+            return {true};
+    });
     setAttributeDescription("ready", "Ask whether the camera is ready to shoot");
 
     // The "camera model" attribute is more or less a copy of the "file" attribute,
     // and is a work around to the fact that the "file" attribute from the Scene shadows
     // the real value from the World.
-    addAttribute("camera model",
+    addAttribute(
+        "camera model",
         [&](const Values& args) {
             _filepath = args[0].as<std::string>();
             read(_filepath);
             return true;
         },
-        [&]() -> Values {
-            return {_filepath};
-        }, {'s'});
+        [&]() -> Values { return {_filepath}; },
+        {'s'});
     setAttributeDescription("camera model", "Camera model, as set or detected");
 }
 

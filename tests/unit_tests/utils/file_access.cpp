@@ -65,7 +65,7 @@ TEST_CASE("Testing Splash::Utils::getPathFromFilePath")
     filename = std::string("this/one/is/relative.ext");
     auto config_path = std::string("/some/config/path");
     CHECK(getPathFromFilePath(filename) == getCurrentWorkingDirectory() + "/this/one/is/");
-    CHECK(getPathFromFilePath(filename, config_path) ==  config_path + "/this/one/is/");
+    CHECK(getPathFromFilePath(filename, config_path) == config_path + "/this/one/is/");
 }
 
 /*************/

@@ -170,6 +170,6 @@ class UserInput : public GraphObject
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_USERINPUT_H

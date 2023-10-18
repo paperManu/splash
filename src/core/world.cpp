@@ -16,12 +16,12 @@
 
 #include "./core/buffer_object.h"
 #include "./core/constants.h"
-#include "./network/link.h"
 #include "./core/scene.h"
 #include "./core/serializer.h"
 #include "./image/image.h"
 #include "./image/queue.h"
 #include "./mesh/mesh.h"
+#include "./network/link.h"
 #include "./utils/jsonutils.h"
 #include "./utils/log.h"
 #include "./utils/osutils.h"
@@ -316,7 +316,8 @@ bool World::applyConfig()
             auto returnValue = sendMessageWithAnswer(s.first, "sync", {}, Constants::CONNECTION_TIMEOUT * 1'000'000);
             if (returnValue.empty() || returnValue[1].as<std::string>() != s.first)
             {
-                Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to sync with scene \"" << s.first << "\" before configuration. Exiting." << Log::endl;
+                Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to sync with scene \"" << s.first << "\" before configuration. Exiting."
+                           << Log::endl;
                 _quit = true;
                 return false;
             }
@@ -438,7 +439,7 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
             if (!worldDisplay.empty() && worldDisplay.find(".") == std::string::npos)
                 worldDisplay += ".0";
         }
-                                                                                                                                       
+
         display = "DISPLAY=" + worldDisplay;
         if (!sceneDisplay.empty())
         {
@@ -1317,7 +1318,8 @@ void World::registerAttributes()
     setAttributeDescription("wireframe", "Show all meshes as wireframes if true");
 
 #if HAVE_LINUX
-    addAttribute("forceRealtime",
+    addAttribute(
+        "forceRealtime",
         [&](const Values& args) {
             _enforceRealtime = args[0].as<bool>();
 
@@ -1338,7 +1340,8 @@ void World::registerAttributes()
     setAttributeDescription("forceRealtime", "Ask the scheduler to run Splash with realtime priority.");
 #endif
 
-    addAttribute("framerate",
+    addAttribute(
+        "framerate",
         [&](const Values& args) {
             _worldFramerate = std::max(1, args[0].as<int>());
             return true;
@@ -1348,7 +1351,8 @@ void World::registerAttributes()
     setAttributeDescription("framerate", "Set the minimum refresh rate for the world (adapted to video framerate)");
 
 #if HAVE_PORTAUDIO
-    addAttribute("clockDeviceName",
+    addAttribute(
+        "clockDeviceName",
         [&](const Values& args) {
             addTask([=]() {
                 auto clockDeviceName = args[0].as<std::string>();
@@ -1366,10 +1370,12 @@ void World::registerAttributes()
     setAttributeDescription("clockDeviceName", "Set the audio device name from which to read the LTC clock signal");
 #endif
 
-    addAttribute("configurationPath", [&](const Values& /*args*/) { return true; }, [&]() -> Values { return {_configurationPath}; }, {'s'});
+    addAttribute(
+        "configurationPath", [&](const Values& /*args*/) { return true; }, [&]() -> Values { return {_configurationPath}; }, {'s'});
     setAttributeDescription("configurationPath", "Path to the configuration files");
 
-    addAttribute("mediaPath",
+    addAttribute(
+        "mediaPath",
         [&](const Values& args) {
             auto path = args[0].as<std::string>();
             if (Utils::isDir(path))
@@ -1380,7 +1386,8 @@ void World::registerAttributes()
         {'s'});
     setAttributeDescription("mediaPath", "Path to the media files");
 
-    addAttribute("looseClock",
+    addAttribute(
+        "looseClock",
         [&](const Values& args) {
             Timer::get().setLoose(args[0].as<bool>());
             return true;
@@ -1389,10 +1396,12 @@ void World::registerAttributes()
         {'b'});
     setAttributeDescription("looseClock", "Master clock is not a hard constraints if true");
 
-    addAttribute("clock", [&](const Values& /*args*/) { return true; }, [&]() -> Values { return {Timer::getTime()}; }, {});
+    addAttribute(
+        "clock", [&](const Values& /*args*/) { return true; }, [&]() -> Values { return {Timer::getTime()}; }, {});
     setAttributeDescription("clock", "Current World clock (not settable)");
 
-    addAttribute("masterClock",
+    addAttribute(
+        "masterClock",
         [&](const Values& /*args*/) { return true; },
         [&]() -> Values {
             Timer::Point masterClock;

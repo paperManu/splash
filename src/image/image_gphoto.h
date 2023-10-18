@@ -134,6 +134,6 @@ class Image_GPhoto final : public Image_Sequence
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_IMAGE_GPHOTO_H

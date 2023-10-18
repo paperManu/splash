@@ -47,6 +47,6 @@ class GuiFilters : public GuiWidget
     std::string _selectedFilterName;
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

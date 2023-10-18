@@ -76,6 +76,6 @@ class GuiNodeView : public GuiWidget
     void initializeNodePositions(const std::vector<std::string>& objectNames);
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

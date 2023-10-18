@@ -45,6 +45,6 @@ class GuiTextBox : public GuiWidget
     std::function<std::string()> getText;
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

@@ -39,10 +39,7 @@ namespace Splash::Serial::detail
 template <class T>
 struct getSizeHelper<T, typename std::enable_if<std::is_same<glm::vec2, T>::value>::type>
 {
-    static uint32_t value(const T& /*obj*/)
-    {
-        return 2 * sizeof(float);
-    }
+    static uint32_t value(const T& /*obj*/) { return 2 * sizeof(float); }
 };
 
 template <class T>
@@ -75,10 +72,7 @@ struct deserializeHelper<T, typename std::enable_if<std::is_same<glm::vec2, T>::
 template <class T>
 struct getSizeHelper<T, typename std::enable_if<std::is_same<glm::vec4, T>::value>::type>
 {
-    static uint32_t value(const T& /*obj*/)
-    {
-        return 4 * sizeof(float);
-    }
+    static uint32_t value(const T& /*obj*/) { return 4 * sizeof(float); }
 };
 
 template <class T>
@@ -149,6 +143,6 @@ struct deserializeHelper<T, typename std::enable_if<std::is_base_of<Mesh::MeshCo
         return meshContainer;
     }
 };
-}
+} // namespace Splash::Serial::detail
 
 #endif // SPLASH_SERIALIZE_MESH_H

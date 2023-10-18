@@ -82,6 +82,6 @@ class Image_NDI final : public Image
     void registerAttributes();
 };
 
-}
+} // namespace Splash
 
 #endif

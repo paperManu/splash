@@ -192,7 +192,8 @@ void UserInput::registerAttributes()
 {
     GraphObject::registerAttributes();
 
-    addAttribute("updateRate",
+    addAttribute(
+        "updateRate",
         [&](const Values& args) {
             _updateRate = std::max(10, args[0].as<int>());
             return true;
@@ -202,4 +203,4 @@ void UserInput::registerAttributes()
     setAttributeDescription("updateRate", "Set the rate at which the inputs are updated");
 }
 
-} // end of namespace
+} // namespace Splash

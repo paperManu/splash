@@ -298,6 +298,6 @@ class Window final : public GraphObject
     void updateWindowShape();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_WINDOW_H

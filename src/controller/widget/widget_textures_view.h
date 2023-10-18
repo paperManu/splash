@@ -41,6 +41,6 @@ class GuiTexturesView : public GuiWidget
     void render() final;
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_WIDGET_TEXTURES_VIEW_H

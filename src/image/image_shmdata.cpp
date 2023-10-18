@@ -40,7 +40,8 @@ Image_Shmdata::~Image_Shmdata()
 /*************/
 bool Image_Shmdata::read(const std::string& filename)
 {
-    _reader = std::make_unique<shmdata::Follower>(filename, [&](void* data, size_t size) { onData(data, size); }, [&](const std::string& caps) { onCaps(caps); }, [&]() {}, &_logger);
+    _reader = std::make_unique<shmdata::Follower>(
+        filename, [&](void* data, size_t size) { onData(data, size); }, [&](const std::string& caps) { onCaps(caps); }, [&]() {}, &_logger);
 
     return true;
 }
@@ -341,4 +342,4 @@ void Image_Shmdata::registerAttributes()
 {
     Image::registerAttributes();
 }
-}
+} // namespace Splash

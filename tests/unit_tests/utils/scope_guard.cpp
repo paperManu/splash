@@ -9,7 +9,10 @@ TEST_CASE("Testing OnScopeExit")
 {
     int value = 42;
     {
-        OnScopeExit { value = 16384; };
+        OnScopeExit
+        {
+            value = 16384;
+        };
     }
     CHECK_EQ(value, 16384);
 }

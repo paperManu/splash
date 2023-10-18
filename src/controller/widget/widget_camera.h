@@ -123,6 +123,6 @@ class GuiCamera : public GuiWidget
     void drawVirtualProbes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

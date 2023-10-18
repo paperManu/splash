@@ -27,8 +27,8 @@
 
 #include <iostream>
 
-#include "./core/serializer.h"
 #include "./core/imagebuffer.h"
+#include "./core/serializer.h"
 
 namespace Splash::Serial::detail
 {

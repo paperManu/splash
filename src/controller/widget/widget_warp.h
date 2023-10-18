@@ -56,6 +56,6 @@ class GuiWarp : public GuiWidget
     void processMouseEvents(const std::shared_ptr<Warp>& warp, int warpWidth, int warpHeight);
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

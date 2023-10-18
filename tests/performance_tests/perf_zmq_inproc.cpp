@@ -45,9 +45,7 @@ std::atomic_int bufferCount{0};
 std::mutex copyMutex{};
 std::condition_variable copyCondition{};
 
-void nop(void*, void*)
-{
-}
+void nop(void*, void*) {}
 
 int main()
 {

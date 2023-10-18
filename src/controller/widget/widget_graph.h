@@ -45,6 +45,6 @@ class GuiGraph : public GuiWidget
     std::map<std::string, std::deque<unsigned long long>> _durationGraph;
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

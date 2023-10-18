@@ -36,7 +36,8 @@ void Sink_Shmdata::registerAttributes()
 {
     Sink::registerAttributes();
 
-    addAttribute("socket",
+    addAttribute(
+        "socket",
         [&](const Values& args) {
             _path = args[0].as<std::string>();
             _previousSpec = ImageBufferSpec();
@@ -46,8 +47,9 @@ void Sink_Shmdata::registerAttributes()
         {'s'});
     setAttributeDescription("socket", "Socket path to which data is sent");
 
-    addAttribute("caps", [&](const Values&) { return true; }, [&]() -> Values { return {_caps}; }, {'s'});
+    addAttribute(
+        "caps", [&](const Values&) { return true; }, [&]() -> Values { return {_caps}; }, {'s'});
     setAttributeDescription("caps", "Caps of the sent data");
 }
 
-} // end of namespace
+} // namespace Splash

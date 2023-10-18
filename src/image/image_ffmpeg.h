@@ -34,7 +34,8 @@
 #include <mutex>
 #include <thread>
 
-extern "C" {
+extern "C"
+{
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
@@ -204,6 +205,6 @@ class Image_FFmpeg final : public Image
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_IMAGE_FFMPEG_H

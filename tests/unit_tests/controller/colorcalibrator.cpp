@@ -11,147 +11,147 @@ using namespace Splash;
 
 namespace ColorCalibratorTests
 {
-    /*************/
-    class RootObjectMock : public RootObject
+/*************/
+class RootObjectMock : public RootObject
+{
+  public:
+    RootObjectMock()
+        : RootObject()
     {
-      public:
-        RootObjectMock()
-            : RootObject()
-        {
-            _name = "world";
-            _tree.setName(_name);
-        }
-    
-        void step() { updateTreeFromObjects(); }
-    };
-    
-    /*************/
-    class ColorCalibratorMock : public ColorCalibrator
+        _name = "world";
+        _tree.setName(_name);
+    }
+
+    void step() { updateTreeFromObjects(); }
+};
+
+/*************/
+class ColorCalibratorMock : public ColorCalibrator
+{
+  public:
+    ColorCalibratorMock(RootObject* root)
+        : ColorCalibrator(root){};
+
+    bool testFindCorrectExposure(float expectedExposure)
     {
-      public:
-        ColorCalibratorMock(RootObject* root)
-            : ColorCalibrator(root){};
-    
-        bool testFindCorrectExposure(float expectedExposure)
-        {
-            const auto foundExposure = findCorrectExposure();
-            return (std::abs(std::log(expectedExposure / foundExposure)) < 1e-5);
-        }
-    
-        bool testCRF(cv::Mat expectedCRF)
-        {
-            captureHDR(9, 0.33);
-            return (cv::norm(expectedCRF, _crf, cv::NORM_L2) < 2.0);
-        }
-    
-        bool testCaptureHDR(cv::Mat3f expectedHdr)
-        {
-            cv::Mat3f hdr = captureHDR(1);
-            for (int x = 0; x < hdr.rows; x++)
-                for (int y = 0; y < hdr.cols; y++)
-                    for (int c = 0; c < 3; c++)
-                        if (std::abs(std::log(expectedHdr.at<cv::Vec3f>(x, y)[c] / hdr.at<cv::Vec3f>(x, y)[c])) > 0.1)
-                            return false;
-            return true;
-        }
-    
-        bool testGetMaskROI(std::vector<bool> expectedMask)
-        {
-            // Compute hdr difference
-            cv::Mat hdr = captureHDR(1);
-            cv::Mat othersHdr = captureHDR(1);
-    
-            cv::Mat diffHdr = hdr.clone();
-            for (int y = 0; y < diffHdr.rows; ++y)
-                for (int x = 0; x < diffHdr.cols; ++x)
-                {
-                    auto pixelValue = diffHdr.at<cv::Vec3f>(y, x) - othersHdr.at<cv::Vec3f>(y, x) * _displayDetectionThreshold;
-                    diffHdr.at<cv::Vec3f>(y, x)[0] = std::max(0.f, pixelValue[0]);
-                    diffHdr.at<cv::Vec3f>(y, x)[1] = std::max(0.f, pixelValue[1]);
-                    diffHdr.at<cv::Vec3f>(y, x)[2] = std::max(0.f, pixelValue[2]);
-                }
-    
-            // Compute mask
-            _mask = getMaskROI(diffHdr);
-    
-            for (int i = 0; i < _mask.size(); i++)
-                if (!(_mask[i] == expectedMask[i]))
-                    return false;
-    
-            return true;
-        }
-    
-        bool testGetMeanValue(std::vector<float> expectedMean)
-        {
-            cv::Mat hdr = captureHDR(1);
-            std::vector<float> mean = getMeanValue(hdr, _mask);
-            for (int i = 0; i < 3; i++)
-                if (std::abs(std::log(mean[i] / expectedMean[i])) > 0.1f)
-                    return false;
-            return true;
-        }
-    
-        bool testComputeProjectorFunctionInverse(std::vector<float> colorCurves, std::vector<float> expectedCurves)
-        {
-            // Input curves
-            std::vector<Curve> curves{3};
-            for (int s = 0; s < 3; ++s)
-            {
-                for (int c = 0; c < 3; ++c)
-                {
-                    RgbValue sampleValue = RgbValue(0., 0., 0.);
-                    sampleValue[c] = colorCurves[s * 6 + 2 * c + 1];
-                    curves[c].push_back(Point(colorCurves[s * 6 + 2 * c], sampleValue));
-                }
-            }
-    
-            // Output projector curves
-            std::vector<Curve> projCurves = computeProjectorFunctionInverse(curves);
-    
-            // Check values one by one
-            for (unsigned int s = 0; s < _colorLUTSize; ++s)
-            {
-                for (int c = 0; c < 3; ++c)
-                {
-                    bool sample = std::abs(expectedCurves[s * 6 + c * 2] - projCurves[c][s].first) < 1e-5;
-                    bool value = std::abs(expectedCurves[s * 6 + c * 2 + 1] - projCurves[c][s].second[c]) < 1e-5;
-    
-                    if (!(sample && value))
+        const auto foundExposure = findCorrectExposure();
+        return (std::abs(std::log(expectedExposure / foundExposure)) < 1e-5);
+    }
+
+    bool testCRF(cv::Mat expectedCRF)
+    {
+        captureHDR(9, 0.33);
+        return (cv::norm(expectedCRF, _crf, cv::NORM_L2) < 2.0);
+    }
+
+    bool testCaptureHDR(cv::Mat3f expectedHdr)
+    {
+        cv::Mat3f hdr = captureHDR(1);
+        for (int x = 0; x < hdr.rows; x++)
+            for (int y = 0; y < hdr.cols; y++)
+                for (int c = 0; c < 3; c++)
+                    if (std::abs(std::log(expectedHdr.at<cv::Vec3f>(x, y)[c] / hdr.at<cv::Vec3f>(x, y)[c])) > 0.1)
                         return false;
-                }
+        return true;
+    }
+
+    bool testGetMaskROI(std::vector<bool> expectedMask)
+    {
+        // Compute hdr difference
+        cv::Mat hdr = captureHDR(1);
+        cv::Mat othersHdr = captureHDR(1);
+
+        cv::Mat diffHdr = hdr.clone();
+        for (int y = 0; y < diffHdr.rows; ++y)
+            for (int x = 0; x < diffHdr.cols; ++x)
+            {
+                auto pixelValue = diffHdr.at<cv::Vec3f>(y, x) - othersHdr.at<cv::Vec3f>(y, x) * _displayDetectionThreshold;
+                diffHdr.at<cv::Vec3f>(y, x)[0] = std::max(0.f, pixelValue[0]);
+                diffHdr.at<cv::Vec3f>(y, x)[1] = std::max(0.f, pixelValue[1]);
+                diffHdr.at<cv::Vec3f>(y, x)[2] = std::max(0.f, pixelValue[2]);
             }
-    
-            return true;
-        }
-    
-        bool testEqualizeWhiteBalances(RgbValue expectedWB, std::pair<RgbValue, RgbValue> whitePoints)
+
+        // Compute mask
+        _mask = getMaskROI(diffHdr);
+
+        for (int i = 0; i < _mask.size(); i++)
+            if (!(_mask[i] == expectedMask[i]))
+                return false;
+
+        return true;
+    }
+
+    bool testGetMeanValue(std::vector<float> expectedMean)
+    {
+        cv::Mat hdr = captureHDR(1);
+        std::vector<float> mean = getMeanValue(hdr, _mask);
+        for (int i = 0; i < 3; i++)
+            if (std::abs(std::log(mean[i] / expectedMean[i])) > 0.1f)
+                return false;
+        return true;
+    }
+
+    bool testComputeProjectorFunctionInverse(std::vector<float> colorCurves, std::vector<float> expectedCurves)
+    {
+        // Input curves
+        std::vector<Curve> curves{3};
+        for (int s = 0; s < 3; ++s)
         {
-            // Initialize parameters
-            CalibrationParams params;
-    
-            params.camName = "cam1";
-            params.whitePoint = whitePoints.first;
-            _calibrationParams.push_back(params);
-    
-            params.camName = "cam2";
-            params.whitePoint = whitePoints.second;
-            _calibrationParams.push_back(params);
-    
-            RgbValue whiteBalance = equalizeWhiteBalances();
-            _calibrationParams.clear();
-    
-            // Check values one by one
-            for (int i = 0; i < 3; i++)
-                if (std::abs(whiteBalance[i] - expectedWB[i]) > 1e-5)
-                    return false;
-    
-            return true;
+            for (int c = 0; c < 3; ++c)
+            {
+                RgbValue sampleValue = RgbValue(0., 0., 0.);
+                sampleValue[c] = colorCurves[s * 6 + 2 * c + 1];
+                curves[c].push_back(Point(colorCurves[s * 6 + 2 * c], sampleValue));
+            }
         }
-    
-      private:
-        std::vector<bool> _mask{};
-    };
-}
+
+        // Output projector curves
+        std::vector<Curve> projCurves = computeProjectorFunctionInverse(curves);
+
+        // Check values one by one
+        for (unsigned int s = 0; s < _colorLUTSize; ++s)
+        {
+            for (int c = 0; c < 3; ++c)
+            {
+                bool sample = std::abs(expectedCurves[s * 6 + c * 2] - projCurves[c][s].first) < 1e-5;
+                bool value = std::abs(expectedCurves[s * 6 + c * 2 + 1] - projCurves[c][s].second[c]) < 1e-5;
+
+                if (!(sample && value))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool testEqualizeWhiteBalances(RgbValue expectedWB, std::pair<RgbValue, RgbValue> whitePoints)
+    {
+        // Initialize parameters
+        CalibrationParams params;
+
+        params.camName = "cam1";
+        params.whitePoint = whitePoints.first;
+        _calibrationParams.push_back(params);
+
+        params.camName = "cam2";
+        params.whitePoint = whitePoints.second;
+        _calibrationParams.push_back(params);
+
+        RgbValue whiteBalance = equalizeWhiteBalances();
+        _calibrationParams.clear();
+
+        // Check values one by one
+        for (int i = 0; i < 3; i++)
+            if (std::abs(whiteBalance[i] - expectedWB[i]) > 1e-5)
+                return false;
+
+        return true;
+    }
+
+  private:
+    std::vector<bool> _mask{};
+};
+} // namespace ColorCalibratorTests
 
 /*************/
 TEST_CASE("Testing Color Calibration")

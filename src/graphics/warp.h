@@ -174,6 +174,6 @@ class Warp final : public Texture
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_WARP_H

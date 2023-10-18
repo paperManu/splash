@@ -101,6 +101,6 @@ struct SerializedObject
     ResizableArray<uint8_t> _data{};
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_SERIALIZED_OBJECT_H

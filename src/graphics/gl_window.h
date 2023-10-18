@@ -73,10 +73,7 @@ class GlWindow
      * Get whether this GLFW window is the current context
      * \return Return true if this window is the current context
      */
-    bool isCurrentContext() const
-    {
-        return _window == glfwGetCurrentContext();
-    }
+    bool isCurrentContext() const { return _window == glfwGetCurrentContext(); }
 
     /**
      * Set the context of this window as current
@@ -117,6 +114,6 @@ class GlWindow
     GLFWwindow* _mainWindow{nullptr};
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_GL_WINDOW_H

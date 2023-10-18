@@ -47,4 +47,4 @@ bool hapDecodeFrame(void* in, unsigned int inSize, void* out, unsigned int outSi
     return true;
 }
 
-} // end of namespace
+} // namespace Splash

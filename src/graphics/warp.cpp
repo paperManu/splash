@@ -282,14 +282,12 @@ void Warp::registerAttributes()
 
     addAttribute(
         "patchControl",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             if (!_screenMesh)
                 return false;
             return _screenMesh->setAttribute("patchControl", args) != BaseObject::SetAttrStatus::failure;
         },
-        [&]() -> Values
-        {
+        [&]() -> Values {
             if (!_screenMesh)
                 return {};
 
@@ -302,14 +300,12 @@ void Warp::registerAttributes()
 
     addAttribute(
         "patchResolution",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             if (!_screenMesh)
                 return false;
             return _screenMesh->setAttribute("patchResolution", args) != BaseObject::SetAttrStatus::failure;
         },
-        [&]() -> Values
-        {
+        [&]() -> Values {
             if (!_screenMesh)
                 return {};
 
@@ -322,15 +318,13 @@ void Warp::registerAttributes()
 
     addAttribute(
         "patchSize",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             if (!_screenMesh)
                 return false;
             Values size = {std::min(8, args[0].as<int>()), std::min(8, args[1].as<int>())};
             return _screenMesh->setAttribute("patchSize", size) != BaseObject::SetAttrStatus::failure;
         },
-        [&]() -> Values
-        {
+        [&]() -> Values {
             if (!_screenMesh)
                 return {};
 
@@ -344,8 +338,7 @@ void Warp::registerAttributes()
     addAttribute(
         "size",
         [&](const Values&) { return true; },
-        [&]() -> Values
-        {
+        [&]() -> Values {
             if (_fbo)
                 return {_fbo->getWidth(), _fbo->getHeight()};
             else
@@ -357,8 +350,7 @@ void Warp::registerAttributes()
     // Show the Bezier patch describing the warp
     // Also resets the selected control point if hidden
     addAttribute("showControlLattice",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             _showControlPoints = args[0].as<bool>();
             if (!_showControlPoints)
                 _selectedControlPointIndex = -1;
@@ -369,8 +361,7 @@ void Warp::registerAttributes()
 
     // Show a single control point
     addAttribute("showControlPoint",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             auto index = args[0].as<int>();
             if (index < 0 || index >= static_cast<int>(_screenMesh->getControlPoints().size()))
                 _selectedControlPointIndex = -1;
@@ -385,8 +376,7 @@ void Warp::registerAttributes()
     // Mipmap capture
     addAttribute(
         "grabMipmapLevel",
-        [&](const Values& args)
-        {
+        [&](const Values& args) {
             _grabMipmapLevel = args[0].as<int>();
             return true;
         },

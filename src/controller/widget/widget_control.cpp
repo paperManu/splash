@@ -27,7 +27,7 @@ void GuiControl::render()
     // Select the object the control
     int index = 0;
     std::string clickedNode = std::dynamic_pointer_cast<GuiNodeView>(_nodeView)->getClickedNode(); // Used to set the object
-                                                                                         // selected for configuration
+                                                                                                   // selected for configuration
     auto objectNames = getObjectList();
     for (const auto& name : objectNames)
     {

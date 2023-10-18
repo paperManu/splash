@@ -162,10 +162,10 @@ struct RgbValue
  */
 inline glm::vec2 colorBalanceFromTemperature(float temp)
 {
-    using glm::min;
-    using glm::max;
-    using glm::pow;
     using glm::log;
+    using glm::max;
+    using glm::min;
+    using glm::pow;
 
     glm::dvec3 c;
     float t = temp / 100.0;
@@ -246,6 +246,6 @@ void hapDecodeCallback(HapDecodeWorkFunction func, void* p, unsigned int count, 
 // If out is null, only sets the format
 bool hapDecodeFrame(void* in, unsigned int inSize, void* out, unsigned int outSize, std::string& format);
 
-} // end of namespace
+} // namespace Splash
 
 #endif
