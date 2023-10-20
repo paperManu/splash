@@ -403,6 +403,7 @@ void Scene::run()
 
     auto mainWindow = _renderer->getMainWindow();
     mainWindow->setAsCurrentContext();
+    TracyGpuContext;
 
     while (_isRunning)
     {
