@@ -26,65 +26,13 @@ before_script:
     ccache wget curl build-essential git-core libjsoncpp-dev zip cmake automake libtool
     libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev
     libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev
-    libopencv-dev libx264-dev libx265-dev software-properties-common
+    libopencv-dev libx264-dev libx265-dev software-properties-common uuid-dev
 
   # CCache stuff
   - mkdir -p ccache
   - export CCACHE_BASEDIR=${PWD}
   - export CCACHE_DIR=${PWD}/ccache
   - export PATH="/usr/lib/ccache:${PATH}"
-
-test:20.04:gcc-bundled-libs:
-  stage: test
-  image: ubuntu:20.04
-  script: 
-    # Prepare bundled dependencies
-    - ./make_deps.sh
-
-    # Test using bundled libs
-    - rm -rf build && mkdir build
-    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
-    - make -sC build -j$(nproc)
-    - make check -sC build
-    - ./build/src/splash --child --prefix unittest &
-    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
-  except:
-    - /^debian.*$/
-
-test:20.04:clang-bundled-libs:
-  stage: test
-  image: ubuntu:20.04
-  script: 
-    # Prepare bundled dependencies
-    - ./make_deps.sh
-
-    # Test using Clang
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends clang
-    - rm -rf build && mkdir build
-    - CC=clang CXX=clang++ cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
-    - make -sC build -j$(nproc)
-    - make check -sC build
-    - ./build/src/splash --child --prefix unittest &
-    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
-  except:
-    - /^debian.*$/
-
-test:20.04:gcc-system-libs:
-  stage: test
-  image: ubuntu:20.04
-  script: 
-    # Test using system libs
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
-      libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev
-    - rm -rf build && mkdir build
-    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
-    - make -sC build -j$(nproc)
-    - make check -sC build
-    - ./build/src/splash --child --prefix unittest &
-    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
-  except:
-    - website
-    - /^debian.*$/
 
 test:22.04:gcc-bundled-libs:
   stage: test
@@ -138,6 +86,58 @@ test:22.04:gcc-system-libs:
     - website
     - /^debian.*$/
 
+test:23.10:gcc-bundled-libs:
+  stage: test
+  image: ubuntu:23.10
+  script: 
+    # Prepare bundled dependencies
+    - ./make_deps.sh
+
+    # Test using bundled libs
+    - rm -rf build && mkdir build
+    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - make -sC build -j$(nproc)
+    - make check -sC build
+    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+  except:
+    - /^debian.*$/
+
+test:23.10:clang-bundled-libs:
+  stage: test
+  image: ubuntu:23.10
+  script: 
+    # Prepare bundled dependencies
+    - ./make_deps.sh
+
+    # Test using Clang
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends clang
+    - rm -rf build && mkdir build
+    - CC=clang CXX=clang++ cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - make -sC build -j$(nproc)
+    - make check -sC build
+    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+  except:
+    - /^debian.*$/
+
+test:23.10:gcc-system-libs:
+  stage: test
+  image: ubuntu:23.10
+  script: 
+    # Test using system libs
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
+      libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev
+    - rm -rf build && mkdir build
+    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
+    - make -sC build -j$(nproc)
+    - make check -sC build
+    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+  except:
+    - website
+    - /^debian.*$/
+
 test:archlinux:
   stage: test
   image: archlinux:latest
@@ -165,7 +165,7 @@ test:archlinux:
 #
 coverage:
   stage: coverage
-  image: ubuntu:20.04
+  image: ubuntu:22.04
   script: 
     # Install coverage tools
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends lcov zip
@@ -189,26 +189,6 @@ coverage:
 # ┣━┛┣━┫┃  ┣┻┓┣━┫┃╺┓┣╸ 
 # ╹  ╹ ╹┗━╸╹ ╹╹ ╹┗━┛┗━╸
 #
-package:debian:20.04:
-  stage: deploy
-  image: ubuntu:20.04
-  script:
-    # Build package
-    - ./make_deps.sh
-    - rm -rf build && mkdir build && cd build
-    - cmake -DBUILD_GENERIC_ARCH=ON -DWITH_LTO=ON -DCMAKE_INSTALL_PREFIX=/usr ..
-    - make -j$(nproc)
-    - make package
-    - mv *.deb ../
-  only:
-    - tags
-    - master
-  artifacts:
-    name: "splash_${CI_BUILD_REF_NAME}"
-    paths:
-      - "*.deb"
-      - "*.tar.bz2"
-
 package:debian:22.04:
   stage: deploy
   image: ubuntu:22.04
@@ -229,9 +209,29 @@ package:debian:22.04:
       - "*.deb"
       - "*.tar.bz2"
 
+package:debian:23.10:
+  stage: deploy
+  image: ubuntu:23.10
+  script:
+    # Build package
+    - ./make_deps.sh
+    - rm -rf build && mkdir build && cd build
+    - cmake -DBUILD_GENERIC_ARCH=ON -DWITH_LTO=ON -DCMAKE_INSTALL_PREFIX=/usr ..
+    - make -j$(nproc)
+    - make package
+    - mv *.deb ../
+  only:
+    - tags
+    - master
+  artifacts:
+    name: "splash_${CI_BUILD_REF_NAME}"
+    paths:
+      - "*.deb"
+      - "*.tar.bz2"
+
 package:blender_addon:
   stage: deploy
-  image: ubuntu:20.04
+  image: ubuntu:22.04
   before_script:
     - apt update -qq
     - DEBIAN_FRONTEND=noninteractive apt install -y git git-lfs zip cmake build-essential pkg-config
@@ -278,7 +278,7 @@ include:
 #
 static_analysis:
   stage: test
-  image: ubuntu:20.04
+  image: ubuntu:22.04
   script:
     - git submodule update --init
     - ./make_deps.sh
@@ -308,7 +308,7 @@ static_analysis:
 #
 pages:
   stage: deploy
-  image: ubuntu:20.04
+  image: ubuntu:22.04
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
   script:

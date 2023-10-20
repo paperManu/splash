@@ -1028,7 +1028,9 @@ RgbValue ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum()
     for (auto& params : _calibrationParams)
         params.whiteBalance = params.whitePoint / params.whitePoint[1];
 
-    int iteration = 1;
+#ifdef DEBUG
+    uint32_t iteration = 1;
+#endif
     while (delta > targetDelta)
     {
         // Get the current minimum luminance
@@ -1060,8 +1062,8 @@ RgbValue ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum()
 #ifdef DEBUG
         Log::get() << Log::DEBUGGING << "ColorCalibrator::" << __FUNCTION__ << " - White balance at iteration " << iteration << ": " << whiteBalance[0] << " / " << whiteBalance[1]
                    << " / " << whiteBalance[2] << " with a delta of " << delta * 100.f / newMinLum << "%" << Log::endl;
-#endif
         iteration++;
+#endif
     }
 
     Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Optimized white balance: " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2]
