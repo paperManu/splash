@@ -29,9 +29,11 @@ namespace Splash
 
 class GLESRenderer : public Renderer
 {
-    virtual void setApiSpecificFlags() const override final { glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API); }
-
+  public:
     virtual ApiVersion getApiSpecificVersion() const override final { return {{3, 2}, "OpenGL ES"}; }
+
+  private:
+    virtual void setApiSpecificFlags() const override final { glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API); }
 
     virtual void loadApiSpecificGlFunctions() const override final { gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress); }
 

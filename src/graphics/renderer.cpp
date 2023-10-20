@@ -1,32 +1,34 @@
 #include "./graphics/renderer.h"
 
+#include "./core/base_object.h"
+#include "./core/graph_object.h"
+#include "./graphics/gl_window.h"
 #include "./graphics/gles_renderer.h"
+#include "./graphics/gpu_buffer.h"
 #include "./graphics/opengl_renderer.h"
+#include "./graphics/texture_image.h"
 
 namespace Splash
 {
 
 /*************/
-std::shared_ptr<Renderer> Renderer::fromApi(Renderer::Api api)
+std::unique_ptr<Renderer> Renderer::fromApi(Renderer::Api api)
 {
-    std::shared_ptr<Renderer> renderer;
     switch (api)
     {
     case Renderer::Api::GLES:
-        renderer = std::make_shared<GLESRenderer>();
+        return std::make_unique<GLESRenderer>();
         break;
     case Renderer::Api::OpenGL:
-        renderer = std::make_shared<OpenGLRenderer>();
+        return std::make_unique<OpenGLRenderer>();
         break;
+    default:
+        return {nullptr};
     }
-
-    // Can't return in the switch, the compiler complains about
-    // "control reaches end of non-void function".
-    return renderer;
 }
 
 /*************/
-std::shared_ptr<Renderer> Renderer::create(std::optional<Renderer::Api> api)
+std::unique_ptr<Renderer> Renderer::create(std::optional<Renderer::Api> api)
 {
     glfwSetErrorCallback(glfwErrorCallback);
 
@@ -37,7 +39,7 @@ std::shared_ptr<Renderer> Renderer::create(std::optional<Renderer::Api> api)
         return nullptr;
     }
 
-    const auto renderer = findGLVersion(api);
+    auto renderer = findGLVersion(api);
     if (!renderer)
     {
         Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to find a suitable GL version (OpenGL 4.5 or OpenGL ES 3.2)" << Log::endl;
@@ -172,7 +174,7 @@ void Renderer::init(const std::string& name)
 }
 
 /*************/
-bool Renderer::tryCreateContext(std::shared_ptr<Renderer> renderer)
+bool Renderer::tryCreateContext(const Renderer* renderer)
 {
     renderer->setApiSpecificFlags();
 
@@ -194,40 +196,41 @@ bool Renderer::tryCreateContext(std::shared_ptr<Renderer> renderer)
 }
 
 /*************/
-std::shared_ptr<Renderer> Renderer::findCompatibleApi()
+std::unique_ptr<Renderer> Renderer::findCompatibleApi()
 {
     Log::get() << Log::MESSAGE << "No rendering API specified, will try finding a compatible one" << Log::endl;
 
-    const std::vector<std::shared_ptr<Renderer>> renderers = {std::make_shared<OpenGLRenderer>(), std::make_shared<GLESRenderer>()};
-
-    for (auto& renderer : renderers)
+    if (auto renderer = std::make_unique<OpenGLRenderer>(); tryCreateContext(renderer.get()))
     {
-        Log::get() << Log::MESSAGE << "Trying API: " << renderer->getApiSpecificVersion().toString() << Log::endl;
-        if (tryCreateContext(renderer))
-        {
-            Log::get() << Log::MESSAGE << "Context created succesfully!" << Log::endl;
-            return renderer;
-        }
+        Log::get() << Log::MESSAGE << "Context " << renderer->getApiSpecificVersion().toString() << " created successfully!" << Log::endl;
+        return renderer;
+    }
+    else if (auto renderer = std::make_unique<GLESRenderer>(); tryCreateContext(renderer.get()))
+    {
+        Log::get() << Log::MESSAGE << "Context " << renderer->getApiSpecificVersion().toString() << " created successfully!" << Log::endl;
+        return renderer;
     }
 
     Log::get() << Log::MESSAGE << "Failed to create a context with any rendering API!" << Log::endl;
-    return {};
+    return {nullptr};
 }
 
 /*************/
-std::shared_ptr<Renderer> Renderer::findGLVersion(std::optional<Renderer::Api> api)
+std::unique_ptr<Renderer> Renderer::findGLVersion(std::optional<Renderer::Api> api)
 {
     if (api)
     {
         auto renderer = Renderer::fromApi(api.value());
 
-        if (tryCreateContext(renderer))
+        if (tryCreateContext(renderer.get()))
             return renderer;
         else
-            return {};
+            return {nullptr};
     }
     else
+    {
         return findCompatibleApi();
+    }
 }
 
 /*************/

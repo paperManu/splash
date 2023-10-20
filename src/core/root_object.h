@@ -38,7 +38,6 @@
 #include "./core/graph_object.h"
 #include "./core/name_registry.h"
 #include "./core/tree.h"
-#include "./graphics/renderer.h"
 #include "./network/link.h"
 #include "./utils/dense_map.h"
 
@@ -239,11 +238,6 @@ class RootObject : public BaseObject
      */
     void signalBufferObjectUpdated();
 
-    std::shared_ptr<Renderer> getRenderer()
-    {
-        return _renderer;
-    }
-
   protected:
     Context _context{};
 
@@ -268,8 +262,7 @@ class RootObject : public BaseObject
     std::atomic_bool _objectsCurrentlyUpdated{false};               //!< Prevents modification of objects from multiple places at the same time
     DenseMap<std::string, std::shared_ptr<GraphObject>> _objects{}; //!< Map of all the objects
 
-    std::unique_ptr<Link> _link{};                               //!< Link object for communicatin between World and Scene
-    static inline std::shared_ptr<Renderer> _renderer = nullptr; // Must be static due to usage inside static functions in Scene.
+    std::unique_ptr<Link> _link{}; //!< Link object for communicatin between World and Scene
 
     /**
      * Wait for a BufferObject update. This does not prevent spurious wakeups.

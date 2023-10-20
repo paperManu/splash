@@ -416,8 +416,8 @@ void Factory::registerObjects()
     _objectBook["texture_image"] = Page(
         [&](RootObject* root) {
             // Root must exist for the renderer to work (indicates normal operation, root is null for tests)
-            if (root)
-                return std::dynamic_pointer_cast<GraphObject>(root->getRenderer()->createTexture_Image(root));
+            if (_scene)
+                return std::dynamic_pointer_cast<GraphObject>(_scene->getRenderer()->createTexture_Image(root));
 
             return std::shared_ptr<GraphObject>(nullptr);
         },

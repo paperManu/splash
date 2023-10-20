@@ -26,12 +26,15 @@
 #define SPLASH_GRAPH_OBJECT_H
 
 #include "./core/base_object.h"
+#include "./graphics/renderer.h"
 #include "./utils/dense_set.h"
 
 namespace Splash
 {
 
+class Renderer;
 class RootObject;
+class Scene;
 
 /*************/
 class GraphObject : public BaseObject
@@ -267,7 +270,10 @@ class GraphObject : public BaseObject
 
     bool _isConnectedToRemote{false}; //!< True if the object gets data from a World object
 
-    RootObject* _root;                                      //!< Root object, Scene or World
+    RootObject* _root;   //!< Root object, Scene or World
+    Scene* _scene;       //!< Pointer to the Scene, if any
+    Renderer* _renderer; //!< Pointer to the graphic renderer
+
     std::vector<std::weak_ptr<GraphObject>> _linkedObjects; //!< Linked objects
 
     /**

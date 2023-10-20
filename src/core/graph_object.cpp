@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "./core/root_object.h"
+#include "./core/scene.h"
 
 namespace Splash
 {
@@ -13,6 +14,12 @@ GraphObject::GraphObject(RootObject* root)
 {
     initializeTree();
     registerAttributes();
+
+    _scene = dynamic_cast<Scene*>(root);
+    if (_scene != nullptr)
+        _renderer = _scene->getRenderer();
+    else
+        _renderer = nullptr;
 }
 
 /*************/

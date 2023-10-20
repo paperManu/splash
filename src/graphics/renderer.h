@@ -25,15 +25,13 @@
 #include <string>
 #include <string_view>
 
-#include "./core/base_object.h"
-#include "./core/graph_object.h"
-#include "./graphics/gl_window.h"
-#include "./graphics/gpu_buffer.h"
 #include "./utils/log.h"
 
 namespace Splash
 {
 
+class GlWindow;
+class GpuBuffer;
 class RootObject;
 class Texture_Image;
 
@@ -59,8 +57,8 @@ class Renderer
         GLES
     };
 
-    static std::shared_ptr<Renderer> fromApi(Renderer::Api api);
-    static std::shared_ptr<Renderer> create(std::optional<Renderer::Api> api);
+    static std::unique_ptr<Renderer> fromApi(Renderer::Api api);
+    static std::unique_ptr<Renderer> create(std::optional<Renderer::Api> api);
 
     virtual ~Renderer() = default;
 
@@ -76,6 +74,11 @@ class Renderer
      *  Initializes glfw, initializes the graphics API, and creates a window.
      */
     void init(const std::string& name);
+
+    /**
+     * \return A simple struct containing the major and minor OpenGL versions, along with a string name.
+     */
+    virtual ApiVersion getApiSpecificVersion() const = 0;
 
     /**
      * \return Returns the version as a pair of {MAJOR, MINOR}
@@ -123,11 +126,6 @@ class Renderer
     virtual void setApiSpecificFlags() const = 0;
 
     /**
-     * \return A simple struct containing the major and minor OpenGL versions, along with a string name.
-     */
-    virtual ApiVersion getApiSpecificVersion() const = 0;
-
-    /**
      * \return Calls the appropriate loader for each API. Calls `gladLoadGLES2Loader` for OpenGL ES, and `gladLoadGLLoader`. Note that calling an incorrect loader might lead to
      * segfaults due to API specific function not getting loaded, leaving the pointers as null.
      */
@@ -151,20 +149,20 @@ class Renderer
      * If `api` is none, tries OpenGL 4.5, followed by GLES 3.2. This can also fail if the device does not support either.
      * \return a specific renderer implementation if creating a context succeeds, nullptr if it fails.
      */
-    static std::shared_ptr<Renderer> findGLVersion(std::optional<Renderer::Api> api);
+    static std::unique_ptr<Renderer> findGLVersion(std::optional<Renderer::Api> api);
 
     /*
      * Loops through a list of predetermined renderers with different APIs.
      * \return The first  renderer that works.
      */
-    static std::shared_ptr<Renderer> findCompatibleApi();
+    static std::unique_ptr<Renderer> findCompatibleApi();
 
     /**
      * Creates a hidden test GLFW window with the given renderer, the renderer sets window flags and hints specific to the API it implements.
      * Can fail if the given renderer's API is not supported. For example: creating an OpenGL 4.5 context on the raspberry pi which doesn't support it.
      * \return true if a context was successfully created, false otherwise.
      */
-    static bool tryCreateContext(std::shared_ptr<Renderer> renderer);
+    static bool tryCreateContext(const Renderer* renderer);
 };
 
 } // namespace Splash

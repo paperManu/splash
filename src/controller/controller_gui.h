@@ -48,8 +48,6 @@
 namespace Splash
 {
 
-class Scene;
-
 /*************/
 class Gui final : public ControllerObject
 {
@@ -221,7 +219,6 @@ class Gui final : public ControllerObject
 
     bool _isInitialized{false};
     std::shared_ptr<GlWindow> _glWindow;
-    Scene* _scene{nullptr};
     Window* _window{nullptr};
 
     std::unique_ptr<Framebuffer> _fbo{nullptr};

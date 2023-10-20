@@ -95,21 +95,20 @@ Scene::Scene(Context context)
 Scene::~Scene()
 {
     // No renderer, probably means we failed to init anyway so no clean up is needed.
-    if (!_renderer)
-        return;
-
-    // Cleanup every object
-    if (const auto mainWindow = _renderer->getMainWindow(); mainWindow)
+    if (_renderer)
     {
-        mainWindow->setAsCurrentContext();
-        std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex); // We don't want any friend to try accessing the objects
+        if (const auto mainWindow = _renderer->getMainWindow(); mainWindow)
+        {
+            mainWindow->setAsCurrentContext();
+            std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex); // We don't want any friend to try accessing the objects
 
-        // Free objects cleanly
-        for (auto& obj : _objects)
-            obj.second.reset();
-        _objects.clear();
+            // Free objects manually
+            for (auto& obj : _objects)
+                obj.second.reset();
+            _objects.clear();
 
-        mainWindow->releaseContext();
+            mainWindow->releaseContext();
+        }
     }
 
 #ifdef DEBUG

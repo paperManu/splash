@@ -47,7 +47,6 @@ Gui::Gui(std::shared_ptr<GlWindow> w, RootObject* s)
     _type = "gui";
     _renderingPriority = Priority::GUI;
 
-    _scene = dynamic_cast<Scene*>(s);
     if (w.get() == nullptr || _scene == nullptr)
         return;
 
@@ -111,7 +110,7 @@ void Gui::loadIcon()
         return;
     }
 
-    _splashLogo = _root->getRenderer()->createTexture_Image(_scene);
+    _splashLogo = _renderer->createTexture_Image(_scene);
     _splashLogo->linkTo(image);
     _splashLogo->update();
 }

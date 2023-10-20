@@ -2,7 +2,6 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "./graphics/renderer.h"
 #include "./utils/scope_guard.h"
 
 using namespace glm;

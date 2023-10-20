@@ -14,13 +14,13 @@ Framebuffer::Framebuffer(RootObject* root)
 
     if (!_depthTexture)
     {
-        _depthTexture = root->getRenderer()->createTexture_Image(_root, _width, _height, "D", _multisample);
+        _depthTexture = _renderer->createTexture_Image(_root, _width, _height, "D", _multisample);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
 
     if (!_colorTexture)
     {
-        _colorTexture = root->getRenderer()->createTexture_Image(_root);
+        _colorTexture = _renderer->createTexture_Image(_root);
         _colorTexture->setAttribute("clampToEdge", {true});
         _colorTexture->setAttribute("filtering", {false});
         _colorTexture->reset(_width, _height, "RGBA", _multisample);

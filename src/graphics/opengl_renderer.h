@@ -29,14 +29,16 @@ namespace Splash
 
 class OpenGLRenderer : public Renderer
 {
+  public:
+    virtual ApiVersion getApiSpecificVersion() const override final { return {{4, 5}, "OpenGL"}; }
+
+  private:
     virtual void setApiSpecificFlags() const override final
     {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
         glfwWindowHint(GLFW_DEPTH_BITS, 24);
     }
-
-    virtual ApiVersion getApiSpecificVersion() const override final { return {{4, 5}, "OpenGL"}; }
 
     virtual void loadApiSpecificGlFunctions() const override final { gladLoadGLLoader((GLADloadproc)glfwGetProcAddress); };
 
