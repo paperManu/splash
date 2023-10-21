@@ -53,6 +53,13 @@ if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
       image/image.cpp
       PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers"
   )
+
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set_source_files_properties(
+        image/image.cpp
+        PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-stringop-overflow"
+    )
+  endif()
 endif()
 
 #
