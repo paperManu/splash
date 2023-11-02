@@ -25,6 +25,7 @@
 #include <string>
 #include <string_view>
 
+#include "./graphics/gl_window.h"
 #include "./utils/log.h"
 
 namespace Splash
@@ -33,7 +34,9 @@ namespace Splash
 class GlWindow;
 class GpuBuffer;
 class RootObject;
+class BaseObject;
 class Texture_Image;
+class GpuBuffer;
 
 struct ApiVersion
 {
@@ -55,6 +58,11 @@ class Renderer
     {
         OpenGL,
         GLES
+    };
+
+    struct GlMsgCallbackData
+    {
+        std::optional<std::string> name, type;
     };
 
     static std::unique_ptr<Renderer> fromApi(Renderer::Api api);
@@ -105,7 +113,7 @@ class Renderer
     std::shared_ptr<GlWindow> getMainWindow() { return _mainWindow; }
 
     /**
-     * Constructor for OpenGLTexture_Image and GLESTexture_Image.
+     * Create a new Texture_Image
      * \param root Root object
      * \param width Width
      * \param height Height
@@ -113,11 +121,39 @@ class Renderer
      * \param data Pointer to data to use to initialize the texture
      * \param multisample Sample count for MSAA
      * \param cubemap True to request a cubemap
+     * \return Return a shared pointer to a Texture_Image
      */
-    virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const = 0;
     std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, int multisample = 0, bool cubemap = false) const;
 
+    /**
+     * Create a new Texture_Image
+     * \param root Root object
+     * \return Return a shared pointer to a default Texture_Image
+     */
+    virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const = 0;
+
+    /**
+     * Create a new GpuBuffer
+     * \param elementSize Base element size
+     * \param type Element type
+     * \param usage Usage hint for the buffer
+     * \param size Size of the buffer
+     * \param data Data to upload to the buffer, if any
+     * \return Return a shared pointer to the created GpuBuffer
+     */
     virtual std::shared_ptr<GpuBuffer> createGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data) const = 0;
+
+    /**
+     * Get a pointer to the data to be sent to the GL callback
+     * \return A raw pointer to the GL callback data
+     */
+    const Renderer::GlMsgCallbackData* getGlMsgCallbackDataPtr();
+
+    /**
+     * Set the user data for the GL callback
+     * \param data User data for the callback
+     */
+    static void setGlMsgCallbackData(const Renderer::GlMsgCallbackData* data) { glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<const void*>(data)); }
 
   protected:
     /**
@@ -134,8 +170,11 @@ class Renderer
   private:
     bool _isInitialized = false;
     std::shared_ptr<GlWindow> _mainWindow;
-
     std::string _glVendor, _glRenderer;
+
+    // Since we don't inherit from BaseObject (because I think it's a bit to heavy for a renderer. (Please ignore my use of virtual functions :P)),
+    // we have to re-declare some variable to hold the data we'll pass to the callback in this class.
+    Renderer::GlMsgCallbackData _glMsgCallbackData;
 
     /**
      *  Callback for GLFW errors

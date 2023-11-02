@@ -177,12 +177,8 @@ void Filter::updateSizeWrtRatio()
 void Filter::render()
 {
 #ifdef DEBUGGL
-    glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<void*>(this));
-
-    OnScopeExit
-    {
-        glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<void*>(_root));
-    };
+    Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
+    OnScopeExit { Renderer::setGlMsgCallbackData(_root->getGlMsgCallbackDataPtr()); };
 #endif
 
     // Intialize FBO, textures and everything OpenGL

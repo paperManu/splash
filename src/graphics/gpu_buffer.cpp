@@ -117,11 +117,11 @@ std::shared_ptr<GpuBuffer> GpuBuffer::copyBuffer() const
     std::shared_ptr<GpuBuffer> newBuffer;
     if (const auto ptr = dynamic_cast<const GLESGpuBuffer*>(this))
     {
-        return std::make_shared<GLESGpuBuffer>(this->_elementSize, this->_type, this->_usage, this->_size, nullptr);
+        return std::make_shared<GLESGpuBuffer>(_elementSize, _type, _usage, _size, nullptr);
     }
     else if (const auto ptr = dynamic_cast<const OpenGLGpuBuffer*>(this))
     {
-        return std::make_shared<OpenGLGpuBuffer>(this->_elementSize, this->_type, this->_usage, this->_size, nullptr);
+        return std::make_shared<OpenGLGpuBuffer>(_elementSize, _type, _usage, _size, nullptr);
     }
     else
     {

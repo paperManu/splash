@@ -36,6 +36,7 @@
 #include "./core/constants.h"
 
 #include "./core/attribute.h"
+#include "./graphics/renderer.h"
 #include "./utils/dense_map.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
@@ -147,6 +148,8 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      */
     virtual void runTasks();
 
+    virtual const Renderer::GlMsgCallbackData* getGlMsgCallbackDataPtr();
+
   protected:
     std::string _name{""};                               //!< Object name
     DenseMap<std::string, Attribute> _attribFunctions{}; //!< Map of all attributes
@@ -159,6 +162,8 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
 
     std::list<std::function<void()>> _taskQueue{};
     std::recursive_mutex _taskMutex;
+
+    Renderer::GlMsgCallbackData _glMsgCallbackData;
 
     struct PeriodicTask
     {

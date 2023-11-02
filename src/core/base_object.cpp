@@ -273,4 +273,11 @@ void BaseObject::runTasks()
         }
     }
 }
+
+/*************/
+const Renderer::GlMsgCallbackData* BaseObject::getGlMsgCallbackDataPtr() {
+    _glMsgCallbackData.name = getName();
+    return &_glMsgCallbackData;
+}
+
 } // namespace Splash

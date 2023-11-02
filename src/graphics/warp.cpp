@@ -126,12 +126,8 @@ void Warp::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 void Warp::render()
 {
 #ifdef DEBUGGL
-    glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<void*>(this));
-
-    OnScopeExit
-    {
-        glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<void*>(_root));
-    };
+    Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
+    OnScopeExit { Renderer::setGlMsgCallbackData(_root->getGlMsgCallbackDataPtr()); };
 #endif
 
     std::shared_ptr<Texture> input(nullptr);

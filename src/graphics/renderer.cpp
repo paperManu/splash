@@ -61,7 +61,7 @@ std::unique_ptr<Renderer> Renderer::create(std::optional<Renderer::Api> api)
 /*************/
 void Renderer::glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* userParam)
 {
-    const auto userParamsAsObj = reinterpret_cast<const BaseObject*>(userParam);
+    const auto callbackData = reinterpret_cast<const Renderer::GlMsgCallbackData*>(userParam);
 
     std::string typeString{"GL::other"};
     std::string messageString;
@@ -113,14 +113,13 @@ void Renderer::glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLen
         // break;
     }
 
-    if (userParam == nullptr)
+    if (callbackData == nullptr)
         Log::get() << logType << messageString << " - Object: unknown"
                    << " - " << message << Log::endl;
-    else if (const auto userParamsAsGraphObject = dynamic_cast<const GraphObject*>(userParamsAsObj); userParamsAsGraphObject != nullptr)
-        Log::get() << logType << messageString << " - Object " << userParamsAsGraphObject->getName() << " of type " << userParamsAsGraphObject->getType() << " - " << message
-                   << Log::endl;
-    else
-        Log::get() << logType << messageString << " - Object " << userParamsAsObj->getName() << " - " << message << Log::endl;
+    else if (callbackData->name && callbackData->type)
+        Log::get() << logType << messageString << " - Object " << callbackData->name.value() << " of type " << callbackData->type.value() << " - " << message << Log::endl;
+    else if (callbackData->name)
+        Log::get() << logType << messageString << " - Object " << callbackData->name.value() << " - " << message << Log::endl;
 }
 
 /*************/
@@ -151,7 +150,7 @@ void Renderer::init(const std::string& name)
 
 // Activate GL debug messages
 #ifdef DEBUGGL
-    glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(this));
+    Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
 #endif
@@ -240,6 +239,14 @@ std::shared_ptr<Texture_Image> Renderer::createTexture_Image(RootObject* root, i
     tex->reset(width, height, pixelFormat, multisample, cubemap);
 
     return tex;
+}
+
+/*************/
+const Renderer::GlMsgCallbackData* Renderer::getGlMsgCallbackDataPtr()
+{
+    _glMsgCallbackData.name = getApiSpecificVersion().toString();
+    _glMsgCallbackData.type = "Renderer";
+    return &_glMsgCallbackData;
 }
 
 }; // namespace Splash

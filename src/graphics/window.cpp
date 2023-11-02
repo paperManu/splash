@@ -301,12 +301,8 @@ void Window::updateSizeAndPos()
 void Window::render()
 {
 #ifdef DEBUGGL
-    glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<void*>(this));
-
-    OnScopeExit
-    {
-        glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<void*>(_root));
-    };
+    Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
+    OnScopeExit { Renderer::setGlMsgCallbackData(_root->getGlMsgCallbackDataPtr()); };
 #endif
 
     // Update the window position and size

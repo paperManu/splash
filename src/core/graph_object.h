@@ -255,6 +255,8 @@ class GraphObject : public BaseObject
      */
     virtual void render() {}
 
+    virtual const Renderer::GlMsgCallbackData* getGlMsgCallbackDataPtr() override;
+
   protected:
     Category _category{Category::MISC};   //!< Object category, updated by the factory
     std::string _type{"baseobject"};      //!< Internal type

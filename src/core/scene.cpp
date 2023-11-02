@@ -598,7 +598,7 @@ std::shared_ptr<GlWindow> Scene::getNewSharedWindow(const std::string& name)
 
     glWindow->setAsCurrentContext();
 #ifdef DEBUGGL
-    glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<void*>(this));
+    Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
 #endif
