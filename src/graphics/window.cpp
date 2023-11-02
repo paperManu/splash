@@ -2,10 +2,12 @@
 
 #include <functional>
 
-#include <glm/gtc/matrix_transform.hpp>
+#include "GLFW/glfw3.h"
 
 #include "./controller/controller_gui.h"
+#include "./core/root_object.h"
 #include "./core/scene.h"
+#include "./graphics/api/window_gfx_impl.h"
 #include "./graphics/camera.h"
 #include "./graphics/geometry.h"
 #include "./graphics/object.h"
@@ -50,10 +52,9 @@ Window::Window(RootObject* root)
 
     if (auto scene = dynamic_cast<Scene*>(root))
     {
-        auto w = scene->getNewSharedWindow();
-        if (w.get() == nullptr)
-            return;
-        _window = w;
+        _gfxImpl = scene->getRenderer()->createWindowGfxImpl();
+        _gfxImpl->init(scene);
+
         updateSwapInterval(scene->getSwapInterval());
     }
 
@@ -69,8 +70,8 @@ Window::Window(RootObject* root)
     showCursor(false);
 
     // Get the default window size and position
-    glfwGetWindowPos(_window->get(), &_windowRect[0], &_windowRect[1]);
-    glfwGetFramebufferSize(_window->get(), &_windowRect[2], &_windowRect[3]);
+    glfwGetWindowPos(_gfxImpl->getGlfwWindow(), &_windowRect[0], &_windowRect[1]);
+    glfwGetFramebufferSize(_gfxImpl->getGlfwWindow(), &_windowRect[2], &_windowRect[3]);
 }
 
 /*************/
@@ -82,9 +83,6 @@ Window::~Window()
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Window::~Window - Destructor" << Log::endl;
 #endif
-
-    glDeleteFramebuffers(1, &_renderFbo);
-    glDeleteFramebuffers(1, &_readFbo);
 }
 
 /*************/
@@ -286,8 +284,8 @@ void Window::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 void Window::updateSizeAndPos()
 {
     int sizeAndPos[4];
-    glfwGetWindowPos(_window->get(), &sizeAndPos[0], &sizeAndPos[1]);
-    glfwGetFramebufferSize(_window->get(), &sizeAndPos[2], &sizeAndPos[3]);
+    glfwGetWindowPos(_gfxImpl->getGlfwWindow(), &sizeAndPos[0], &sizeAndPos[1]);
+    glfwGetFramebufferSize(_gfxImpl->getGlfwWindow(), &sizeAndPos[2], &sizeAndPos[3]);
 
     for (size_t i = 0; i < 4; ++i)
         if (sizeAndPos[i] != _windowRect[i])
@@ -301,8 +299,12 @@ void Window::updateSizeAndPos()
 void Window::render()
 {
 #ifdef DEBUGGL
-    Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
-    OnScopeExit { Renderer::setGlMsgCallbackData(_root->getGlMsgCallbackDataPtr()); };
+    _gfxImpl->setDebugData(reinterpret_cast<void*>(this));
+
+    OnScopeExit
+    {
+        _gfxImpl->setDebugData(reinterpret_cast<void*>(_root));
+    };
 #endif
 
     // Update the window position and size
@@ -311,34 +313,25 @@ void Window::render()
     // Update the FBO configuration if needed
     if (_resized)
     {
-        setupFBOs();
+        _gfxImpl->setupFBOs(_scene, _windowRect);
+
+        // It has to be created in the context where it is used, so its (re)creation will be triggered
+        // in Window::swapBuffers if needed, depending on the following flag
+        _renderTextureUpdated = true;
         _resized = false;
     }
 
-    glViewport(0, 0, _windowRect[2], _windowRect[3]);
-
-#ifdef DEBUG
-    glGetError();
-#endif
-
-    glEnable(GL_BLEND);
-    glDisable(GL_DEPTH_TEST);
-    glBlendEquation(GL_FUNC_ADD);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
+    _gfxImpl->beginRender(_windowRect);
 
     // If we are in synchronization testing mode
     if (_swapSynchronizationTesting)
     {
-        glClearColor(_swapSynchronizationColor[0], _swapSynchronizationColor[1], _swapSynchronizationColor[2], _swapSynchronizationColor[3]);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        _gfxImpl->clearScreen(_swapSynchronizationColor, true);
     }
     // else, we draw the window normally
     else
     {
-        glClearColor(0.0, 0.0, 0.0, 1.0);
-        glClear(GL_COLOR_BUFFER_BIT);
+        _gfxImpl->clearScreen(glm::vec4(0.0, 0.0, 0.0, 1.0), false);
 
         auto layout = _layout;
         layout.push_front("_layout");
@@ -358,8 +351,7 @@ void Window::render()
         _screenGui->deactivate();
     }
 
-    glDeleteSync(_renderFence);
-    _renderFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    _gfxImpl->resetSyncFence();
     _swappableWindowsCount = 0; // Reset the window number
 
     // Resize the input textures accordingly to the window size.
@@ -373,6 +365,7 @@ void Window::render()
             if (_layout[j].as<int>() != value)
                 resize = false;
     }
+
     if (resize) // We don't do this if we are directly connected to a Texture (updated from an image)
     {
         for (auto& t : _inTextures)
@@ -396,169 +389,29 @@ void Window::render()
     }
     _backBufferTimestamp = timestamp;
 
-#ifdef DEBUG
-    GLenum error = glGetError();
-    if (error)
-        Log::get() << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the window: " << error << Log::endl;
-#endif
-
-    glDisable(GL_BLEND);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    _gfxImpl->endRender();
 
     return;
 }
 
 /*************/
-void Window::setupFBOs()
-{
-    // Render FBO
-    if (glIsFramebuffer(_renderFbo) == GL_FALSE)
-    {
-        glGenFramebuffers(1, &_renderFbo);
-    }
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
-
-    _depthTexture = _renderer->createTexture_Image(_root, _windowRect[2], _windowRect[3], "D");
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
-
-    _colorTexture = _renderer->createTexture_Image(_root);
-    _colorTexture->setAttribute("filtering", {false});
-    _colorTexture->reset(_windowRect[2], _windowRect[3], "RGBA");
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
-
-    GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    glDrawBuffers(1, fboBuffers);
-
-    const auto _status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
-    if (_status != GL_FRAMEBUFFER_COMPLETE)
-        Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing render framebuffer object: " << _status << Log::endl;
-#ifdef DEBUG
-    else
-        Log::get() << Log::DEBUGGING << "Window::" << __FUNCTION__ << " - Render framebuffer object successfully initialized" << Log::endl;
-#endif
-
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
-    // It has to be created in the context where it is used, so its (re)creation will be triggered
-    // in Window::swapBuffers if needed, depending on the following flag
-    _renderTextureUpdated = true;
-}
-
-/*************/
-/* Back to front buffer swap is done a bit differently than what is usually done
- * in most software. To understand why and how it works, you have to know that
- * with Xorg (which is for now the main target for the use of Splash), vertical
- * synchronization is done for each OpenGL context separately even when contexts
- * are shared. So for each context, the OpenGL driver has to wait for the vsync
- * to happen before being authorized to go forward.
- *
- * Splash can be configured to render to multiple windows, to multiple displays.
- * In this case what can happen is that one window blocks due to waiting for the
- * buffer swap, which may lead to missing the swap for the next window. Which will
- * then wait for the next one, and so on. In this context, all displays (screens
- * or projectors) are considered to have the same refresh rate, and ideally to
- * be synchronized.
- *
- * This means that buffer swapping has to be done manually. The following
- * swapBuffers() method is called for each window sequentially (in Scene::render()),
- * and overall here is what happens:
- * - the first window renders to the back buffer, and waits for the vertical sync
- * - all subsequent windows draw directly to the front buffer
- *
- * As the drawing in this method is merely a buffer copy, it is fast enough for
- * the subsequent windows to be rendered soon enough for the rendering to front
- * buffer to be invisible (as in, not producing any visible glitch). And the whole
- * rendering is then synchronized only once for all of Splash.
- *
- * Note that in the case where NVIDIA Quadro and Quadro sync cards are detected,
- * and that NVSwapGroups are available, all of this behavior is mostly disabled as
- * NVIDIA drivers take care of vertical synchronization correctly. So vertical
- * synchronization happens as usual in this case.
- */
 void Window::swapBuffers()
 {
-    _window->setAsCurrentContext();
-    glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
 
     // Only one window will wait for vblank, the others draws directly into front buffer
     const auto windowIndex = _swappableWindowsCount++;
 
-    // If this is the first window to be swapped, or NVSwapGroups are active,
-    // this window should be synchronized to the vertical sync. So we will draw to back buffer
-    const bool isWindowSynchronized = Scene::getHasNVSwapGroup() or windowIndex == 0;
-
-    // If the window is not synchronized, draw directly to front buffer
-    if (!isWindowSynchronized)
-    {
-        // Since we can't draw to the front buffer directly in OpenGL ES,
-        // we draw to the back buffer, then immediately present it
-        GLenum buffers[] = {GL_BACK};
-        glDrawBuffers(1, buffers);
-        glfwSwapBuffers(_window->get());
-    }
-
-    if (_srgb)
-        glEnable(GL_FRAMEBUFFER_SRGB);
-
-    // If the render texture specs have changed
-    if (_renderTextureUpdated)
-    {
-        if (_readFbo != 0)
-            glDeleteFramebuffers(1, &_readFbo);
-
-        glGenFramebuffers(1, &_readFbo);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, _readFbo);
-
-        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
-        const auto status = glCheckFramebufferStatus(GL_READ_FRAMEBUFFER);
-        if (status != GL_FRAMEBUFFER_COMPLETE)
-            Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing read framebuffer object: " << status << Log::endl;
-#ifdef DEBUG
-        else
-            Log::get() << Log::DEBUGGING << "Window::" << __FUNCTION__ << " - Read framebuffer object successfully initialized" << Log::endl;
-#endif
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-        _renderTextureUpdated = false;
-    }
-
-    // Copy the rendered texture to the back/front buffer
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, _readFbo);
-    glBlitFramebuffer(0, 0, _windowRect[2], _windowRect[3], 0, 0, _windowRect[2], _windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-
-    if (_srgb)
-        glDisable(GL_FRAMEBUFFER_SRGB);
-
-    if (isWindowSynchronized)
-    {
-        // If this window is synchronized, so we wait for the vsync and swap
-        // front and back buffers
-        glfwSwapBuffers(_window->get());
-    }
-    else
-    {
-        // If this window is not synchronized, we revert the draw buffer back
-        // to drawing to the back buffer
-        GLenum buffers[] = {GL_BACK};
-        glDrawBuffers(1, buffers);
-    }
+    _gfxImpl->swapBuffers(windowIndex, _srgb, _renderTextureUpdated, _windowRect);
 
     _frontBufferTimestamp = _backBufferTimestamp;
     _presentationDelay = Timer::getTime() - _frontBufferTimestamp;
-
-    _window->releaseContext();
 }
 
 /*************/
 void Window::showCursor(bool visibility)
 {
-    if (visibility)
-        glfwSetInputMode(_window->get(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    else
-        glfwSetInputMode(_window->get(), GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    const auto cursor = visibility ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN;
+    glfwSetInputMode(_gfxImpl->getGlfwWindow(), GLFW_CURSOR, cursor);
 }
 
 /*************/
@@ -657,20 +510,20 @@ void Window::closeCallback(GLFWwindow* /*win*/)
 /*************/
 void Window::setEventsCallbacks()
 {
-    glfwSetKeyCallback(_window->get(), Window::keyCallback);
-    glfwSetCharCallback(_window->get(), Window::charCallback);
-    glfwSetMouseButtonCallback(_window->get(), Window::mouseBtnCallback);
-    glfwSetCursorPosCallback(_window->get(), Window::mousePosCallback);
-    glfwSetScrollCallback(_window->get(), Window::scrollCallback);
-    glfwSetDropCallback(_window->get(), Window::pathdropCallback);
-    glfwSetWindowCloseCallback(_window->get(), Window::closeCallback);
+    glfwSetKeyCallback(_gfxImpl->getGlfwWindow(), Window::keyCallback);
+    glfwSetCharCallback(_gfxImpl->getGlfwWindow(), Window::charCallback);
+    glfwSetMouseButtonCallback(_gfxImpl->getGlfwWindow(), Window::mouseBtnCallback);
+    glfwSetCursorPosCallback(_gfxImpl->getGlfwWindow(), Window::mousePosCallback);
+    glfwSetScrollCallback(_gfxImpl->getGlfwWindow(), Window::scrollCallback);
+    glfwSetDropCallback(_gfxImpl->getGlfwWindow(), Window::pathdropCallback);
+    glfwSetWindowCloseCallback(_gfxImpl->getGlfwWindow(), Window::closeCallback);
 }
 
 /*************/
 bool Window::setProjectionSurface()
 {
-    _window->setAsCurrentContext();
-    glfwShowWindow(_window->get());
+    _gfxImpl->setAsCurrentContext();
+    glfwShowWindow(_gfxImpl->getGlfwWindow());
     glfwSwapInterval(_swapInterval);
 
 // Setup the projection surface
@@ -694,7 +547,7 @@ bool Window::setProjectionSurface()
         Log::get() << Log::WARNING << __FUNCTION__ << " - Error while creating the projection surface: " << error << Log::endl;
 #endif
 
-    _window->releaseContext();
+    _gfxImpl->releaseContext();
 
 #ifdef DEBUG
     return error == 0 ? true : false;
@@ -713,7 +566,7 @@ void Window::setWindowDecoration(bool hasDecoration)
     glfwWindowHint(GLFW_RESIZABLE, hasDecoration);
     glfwWindowHint(GLFW_DECORATED, hasDecoration);
     GLFWwindow* window;
-    window = glfwCreateWindow(_windowRect[2], _windowRect[3], ("Splash::" + _name).c_str(), 0, _window->getMainWindow());
+    window = glfwCreateWindow(_windowRect[2], _windowRect[3], ("Splash::" + _name).c_str(), 0, _gfxImpl->getMainWindow());
 
     // Reset hints to default ones
     glfwWindowHint(GLFW_RESIZABLE, true);
@@ -725,7 +578,7 @@ void Window::setWindowDecoration(bool hasDecoration)
         return;
     }
 
-    _window = std::make_shared<GlWindow>(window, _window->getMainWindow());
+    _gfxImpl->updateGlfwWindow(window);
     updateSwapInterval(_swapInterval);
     _resized = true;
 
@@ -738,35 +591,35 @@ void Window::setWindowDecoration(bool hasDecoration)
 /*************/
 void Window::updateSwapInterval(int swapInterval)
 {
-    if (!_window)
+    if (!_gfxImpl->windowExists())
         return;
 
-    _window->setAsCurrentContext();
+    _gfxImpl->setAsCurrentContext();
 
     _swapInterval = std::max<int>(-1, swapInterval);
     glfwSwapInterval(_swapInterval);
 
-    _window->releaseContext();
+    _gfxImpl->releaseContext();
 }
 
 /*************/
 void Window::updateWindowShape()
 {
-    if (!_window)
+    if (!_gfxImpl || !_gfxImpl->windowExists())
         return;
 
     bool wasGlfwContextEnabled = true;
-    if (!_window->isCurrentContext())
+    if (!_gfxImpl->isCurrentContext())
     {
         wasGlfwContextEnabled = false;
-        _window->setAsCurrentContext();
+        _gfxImpl->setAsCurrentContext();
     }
 
-    glfwSetWindowPos(_window->get(), _windowRect[0], _windowRect[1]);
-    glfwSetWindowSize(_window->get(), _windowRect[2], _windowRect[3]);
+    glfwSetWindowPos(_gfxImpl->getGlfwWindow(), _windowRect[0], _windowRect[1]);
+    glfwSetWindowSize(_gfxImpl->getGlfwWindow(), _windowRect[2], _windowRect[3]);
 
     if (!wasGlfwContextEnabled)
-        _window->releaseContext();
+        _gfxImpl->releaseContext();
 }
 
 /*************/

@@ -22,26 +22,23 @@
  * Contains OpenGL 4.5 specific functionality for textures.
  */
 
-#ifndef SPLASH_OPENGL_TEXTURE_IMAGE_H
-#define SPLASH_OPENGL_TEXTURE_IMAGE_H
+#ifndef SPLASH_GFX_OPENGL_TEXTURE_IMAGE_H
+#define SPLASH_GFX_OPENGL_TEXTURE_IMAGE_H
 
-#include "./graphics/texture_image.h"
+#include "./graphics/api/gl_base_texture_image_impl.h"
 
-namespace Splash
+namespace Splash::gfx::opengl
 {
 
-class OpenGLTexture_Image final : public Texture_Image
+class Texture_ImageImpl final : public GlBaseTexture_ImageImpl
 {
   public:
-    explicit OpenGLTexture_Image(RootObject* root)
-        : Texture_Image(root)
-    {
-    }
+    explicit Texture_ImageImpl() = default;
 
-    OpenGLTexture_Image(const OpenGLTexture_Image&) = delete;
-    OpenGLTexture_Image& operator=(const OpenGLTexture_Image&) = delete;
-    OpenGLTexture_Image(OpenGLTexture_Image&&) = delete;
-    OpenGLTexture_Image& operator=(OpenGLTexture_Image&&) = delete;
+    Texture_ImageImpl(const Texture_ImageImpl&) = delete;
+    Texture_ImageImpl& operator=(const Texture_ImageImpl&) = delete;
+    Texture_ImageImpl(Texture_ImageImpl&&) = delete;
+    Texture_ImageImpl& operator=(Texture_ImageImpl&&) = delete;
 
     virtual std::unordered_map<std::string, InitTuple> getPixelFormatToInitTable() const final;
 
@@ -69,6 +66,6 @@ class OpenGLTexture_Image final : public Texture_Image
     GLubyte* _pbosPixels[2];
 };
 
-} // namespace Splash
+} // namespace Splash::gfx::opengl
 
 #endif

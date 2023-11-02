@@ -27,6 +27,7 @@
 
 #include "./graphics/gl_window.h"
 #include "./utils/log.h"
+#include "graphics/api/window_gfx_impl.h"
 
 namespace Splash
 {
@@ -112,6 +113,7 @@ class Renderer
      */
     std::shared_ptr<GlWindow> getMainWindow() { return _mainWindow; }
 
+  public:
     /**
      * Create a new Texture_Image
      * \param root Root object
@@ -154,6 +156,11 @@ class Renderer
      * \param data User data for the callback
      */
     static void setGlMsgCallbackData(const Renderer::GlMsgCallbackData* data) { glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<const void*>(data)); }
+
+    /**
+     * \return A class containing the graphics API specific details of `Splash::Window`.
+     */
+    virtual std::unique_ptr<gfx::WindowGfxImpl> createWindowGfxImpl() const = 0;
 
   protected:
     /**

@@ -1,13 +1,14 @@
-#include "./graphics/gles_texture_image.h"
+#include "./graphics/api/gles/texture_image_impl.h"
 
-namespace Splash
+namespace Splash::gfx::gles
 {
 
 /*************/
-std::unordered_map<std::string, Texture_Image::InitTuple> GLESTexture_Image::getPixelFormatToInitTable() const
+std::unordered_map<std::string, GlBaseTexture_ImageImpl::InitTuple> Texture_ImageImpl::getPixelFormatToInitTable() const
 {
     // Lists the supported combinations of internal formats, formats, and texture types: https://docs.gl/es3/glTexStorage2D
-    return {// OpenGL ES doesn't support 16 bpc (bit per channel) RGBA textures, so we treat them as 8 bpc.
+    return {
+        // OpenGL ES doesn't support 16 bpc (bit per channel) RGBA textures, so we treat them as 8 bpc.
         //
         // OpenGL 4 vs ES 3.1: GL_UNSIGNED_INT_8_8_8_8_REV seems to be unavailable
         // The docs say to use GL_RGBA8, GL_RGBA, and GL_UNSIGNED_BYTE for the internal format,
@@ -19,34 +20,17 @@ std::unordered_map<std::string, Texture_Image::InitTuple> GLESTexture_Image::get
         {"RGB", {3, 32, ImageBufferSpec::Type::UINT8, "RGB", GL_RGBA8, GL_RGB, GL_UNSIGNED_BYTE}},
         {"R16", {1, 16, ImageBufferSpec::Type::UINT16, "R", GL_R16, GL_RED, GL_UNSIGNED_SHORT}},
 
-        {"YUYV",
-            {
-                3,
-                16,
-                ImageBufferSpec::Type::UINT8,
-                _pixelFormat,
-                GL_RG8,
-                GL_RG,
-                GL_UNSIGNED_SHORT,
-            }},
-        {"UYVY",
-            {
-                3,
-                16,
-                ImageBufferSpec::Type::UINT8,
-                _pixelFormat,
-                GL_RG8,
-                GL_RG,
-                GL_UNSIGNED_SHORT,
-            }},
+        {"YUYV", {3, 16, ImageBufferSpec::Type::UINT8, "YUUV", GL_RG8, GL_RG, GL_UNSIGNED_SHORT}},
+        {"UYVY", {3, 16, ImageBufferSpec::Type::UINT8, "UYVY", GL_RG8, GL_RG, GL_UNSIGNED_SHORT}},
 
         // OpenGL ES supports only GL_DEPTH_COMPONENT32F for float values,
         // even though we're using 24bit float value, this works fine.
-        {"D", {1, 24, ImageBufferSpec::Type::FLOAT, "R", GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT}}};
+        {"D", {1, 24, ImageBufferSpec::Type::FLOAT, "R", GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT}},
+    };
 }
 
 /*************/
-void GLESTexture_Image::bind()
+void Texture_ImageImpl::bind()
 {
     glGetIntegerv(GL_ACTIVE_TEXTURE, &_activeTexture);
     glActiveTexture(_activeTexture);
@@ -54,24 +38,23 @@ void GLESTexture_Image::bind()
 }
 
 /*************/
-void GLESTexture_Image::unbind()
+void Texture_ImageImpl::unbind()
 {
 #ifdef DEBUG
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, 0);
 #endif
-    _lastDrawnTimestamp = Timer::getTime();
 }
 
 /*************/
-void GLESTexture_Image::generateMipmap() const
+void Texture_ImageImpl::generateMipmap() const
 {
     glBindTexture(GL_TEXTURE_2D, _glTex);
     glGenerateMipmap(GL_TEXTURE_2D);
 }
 
 /*************/
-void GLESTexture_Image::getTextureImage(GLuint textureId, GLenum textureType, GLint level, GLenum format, GLenum type, GLsizei /*bufSize*/, void* pixels) const
+void Texture_ImageImpl::getTextureImage(GLuint textureId, GLenum textureType, GLint level, GLenum format, GLenum type, GLsizei /*bufSize*/, void* pixels) const
 {
     // Source: https://stackoverflow.com/a/53993894
 
@@ -95,19 +78,19 @@ void GLESTexture_Image::getTextureImage(GLuint textureId, GLenum textureType, GL
 }
 
 /*************/
-void GLESTexture_Image::getTextureLevelParameteriv(GLenum target, GLint level, GLenum pname, GLint* params) const
+void Texture_ImageImpl::getTextureLevelParameteriv(GLenum target, GLint level, GLenum pname, GLint* params) const
 {
     glGetTexLevelParameteriv(target, level, pname, params);
 }
 
 /*************/
-void GLESTexture_Image::getTextureParameteriv(GLenum target, GLenum pname, GLint* params) const
+void Texture_ImageImpl::getTextureParameteriv(GLenum target, GLenum pname, GLint* params) const
 {
     glGetTexParameteriv(target, pname, params);
 }
 
 /*************/
-bool GLESTexture_Image::reallocatePBOs(int width, int height, int bytes)
+bool Texture_ImageImpl::reallocatePBOs(int width, int height, int bytes)
 {
     glDeleteBuffers(2, _pbos);
 
@@ -131,7 +114,7 @@ bool GLESTexture_Image::reallocatePBOs(int width, int height, int bytes)
 }
 
 /*************/
-std::optional<std::pair<GLenum, GLenum>> GLESTexture_Image::updateUncompressedInternalAndDataFormat(const ImageBufferSpec& spec, const Values& srgb)
+std::optional<std::pair<GLenum, GLenum>> Texture_ImageImpl::updateUncompressedInternalAndDataFormat(const ImageBufferSpec& spec, const Values& srgb)
 {
     GLenum internalFormat;
     GLenum dataFormat = GL_UNSIGNED_BYTE;
@@ -166,7 +149,7 @@ std::optional<std::pair<GLenum, GLenum>> GLESTexture_Image::updateUncompressedIn
     }
     else
     {
-        Log::get() << Log::WARNING << "GLESTexture_Image::" << __FUNCTION__ << " - Unknown uncompressed format" << Log::endl;
+        Log::get() << Log::WARNING << "Texture_ImageImpl::" << __FUNCTION__ << " - Unknown uncompressed format" << Log::endl;
         return {};
     }
 
@@ -174,7 +157,7 @@ std::optional<std::pair<GLenum, GLenum>> GLESTexture_Image::updateUncompressedIn
 }
 
 /*************/
-void GLESTexture_Image::readFromImageIntoPBO(GLuint pboId, int imageDataSize, std::shared_ptr<Image> img) const
+void Texture_ImageImpl::readFromImageIntoPBO(GLuint pboId, int imageDataSize, std::shared_ptr<Image> img) const
 {
     // Fill one of the PBOs right now
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboId);
@@ -183,14 +166,14 @@ void GLESTexture_Image::readFromImageIntoPBO(GLuint pboId, int imageDataSize, st
     if (pixels != nullptr)
         memcpy((void*)pixels, img->data(), imageDataSize);
     else
-        Log::get() << Log::ERROR << "GLESTexture_Image::" << __FUNCTION__ << " - Unable to initialize upload PBOs" << Log::endl;
+        Log::get() << Log::ERROR << "Texture_ImageImpl::" << __FUNCTION__ << " - Unable to initialize upload PBOs" << Log::endl;
 
     glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 }
 
 /*************/
-void GLESTexture_Image::copyPixelsBetweenPBOs(int imageDataSize) const
+void Texture_ImageImpl::copyPixelsBetweenPBOs(int imageDataSize) const
 {
     glBindBuffer(GL_COPY_READ_BUFFER, _pbos[0]);
     glBindBuffer(GL_COPY_WRITE_BUFFER, _pbos[1]);
@@ -199,4 +182,4 @@ void GLESTexture_Image::copyPixelsBetweenPBOs(int imageDataSize) const
     glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }
 
-} // namespace Splash
+} // namespace Splash::gfx::gles

@@ -5,15 +5,15 @@
 #include "./image/image.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
+#include "graphics/api/texture_image_impl.h"
 
 namespace Splash
 {
 
-constexpr int Texture_Image::_texLevels;
-
 /*************/
-Texture_Image::Texture_Image(RootObject* root)
+Texture_Image::Texture_Image(RootObject* root, std::unique_ptr<gfx::Texture_ImageImpl> gfxImpl)
     : Texture(root)
+    , _gfxImpl(std::move(gfxImpl))
 {
     init();
 }
@@ -27,9 +27,6 @@ Texture_Image::~Texture_Image()
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Texture_Image::~Texture_Image - Destructor" << Log::endl;
 #endif
-
-    glDeleteTextures(1, &_glTex);
-    glDeleteBuffers(2, _pbos);
 }
 
 /*************/
@@ -42,31 +39,24 @@ Texture_Image& Texture_Image::operator=(const std::shared_ptr<Image>& img)
 /*************/
 RgbValue Texture_Image::getMeanValue() const
 {
-    int level = _texLevels - 1;
-    int width, height;
-
-    glBindTexture(_textureType, _glTex);
-    getTextureLevelParameteriv(_textureType, level, GL_TEXTURE_WIDTH, &width);
-    getTextureLevelParameteriv(_textureType, level, GL_TEXTURE_HEIGHT, &height);
-
-    auto size = width * height * 4;
-    ResizableArray<uint8_t> buffer(size);
-    getTextureImage(_glTex, _textureType, level, GL_RGBA, GL_UNSIGNED_BYTE, buffer.size(), buffer.data());
+    int mipmapLevel = gfx::Texture_ImageImpl::_texLevels - 1;
+    const auto image = read(mipmapLevel);
+    const auto imageSpec = image->getSpec(); // Invokes a mutex
+    const auto width = imageSpec.width, height = imageSpec.height;
 
     RgbValue meanColor;
-    for (int y = 0; y < height; ++y)
+    for (uint y = 0; y < height; ++y)
     {
         RgbValue rowMeanColor;
-        for (int x = 0; x < width; ++x)
+        for (uint x = 0; x < width; ++x)
         {
-            auto index = (x + y * width) * 4;
-            RgbValue color(buffer[index], buffer[index + 1], buffer[index + 2]);
-            rowMeanColor += color;
+            rowMeanColor += image->readPixel(x, y);
         }
+
         rowMeanColor /= static_cast<float>(width);
         meanColor += rowMeanColor;
     }
-    meanColor /= height;
+    meanColor /= static_cast<float>(height);
 
     return meanColor;
 }
@@ -82,20 +72,10 @@ std::unordered_map<std::string, Values> Texture_Image::getShaderUniforms() const
 /*************/
 ImageBuffer Texture_Image::grabMipmap(unsigned int level) const
 {
-    int mipmapLevel = std::min<int>(level, _texLevels);
-    GLint width = 0, height = 0;
-
-    glBindTexture(_textureType, _glTex);
-    getTextureLevelParameteriv(_textureType, level, GL_TEXTURE_WIDTH, &width);
-    getTextureLevelParameteriv(_textureType, level, GL_TEXTURE_HEIGHT, &height);
-
-    auto spec = _spec;
-    spec.width = width;
-    spec.height = height;
-
-    auto image = ImageBuffer(spec);
-    getTextureImage(_glTex, _textureType, mipmapLevel, _texFormat, _texType, image.getSize(), image.data());
-    return image;
+    int mipmapLevel = std::min<int>(level, gfx::Texture_ImageImpl::_texLevels);
+    // The copy constructor of `ImageBuffer`, which is returned by `std::shared_ptr<Image>::get()`, does a full copy of the underlying buffers.
+    // So it is safe to return it from this method.
+    return read(mipmapLevel)->get();
 }
 
 /*************/
@@ -124,11 +104,9 @@ void Texture_Image::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-std::shared_ptr<Image> Texture_Image::read()
+std::shared_ptr<Image> Texture_Image::read(int mipmapLevel) const
 {
-    auto img = std::make_shared<Image>(_root, _spec);
-    getTextureImage(_glTex, _textureType, 0, _texFormat, _texType, img->getSpec().rawSize(), (GLvoid*)img->data());
-    return img;
+    return _gfxImpl->read(_root, mipmapLevel, _spec);
 }
 
 /*************/
@@ -147,9 +125,8 @@ void Texture_Image::reset(int width, int height, const std::string& pixelFormat,
     _multisample = multisample;
     _cubemap = multisample == 0 ? cubemap : false;
 
-    initFromPixelFormat(width, height);
+    _spec = _gfxImpl->reset(width, height, _pixelFormat, _spec, _multisample, _cubemap, _filtering);
 
-    initOpenGLTexture();
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Reset the texture to size " << width << "x" << height << Log::endl;
 #endif
@@ -162,234 +139,6 @@ void Texture_Image::resize(int width, int height)
         return;
     if (static_cast<uint32_t>(width) != _spec.width || static_cast<uint32_t>(height) != _spec.height)
         reset(width, height, _pixelFormat, _multisample, _cubemap);
-}
-
-/*************/
-void Texture_Image::setTextureTypeFromOptions()
-{
-    if (_multisample > 1)
-        _textureType = GL_TEXTURE_2D_MULTISAMPLE;
-    else if (_cubemap)
-        _textureType = GL_TEXTURE_CUBE_MAP;
-    else
-        _textureType = GL_TEXTURE_2D;
-}
-
-/*************/
-void Texture_Image::allocateGLTexture()
-{
-    switch (_textureType)
-    {
-    case GL_TEXTURE_2D_MULTISAMPLE:
-        glTexStorage2DMultisample(_textureType, _multisample, _texInternalFormat, _spec.width, _spec.height, false);
-        break;
-
-    case GL_TEXTURE_CUBE_MAP:
-        glTexStorage2D(GL_TEXTURE_CUBE_MAP, _texLevels, _texInternalFormat, _spec.width, _spec.height);
-        break;
-
-    default:
-        glTexStorage2D(GL_TEXTURE_2D, _texLevels, _texInternalFormat, _spec.width, _spec.height);
-        break;
-    }
-}
-
-/*************/
-void Texture_Image::initOpenGLTexture()
-{
-    // Create and initialize the texture
-    if (glIsTexture(_glTex))
-        glDeleteTextures(1, &_glTex);
-
-    setTextureTypeFromOptions();
-
-    glGenTextures(1, &_glTex);
-
-    setGLTextureParameters();
-
-    allocateGLTexture();
-}
-
-/*************/
-GLenum Texture_Image::getChannelOrder(const ImageBufferSpec& spec)
-{
-    GLenum glChannelOrder = GL_RGB;
-
-    // We don't want to let the driver convert from BGR to RGB, as this can lead in
-    // some cases to mediocre performances.
-    if (spec.format == "RGB" || spec.format == "BGR" || spec.format == "RGB_DXT1")
-        glChannelOrder = GL_RGB;
-    else if (spec.format == "RGBA" || spec.format == "BGRA" || spec.format == "RGBA_DXT5")
-        glChannelOrder = GL_RGBA;
-    else if (spec.format == "YUYV" || spec.format == "UYVY")
-        glChannelOrder = GL_RG;
-    else if (spec.channels == 1)
-        glChannelOrder = GL_RED;
-    else if (spec.channels == 3)
-        glChannelOrder = GL_RGB;
-    else if (spec.channels == 4)
-        glChannelOrder = GL_RGBA;
-
-    return glChannelOrder;
-}
-
-/*************/
-bool Texture_Image::updateCompressedSpec(ImageBufferSpec& spec) const
-{
-    // If the texture is compressed, we need to modify a few values
-    bool isCompressed = false;
-
-    if (spec.format == "RGB_DXT1")
-    {
-        isCompressed = true;
-        spec.height *= 2;
-        spec.channels = 3;
-    }
-    else if (spec.format == "RGBA_DXT5")
-    {
-        isCompressed = true;
-        spec.channels = 4;
-    }
-    else if (spec.format == "YCoCg_DXT5")
-    {
-        isCompressed = true;
-    }
-
-    return isCompressed;
-}
-
-/*************/
-std::optional<std::pair<GLenum, GLenum>> Texture_Image::updateCompressedInternalAndDataFormat(const ImageBufferSpec& spec, const Values& srgb) const
-{
-    GLenum internalFormat;
-    // Doesn't actually change the data format, not sure if it should be kept for uniformity with its compressed counterpart, or removed.
-    GLenum dataFormat = GL_UNSIGNED_BYTE;
-
-    if (spec.format == "RGB_DXT1")
-    {
-        if (srgb[0].as<bool>())
-            internalFormat = GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
-        else
-            internalFormat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-    }
-    else if (spec.format == "RGBA_DXT5")
-    {
-        if (srgb[0].as<bool>())
-            internalFormat = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
-        else
-            internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-    }
-    else if (spec.format == "YCoCg_DXT5")
-    {
-        internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-    }
-    else
-    {
-        Log::get() << Log::WARNING << "Texture_Image::" << __FUNCTION__ << " - Unknown compressed format" << Log::endl;
-        return {};
-    }
-
-    return {{internalFormat, dataFormat}};
-}
-
-/*************/
-std::optional<std::pair<GLenum, GLenum>> Texture_Image::updateInternalAndDataFormat(bool isCompressed, const ImageBufferSpec& spec, std::shared_ptr<Image> img)
-{
-    Values srgb;
-    img->getAttribute("srgb", srgb);
-
-    if (isCompressed)
-        return updateCompressedInternalAndDataFormat(spec, srgb);
-    else
-        return updateUncompressedInternalAndDataFormat(spec, srgb);
-}
-
-/*************/
-void Texture_Image::updateGLTextureParameters(bool isCompressed)
-{
-    // glTexStorage2D is immutable, so we have to delete the texture first
-    glDeleteTextures(1, &_glTex);
-    glGenTextures(1, &_glTex);
-    glBindTexture(_textureType, _glTex);
-
-    glTexParameteri(_textureType, GL_TEXTURE_WRAP_S, _glTextureWrap);
-    glTexParameteri(_textureType, GL_TEXTURE_WRAP_T, _glTextureWrap);
-
-    if (_filtering)
-    {
-        if (isCompressed)
-            glTexParameteri(_textureType, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        else
-            glTexParameteri(_textureType, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(_textureType, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    }
-    else
-    {
-        glTexParameteri(_textureType, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(_textureType, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    }
-}
-
-/*************/
-void Texture_Image::reallocateAndInitGLTexture(
-    bool isCompressed, GLenum internalFormat, const ImageBufferSpec& spec, GLenum glChannelOrder, GLenum dataFormat, std::shared_ptr<Image> img, int imageDataSize) const
-{
-    // Create or update the texture parameters
-    if (!isCompressed)
-    {
-#ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Creating a new texture" << Log::endl;
-#endif
-
-        glTexStorage2D(_textureType, _texLevels, internalFormat, spec.width, spec.height);
-        glTexSubImage2D(_textureType, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, img->data());
-    }
-    else
-    {
-#ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Creating a new compressed texture" << Log::endl;
-#endif
-
-        glTexStorage2D(_textureType, _texLevels, internalFormat, spec.width, spec.height);
-        glCompressedTexSubImage2D(_textureType, 0, 0, 0, spec.width, spec.height, internalFormat, imageDataSize, img->data());
-    }
-}
-
-/*************/
-bool Texture_Image::updatePBOs(const ImageBufferSpec& spec, int imageDataSize, std::shared_ptr<Image> img)
-{
-    if (!reallocatePBOs(spec.width, spec.height, spec.pixelBytes()))
-        return false;
-
-    // Fill one of the PBOs right now
-    readFromImageIntoPBO(_pbos[0], imageDataSize, img);
-
-    // And copy it to the second PBO
-    copyPixelsBetweenPBOs(imageDataSize);
-
-    _spec = spec;
-
-    return true;
-}
-/**************/
-void Texture_Image::updateTextureFromImage(
-    bool isCompressed, GLenum internalFormat, const ImageBufferSpec& spec, GLenum glChannelOrder, GLenum dataFormat, std::shared_ptr<Image> img, int imageDataSize)
-{
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboUploadIndex]);
-    glBindTexture(_textureType, _glTex);
-
-    // (Re-)allocate space for the texture
-    if (!isCompressed)
-        glTexSubImage2D(_textureType, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, 0);
-    else
-        glCompressedTexSubImage2D(_textureType, 0, 0, 0, spec.width, spec.height, internalFormat, imageDataSize, 0);
-
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
-    _pboUploadIndex = (_pboUploadIndex + 1) % 2;
-
-    // Fill the next PBO with the image pixels
-    readFromImageIntoPBO(_pbos[_pboUploadIndex], imageDataSize, img);
 }
 
 /*************/
@@ -442,44 +191,21 @@ void Texture_Image::update()
     img->update();
     const auto imgLock = img->getReadLock();
 
-    // Gets the spec, if the image format is one of the compressed ones, updates some spec values,
-    // and returns true to indicate that the image is compressed.
-    auto spec = img->getSpec();
+    auto imgSpec = img->getSpec(); // Invokes a mutex, so we should minimize the number of its calls.
 
-    // Must be called before `updateCompressedSpec`, as it will change the height, which is involved in `rawSize`.
-    // If you call `rawSize` after `updateCompressedSpec`, you might get an incorrect `imageDataSize` (depends on
-    // the format, check the function for which formats update the height), causing you to read off the buffer in
-    // `swapPBOs` and segfault.
-    const int imageDataSize = spec.rawSize();
+    const auto [textureUpdated, updatedSpec] = _gfxImpl->update(img, imgSpec, _spec, _filtering);
 
-    const bool isCompressed = updateCompressedSpec(spec);
-    const auto internalAndDataFormat = updateInternalAndDataFormat(isCompressed, spec, img);
-
-    if (!internalAndDataFormat)
+    if (!textureUpdated)
         return;
 
-    const auto [internalFormat, dataFormat] = internalAndDataFormat.value();
+    if (updatedSpec)
+        _spec = *updatedSpec;
 
-    const GLenum glChannelOrder = getChannelOrder(spec);
-    // Update the textures if the format changed
-    if (spec != _spec || !spec.videoFrame)
-    {
-        updateGLTextureParameters(isCompressed);
-        reallocateAndInitGLTexture(isCompressed, internalFormat, spec, glChannelOrder, dataFormat, img, imageDataSize);
-        if (!updatePBOs(spec, imageDataSize, img))
-            return;
-    }
-    // Update the content of the texture, i.e the image
-    else
-    {
-        updateTextureFromImage(isCompressed, internalFormat, spec, glChannelOrder, dataFormat, img, imageDataSize);
-    }
+    _spec.timestamp = imgSpec.timestamp;
 
-    _spec.timestamp = spec.timestamp;
+    updateShaderUniforms(imgSpec, img);
 
-    updateShaderUniforms(spec, img);
-
-    if (_filtering && !isCompressed)
+    if (_filtering && !_gfxImpl->isCompressed(imgSpec))
         generateMipmap();
 }
 
@@ -492,68 +218,6 @@ void Texture_Image::init()
     // This is used for getting documentation "offline"
     if (!_root)
         return;
-}
-
-/*************/
-void Texture_Image::setGLTextureParameters() const
-{
-    glBindTexture(_textureType, _glTex);
-
-    if (_texInternalFormat == GL_DEPTH_COMPONENT)
-    {
-        glTexParameteri(_textureType, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(_textureType, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(_textureType, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(_textureType, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    }
-    else
-    {
-        glTexParameteri(_textureType, GL_TEXTURE_WRAP_S, _glTextureWrap);
-        glTexParameteri(_textureType, GL_TEXTURE_WRAP_T, _glTextureWrap);
-
-        // Anisotropic filtering. Not in core, but available on any GPU capable of running Splash
-        // See https://www.khronos.org/opengl/wiki/Sampler_Object#Anisotropic_filtering
-        float maxAnisoFiltering;
-        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisoFiltering);
-        glTexParameterf(_textureType, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisoFiltering);
-
-        if (_filtering)
-        {
-            glTexParameteri(_textureType, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-            glTexParameteri(_textureType, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        }
-        else
-        {
-            glTexParameteri(_textureType, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(_textureType, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        }
-
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-        glPixelStorei(GL_PACK_ALIGNMENT, 4);
-    }
-}
-
-/*************/
-void Texture_Image::initFromPixelFormat(int width, int height)
-{
-    const auto pixelFormatToInit = getPixelFormatToInitTable();
-    const bool containsPixelFormat = pixelFormatToInit.find(_pixelFormat) != pixelFormatToInit.end();
-    if (containsPixelFormat)
-    {
-        const auto initTuple = pixelFormatToInit.at(_pixelFormat);
-        _spec = ImageBufferSpec(width, height, initTuple.numChannels, initTuple.bitsPerChannel, initTuple.pixelBitFormat, initTuple.stringName);
-        _texInternalFormat = initTuple.texInternalFormat;
-        _texFormat = initTuple.texFormat;
-        _texType = initTuple.texType;
-    }
-    else
-    {
-        _spec.width = width;
-        _spec.height = height;
-
-        Log::get() << Log::WARNING << "Texture_Image::" << __FUNCTION__ << " - The given pixel format (" << _pixelFormat
-                   << ") does not match any of the supported types. Will use default values." << Log::endl;
-    }
 }
 
 /*************/
@@ -573,7 +237,7 @@ void Texture_Image::registerAttributes()
 
     addAttribute("clampToEdge",
         [&](const Values& args) {
-            _glTextureWrap = args[0].as<bool>() ? GL_CLAMP_TO_EDGE : GL_REPEAT;
+            _gfxImpl->setClampToEdge(args[0].as<bool>());
             return true;
         },
         {'b'});

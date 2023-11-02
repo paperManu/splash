@@ -34,6 +34,7 @@
 #include "./core/constants.h"
 
 #include "./core/attribute.h"
+#include "./graphics/api/texture_image_impl.h"
 #include "./graphics/texture.h"
 #include "./image/image.h"
 #include "./utils/cgutils.h"
@@ -44,32 +45,43 @@ namespace Splash
 class Texture_Image : public Texture
 {
   public:
+    explicit Texture_Image(RootObject* root, std::unique_ptr<gfx::Texture_ImageImpl> gfxImpl);
+
+    /**
+     * Destructor
+     */
+    virtual ~Texture_Image();
+
     /**
      * Bind this texture
      */
-    virtual void bind() override = 0;
+    virtual void bind() override { _gfxImpl->bind(); }
 
     /**
      * Unbind this texture
      */
-    virtual void unbind() override = 0;
+    virtual void unbind() override
+    {
+        _gfxImpl->unbind();
+        _lastDrawnTimestamp = Timer::getTime();
+    };
 
     /**
      * Generate the mipmaps for the texture
      */
-    virtual void generateMipmap() const = 0;
+    virtual void generateMipmap() const { _gfxImpl->generateMipmap(); };
+
+    /**
+     * Get the id of the texture (API dependant)
+     * \return Return the texture id
+     */
+    GLuint getTexId() const final { return _gfxImpl->getTexId(); }
 
     /**
      * Computed the mean value for the image
      * \return Return the mean RGB value
      */
     RgbValue getMeanValue() const;
-
-    /**
-     * Get the id of the gl texture
-     * \return Return the texture id
-     */
-    GLuint getTexId() const final { return _glTex; }
 
     /**
      * Get the shader parameters related to this texture. Texture should be locked first.
@@ -86,9 +98,10 @@ class Texture_Image : public Texture
 
     /**
      * Read the texture and returns an Image
+     * \param level The mipmap level we wish to read the texture at.
      * \return Return the image
      */
-    std::shared_ptr<Image> read();
+    std::shared_ptr<Image> read(int level = 0) const;
 
     /**
      * Set the buffer size / type / internal format
@@ -112,21 +125,19 @@ class Texture_Image : public Texture
      * Enable / disable clamp to edge
      * \param active If true, enables clamping
      */
-    void setClampToEdge(bool active) { _glTextureWrap = active ? GL_CLAMP_TO_EDGE : GL_REPEAT; }
+    void setClampToEdge(bool active) { _gfxImpl->setClampToEdge(active); }
 
     /**
      * Update the texture according to the owned Image
      */
     void update() final;
 
-  protected:
-    explicit Texture_Image(RootObject* root);
-
     /**
-     * Destructor
+     * Clears and updates the following uniforms: `flip`, `flop`, and `encoding`.
      */
-    virtual ~Texture_Image();
+    void updateShaderUniforms(const ImageBufferSpec& spec, const std::shared_ptr<Image> img);
 
+  protected:
     /**
      * Constructors/operators
      */
@@ -153,138 +164,6 @@ class Texture_Image : public Texture
      */
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
-    /**
-     * Uses `_pixelFormat` to initialize `_spec`, `_texInternalFormat`, `_texFormat`, and `_texType`. Different graphics APIs might have different initializations due to supporting
-     * different combinations of the format, internal format, and type.
-     * \param width Width of the texture
-     * \param height Height of the texture
-     * \sa getPixelFormatToInitTable()
-     */
-    void initFromPixelFormat(int width, int height);
-
-    /**
-     * Used only in `getPixelFormatToInitTable` at the moment. Can be replaced by an `std::tuple`, but the field names might be helpful.
-     */
-    struct InitTuple
-    {
-        uint numChannels, bitsPerChannel;
-        ImageBufferSpec::Type pixelBitFormat;
-        std::string stringName;
-        GLenum texInternalFormat, texFormat, texType;
-    };
-
-    /**
-     * Note that this table is constant throughout the life of the program, so it might be opimized further if it proves to be a bottleneck.
-     * \return A graphics API specific table to initialize `_spec`, `_texInternalFormat`, `_texFormat`, and `_texType` depending on `_pixelFormat`.
-     * \sa https://docs.gl/es3/glTexStorage2D
-     * \sa https://docs.gl/gl4/glTexStorage2D
-     */
-    virtual std::unordered_map<std::string, InitTuple> getPixelFormatToInitTable() const = 0;
-
-    /**
-     * Wrapper for OpenGL's `getTextureLevelParameteriv` and `getTexLevelParameteriv`
-     */
-    virtual void getTextureLevelParameteriv(GLenum target, GLint level, GLenum pname, GLint* params) const = 0;
-
-    /**
-     * Wrapper for OpenGL's `getTextureParameteriv` and `getTexParameteriv`
-     */
-    virtual void getTextureParameteriv(GLenum target, GLenum pname, GLint* params) const = 0;
-
-    /**
-     * Reads an  OpenGL texture into a pre-allocated buffer on the CPU. Deviates from the OpenGL API by taking both the texture ID and texture type. This is needed to accomodate
-     * OpenGL ES.
-     */
-    virtual void getTextureImage(GLuint textureId, GLenum textureType, GLint level, GLenum format, GLenum type, GLsizei bufSize, void* pixels) const = 0;
-
-    /**
-     * Sets up texture wrapping, minification and magnification filters, anistropy, and packing/unpacking alignment. Note that all of the OpenGL calls used in this function are
-     * supported by OpenGL 4.5 and OpenGL ES, so no need to virtualize them.
-     */
-    void setGLTextureParameters() const;
-
-    /**
-     * Sets `_textureType` based on whether the texture is multisampled, is a cube map, or just an ordinary 2D texture.
-     */
-    void setTextureTypeFromOptions();
-
-    /**
-     * Allocates the texture on the GPU depending on its type (multisampled, cubemap, 2D). Can optionally initialize 2D textures through `data`.
-     */
-    void allocateGLTexture();
-
-    /**
-     * Deletes the texture if it already exists, initializes `_textureType`, generates and sets the OpenGL texture parameters, then allocates space on the GPU for the texture.
-     * \sa setTextureTypeFromOptions(), setGLTextureParameters(), and allocateGLTexture().
-     */
-    void initOpenGLTexture();
-
-    /**
-     * Given an `ImageBufferSpec`, updates its channels and/or height depending on the spec's format. Supports `RGB_DXT1`, `RGBA_DXT5`, and `YCoCg_DXT5` formats.
-     * \param spec The spec we wish to update.
-     * \return Whether the format is a compressed one, can potentially indicate that `spec` was updated.
-     */
-    bool updateCompressedSpec(ImageBufferSpec& spec) const;
-
-    /**
-     * \return Given a spec (more specifically, its format), returns a pair of `{internalFormat, dataFormat}` if the spec is supported. Otherwise, returns an empty optional.
-     * Supports `RGB_DXT1`, `RGBA_DXT5`, and `YCoCg_DXT5` formats. Note that `dataFormat` is always `GL_UNSIGNED_BYTE`.
-     */
-    std::optional<std::pair<GLenum, GLenum>> updateCompressedInternalAndDataFormat(const ImageBufferSpec& spec, const Values& srgb) const;
-
-    /**
-     * \return Given a spec (more specifically, its number of channels and type), returns a pair of `{internalFormat, dataFormat}` if the spec is supported. Otherwise, returns an
-     * empty optional. Can update `_texFormat` depending on the number of channels and type for OpenGL ES.
-     * TODO: Check if updating `_texFormat` in OpenGL ES is still necessary.
-     */
-    virtual std::optional<std::pair<GLenum, GLenum>> updateUncompressedInternalAndDataFormat(const ImageBufferSpec& spec, const Values& srgb) = 0;
-
-    /**
-     * Wrapper to dispach either `updateCompressedInternalAndDataFormat` or `updateUncompressedInternalAndDataFormat` depending on `isCompressed`.
-     * \return a pair of `{internalFormat, dataFormat}` if the spec is supported, an empty optional otherwise.
-     */
-    std::optional<std::pair<GLenum, GLenum>> updateInternalAndDataFormat(bool isCompressed, const ImageBufferSpec& spec, std::shared_ptr<Image> img);
-
-    /**
-     * Re-allocates the texture and sets values for vertical/horizontal wrapping, and minification and magnification filters.
-     */
-    void updateGLTextureParameters(bool isCompressed);
-
-    /**
-     * Reallocates space on the GPU for the texture and initializes its contents with the given image's.
-     */
-    void reallocateAndInitGLTexture(
-        bool isCompressed, GLenum internalFormat, const ImageBufferSpec& spec, GLenum glChannelOrder, GLenum dataFormat, std::shared_ptr<Image> img, int imageDataSize) const;
-
-    /**
-     * Updates PBO sizes if needed, reads from the given image into one, and copies the data into the second.
-     * \return true if updating the PBOs went well, false otherwise.
-     * \sa updatePBOs(), readFromImageIntoPBO(), copyPixelsBetweenPBOs().
-     */
-    bool updatePBOs(const ImageBufferSpec& spec, int imageDataSize, std::shared_ptr<Image> img);
-
-    /**
-     * Updates the specified PBO with the data of the given image.
-     */
-    virtual void readFromImageIntoPBO(GLuint pboId, int imageDataSize, std::shared_ptr<Image> img) const = 0;
-
-    /**
-     * Reads the data from the given image and uploads it to the GPU through PBOs, reallocating space if needed.
-     * \sa updateTextureFromImage().
-     */
-    void updateTextureFromImage(
-        bool isCompressed, GLenum internalFormat, const ImageBufferSpec& spec, GLenum glChannelOrder, GLenum dataFormat, std::shared_ptr<Image> img, int imageDataSize);
-
-    /**
-     * Copies the data between `_pbos[0]` and `_pbos[1]`.
-     */
-    virtual void copyPixelsBetweenPBOs(int imageDataSize) const = 0;
-
-    /**
-     * Clears and updates the following uniforms: `flip`, `flop`, and `encoding`.
-     */
-    void updateShaderUniforms(const ImageBufferSpec& spec, const std::shared_ptr<Image> img);
-
   protected:
     enum ColorEncoding : int32_t
     {
@@ -295,26 +174,11 @@ class Texture_Image : public Texture
         YCoCg = 4
     };
 
-    GLuint _glTex{0};
-    GLuint _pbos[2];
-    // Can either be GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_2D, GL_TEXTURE_CUBE_MAP
-    GLuint _textureType{GL_TEXTURE_2D};
-
-    int _multisample{0};
-    bool _cubemap{false};
-    int _pboUploadIndex{0};
     int64_t _lastDrawnTimestamp{0};
 
-    // Store some texture parameters
-    static const int _texLevels = 4;
-    bool _filtering{false};
-    GLenum _texFormat{GL_RGB}, _texType{GL_UNSIGNED_BYTE};
     std::string _pixelFormat{"RGBA"};
-    GLint _texInternalFormat{GL_RGBA};
-    GLint _glTextureWrap{GL_REPEAT};
-
-    // And some temporary attributes
-    GLint _activeTexture{0}; // Texture unit to which the texture is bound
+    int _multisample{0};
+    bool _cubemap{false}, _filtering;
 
     std::weak_ptr<Image> _img;
 
@@ -327,25 +191,12 @@ class Texture_Image : public Texture
     void init();
 
     /**
-     * Get GL channel order according to spec.format
-     * \param spec Specification
-     * \return Return the GL channel order (GL_RGBA, GL_BGRA, ...)
-     */
-    GLenum getChannelOrder(const ImageBufferSpec& spec);
-
-    /**
-     * Update the pbos according to the parameters
-     * \param width Width
-     * \param height Height
-     * \param bytes Bytes per pixel
-     * \return Return true if all went well
-     */
-    virtual bool reallocatePBOs(int width, int height, int bytes) = 0;
-
-    /**
      * Register new functors to modify attributes
      */
     void registerAttributes();
+
+  private:
+    std::unique_ptr<gfx::Texture_ImageImpl> _gfxImpl;
 };
 
 } // namespace Splash

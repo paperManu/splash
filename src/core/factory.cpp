@@ -225,7 +225,13 @@ void Factory::registerObjects()
         "Custom filter, which can take a GLSL fragment shader source to process the input texture(s).",
         true);
 
-    _objectBook["geometry"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Geometry>(root)); },
+    _objectBook["geometry"] = Page(
+        [&](RootObject* root) {
+            if (root)
+                return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Geometry>(root));
+
+            return std::shared_ptr<GraphObject>(nullptr);
+        },
         GraphObject::Category::MISC,
         "Geometry",
         "Intermediary object holding vertices, UV and normal coordinates of a projection surface.");

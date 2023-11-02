@@ -20,8 +20,9 @@
 #ifndef SPLASH_OPENGL_RENDERER_H
 #define SPLASH_OPENGL_RENDERER_H
 
+#include "./graphics/api/opengl/texture_image_impl.h"
+#include "./graphics/api/opengl/window_gfx_impl.h"
 #include "./graphics/opengl_gpu_buffer.h"
-#include "./graphics/opengl_texture_image.h"
 #include "./graphics/renderer.h"
 
 namespace Splash
@@ -42,12 +43,17 @@ class OpenGLRenderer : public Renderer
 
     virtual void loadApiSpecificGlFunctions() const override final { gladLoadGLLoader((GLADloadproc)glfwGetProcAddress); };
 
-    virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const override final { return std::make_shared<OpenGLTexture_Image>(root); };
+    virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const override final
+    {
+        return std::make_shared<Texture_Image>(root, std::make_unique<gfx::opengl::Texture_ImageImpl>());
+    };
 
     virtual std::shared_ptr<GpuBuffer> createGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data) const override final
     {
         return std::make_shared<OpenGLGpuBuffer>(elementSize, type, usage, size, data);
     }
+
+    virtual std::unique_ptr<gfx::WindowGfxImpl> createWindowGfxImpl() const override final { return std::make_unique<gfx::opengl::WindowGfxImpl>(); }
 };
 
 } // namespace Splash

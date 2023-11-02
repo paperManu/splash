@@ -18,7 +18,6 @@
 namespace Splash
 {
 
-
 /*************/
 Image::Image(RootObject* root, const std::optional<ImageBufferSpec> spec)
     : BufferObject(root)
@@ -32,15 +31,15 @@ Image::Image(RootObject* root, const std::optional<ImageBufferSpec> spec)
     if (!_root)
         return;
 
-    if(spec) 
+    if (spec)
     {
-	initFromSpec(*spec);
+        initFromSpec(*spec);
     }
-    else  
+    else
     {
-	// No spec passed, create an image with the default spec.
-	initFromSpec(ImageBufferSpec(128, 128, 4, 32, ImageBufferSpec::Type::UINT8));
-	_renderingPriority = Priority::MEDIA;
+        // No spec passed, create an image with the default spec.
+        initFromSpec(ImageBufferSpec(128, 128, 4, 32, ImageBufferSpec::Type::UINT8));
+        _renderingPriority = Priority::MEDIA;
     }
 
     update();
@@ -298,6 +297,28 @@ bool Image::write(const std::string& filename)
     }
     else
         return false;
+}
+
+/*************/
+RgbValue Image::readPixel(uint x, uint y) const
+{
+    const auto* imageBytes = static_cast<const uint8_t*>(data());
+    const auto spec = getSpec();
+
+    assert(_image && "Image is uninitialized!"); // Make sure the image is already initialized
+    assert(spec.type == ImageBufferSpec::Type::UINT8 && "Only UINT8 textures support reading pixels.");
+    assert(spec.format == "RGBA" && "Only RGBA textures support reading pixels.");
+    assert(spec.bpp == 32 && spec.channels == 4 && "Only 8 bits per channel textures support reading pixels.");
+
+    // Note that since x and  y are already unsigned, they should always be > 0.
+    // However, if a negative value is passed, it should result in a very large unsigned value.
+    assert(x < spec.width && "Pixel x is outside of image");
+    assert(y < spec.height && "Pixel y is outside of image");
+
+    assert(imageBytes != nullptr && "Image doesn't contain any data");
+
+    auto index = (x + y * spec.width) * 4;
+    return RgbValue(imageBytes[index], imageBytes[index + 1], imageBytes[index + 2]);
 }
 
 /*************/

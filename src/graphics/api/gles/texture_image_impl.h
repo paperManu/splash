@@ -22,26 +22,23 @@
  * Contains OpenGL ES 3.x specific functionality for textures.
  */
 
-#ifndef SPLASH_GLES_TEXTURE_IMAGE_H
-#define SPLASH_GLES_TEXTURE_IMAGE_H
+#ifndef SPLASH_GFX_GLES_TEXTURE_IMAGE_IMPL_H
+#define SPLASH_GFX_GLES_TEXTURE_IMAGE_IMPL_H
 
-#include "./graphics/texture_image.h"
+#include "./graphics/api/gl_base_texture_image_impl.h"
 
-namespace Splash
+namespace Splash::gfx::gles
 {
 
-class GLESTexture_Image final : public Texture_Image
+class Texture_ImageImpl final : public GlBaseTexture_ImageImpl
 {
   public:
-    explicit GLESTexture_Image(RootObject* root)
-        : Texture_Image(root)
-    {
-    }
+    explicit Texture_ImageImpl() = default;
 
-    GLESTexture_Image(const GLESTexture_Image&) = delete;
-    GLESTexture_Image& operator=(const GLESTexture_Image&) = delete;
-    GLESTexture_Image(GLESTexture_Image&&) = delete;
-    GLESTexture_Image& operator=(GLESTexture_Image&&) = delete;
+    Texture_ImageImpl(const Texture_ImageImpl&) = delete;
+    Texture_ImageImpl& operator=(const Texture_ImageImpl&) = delete;
+    Texture_ImageImpl(Texture_ImageImpl&&) = delete;
+    Texture_ImageImpl& operator=(Texture_ImageImpl&&) = delete;
 
     virtual std::unordered_map<std::string, InitTuple> getPixelFormatToInitTable() const final;
 
@@ -66,6 +63,6 @@ class GLESTexture_Image final : public Texture_Image
     virtual void copyPixelsBetweenPBOs(int imageDataSize) const final;
 };
 
-} // namespace Splash
+} // namespace Splash::gfx::gles
 
 #endif

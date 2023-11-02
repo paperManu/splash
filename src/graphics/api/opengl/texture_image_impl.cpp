@@ -1,10 +1,10 @@
-#include "./graphics/opengl_texture_image.h"
+#include "./graphics/api/opengl/texture_image_impl.h"
 
-namespace Splash
+namespace Splash::gfx::opengl
 {
 
 /*************/
-std::unordered_map<std::string, Texture_Image::InitTuple> OpenGLTexture_Image::getPixelFormatToInitTable() const
+std::unordered_map<std::string, GlBaseTexture_ImageImpl::InitTuple> Texture_ImageImpl::getPixelFormatToInitTable() const
 {
     // Note from Emmanuel: Just FYI, `GL_UNSIGNED_INT_8_8_8_8_REV` is known to allow for faster memory transfer than mere GL_UNSIGNED_BYTE. Which is why it was used here.
     // This is in contrast to GLESTexture_Image, where `GL_UNSIGNED_INT_8_8_8_8_REV` is unavailable.
@@ -14,14 +14,14 @@ std::unordered_map<std::string, Texture_Image::InitTuple> OpenGLTexture_Image::g
         {"RGBA16", {4, 64, ImageBufferSpec::Type::UINT16, "RGBA", GL_RGBA16, GL_RGBA, GL_UNSIGNED_SHORT}},
         {"RGB", {3, 24, ImageBufferSpec::Type::UINT8, "RGB", GL_RGBA8, GL_RGB, GL_UNSIGNED_BYTE}},
         {"R16", {1, 16, ImageBufferSpec::Type::UINT16, "R", GL_R16, GL_RED, GL_UNSIGNED_SHORT}},
-        {"YUYV", {3, 16, ImageBufferSpec::Type::UINT8, _pixelFormat, GL_RG8, GL_RG, GL_UNSIGNED_SHORT}},
-        {"UYVY", {3, 16, ImageBufferSpec::Type::UINT8, _pixelFormat, GL_RG8, GL_RG, GL_UNSIGNED_SHORT}},
+        {"YUYV", {3, 16, ImageBufferSpec::Type::UINT8, "YUYV", GL_RG8, GL_RG, GL_UNSIGNED_SHORT}},
+        {"UYVY", {3, 16, ImageBufferSpec::Type::UINT8, "UYVY", GL_RG8, GL_RG, GL_UNSIGNED_SHORT}},
         {"D", {1, 24, ImageBufferSpec::Type::FLOAT, "R", GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_FLOAT}},
     };
 }
 
 /*************/
-void OpenGLTexture_Image::bind()
+void Texture_ImageImpl::bind()
 {
     glGetIntegerv(GL_ACTIVE_TEXTURE, &_activeTexture);
     _activeTexture = _activeTexture - GL_TEXTURE0;
@@ -29,40 +29,39 @@ void OpenGLTexture_Image::bind()
 }
 
 /*************/
-void OpenGLTexture_Image::unbind()
+void Texture_ImageImpl::unbind()
 {
 #ifdef DEBUG
     glBindTextureUnit(_activeTexture, 0);
 #endif
-    _lastDrawnTimestamp = Timer::getTime();
 }
 
 /*************/
-void OpenGLTexture_Image::generateMipmap() const
+void Texture_ImageImpl::generateMipmap() const
 {
     glGenerateTextureMipmap(_glTex);
 }
 
 /*************/
-void OpenGLTexture_Image::getTextureImage(GLuint textureId, GLenum /*textureType*/, GLint level, GLenum format, GLenum type, GLsizei bufSize, void* pixels) const
+void Texture_ImageImpl::getTextureImage(GLuint textureId, GLenum /*textureType*/, GLint level, GLenum format, GLenum type, GLsizei bufSize, void* pixels) const
 {
     glGetTextureImage(textureId, level, format, type, bufSize, pixels);
 }
 
 /*************/
-void OpenGLTexture_Image::getTextureLevelParameteriv(GLenum /*target*/, GLint level, GLenum pname, GLint* params) const
+void Texture_ImageImpl::getTextureLevelParameteriv(GLenum /*target*/, GLint level, GLenum pname, GLint* params) const
 {
     glGetTextureLevelParameteriv(_glTex, level, pname, params);
 }
 
 /*************/
-void OpenGLTexture_Image::getTextureParameteriv(GLenum /*target*/, GLenum pname, GLint* params) const
+void Texture_ImageImpl::getTextureParameteriv(GLenum /*target*/, GLenum pname, GLint* params) const
 {
     glGetTextureParameteriv(_glTex, pname, params);
 }
 
 /*************/
-bool OpenGLTexture_Image::reallocatePBOs(int width, int height, int bytes)
+bool Texture_ImageImpl::reallocatePBOs(int width, int height, int bytes)
 {
     glDeleteBuffers(2, _pbos);
     auto flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
@@ -77,7 +76,7 @@ bool OpenGLTexture_Image::reallocatePBOs(int width, int height, int bytes)
 
     if (!_pbosPixels[0] || !_pbosPixels[1])
     {
-        Log::get() << Log::ERROR << "OpenGLTexture_Image::" << __FUNCTION__ << " - Unable to initialize upload PBOs" << Log::endl;
+        Log::get() << Log::ERROR << "Texture_ImageImpl::" << __FUNCTION__ << " - Unable to initialize upload PBOs" << Log::endl;
         return false;
     }
 
@@ -85,7 +84,7 @@ bool OpenGLTexture_Image::reallocatePBOs(int width, int height, int bytes)
 }
 
 /*************/
-std::optional<std::pair<GLenum, GLenum>> OpenGLTexture_Image::updateUncompressedInternalAndDataFormat(const ImageBufferSpec& spec, const Values& srgb)
+std::optional<std::pair<GLenum, GLenum>> Texture_ImageImpl::updateUncompressedInternalAndDataFormat(const ImageBufferSpec& spec, const Values& srgb)
 {
     GLenum internalFormat;
     GLenum dataFormat = GL_UNSIGNED_BYTE;
@@ -118,7 +117,7 @@ std::optional<std::pair<GLenum, GLenum>> OpenGLTexture_Image::updateUncompressed
     }
     else
     {
-        Log::get() << Log::WARNING << "OpenGLTexture_Image::" << __FUNCTION__ << " - Unknown uncompressed format" << Log::endl;
+        Log::get() << Log::WARNING << "Texture_ImageImpl::" << __FUNCTION__ << " - Unknown uncompressed format" << Log::endl;
         return {};
     }
 
@@ -126,7 +125,7 @@ std::optional<std::pair<GLenum, GLenum>> OpenGLTexture_Image::updateUncompressed
 }
 
 /*************/
-void OpenGLTexture_Image::readFromImageIntoPBO(GLuint pboId, int imageDataSize, std::shared_ptr<Image> img) const
+void Texture_ImageImpl::readFromImageIntoPBO(GLuint pboId, int imageDataSize, std::shared_ptr<Image> img) const
 {
 
     // Given an OpenGL PBO ID, we need to figure out which pixel buffer we need to read into.
@@ -148,9 +147,9 @@ void OpenGLTexture_Image::readFromImageIntoPBO(GLuint pboId, int imageDataSize, 
 }
 
 /*************/
-void OpenGLTexture_Image::copyPixelsBetweenPBOs(int imageDataSize) const
+void Texture_ImageImpl::copyPixelsBetweenPBOs(int imageDataSize) const
 {
     glCopyNamedBufferSubData(_pbos[0], _pbos[1], 0, 0, imageDataSize);
 }
 
-} // namespace Splash
+} // namespace Splash::gfx::opengl

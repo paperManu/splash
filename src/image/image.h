@@ -34,6 +34,7 @@
 #include "./core/buffer_object.h"
 #include "./core/imagebuffer.h"
 #include "./core/root_object.h"
+#include "./utils/cgutils.h"
 
 namespace Splash
 {
@@ -158,6 +159,14 @@ class Image : public BufferObject
      * \return Return true if all went well
      */
     bool write(const std::string& filename);
+
+    /**
+     * Read the RGB value at the specified x and y pixel locations. Assumes the image is RGBA and that each channel occupies one byte.
+     * Also assumes that the x and y positions are within the bounds of the current mipmap level that's loaded.
+     * Currently this suppors only RGBA 32bpp images
+     * \return The RGB value at (x, y)
+     */
+    RgbValue readPixel(uint x, uint y) const;
 
   protected:
     std::unique_ptr<ImageBuffer> _image{nullptr};

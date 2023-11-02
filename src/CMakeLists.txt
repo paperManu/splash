@@ -155,6 +155,8 @@ target_sources(splash-${API_VERSION} PRIVATE
     controller/widget/widget_textures_view.cpp
     controller/widget/widget_tree.cpp
     controller/widget/widget_warp.cpp
+    graphics/api/gles/texture_image_impl.cpp
+    graphics/api/opengl/texture_image_impl.cpp
     graphics/camera.cpp
     graphics/filter.cpp
     graphics/filter_black_level.cpp
@@ -162,12 +164,10 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/filter_custom.cpp
     graphics/framebuffer.cpp
     graphics/geometry.cpp
-    graphics/gles_texture_image.cpp
     graphics/gles_gpu_buffer.cpp
     graphics/gpu_buffer.cpp
     graphics/object.cpp
     graphics/object_library.cpp
-    graphics/opengl_texture_image.cpp
     graphics/opengl_gpu_buffer.cpp
     graphics/renderer.cpp
     graphics/shader.cpp
