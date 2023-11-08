@@ -118,9 +118,9 @@ class GeometryGfxImpl
 
     /**
      * Update the object
-     * \param buffersDirty In/out param, must be true if the buffers are considered dirty
+     * \param buffersDirty True if the buffers are considered dirty, forces update
      */
-    virtual void update(bool& buffersDirty) = 0;
+    virtual void update(bool buffersDirty) = 0;
 
     /**
      * Activate alternative buffers for draw

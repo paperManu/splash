@@ -140,9 +140,9 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
 
     /**
      * Update the object
-     * \param buffersDirty In/out param, must be true if the buffers are considered dirty
+     * \param buffersDirty True if the buffers are considered dirty, forces update
      */
-    virtual void update(bool& buffersDirty) override final;
+    virtual void update(bool buffersDirty) override final;
 
     /**
      * Activate alternative buffers for draw

@@ -201,7 +201,7 @@ void GeometryGfxImpl::updateTemporaryBuffers(Mesh::MeshContainer* deserializedMe
 }
 
 /*************/
-void GeometryGfxImpl::update(bool& buffersDirty)
+void GeometryGfxImpl::update(bool buffersDirty)
 {
     GLFWwindow* context = glfwGetCurrentContext();
     auto vertexArrayIt = _vertexArray.find(context);
@@ -228,8 +228,6 @@ void GeometryGfxImpl::update(bool& buffersDirty)
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
-
-        buffersDirty = false;
     }
 }
 

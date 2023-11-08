@@ -235,6 +235,7 @@ void Geometry::update()
         updateTemporaryBuffers();
 
     _gfxImpl->update(_buffersDirty);
+    _buffersDirty = false;
 }
 
 /*************/
