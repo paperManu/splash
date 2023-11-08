@@ -20,12 +20,12 @@
 #ifndef SPLASH_OpenGL_GPU_BUFFER_H
 #define SPLASH_OpenGL_GPU_BUFFER_H
 
-#include "./graphics/gpu_buffer.h"
+#include "./graphics/api/gpu_buffer.h"
 
-namespace Splash
+namespace Splash::gfx::opengl
 {
 
-class OpenGLGpuBuffer final : public GpuBuffer
+class GpuBuffer final : public gfx::GpuBuffer
 {
   public:
     /**
@@ -36,7 +36,7 @@ class OpenGLGpuBuffer final : public GpuBuffer
      * \param size Size of the buffer
      * \param data Data to upload to the buffer, if any
      */
-    OpenGLGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data);
+    GpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data);
 
   protected:
     /**

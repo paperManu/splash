@@ -245,9 +245,9 @@ RootObject::Context parseArguments(int argc, char** argv)
         {
             const auto argString = std::string(optarg);
             if (argString == "opengl")
-                context.renderingApi = Renderer::Api::OpenGL;
+                context.renderingApi = gfx::Renderer::Api::OpenGL;
             else if (argString == "gles")
-                context.renderingApi = Renderer::Api::GLES;
+                context.renderingApi = gfx::Renderer::Api::GLES;
             else
                 Log::get() << Log::WARNING << "Splash::" << __FUNCTION__ << " - Wrong argument for --renderer, got " << argString << Log::endl;
 

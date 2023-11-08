@@ -34,10 +34,13 @@ namespace Splash
 
 class Geometry;
 class GlWindow;
-class GpuBuffer;
 class RootObject;
 class BaseObject;
 class Texture_Image;
+
+namespace gfx
+{
+
 class GpuBuffer;
 
 struct ApiVersion
@@ -45,7 +48,7 @@ struct ApiVersion
     std::pair<uint, uint> version;
     std::string name;
 
-    std::string toString() const
+    [[nodiscard]] std::string toString() const
     {
         const auto major = std::to_string(std::get<0>(version));
         const auto minor = std::to_string(std::get<1>(version));
@@ -74,7 +77,6 @@ class Renderer
 
     /**
      *  Callback for GL errors and warnings
-     *  TODO: Make private once `Scene::getNewSharedWindow` is moved to the renderer.
      */
     static void glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* userParam);
 
@@ -149,7 +151,7 @@ class Renderer
      * \param data Data to upload to the buffer, if any
      * \return Return a shared pointer to the created GpuBuffer
      */
-    virtual std::shared_ptr<GpuBuffer> createGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data) const = 0;
+    virtual std::shared_ptr<gfx::GpuBuffer> createGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data) const = 0;
 
     /**
      * Get a pointer to the data to be sent to the GL callback
@@ -217,6 +219,7 @@ class Renderer
     static bool tryCreateContext(const Renderer* renderer);
 };
 
+} // namespace gfx
 } // namespace Splash
 
 #endif

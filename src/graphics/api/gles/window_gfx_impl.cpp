@@ -103,7 +103,7 @@ void WindowGfxImpl::endRender()
 /*************/
 void WindowGfxImpl::setDebugData(const void* userData)
 {
-    glDebugMessageCallback(Renderer::glMsgCallback, userData);
+    glDebugMessageCallback(gfx::Renderer::glMsgCallback, userData);
 }
 
 /*************/

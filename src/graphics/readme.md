@@ -39,7 +39,7 @@ At this point, you should have at least two new files:
 
 The code execution should go as follows:
 1. Splash starts up, constructs some instance of `Foo`.
-2. While initializing the instance of `Foo` (can be either at construction time or later on), you call `Renderer::createFooGfxImpl(..)` to initialize `Foo::_gfxImpl`.
+2. While initializing the instance of `Foo` (can be either at construction time or later on), you call `gfx::Renderer::createFooGfxImpl(..)` to initialize `Foo::_gfxImpl`.
 3. All calls to a the graphics API should be through `_gfxImpl`.
 
 Some notes:

@@ -117,7 +117,7 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
      * \param data Coordinates of the vertices, in uniform coordinates (4 floats per vertex)
      * \param numVerts Number of vertices to initialize
      */
-    virtual void initVertices(Renderer* renderer, float* data, uint numVerts) override final;
+    virtual void initVertices(gfx::Renderer* renderer, float* data, uint numVerts) override final;
 
     /**
      * Allocate or init the chosen buffer
@@ -125,7 +125,7 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
      * \param bufferType Buffer type, one of Geometry::BufferType
      * \param componentsPerElement Component (float, int, ...) counts per element (vec2, ivec3, ...)
      */
-    virtual void allocateOrInitBuffer(Renderer* renderer, Geometry::BufferType bufferType, uint componentsPerElement, std::vector<float>& dataVec) override final;
+    virtual void allocateOrInitBuffer(gfx::Renderer* renderer, Geometry::BufferType bufferType, uint componentsPerElement, std::vector<float>& dataVec) override final;
 
     /**
      * Delete all vertex arrays
@@ -137,7 +137,7 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
      * \param renderer Renderer, used to create GpuBuffers
      * \param deserializedMesh Deserialized mesh, to be used to update the buffers
      */
-    virtual void updateTemporaryBuffers(Renderer* renderer, Mesh::MeshContainer* deserializedMesh) override final;
+    virtual void updateTemporaryBuffers(gfx::Renderer* renderer, Mesh::MeshContainer* deserializedMesh) override final;
 
     /**
      * Update the object
@@ -155,9 +155,9 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
     std::map<GLFWwindow*, GLuint> _vertexArray;
     GLuint _feedbackQuery;
 
-    std::array<std::shared_ptr<GpuBuffer>, 4> _glBuffers{};
-    std::array<std::shared_ptr<GpuBuffer>, 4> _glAlternativeBuffers{}; // Alternative buffers used for rendering
-    std::array<std::shared_ptr<GpuBuffer>, 4> _glTemporaryBuffers{};   // Temporary buffers used for feedback
+    std::array<std::shared_ptr<gfx::GpuBuffer>, 4> _glBuffers{};
+    std::array<std::shared_ptr<gfx::GpuBuffer>, 4> _glAlternativeBuffers{}; // Alternative buffers used for rendering
+    std::array<std::shared_ptr<gfx::GpuBuffer>, 4> _glTemporaryBuffers{};   // Temporary buffers used for feedback
 
     GLuint _feedbackMaxNbrPrimitives{0};
 
@@ -182,7 +182,7 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
      * \param bufferType Buffer type, one of Geometry::BufferType
      * \param componentsPerElement Component (float, int, ...) counts per element (vec2, ivec3, ...)
      */
-    void allocateOrInitTemporaryBuffer(Renderer* renderer, Geometry::BufferType bufferType, uint componentsPerElement, uint tempVerticesNumber, char* data);
+    void allocateOrInitTemporaryBuffer(gfx::Renderer* renderer, Geometry::BufferType bufferType, uint componentsPerElement, uint tempVerticesNumber, char* data);
 
     /**
      * Get whether any alternative buffer is missing

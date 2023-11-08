@@ -1,12 +1,12 @@
-#include "./graphics/gpu_buffer.h"
+#include "./graphics/api/gpu_buffer.h"
 
 #include <sstream>
 #include <unordered_map>
 
-#include "./graphics/gles_gpu_buffer.h"
-#include "./graphics/opengl_gpu_buffer.h"
+#include "./graphics/api/gles/gpu_buffer.h"
+#include "./graphics/api/opengl/gpu_buffer.h"
 
-namespace Splash
+namespace Splash::gfx
 {
 
 /*************/
@@ -115,13 +115,13 @@ void GpuBuffer::resize(size_t size)
 std::shared_ptr<GpuBuffer> GpuBuffer::copyBuffer() const
 {
     std::shared_ptr<GpuBuffer> newBuffer;
-    if (const auto ptr = dynamic_cast<const GLESGpuBuffer*>(this))
+    if (const auto ptr = dynamic_cast<const gfx::gles::GpuBuffer*>(this))
     {
-        return std::make_shared<GLESGpuBuffer>(_elementSize, _type, _usage, _size, nullptr);
+        return std::make_shared<gfx::gles::GpuBuffer>(_elementSize, _type, _usage, _size, nullptr);
     }
-    else if (const auto ptr = dynamic_cast<const OpenGLGpuBuffer*>(this))
+    else if (const auto ptr = dynamic_cast<const gfx::opengl::GpuBuffer*>(this))
     {
-        return std::make_shared<OpenGLGpuBuffer>(_elementSize, _type, _usage, _size, nullptr);
+        return std::make_shared<gfx::opengl::GpuBuffer>(_elementSize, _type, _usage, _size, nullptr);
     }
     else
     {

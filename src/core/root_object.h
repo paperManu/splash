@@ -82,7 +82,7 @@ class RootObject : public BaseObject
 #else
         Link::ChannelType channelType{Link::ChannelType::zmq};
 #endif
-        std::optional<Renderer::Api> renderingApi{};
+        std::optional<gfx::Renderer::Api> renderingApi{};
     };
 
     enum Command

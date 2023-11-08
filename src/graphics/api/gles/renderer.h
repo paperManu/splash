@@ -23,16 +23,16 @@
 #include "./graphics/api/gles/geometry_gfx_impl.h"
 #include "./graphics/api/gles/texture_image_impl.h"
 #include "./graphics/api/gles/window_gfx_impl.h"
-#include "./graphics/gles_gpu_buffer.h"
-#include "./graphics/renderer.h"
+#include "./graphics/api/gles/gpu_buffer.h"
+#include "./graphics/api/renderer.h"
 
-namespace Splash
+namespace Splash::gfx::gles
 {
 
-class GLESRenderer : public Renderer
+class Renderer : public gfx::Renderer
 {
   public:
-    virtual ApiVersion getApiSpecificVersion() const override final { return {{3, 2}, "OpenGL ES"}; }
+    virtual gfx::ApiVersion getApiSpecificVersion() const override final { return {{3, 2}, "OpenGL ES"}; }
 
   private:
     virtual void setApiSpecificFlags() const override final { glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API); }
@@ -44,9 +44,9 @@ class GLESRenderer : public Renderer
         return std::make_shared<Geometry>(root, std::make_unique<gfx::gles::GeometryGfxImpl>());
     }
 
-    virtual std::shared_ptr<GpuBuffer> createGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data) const override final
+    virtual std::shared_ptr<gfx::GpuBuffer> createGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data) const override final
     {
-        return std::make_shared<GLESGpuBuffer>(elementSize, type, usage, size, data);
+        return std::make_shared<gfx::gles::GpuBuffer>(elementSize, type, usage, size, data);
     }
 
     virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const override final

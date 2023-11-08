@@ -399,10 +399,11 @@ void GraphObject::uninitializeTree()
 }
 
 /*************/
-const Renderer::GlMsgCallbackData* GraphObject::getGlMsgCallbackDataPtr() {
-   _glMsgCallbackData.name = _name;
-   _glMsgCallbackData.type = _type;
-   return &_glMsgCallbackData;
+const gfx::Renderer::GlMsgCallbackData* GraphObject::getGlMsgCallbackDataPtr()
+{
+    _glMsgCallbackData.name = _name;
+    _glMsgCallbackData.type = _type;
+    return &_glMsgCallbackData;
 }
 
 } // namespace Splash

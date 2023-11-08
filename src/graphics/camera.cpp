@@ -555,8 +555,11 @@ Values Camera::pickVertexOrCalibrationPoint(float x, float y)
 void Camera::render()
 {
 #ifdef DEBUGGL
-    Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
-    OnScopeExit { Renderer::setGlMsgCallbackData(_root->getGlMsgCallbackDataPtr()); };
+    gfx::Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
+    OnScopeExit
+    {
+        gfx::Renderer::setGlMsgCallbackData(_root->getGlMsgCallbackDataPtr());
+    };
 #endif
 
     // Keep the timestamp of the newest object

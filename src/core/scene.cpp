@@ -597,7 +597,7 @@ std::shared_ptr<GlWindow> Scene::getNewSharedWindow(const std::string& name)
 
     glWindow->setAsCurrentContext();
 #ifdef DEBUGGL
-    Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
+    gfx::Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
 #endif
@@ -631,7 +631,7 @@ std::shared_ptr<GlWindow> Scene::getNewSharedWindow(const std::string& name)
 /*************/
 void Scene::init(const std::string& name)
 {
-    _renderer = Renderer::create(_context.renderingApi);
+    _renderer = gfx::Renderer::create(_context.renderingApi);
 
     if (!_renderer)
         return;

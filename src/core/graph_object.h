@@ -26,15 +26,19 @@
 #define SPLASH_GRAPH_OBJECT_H
 
 #include "./core/base_object.h"
-#include "./graphics/renderer.h"
+#include "./graphics/api/renderer.h"
 #include "./utils/dense_set.h"
 
 namespace Splash
 {
 
-class Renderer;
 class RootObject;
 class Scene;
+
+namespace gfx
+{
+class Renderer;
+}
 
 /*************/
 class GraphObject : public BaseObject
@@ -255,7 +259,7 @@ class GraphObject : public BaseObject
      */
     virtual void render() {}
 
-    virtual const Renderer::GlMsgCallbackData* getGlMsgCallbackDataPtr() override;
+    virtual const gfx::Renderer::GlMsgCallbackData* getGlMsgCallbackDataPtr() override;
 
   protected:
     Category _category{Category::MISC};   //!< Object category, updated by the factory
@@ -274,7 +278,7 @@ class GraphObject : public BaseObject
 
     RootObject* _root;   //!< Root object, Scene or World
     Scene* _scene;       //!< Pointer to the Scene, if any
-    Renderer* _renderer; //!< Pointer to the graphic renderer
+    gfx::Renderer* _renderer; //!< Pointer to the graphic renderer
 
     std::vector<std::weak_ptr<GraphObject>> _linkedObjects; //!< Linked objects
 

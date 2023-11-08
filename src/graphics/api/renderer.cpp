@@ -1,14 +1,14 @@
-#include "./graphics/renderer.h"
+#include "./graphics/api/renderer.h"
 
 #include "./core/base_object.h"
 #include "./core/graph_object.h"
+#include "./graphics/api/gpu_buffer.h"
 #include "./graphics/gl_window.h"
-#include "./graphics/gles_renderer.h"
-#include "./graphics/gpu_buffer.h"
-#include "./graphics/opengl_renderer.h"
+#include "./graphics/api/gles/renderer.h"
+#include "./graphics/api/opengl/renderer.h"
 #include "./graphics/texture_image.h"
 
-namespace Splash
+namespace Splash::gfx
 {
 
 /*************/
@@ -17,10 +17,10 @@ std::unique_ptr<Renderer> Renderer::fromApi(Renderer::Api api)
     switch (api)
     {
     case Renderer::Api::GLES:
-        return std::make_unique<GLESRenderer>();
+        return std::make_unique<gles::Renderer>();
         break;
     case Renderer::Api::OpenGL:
-        return std::make_unique<OpenGLRenderer>();
+        return std::make_unique<opengl::Renderer>();
         break;
     default:
         return {nullptr};
@@ -199,12 +199,12 @@ std::unique_ptr<Renderer> Renderer::findCompatibleApi()
 {
     Log::get() << Log::MESSAGE << "No rendering API specified, will try finding a compatible one" << Log::endl;
 
-    if (auto renderer = std::make_unique<OpenGLRenderer>(); tryCreateContext(renderer.get()))
+    if (auto renderer = std::make_unique<opengl::Renderer>(); tryCreateContext(renderer.get()))
     {
         Log::get() << Log::MESSAGE << "Context " << renderer->getApiSpecificVersion().toString() << " created successfully!" << Log::endl;
         return renderer;
     }
-    else if (auto renderer = std::make_unique<GLESRenderer>(); tryCreateContext(renderer.get()))
+    else if (auto renderer = std::make_unique<gles::Renderer>(); tryCreateContext(renderer.get()))
     {
         Log::get() << Log::MESSAGE << "Context " << renderer->getApiSpecificVersion().toString() << " created successfully!" << Log::endl;
         return renderer;

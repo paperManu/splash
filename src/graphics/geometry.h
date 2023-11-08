@@ -36,8 +36,8 @@
 
 #include "./core/attribute.h"
 #include "./core/buffer_object.h"
-#include "./graphics/gpu_buffer.h"
-#include "./graphics/renderer.h"
+#include "./graphics/api/gpu_buffer.h"
+#include "./graphics/api/renderer.h"
 #include "./mesh/mesh.h"
 
 namespace Splash

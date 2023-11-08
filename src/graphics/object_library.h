@@ -64,7 +64,7 @@ class ObjectLibrary
 
   private:
     Scene* _scene;
-    Renderer* _renderer{nullptr};
+    gfx::Renderer* _renderer{nullptr};
     std::unique_ptr<Object> _defaultObject{nullptr};
     std::map<std::string, std::unique_ptr<Object>> _library{};
 };

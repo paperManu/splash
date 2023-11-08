@@ -23,16 +23,16 @@
 #include "./graphics/api/opengl/geometry_gfx_impl.h"
 #include "./graphics/api/opengl/texture_image_impl.h"
 #include "./graphics/api/opengl/window_gfx_impl.h"
-#include "./graphics/opengl_gpu_buffer.h"
-#include "./graphics/renderer.h"
+#include "./graphics/api/opengl/gpu_buffer.h"
+#include "./graphics/api/renderer.h"
 
-namespace Splash
+namespace Splash::gfx::opengl
 {
 
-class OpenGLRenderer : public Renderer
+class Renderer : public gfx::Renderer
 {
   public:
-    virtual ApiVersion getApiSpecificVersion() const override final { return {{4, 5}, "OpenGL"}; }
+    virtual gfx::ApiVersion getApiSpecificVersion() const override final { return {{4, 5}, "OpenGL"}; }
 
   private:
     virtual void setApiSpecificFlags() const override final
@@ -49,9 +49,9 @@ class OpenGLRenderer : public Renderer
         return std::make_shared<Geometry>(root, std::make_unique<gfx::opengl::GeometryGfxImpl>());
     }
 
-    virtual std::shared_ptr<GpuBuffer> createGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data) const override final
+    virtual std::shared_ptr<gfx::GpuBuffer> createGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data) const override final
     {
-        return std::make_shared<OpenGLGpuBuffer>(elementSize, type, usage, size, data);
+        return std::make_shared<gfx::opengl::GpuBuffer>(elementSize, type, usage, size, data);
     }
 
     virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const override final

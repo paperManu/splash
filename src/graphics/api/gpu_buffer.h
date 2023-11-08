@@ -35,7 +35,7 @@
 #include "./core/constants.h"
 #include "./mesh/mesh.h"
 
-namespace Splash
+namespace Splash::gfx
 {
 
 class GpuBuffer

@@ -162,14 +162,14 @@ void GeometryGfxImpl::swapBuffers()
 }
 
 /*************/
-void GeometryGfxImpl::initVertices(Renderer* renderer, float* data, uint numVerts)
+void GeometryGfxImpl::initVertices(gfx::Renderer* renderer, float* data, uint numVerts)
 {
     setVerticesNumber(numVerts);
     _glBuffers[0] = renderer->createGpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, data);
 }
 
 /*************/
-void GeometryGfxImpl::allocateOrInitBuffer(Renderer* renderer, Geometry::BufferType bufferType, uint componentsPerElement, std::vector<float>& dataVec)
+void GeometryGfxImpl::allocateOrInitBuffer(gfx::Renderer* renderer, Geometry::BufferType bufferType, uint componentsPerElement, std::vector<float>& dataVec)
 {
     const auto bufferIndex = static_cast<uint8_t>(bufferType);
     if (!dataVec.empty())
@@ -188,7 +188,7 @@ void GeometryGfxImpl::clearFromAllContexts()
 }
 
 /*************/
-void GeometryGfxImpl::updateTemporaryBuffers(Renderer* renderer, Mesh::MeshContainer* deserializedMesh)
+void GeometryGfxImpl::updateTemporaryBuffers(gfx::Renderer* renderer, Mesh::MeshContainer* deserializedMesh)
 {
     _temporaryVerticesNumber = deserializedMesh->vertices.size();
     _temporaryBufferSize = _temporaryVerticesNumber;
@@ -245,7 +245,7 @@ void GeometryGfxImpl::setVerticesNumber(uint32_t verticesNumber)
 }
 
 /*************/
-void GeometryGfxImpl::allocateOrInitTemporaryBuffer(Renderer* renderer, Geometry::BufferType bufferType, uint componentsPerElement, uint tempVerticesNumber, char* data)
+void GeometryGfxImpl::allocateOrInitTemporaryBuffer(gfx::Renderer* renderer, Geometry::BufferType bufferType, uint componentsPerElement, uint tempVerticesNumber, char* data)
 {
     const auto bufferIndex = static_cast<uint8_t>(bufferType);
     if (!_glTemporaryBuffers[bufferIndex])

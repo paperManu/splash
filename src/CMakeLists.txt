@@ -155,10 +155,14 @@ target_sources(splash-${API_VERSION} PRIVATE
     controller/widget/widget_textures_view.cpp
     controller/widget/widget_tree.cpp
     controller/widget/widget_warp.cpp
+    graphics/api/gpu_buffer.cpp
+    graphics/api/renderer.cpp
     graphics/api/gles/geometry_gfx_impl.cpp
+    graphics/api/gles/gpu_buffer.cpp
     graphics/api/gles/texture_image_impl.cpp
     graphics/api/gles/window_gfx_impl.cpp
     graphics/api/opengl/geometry_gfx_impl.cpp
+    graphics/api/opengl/gpu_buffer.cpp
     graphics/api/opengl/texture_image_impl.cpp
     graphics/api/opengl/window_gfx_impl.cpp
     graphics/camera.cpp
@@ -168,12 +172,8 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/filter_custom.cpp
     graphics/framebuffer.cpp
     graphics/geometry.cpp
-    graphics/gles_gpu_buffer.cpp
-    graphics/gpu_buffer.cpp
     graphics/object.cpp
     graphics/object_library.cpp
-    graphics/opengl_gpu_buffer.cpp
-    graphics/renderer.cpp
     graphics/shader.cpp
     graphics/texture.cpp
     graphics/texture_image.cpp

@@ -275,7 +275,8 @@ void BaseObject::runTasks()
 }
 
 /*************/
-const Renderer::GlMsgCallbackData* BaseObject::getGlMsgCallbackDataPtr() {
+const gfx::Renderer::GlMsgCallbackData* BaseObject::getGlMsgCallbackDataPtr()
+{
     _glMsgCallbackData.name = getName();
     return &_glMsgCallbackData;
 }

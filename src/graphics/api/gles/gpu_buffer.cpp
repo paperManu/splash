@@ -1,17 +1,17 @@
-#include "./graphics/gles_gpu_buffer.h"
+#include "./graphics/api/gles/gpu_buffer.h"
 
-namespace Splash
+namespace Splash::gfx::gles
 {
 
 /*************/
-GLESGpuBuffer::GLESGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data)
+GpuBuffer::GpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data)
 {
     _glId = generateAndBindBuffer();
     init(elementSize, type, usage, size, data);
 }
 
 /*************/
-void GLESGpuBuffer::zeroBuffer()
+void GpuBuffer::zeroBuffer()
 {
     // Previously used `glClearBufferData` with the data set to `nullptr`, this causes the buffer to be filled with zeros. Unfortunately, this function is not available in OpenGL
     // ES, so we make do with a manual upload.
@@ -22,14 +22,14 @@ void GLESGpuBuffer::zeroBuffer()
 }
 
 /*************/
-void GLESGpuBuffer::allocateBufferData(GLuint bufferId, GLenum target, GLsizeiptr size, const GLvoid* data, GLenum usage)
+void GpuBuffer::allocateBufferData(GLuint bufferId, GLenum target, GLsizeiptr size, const GLvoid* data, GLenum usage)
 {
     glBindBuffer(target, bufferId);
     glBufferData(target, size, data, usage);
 }
 
 /*************/
-void GLESGpuBuffer::copyBetweenBuffers(GLuint fromId, GLuint toId, GLsizeiptr size)
+void GpuBuffer::copyBetweenBuffers(GLuint fromId, GLuint toId, GLsizeiptr size)
 {
     glBindBuffer(GL_COPY_READ_BUFFER, fromId);
     glBindBuffer(GL_COPY_WRITE_BUFFER, toId);
@@ -37,7 +37,7 @@ void GLESGpuBuffer::copyBetweenBuffers(GLuint fromId, GLuint toId, GLsizeiptr si
 }
 
 /*************/
-std::vector<char> GLESGpuBuffer::readBufferFromGpu(GLuint bufferId, GLsizeiptr bytesToRead)
+std::vector<char> GpuBuffer::readBufferFromGpu(GLuint bufferId, GLsizeiptr bytesToRead)
 {
     glBindBuffer(GL_ARRAY_BUFFER, bufferId);
     const auto* bufferPtr = static_cast<char*>(glMapBufferRange(GL_ARRAY_BUFFER, 0, bytesToRead, GL_MAP_READ_BIT));
@@ -50,7 +50,7 @@ std::vector<char> GLESGpuBuffer::readBufferFromGpu(GLuint bufferId, GLsizeiptr b
 }
 
 /*************/
-void GLESGpuBuffer::getBufferParameteriv(GLenum bufferId, GLenum target, GLenum value, GLint* data)
+void GpuBuffer::getBufferParameteriv(GLenum bufferId, GLenum target, GLenum value, GLint* data)
 {
     glBindBuffer(target, bufferId);
     glGetBufferParameteriv(target, value, data);
@@ -58,7 +58,7 @@ void GLESGpuBuffer::getBufferParameteriv(GLenum bufferId, GLenum target, GLenum 
 }
 
 /*************/
-void GLESGpuBuffer::setBufferData(GLuint bufferId, GLenum target, GLsizeiptr size, const GLvoid* data)
+void GpuBuffer::setBufferData(GLuint bufferId, GLenum target, GLsizeiptr size, const GLvoid* data)
 {
     glBindBuffer(target, bufferId);
     glBufferSubData(target, 0, size, data);
