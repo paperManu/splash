@@ -40,13 +40,11 @@ void GLESGpuBuffer::copyBetweenBuffers(GLuint fromId, GLuint toId, GLsizeiptr si
 std::vector<char> GLESGpuBuffer::readBufferFromGpu(GLuint bufferId, GLsizeiptr bytesToRead)
 {
     glBindBuffer(GL_ARRAY_BUFFER, bufferId);
-    auto* bufferPtr = static_cast<char*>(glMapBufferRange(GL_ARRAY_BUFFER, 0, bytesToRead, GL_MAP_READ_BIT));
-
+    const auto* bufferPtr = static_cast<char*>(glMapBufferRange(GL_ARRAY_BUFFER, 0, bytesToRead, GL_MAP_READ_BIT));
     assert(bufferPtr != nullptr && "Mapped buffer returned a null pointer!");
-
     auto buffer = std::vector<char>(bufferPtr, bufferPtr + bytesToRead);
-
     glUnmapBuffer(GL_ARRAY_BUFFER);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     return buffer;
 }
@@ -56,6 +54,7 @@ void GLESGpuBuffer::getBufferParameteriv(GLenum bufferId, GLenum target, GLenum 
 {
     glBindBuffer(target, bufferId);
     glGetBufferParameteriv(target, value, data);
+    glBindBuffer(target, 0);
 }
 
 /*************/
@@ -63,6 +62,7 @@ void GLESGpuBuffer::setBufferData(GLuint bufferId, GLenum target, GLsizeiptr siz
 {
     glBindBuffer(target, bufferId);
     glBufferSubData(target, 0, size, data);
+    glBindBuffer(target, 0);
 }
 
 } // namespace Splash

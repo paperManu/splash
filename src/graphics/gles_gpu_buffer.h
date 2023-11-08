@@ -28,14 +28,65 @@ namespace Splash
 class GLESGpuBuffer final : public GpuBuffer
 {
   public:
+    /**
+     * Constructor
+     * \param elementSize Base element size
+     * \param type Element type
+     * \param usage Usage hint for the buffer
+     * \param size Size of the buffer
+     * \param data Data to upload to the buffer, if any
+     */
     GLESGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data);
 
   protected:
+    /**
+     * Set the buffer to zero.
+     * The buffer is considered to have already been allocated.
+     */
     virtual void zeroBuffer() override final;
+
+    /**
+     * Alocate and initializes the buffer given its handle
+     * \param bufferId Handle of the buffer
+     * \param target Usage target
+     * \param size Data size
+     * \param data Pointer to the data
+     * \param  usage Usage pattern
+     */
     virtual void allocateBufferData(GLuint bufferId, GLenum target, GLsizeiptr size, const GLvoid* data, GLenum usage) override final;
+
+    /**
+     * Copy data between buffers
+     * \param fromId Handle of the source buffer
+     * \param toId Handle of the target buffer
+     * \param size Size (in bytes) of the data to copy
+     */
     virtual void copyBetweenBuffers(GLuint fromId, GLuint toId, GLsizeiptr size) override final;
+
+    /**
+     * Read a buffer and return it
+     * \param bufferId Handle of the buffer
+     * \param bytesToRead Total bytes to read from the bufer
+     * \return Return a std::vector<char> containing the data
+     */
     virtual std::vector<char> readBufferFromGpu(GLuint bufferId, GLsizeiptr bytesToRead) override final;
+
+    /**
+     * Wrapper around glGetBufferParameteriv
+     * \param bufferId Buffer handle
+     * \param target Target usage
+     * \param value Value
+     * \param data Pre-allocated pointer to data, to hold the parameter
+     */
     virtual void getBufferParameteriv(GLenum bufferId, GLenum target, GLenum value, GLint* data) override final;
+
+    /**
+     * Wrapper around glBufferSubData
+     * \param bufferId Buffer handle
+     * \param target Target usage
+     * \param size Data size
+     * \param data Pointer to the data to set the bufer to
+     */
     virtual void setBufferData(GLuint bufferId, GLenum target, GLsizeiptr size, const GLvoid* data) override final;
 };
 
