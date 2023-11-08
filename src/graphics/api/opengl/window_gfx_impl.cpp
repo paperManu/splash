@@ -15,7 +15,7 @@ WindowGfxImpl::~WindowGfxImpl()
 }
 
 /*************/
-void WindowGfxImpl::setupFBOs(Scene* scene, int windowRect[4])
+void WindowGfxImpl::setupFBOs(Scene* scene, uint32_t width, uint32_t height)
 {
     // Render FBO
     if (glIsFramebuffer(_renderFbo) == GL_FALSE)
@@ -25,12 +25,12 @@ void WindowGfxImpl::setupFBOs(Scene* scene, int windowRect[4])
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
 
-    _depthTexture = scene->getRenderer()->createTexture_Image(scene, windowRect[2], windowRect[3], "D");
+    _depthTexture = scene->getRenderer()->createTexture_Image(scene, width, height, "D");
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
 
     _colorTexture = scene->getRenderer()->createTexture_Image(scene);
     _colorTexture->setAttribute("filtering", {false});
-    _colorTexture->reset(windowRect[2], windowRect[3], "RGBA");
+    _colorTexture->reset(width, height, "RGBA");
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
 
     GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
@@ -72,7 +72,7 @@ void WindowGfxImpl::resetSyncFence()
 /*************/
 void WindowGfxImpl::beginRender(int windowRect[4])
 {
-    glViewport(0, 0, windowRect[2], windowRect[3]);
+    glViewport(windowRect[0], windowRect[1], windowRect[2], windowRect[3]);
 
 #ifdef DEBUG
     glGetError();
@@ -183,7 +183,8 @@ void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureU
     }
 
     // Copy the rendered texture to the back/front buffer
-    glBlitNamedFramebuffer(_readFbo, 0, 0, 0, windowRect[2], windowRect[3], 0, 0, windowRect[2], windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBlitNamedFramebuffer(
+        _readFbo, 0, windowRect[0], windowRect[1], windowRect[2], windowRect[3], windowRect[0], windowRect[1], windowRect[2], windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     if (srgb)
         glDisable(GL_FRAMEBUFFER_SRGB);

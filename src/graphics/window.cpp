@@ -313,7 +313,7 @@ void Window::render()
     // Update the FBO configuration if needed
     if (_resized)
     {
-        _gfxImpl->setupFBOs(_scene, _windowRect);
+        _gfxImpl->setupFBOs(_scene, _windowRect[2], _windowRect[3]);
 
         // It has to be created in the context where it is used, so its (re)creation will be triggered
         // in Window::swapBuffers if needed, depending on the following flag
@@ -397,7 +397,6 @@ void Window::render()
 /*************/
 void Window::swapBuffers()
 {
-
     // Only one window will wait for vblank, the others draws directly into front buffer
     const auto windowIndex = _swappableWindowsCount++;
 

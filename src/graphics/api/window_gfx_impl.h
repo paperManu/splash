@@ -49,9 +49,10 @@ class WindowGfxImpl
     /**
      * Setup the FBOs for this window
      * \param scene Pointer to the Scene
-     * \param windowRect Window
+     * \param width FBO width
+     * \param height FBO height
      */
-    virtual void setupFBOs(Scene* _scene, int _windowRect[4]) = 0;
+    virtual void setupFBOs(Scene* _scene, uint32_t width, uint32_t height) = 0;
 
     /**
      * Clear the screen with the given color
@@ -67,9 +68,9 @@ class WindowGfxImpl
 
     /**
      * Setup the window for beginning rendering
-     * \param windowRect Window position and size
+     * \param windowRect Rendering position and size
      */
-    virtual void beginRender(int _windowRect[4]) = 0;
+    virtual void beginRender(int windowRect[4]) = 0;
 
     /**
      * End rendering for this window
@@ -129,11 +130,11 @@ class WindowGfxImpl
     virtual bool windowExists() const = 0;
 
     /**
-     * Swap back and front buffers
+     * Copy the given portion of rendered FBO up to the front buffer, respecting vertical sync if active
      * \param windowIndex Window index, among all of Splash windows
      * \param srgb True if the window is rendered in the sRGB color space
      * \param renderTextureUpdated True if the render textures have been updated
-     * \param windowRect Window position and size
+     * \param windowRect Position and size of the region to copy
      */
     virtual void swapBuffers(int windowIndex, bool _srgb, bool& _renderTextureUpdated, int _windowRect[4]) = 0;
 };

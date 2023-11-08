@@ -50,9 +50,10 @@ class WindowGfxImpl : public Splash::gfx::WindowGfxImpl
     /**
      * Setup the FBOs for this window
      * \param scene Pointer to the Scene
-     * \param windowRect Window
+     * \param width FBO width
+     * \param height FBO height
      */
-    void setupFBOs(Scene* scene, int windowRect[4]) final;
+    void setupFBOs(Scene* scene, uint32_t width, uint32_t height) final;
 
     /**
      * Clear the screen with the given color
