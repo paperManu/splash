@@ -49,8 +49,7 @@ void GeometryGfxImpl::resizeTempBuffers()
     _temporaryBufferSize = _feedbackMaxNbrPrimitives * 6; // 3 vertices per primitive, times two to keep some margin for future updates
     for (size_t i = 0; i < _glBuffers.size(); ++i)
     {
-        // This creates a copy of the buffer
-        auto tempBuffer = _glBuffers[i]->copyBuffer();
+        auto tempBuffer = std::make_shared<GpuBuffer>(*_glBuffers[i]);
         tempBuffer->resize(_temporaryBufferSize);
         _glTemporaryBuffers[i] = tempBuffer;
     }

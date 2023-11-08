@@ -38,6 +38,31 @@ class GpuBuffer final : public gfx::GpuBuffer
      */
     GpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data);
 
+    /**
+     * Destructor
+     */
+    virtual ~GpuBuffer() = default;
+
+    /**
+     * Copy constructor and operators
+     */
+    GpuBuffer(GpuBuffer& o)
+    {
+        _size = o._size;
+        _baseSize = o._baseSize;
+        _elementSize = o._elementSize;
+        _type = o._type;
+        _usage = o._usage;
+
+        glGenBuffers(1, &_glId);
+        glBindBuffer(GL_ARRAY_BUFFER, _glId);
+        glBufferData(GL_ARRAY_BUFFER, _size * _elementSize * _baseSize, nullptr, _usage);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+    GpuBuffer& operator=(const GpuBuffer&) = delete;
+    GpuBuffer(GpuBuffer&&) = delete;
+    GpuBuffer& operator=(GpuBuffer&&) = delete;
+
   protected:
     /**
      * Set the buffer to zero.

@@ -51,7 +51,7 @@ class GpuBuffer
      */
     virtual ~GpuBuffer();
 
-    GpuBuffer(GpuBuffer&) = delete;
+    GpuBuffer(GpuBuffer&) = default;
     GpuBuffer& operator=(const GpuBuffer&) = delete;
     GpuBuffer(GpuBuffer&&) = delete;
     GpuBuffer& operator=(GpuBuffer&&) = delete;
@@ -71,12 +71,6 @@ class GpuBuffer
      * Fill the buffer with 0
      */
     void clear();
-
-    /**
-     * Copy this buffer to a new one
-     * \return Return a deep copy of this buffer
-     */
-    std::shared_ptr<GpuBuffer> copyBuffer() const;
 
     /**
      * Get the GL id

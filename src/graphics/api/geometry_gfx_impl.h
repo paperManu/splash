@@ -6,7 +6,6 @@
 #include <memory>
 
 #include "./core/constants.h"
-#include "./graphics/api/gpu_buffer.h"
 #include "./graphics/geometry.h"
 
 namespace Splash::gfx

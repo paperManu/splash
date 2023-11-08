@@ -30,6 +30,8 @@
 namespace Splash::gfx::gles
 {
 
+class GpuBuffer;
+
 class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
 {
   public:
@@ -152,9 +154,9 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
     std::map<GLFWwindow*, GLuint> _vertexArray;
     GLuint _feedbackQuery;
 
-    std::array<std::shared_ptr<gfx::GpuBuffer>, 4> _glBuffers{};
-    std::array<std::shared_ptr<gfx::GpuBuffer>, 4> _glAlternativeBuffers{}; // Alternative buffers used for rendering
-    std::array<std::shared_ptr<gfx::GpuBuffer>, 4> _glTemporaryBuffers{};   // Temporary buffers used for feedback
+    std::array<std::shared_ptr<gfx::gles::GpuBuffer>, 4> _glBuffers{};
+    std::array<std::shared_ptr<gfx::gles::GpuBuffer>, 4> _glAlternativeBuffers{}; // Alternative buffers used for rendering
+    std::array<std::shared_ptr<gfx::gles::GpuBuffer>, 4> _glTemporaryBuffers{};   // Temporary buffers used for feedback
 
     GLuint _feedbackMaxNbrPrimitives{0};
 

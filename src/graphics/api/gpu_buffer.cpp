@@ -3,9 +3,6 @@
 #include <sstream>
 #include <unordered_map>
 
-#include "./graphics/api/gles/gpu_buffer.h"
-#include "./graphics/api/opengl/gpu_buffer.h"
-
 namespace Splash::gfx
 {
 
@@ -109,25 +106,6 @@ void GpuBuffer::resize(size_t size)
     resizeBuffer(_glId, totalSize);
 
     _size = size;
-}
-
-/*************/
-std::shared_ptr<GpuBuffer> GpuBuffer::copyBuffer() const
-{
-    std::shared_ptr<GpuBuffer> newBuffer;
-    if (const auto ptr = dynamic_cast<const gfx::gles::GpuBuffer*>(this))
-    {
-        return std::make_shared<gfx::gles::GpuBuffer>(_elementSize, _type, _usage, _size, nullptr);
-    }
-    else if (const auto ptr = dynamic_cast<const gfx::opengl::GpuBuffer*>(this))
-    {
-        return std::make_shared<gfx::opengl::GpuBuffer>(_elementSize, _type, _usage, _size, nullptr);
-    }
-    else
-    {
-        assert(false && "Forgot to add support for this new GPU buffer type!");
-        return nullptr;
-    }
 }
 
 /*************/
