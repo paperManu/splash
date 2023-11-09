@@ -7,7 +7,6 @@
 
 #include "./core/constants.h"
 #include "./graphics/api/gpu_buffer.h"
-#include "./graphics/api/renderer.h"
 #include "./graphics/geometry.h"
 
 namespace Splash::gfx
@@ -95,19 +94,17 @@ class GeometryGfxImpl
 
     /**
      * Initialize the vertices to the given number and data
-     * \param renderer Renderer, used to create the GpuBuffers
      * \param data Coordinates of the vertices, in uniform coordinates (4 floats per vertex)
      * \param numVerts Number of vertices to initialize
      */
-    virtual void initVertices(gfx::Renderer* renderer, float* data, uint numVerts) = 0;
+    virtual void initVertices(float* data, uint numVerts) = 0;
 
     /**
      * Allocate or init the chosen buffer
-     * \param renderer Renderer, used to create GpuBuffers
      * \param bufferType Buffer type, one of Geometry::BufferType
      * \param componentsPerElement Component (float, int, ...) counts per element (vec2, ivec3, ...)
      */
-    virtual void allocateOrInitBuffer(gfx::Renderer* renderer, Geometry::BufferType bufferType, uint componentsPerElement, std::vector<float>& dataVec) = 0;
+    virtual void allocateOrInitBuffer(Geometry::BufferType bufferType, uint componentsPerElement, std::vector<float>& dataVec) = 0;
 
     /**
      * Delete all vertex arrays
@@ -116,10 +113,9 @@ class GeometryGfxImpl
 
     /**
      * Update the temporary buffers
-     * \param renderer Renderer, used to create GpuBuffers
      * \param deserializedMesh Deserialized mesh, to be used to update the buffers
      */
-    virtual void updateTemporaryBuffers(gfx::Renderer* renderer, Mesh::MeshContainer* deserializedMesh) = 0;
+    virtual void updateTemporaryBuffers(Mesh::MeshContainer* deserializedMesh) = 0;
 
     /**
      * Update the object

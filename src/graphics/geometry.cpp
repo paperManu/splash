@@ -189,19 +189,17 @@ void Geometry::updateBuffers()
     if (vertices.empty())
         return;
 
-    auto* renderer = _scene->getRenderer();
-
-    _gfxImpl->initVertices(renderer, vertices.data(), vertices.size() / 4);
+    _gfxImpl->initVertices(vertices.data(), vertices.size() / 4);
 
     std::vector<float> texcoords = _mesh->getUVCoordsFlat();
-    _gfxImpl->allocateOrInitBuffer(renderer, BufferType::TexCoords, 2, texcoords);
+    _gfxImpl->allocateOrInitBuffer(BufferType::TexCoords, 2, texcoords);
 
     std::vector<float> normals = _mesh->getNormalsFlat();
-    _gfxImpl->allocateOrInitBuffer(renderer, BufferType::Normal, 4, normals);
+    _gfxImpl->allocateOrInitBuffer(BufferType::Normal, 4, normals);
 
     // An additional annexe buffer, to be filled by compute shaders. Contains a vec4 for each vertex
     std::vector<float> annexe = _mesh->getAnnexeFlat();
-    _gfxImpl->allocateOrInitBuffer(renderer, BufferType::Annexe, 4, annexe);
+    _gfxImpl->allocateOrInitBuffer(BufferType::Annexe, 4, annexe);
 
     _gfxImpl->clearFromAllContexts();
 
@@ -216,7 +214,7 @@ void Geometry::updateTemporaryBuffers()
 {
     std::lock_guard<Spinlock> updateLock(_updateMutex);
 
-    _gfxImpl->updateTemporaryBuffers(_scene->getRenderer(), _deserializedMesh.get());
+    _gfxImpl->updateTemporaryBuffers(_deserializedMesh.get());
 
     swapBuffers();
     _buffersDirty = true;

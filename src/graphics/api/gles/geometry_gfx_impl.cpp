@@ -1,5 +1,7 @@
 #include "./graphics/api/gles/geometry_gfx_impl.h"
 
+#include "./graphics/api/gles/gpu_buffer.h"
+
 namespace Splash::gfx::gles
 {
 
@@ -162,20 +164,20 @@ void GeometryGfxImpl::swapBuffers()
 }
 
 /*************/
-void GeometryGfxImpl::initVertices(gfx::Renderer* renderer, float* data, uint numVerts)
+void GeometryGfxImpl::initVertices(float* data, uint numVerts)
 {
     setVerticesNumber(numVerts);
-    _glBuffers[0] = renderer->createGpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, data);
+    _glBuffers[0] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, data);
 }
 
 /*************/
-void GeometryGfxImpl::allocateOrInitBuffer(gfx::Renderer* renderer, Geometry::BufferType bufferType, uint componentsPerElement, std::vector<float>& dataVec)
+void GeometryGfxImpl::allocateOrInitBuffer(Geometry::BufferType bufferType, uint componentsPerElement, std::vector<float>& dataVec)
 {
     const auto bufferIndex = static_cast<uint8_t>(bufferType);
     if (!dataVec.empty())
-        _glBuffers[bufferIndex] = renderer->createGpuBuffer(componentsPerElement, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, dataVec.data());
+        _glBuffers[bufferIndex] = std::make_shared<GpuBuffer>(componentsPerElement, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, dataVec.data());
     else
-        _glBuffers[bufferIndex] = renderer->createGpuBuffer(componentsPerElement, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr);
+        _glBuffers[bufferIndex] = std::make_shared<GpuBuffer>(componentsPerElement, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr);
 }
 
 /*************/
@@ -188,15 +190,15 @@ void GeometryGfxImpl::clearFromAllContexts()
 }
 
 /*************/
-void GeometryGfxImpl::updateTemporaryBuffers(gfx::Renderer* renderer, Mesh::MeshContainer* deserializedMesh)
+void GeometryGfxImpl::updateTemporaryBuffers(Mesh::MeshContainer* deserializedMesh)
 {
     _temporaryVerticesNumber = deserializedMesh->vertices.size();
     _temporaryBufferSize = _temporaryVerticesNumber;
 
-    allocateOrInitTemporaryBuffer(renderer, Geometry::BufferType::Vertex, 4, _temporaryVerticesNumber, reinterpret_cast<char*>(deserializedMesh->vertices.data()));
-    allocateOrInitTemporaryBuffer(renderer, Geometry::BufferType::TexCoords, 2, _temporaryVerticesNumber, reinterpret_cast<char*>(deserializedMesh->uvs.data()));
-    allocateOrInitTemporaryBuffer(renderer, Geometry::BufferType::Normal, 4, _temporaryVerticesNumber, reinterpret_cast<char*>(deserializedMesh->normals.data()));
-    allocateOrInitTemporaryBuffer(renderer, Geometry::BufferType::Annexe, 4, _temporaryVerticesNumber, reinterpret_cast<char*>(deserializedMesh->annexe.data()));
+    allocateOrInitTemporaryBuffer(Geometry::BufferType::Vertex, 4, _temporaryVerticesNumber, reinterpret_cast<char*>(deserializedMesh->vertices.data()));
+    allocateOrInitTemporaryBuffer(Geometry::BufferType::TexCoords, 2, _temporaryVerticesNumber, reinterpret_cast<char*>(deserializedMesh->uvs.data()));
+    allocateOrInitTemporaryBuffer(Geometry::BufferType::Normal, 4, _temporaryVerticesNumber, reinterpret_cast<char*>(deserializedMesh->normals.data()));
+    allocateOrInitTemporaryBuffer(Geometry::BufferType::Annexe, 4, _temporaryVerticesNumber, reinterpret_cast<char*>(deserializedMesh->annexe.data()));
 }
 
 /*************/
@@ -245,11 +247,11 @@ void GeometryGfxImpl::setVerticesNumber(uint32_t verticesNumber)
 }
 
 /*************/
-void GeometryGfxImpl::allocateOrInitTemporaryBuffer(gfx::Renderer* renderer, Geometry::BufferType bufferType, uint componentsPerElement, uint tempVerticesNumber, char* data)
+void GeometryGfxImpl::allocateOrInitTemporaryBuffer(Geometry::BufferType bufferType, uint componentsPerElement, uint tempVerticesNumber, char* data)
 {
     const auto bufferIndex = static_cast<uint8_t>(bufferType);
     if (!_glTemporaryBuffers[bufferIndex])
-        _glTemporaryBuffers[bufferIndex] = renderer->createGpuBuffer(componentsPerElement, GL_FLOAT, GL_STATIC_DRAW, tempVerticesNumber, reinterpret_cast<GLvoid*>(data));
+        _glTemporaryBuffers[bufferIndex] = std::make_shared<GpuBuffer>(componentsPerElement, GL_FLOAT, GL_STATIC_DRAW, tempVerticesNumber, reinterpret_cast<GLvoid*>(data));
     else
         _glTemporaryBuffers[bufferIndex]->setBufferFromVector({data, data + tempVerticesNumber * sizeof(float) * componentsPerElement});
 }

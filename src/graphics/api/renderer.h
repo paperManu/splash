@@ -143,17 +143,6 @@ class Renderer
     virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const = 0;
 
     /**
-     * Create a new GpuBuffer
-     * \param elementSize Base element size
-     * \param type Element type
-     * \param usage Usage hint for the buffer
-     * \param size Size of the buffer
-     * \param data Data to upload to the buffer, if any
-     * \return Return a shared pointer to the created GpuBuffer
-     */
-    virtual std::shared_ptr<gfx::GpuBuffer> createGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data) const = 0;
-
-    /**
      * Get a pointer to the data to be sent to the GL callback
      * \return A raw pointer to the GL callback data
      */

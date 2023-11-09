@@ -44,11 +44,6 @@ class Renderer : public gfx::Renderer
         return std::make_shared<Geometry>(root, std::make_unique<gfx::gles::GeometryGfxImpl>());
     }
 
-    virtual std::shared_ptr<gfx::GpuBuffer> createGpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data) const override final
-    {
-        return std::make_shared<gfx::gles::GpuBuffer>(elementSize, type, usage, size, data);
-    }
-
     virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const override final
     {
         return std::make_shared<Texture_Image>(root, std::make_unique<gfx::gles::Texture_ImageImpl>());
