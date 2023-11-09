@@ -105,8 +105,16 @@ sudo apt install libglfw3-dev libglm-dev libavcodec-dev libavformat-dev \
 
 - Fedora 38:
 
+If not already installed, add the RPM Fusion additional package repository (needed for some of the following dependencies). This only adds the free repository:
+
 ```bash
-sudo dnf install gcc g++ cmake gsl-dev atlas-devel libgphoto2-devel python3-devel \
+sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+```
+
+Then install the dependencies:
+
+```bash
+sudo dnf install gcc g++ cmake gsl-devel atlas-devel libgphoto2-devel python3-devel \
     yasm portaudio-devel python3-numpy opencv-devel jsoncpp-devel x264-devel \
     x265-devel libuuid-devel libX11-devel libXrandr-devel libXinerama-devel \
     libXcursor-devel libXi-devel mesa-libGL-devel
