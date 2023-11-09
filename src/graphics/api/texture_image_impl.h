@@ -20,8 +20,8 @@
 #ifndef SPLASH_GFX_TEXTURE_IMAGE_IMPL_H
 #define SPLASH_GFX_TEXTURE_IMAGE_IMPL_H
 
+#include "./core/imagebuffer.h"
 #include "./image/image.h"
-#include "core/imagebuffer.h"
 
 namespace Splash::gfx
 {

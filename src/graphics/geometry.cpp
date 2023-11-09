@@ -14,9 +14,9 @@ namespace Splash
 {
 
 /*************/
-Geometry::Geometry(RootObject* root)
+Geometry::Geometry(RootObject* root, std::unique_ptr<gfx::GeometryGfxImpl> gfxImpl)
     : BufferObject(root)
-    , _gfxImpl(std::make_unique<gfx::GeometryGfxImpl>())
+    , _gfxImpl(std::move(gfxImpl))
 {
     init();
 

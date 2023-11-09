@@ -58,7 +58,6 @@ std::vector<std::string> Scene::_ghostableTypes{"camera", "warp"};
 /*************/
 Scene::Scene(Context context)
     : RootObject(context)
-    , _objectLibrary(dynamic_cast<RootObject*>(this))
 {
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
@@ -636,6 +635,8 @@ void Scene::init(const std::string& name)
 
     if (!_renderer)
         return;
+
+    _objectLibrary = std::make_unique<ObjectLibrary>(this);
 
     _isInitialized = true;
     _renderer->init(name);

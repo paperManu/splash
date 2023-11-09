@@ -25,13 +25,14 @@
 #include <string>
 #include <string_view>
 
+#include "./graphics/api/window_gfx_impl.h"
 #include "./graphics/gl_window.h"
 #include "./utils/log.h"
-#include "graphics/api/window_gfx_impl.h"
 
 namespace Splash
 {
 
+class Geometry;
 class GlWindow;
 class GpuBuffer;
 class RootObject;
@@ -113,7 +114,12 @@ class Renderer
      */
     std::shared_ptr<GlWindow> getMainWindow() { return _mainWindow; }
 
-  public:
+    /**
+     * Create a new Geometry
+     * \param root Root object
+     */
+    virtual std::shared_ptr<Geometry> createGeometry(RootObject* root) const = 0;
+
     /**
      * Create a new Texture_Image
      * \param root Root object

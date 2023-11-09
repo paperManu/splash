@@ -1,92 +1,157 @@
-#include "./graphics/api/gl_base_window_gfx_impl.h"
+/*
+ * Copyright (C) 2023 Tarek Yasser
+ *
+ * This file is part of Splash.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Splash is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
-namespace Splash::gfx::opengl
+#ifndef SPLASH_GFX_GL_WINDOW_IMPL_H
+#define SPLASH_GFX_GL_WINDOW_IMPL_H
+
+#include <memory>
+
+#include "./core/constants.h"
+#include "./graphics/api/window_gfx_impl.h"
+#include "./graphics/gl_window.h"
+
+namespace Splash
 {
 
-class WindowGfxImpl : public gfx::GlBaseWindowGfxImpl
+class Texture_Image;
+
+namespace gfx::opengl
 {
-    /* Back to front buffer swap is done a bit differently than what is usually done
-     * in most software. To understand why and how it works, you have to know that
-     * with Xorg (which is for now the main target for the use of Splash), vertical
-     * synchronization is done for each OpenGL context separately even when contexts
-     * are shared. So for each context, the OpenGL driver has to wait for the vsync
-     * to happen before being authorized to go forward.
-     *
-     * Splash can be configured to render to multiple windows, to multiple displays.
-     * In this case what can happen is that one window blocks due to waiting for the
-     * buffer swap, which may lead to missing the swap for the next window. Which will
-     * then wait for the next one, and so on. In this context, all displays (screens
-     * or projectors) are considered to have the same refresh rate, and ideally to
-     * be synchronized.
-     *
-     * This means that buffer swapping has to be done manually. The following
-     * swapBuffers() method is called for each window sequentially (in Scene::render()),
-     * and overall here is what happens:
-     * - the first window renders to the back buffer, and waits for the vertical sync
-     * - all subsequent windows draw directly to the front buffer
-     *
-     * As the drawing in this method is merely a buffer copy, it is fast enough for
-     * the subsequent windows to be rendered soon enough for the rendering to front
-     * buffer to be invisible (as in, not producing any visible glitch). And the whole
-     * rendering is then synchronized only once for all of Splash.
-     *
-     * Note that in the case where NVIDIA Quadro and Quadro sync cards are detected,
-     * and that NVSwapGroups are available, all of this behavior is mostly disabled as
-     * NVIDIA drivers take care of vertical synchronization correctly. So vertical
-     * synchronization happens as usual in this case.
+
+class WindowGfxImpl : public Splash::gfx::WindowGfxImpl
+{
+  public:
+    /**
+     * Constructor
      */
-    virtual void swapBuffers(int windowIndex, bool _srgb, bool& _renderTextureUpdated, int _windowRect[4]) override final
-    {
-        _window->setAsCurrentContext();
-        glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
+    WindowGfxImpl() = default;
 
-        // If this is the first window to be swapped, or NVSwapGroups are active,
-        // this window should be synchronized to the vertical sync. So we will draw to back buffer
-        const bool isWindowSynchronized = Scene::getHasNVSwapGroup() or windowIndex == 0;
+    /**
+     * Destructor
+     */
+    virtual ~WindowGfxImpl() override;
 
-        // If the window is not synchronized, draw directly to front buffer
-        if (!isWindowSynchronized)
-            glDrawBuffer(GL_FRONT);
+    /**
+     * Setup the FBOs for this window
+     * \param scene Pointer to the Scene
+     * \param windowRect Window
+     */
+    void setupFBOs(Scene* scene, int windowRect[4]) final;
 
-        if (_srgb)
-            glEnable(GL_FRAMEBUFFER_SRGB);
+    /**
+     * Clear the screen with the given color
+     * \param color Clear color
+     * \param clearDepth If true, also clears the depth buffer
+     */
+    void clearScreen(glm::vec4 color, bool clearDepth = false) final;
 
-        // If the render texture specs have changed
-        if (_renderTextureUpdated)
-        {
-            if (_readFbo != 0)
-                glDeleteFramebuffers(1, &_readFbo);
+    /**
+     * Reset the render sync fence
+     */
+    void resetSyncFence() final;
 
-            glCreateFramebuffers(1, &_readFbo);
+    /**
+     * Setup the window for beginning rendering
+     * \param windowRect Window position and size
+     */
+    void beginRender(int windowRect[4]) final;
 
-            glNamedFramebufferTexture(_readFbo, GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
-            const auto status = glCheckNamedFramebufferStatus(_readFbo, GL_FRAMEBUFFER);
-            if (status != GL_FRAMEBUFFER_COMPLETE)
-                Log::get() << Log::WARNING << "gfx::opengl::WindowGfxImpl::" << __FUNCTION__ << " - Error while initializing read framebuffer object: " << status << Log::endl;
-#ifdef DEBUG
-            else
-                Log::get() << Log::DEBUGGING << "gfx::opengl::WindowGfxImpl::" << __FUNCTION__ << " - Read framebuffer object successfully initialized" << Log::endl;
-#endif
-            _renderTextureUpdated = false;
-        }
+    /**
+     * End rendering for this window
+     */
+    void endRender() final;
 
-        // Copy the rendered texture to the back/front buffer
-        glBlitNamedFramebuffer(_readFbo, 0, 0, 0, _windowRect[2], _windowRect[3], 0, 0, _windowRect[2], _windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    /**
+     * Setup user data for debug messages
+     * \param userData Pointer to the user data
+     */
+    void setDebugData(const void* userData) final;
 
-        if (_srgb)
-            glDisable(GL_FRAMEBUFFER_SRGB);
+    /**
+     * Get the GLFW window
+     * \return Return a pointer to the GLFW window
+     */
+    inline GLFWwindow* getGlfwWindow() final { return _window->get(); }
 
-        if (isWindowSynchronized)
-            // If this window is synchronized, so we wait for the vsync and swap
-            // front and back buffers
-            glfwSwapBuffers(_window->get());
-        else
-            // If this window is not synchronized, we revert the draw buffer back
-            // to drawing to the back buffer
-            glDrawBuffer(GL_BACK);
+    /**
+     * Get the main window, corresponding to the main rendering context
+     * \return Return a pointer to the  main GLFW window
+     */
+    inline GLFWwindow* getMainWindow() final { return _window->getMainWindow(); }
 
-        _window->releaseContext();
-    }
+    /**
+     * Initialize the window
+     * \param scene Root Scene
+     */
+    void init(Scene* scene) final;
+
+    /**
+     * Set as current rendering context
+     */
+    inline void setAsCurrentContext() final { _window->setAsCurrentContext(); }
+
+    /**
+     * Release from begin the current rendering context
+     */
+    inline void releaseContext() final { _window->releaseContext(); }
+
+    /**
+     * Check whether this window is the current rendering context
+     * \return Return true if this window is the current rendering context
+     */
+    inline bool isCurrentContext() const final { return _window->isCurrentContext(); }
+
+    /**
+     * Update the GLFW window from another one, both having shared resources
+     * \param window The window to share resources with
+     */
+    void updateGlfwWindow(GLFWwindow* window) final { _window = std::make_shared<GlWindow>(window, _window->getMainWindow()); }
+
+    /**
+     * Check whether the GLFW window exists
+     * \return Return true if the contained GLFW window exists
+     */
+    bool windowExists() const final { return _window != nullptr; }
+
+    /**
+     * Swap back and front buffers
+     * \param windowIndex Window index, among all of Splash windows
+     * \param srgb True if the window is rendered in the sRGB color space
+     * \param renderTextureUpdated True if the render textures have been updated
+     * \param windowRect Window position and size
+     */
+    void swapBuffers(int windowIndex, bool srgb, bool& renderTextureUpdated, int windowRect[4]) final;
+
+  private:
+    GLuint _readFbo{0};
+    GLuint _renderFbo{0};
+
+    std::shared_ptr<GlWindow> _window{nullptr};
+
+    GLsync _renderFence{nullptr};
+
+    std::shared_ptr<Texture_Image> _depthTexture{nullptr};
+    std::shared_ptr<Texture_Image> _colorTexture{nullptr};
 };
 
-} // namespace Splash::gfx::opengl
+} // namespace gfx::opengl
+
+} // namespace Splash
+
+#endif

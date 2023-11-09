@@ -180,7 +180,7 @@ void Warp::render()
             auto scene = dynamic_cast<Scene*>(_root);
             assert(scene != nullptr);
 
-            auto pointModel = scene->getObjectLibrary().getModel("3d_marker");
+            auto pointModel = scene->getObjectLibrary()->getModel("3d_marker");
 
             auto controlPoints = _screenMesh->getControlPoints();
             auto point = controlPoints[_selectedControlPointIndex];
@@ -246,10 +246,10 @@ void Warp::loadDefaultModels()
 
     for (auto& file : files)
     {
-        if (!scene->getObjectLibrary().loadModel(file.first, file.second))
+        if (!scene->getObjectLibrary()->loadModel(file.first, file.second))
             continue;
 
-        auto object = scene->getObjectLibrary().getModel(file.first);
+        auto object = scene->getObjectLibrary()->getModel(file.first);
         assert(object != nullptr);
 
         object->setAttribute("fill", {"color"});
@@ -265,7 +265,7 @@ void Warp::setupFBO()
     // Setup the virtual screen
     _screen = std::make_shared<Object>(_root);
     _screen->setAttribute("fill", {"warp"});
-    auto virtualScreen = std::make_shared<Geometry>(_root);
+    auto virtualScreen = _renderer->createGeometry(_root);
     _screenMesh = std::make_shared<Mesh_BezierPatch>(_root);
     virtualScreen->linkTo(_screenMesh);
     _screen->addGeometry(virtualScreen);

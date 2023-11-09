@@ -63,8 +63,9 @@ class Geometry : public BufferObject
     /**
      * Constructor
      * \param root Root object
+     * \param gfxImpl Specialization of a gfx::GeometryGfxImpl for handling rendering
      */
-    Geometry(RootObject* root);
+    explicit Geometry(RootObject* root, std::unique_ptr<gfx::GeometryGfxImpl> gfxImpl);
 
     /**
      * Destructor

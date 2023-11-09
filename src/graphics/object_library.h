@@ -36,6 +36,8 @@
 namespace Splash
 {
 
+class Scene;
+
 /*************/
 class ObjectLibrary
 {
@@ -43,10 +45,7 @@ class ObjectLibrary
     /**
      * Constructor
      */
-    explicit ObjectLibrary(RootObject* root)
-        : _root(root)
-    {
-    }
+    explicit ObjectLibrary(Scene* scene);
 
     /**
      * Load a 3D model for later use
@@ -64,7 +63,8 @@ class ObjectLibrary
     Object* getModel(const std::string& name);
 
   private:
-    RootObject* _root;
+    Scene* _scene;
+    Renderer* _renderer{nullptr};
     std::unique_ptr<Object> _defaultObject{nullptr};
     std::map<std::string, std::unique_ptr<Object>> _library{};
 };

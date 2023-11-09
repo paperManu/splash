@@ -125,7 +125,7 @@ class Scene : public RootObject
      * Get a reference to the object library
      * \return Return a reference to the object library
      */
-    ObjectLibrary& getObjectLibrary() { return _objectLibrary; }
+    ObjectLibrary* getObjectLibrary() { return _objectLibrary.get(); }
 
     /**
      * Get a raw pointer to the Scene graphic renderer
@@ -254,7 +254,7 @@ class Scene : public RootObject
 #endif
 
   private:
-    ObjectLibrary _objectLibrary;                               //!< Library of 3D objects used by multiple GraphObjects
+    std::unique_ptr<ObjectLibrary> _objectLibrary{nullptr};     //!< Library of 3D objects used by multiple GraphObjects
     static inline std::unique_ptr<Renderer> _renderer{nullptr}; // Must be static due to usage inside static functions in Scene.
 
     static bool _hasNVSwapGroup; //!< If true, NV swap groups have been detected and are used

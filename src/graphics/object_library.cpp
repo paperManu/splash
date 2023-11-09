@@ -3,8 +3,18 @@
 #include <fstream>
 #include <utility>
 
+#include "./core/scene.h"
+
 namespace Splash
 {
+
+/*************/
+ObjectLibrary::ObjectLibrary(Scene* scene)
+    : _scene(scene)
+{
+    if (scene != nullptr)
+        _renderer = scene->getRenderer();
+}
 
 /*************/
 bool ObjectLibrary::loadModel(const std::string& name, const std::string& filename)
@@ -27,14 +37,16 @@ bool ObjectLibrary::loadModel(const std::string& name, const std::string& filena
         }
     }
 
-    auto mesh = std::make_shared<Mesh>(_root);
+    assert(_renderer != nullptr);
+
+    auto mesh = std::make_shared<Mesh>(_scene);
     mesh->setAttribute("file", {filepath});
 
     // We create the geometry manually for it not to be registered in the root
-    auto geometry = std::make_shared<Geometry>(_root);
+    auto geometry = _renderer->createGeometry(_scene);
     geometry->setMesh(mesh);
 
-    auto obj = std::make_unique<Object>(_root);
+    auto obj = std::make_unique<Object>(_scene);
     obj->addGeometry(geometry);
 
     _library[name] = std::move(obj);
@@ -51,8 +63,8 @@ Object* ObjectLibrary::getModel(const std::string& name)
         // can not be created in the constructor of the library
         if (!_defaultObject)
         {
-            auto geometry = std::make_shared<Geometry>(_root);
-            _defaultObject = std::make_unique<Object>(_root);
+            auto geometry = _renderer->createGeometry(_scene);
+            _defaultObject = std::make_unique<Object>(_scene);
             _defaultObject->addGeometry(geometry);
         }
 

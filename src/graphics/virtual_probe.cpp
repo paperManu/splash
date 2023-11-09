@@ -182,7 +182,7 @@ void VirtualProbe::setupFBO()
 
     _screen = std::make_unique<Object>(_root);
     _screen->setAttribute("fill", {"cubemap_projection"});
-    auto virtualScreen = std::make_shared<Geometry>(_root);
+    auto virtualScreen = _renderer->createGeometry(_root);
     _screen->addGeometry(virtualScreen);
     _screen->addTexture(_fbo->getColorTexture());
 }

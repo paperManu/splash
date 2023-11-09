@@ -533,12 +533,12 @@ bool Window::setProjectionSurface()
 
     _screen = std::make_shared<Object>(_root);
     _screen->setAttribute("fill", {"window"});
-    auto virtualScreen = std::make_shared<Geometry>(_root);
+    auto virtualScreen = _renderer->createGeometry(_root);
     _screen->addGeometry(virtualScreen);
 
     _screenGui = std::make_shared<Object>(_root);
     _screenGui->setAttribute("fill", {"window"});
-    virtualScreen = std::make_shared<Geometry>(_root);
+    virtualScreen = _renderer->createGeometry(_root);
     _screenGui->addGeometry(virtualScreen);
 
 #ifdef DEBUG

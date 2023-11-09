@@ -227,8 +227,8 @@ void Factory::registerObjects()
 
     _objectBook["geometry"] = Page(
         [&](RootObject* root) {
-            if (root)
-                return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Geometry>(root));
+            if (_scene)
+                return std::dynamic_pointer_cast<GraphObject>(_scene->getRenderer()->createGeometry(root));
 
             return std::shared_ptr<GraphObject>(nullptr);
         },

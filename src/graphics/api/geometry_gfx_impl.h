@@ -6,8 +6,6 @@
 #include <memory>
 
 #include "./core/constants.h"
-
-// TODO: Move GPUBuffer to be internal to GeometryGfxImpl?
 #include "./graphics/geometry.h"
 #include "./graphics/gpu_buffer.h"
 #include "./graphics/renderer.h"
@@ -17,250 +15,130 @@ namespace Splash::gfx
 class GeometryGfxImpl
 {
   public:
-    GeometryGfxImpl() { glGenQueries(1, &_feedbackQuery); }
+    /**
+     * Constructor
+     */
+    GeometryGfxImpl() = default;
 
-    ~GeometryGfxImpl()
-    {
-        for (auto v : _vertexArray)
-            glDeleteVertexArrays(1, &(v.second));
+    /**
+     * Destructor
+     */
+    virtual ~GeometryGfxImpl() = default;
 
-        glDeleteQueries(1, &_feedbackQuery);
-    }
+    /**
+     * Other constructors
+     */
+    GeometryGfxImpl(const GeometryGfxImpl&) = delete;
+    GeometryGfxImpl& operator=(const GeometryGfxImpl&) = delete;
+    GeometryGfxImpl(GeometryGfxImpl&&) = delete;
+    GeometryGfxImpl& operator=(const GeometryGfxImpl&&) = delete;
 
-    void activate() { glBindVertexArray(_vertexArray[glfwGetCurrentContext()]); }
+    /**
+     * Activate for rendering
+     */
+    virtual void activate() = 0;
 
-    void deactivate()
-    {
-#if DEBUG
-        glBindVertexArray(0);
-#endif
-    }
+    /**
+     * Deactivate for rendering
+     */
+    virtual void deactivate() = 0;
 
-    void activateAsSharedBuffer()
-    {
-        const auto& buffers = _useAlternativeBuffers ? _glAlternativeBuffers : _glBuffers;
+    /**
+     * Activate the geometry for gpgpu
+     */
+    virtual void activateAsSharedBuffer() = 0;
 
-        for (uint i = 0; i < 4; i++)
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, i, buffers[i]->getId());
-    }
+    /**
+     * Resize temporary buffers
+     */
+    virtual void resizeTempBuffers() = 0;
 
-    void resizeTempBuffers()
-    {
-        _temporaryBufferSize = _feedbackMaxNbrPrimitives * 6; // 3 vertices per primitive, times two to keep some margin for future updates
-        for (size_t i = 0; i < _glBuffers.size(); ++i)
-        {
-            // This creates a copy of the buffer
-            auto tempBuffer = _glBuffers[i]->copyBuffer();
-            tempBuffer->resize(_temporaryBufferSize);
-            _glTemporaryBuffers[i] = tempBuffer;
-        }
-    }
+    /**
+     * Activate for transform feedback
+     */
+    virtual void activateForFeedback() = 0;
 
-    void activateForFeedback()
-    {
-        for (unsigned int i = 0; i < _glTemporaryBuffers.size(); ++i)
-        {
-            _glTemporaryBuffers[i]->clear();
-            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, i, _glTemporaryBuffers[i]->getId());
-        }
+    /**
+     * Deactivate  for transform feedback
+     */
+    virtual void deactivateFeedback() = 0;
 
-        glBeginQuery(GL_PRIMITIVES_GENERATED, _feedbackQuery);
-    }
+    /**
+     * Get the number of vertices for this geometry
+     * \return Return the vertice count
+     */
+    virtual uint32_t getVerticesNumber() const = 0;
 
-    void deactivateFeedback()
-    {
-#if DEBUG
-        for (unsigned int i = 0; i < _glTemporaryBuffers.size(); ++i)
-            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, i, 0);
-#endif
-
-        glEndQuery(GL_PRIMITIVES_GENERATED);
-        GLuint drawnPrimitives = 0;
-        while (true)
-        {
-            glGetQueryObjectuiv(_feedbackQuery, GL_QUERY_RESULT_AVAILABLE, &drawnPrimitives);
-            if (drawnPrimitives != 0)
-                break;
-            std::this_thread::sleep_for(std::chrono::microseconds(500));
-        }
-
-        glGetQueryObjectuiv(_feedbackQuery, GL_QUERY_RESULT, &drawnPrimitives);
-        _feedbackMaxNbrPrimitives = std::max(_feedbackMaxNbrPrimitives, drawnPrimitives);
-        _temporaryVerticesNumber = drawnPrimitives * 3;
-    }
-
-    uint getVerticesNumber() const
-    {
-        return _useAlternativeBuffers ? _alternativeVerticesNumber : _verticesNumber;
-    }
-
-    bool buffersTooSmall()
-    {
-        _feedbackMaxNbrPrimitives = std::max(_verticesNumber / 3, _feedbackMaxNbrPrimitives);
-        return _feedbackMaxNbrPrimitives * 6 > _temporaryBufferSize;
-    }
+    /**
+     * Get whether the buffers are too small to hold the whole geometry
+     * \return Return true if the buffers are too small
+     */
+    virtual bool buffersTooSmall() = 0;
 
     /**
      * Get a copy of the given GPU buffer
      * \param type GPU buffer type
      * \return Return a vector containing a copy of the buffer
      */
-    std::vector<char> getGpuBufferAsVector(int typeId, bool forceAlternativeBuffers = false)
-    {
-        if ((forceAlternativeBuffers || _useAlternativeBuffers) && _glAlternativeBuffers[typeId] != nullptr)
-            return _glAlternativeBuffers[typeId]->getBufferAsVector();
-        else
-            return _glBuffers[typeId]->getBufferAsVector();
-    }
+    virtual std::vector<char> getGpuBufferAsVector(int typeId, bool forceAlternativeBuffers = false) = 0;
 
-    bool anyAlternativeBufferMissing() const
-    {
-        return std::any_of(_glAlternativeBuffers.cbegin(), _glAlternativeBuffers.cend(), [](const auto& buffer) { return buffer == nullptr; });
-    }
+    /**
+     * Get the geometry as serialized
+     * \return Return the serialized geometry
+     */
+    virtual Mesh::MeshContainer serialize(const std::string& name) = 0;
 
-    Mesh::MeshContainer serialize(const std::string& name)
-    {
-        if (anyAlternativeBufferMissing())
-            return {};
+    /**
+     * Swap between temporary and alternative buffers
+     */
+    virtual void swapBuffers() = 0;
 
-        const auto vertices = _glAlternativeBuffers[0]->getBufferAsVector();
-        const auto uvs = _glAlternativeBuffers[1]->getBufferAsVector();
-        const auto normals = _glAlternativeBuffers[2]->getBufferAsVector();
-        const auto annexe = _glAlternativeBuffers[3]->getBufferAsVector();
+    /**
+     * Initialize the vertices to the given number and data
+     * \param renderer Renderer, used to create the GpuBuffers
+     * \param data Coordinates of the vertices, in uniform coordinates (4 floats per vertex)
+     * \param numVerts Number of vertices to initialize
+     */
+    virtual void initVertices(Renderer* renderer, float* data, uint numVerts) = 0;
 
-        const auto verticesData = reinterpret_cast<const glm::vec4*>(vertices.data());
-        const auto uvsData = reinterpret_cast<const glm::vec2*>(uvs.data());
-        const auto normalsData = reinterpret_cast<const glm::vec4*>(normals.data());
-        const auto annexeData = reinterpret_cast<const glm::vec4*>(annexe.data());
+    /**
+     * Allocate or init the chosen buffer
+     * \param renderer Renderer, used to create GpuBuffers
+     * \param bufferType Buffer type, one of Geometry::BufferType
+     * \param componentsPerElement Component (float, int, ...) counts per element (vec2, ivec3, ...)
+     */
+    virtual void allocateOrInitBuffer(Renderer* renderer, Geometry::BufferType bufferType, uint componentsPerElement, std::vector<float>& dataVec) = 0;
 
-        return Mesh::MeshContainer{
-            .name = name,
-            .vertices = std::vector<glm::vec4>(verticesData, verticesData + _alternativeVerticesNumber),
-            .uvs = std::vector<glm::vec2>(uvsData, uvsData + _alternativeVerticesNumber),
-            .normals = std::vector<glm::vec4>(normalsData, normalsData + _alternativeVerticesNumber),
-            .annexe = std::vector<glm::vec4>(annexeData, annexeData + _alternativeVerticesNumber),
-        };
-    }
+    /**
+     * Delete all vertex arrays
+     */
+    virtual void clearFromAllContexts() = 0;
 
-    void swapBuffers()
-    {
-        _glAlternativeBuffers.swap(_glTemporaryBuffers);
+    /**
+     * Update the temporary buffers
+     * \param renderer Renderer, used to create GpuBuffers
+     * \param deserializedMesh Deserialized mesh, to be used to update the buffers
+     */
+    virtual void updateTemporaryBuffers(Renderer* renderer, Mesh::MeshContainer* deserializedMesh) = 0;
 
-        int tmp = _alternativeVerticesNumber;
-        _alternativeVerticesNumber = _temporaryVerticesNumber;
-        _temporaryVerticesNumber = tmp;
+    /**
+     * Update the object
+     * \param buffersDirty In/out param, must be true if the buffers are considered dirty
+     */
+    virtual void update(bool& buffersDirty) = 0;
 
-        tmp = _alternativeBufferSize;
-        _alternativeBufferSize = _temporaryBufferSize;
-        _temporaryBufferSize = tmp;
-    }
-
-    void initVertices(Renderer* renderer, float* data, uint numVerts)
-    {
-        setVerticesNumber(numVerts);
-        _glBuffers[0] = renderer->createGpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, data);
-    }
-
-    // componentsPerElement: How many primitives (float, int, etc..) in one component (vec2, ivec3, etc)
-    // TODO: createGpuBuffer probably needs to take a const pointer?
-    void allocateOrInitBuffer(Renderer* renderer, Geometry::BufferType bufferType, uint componentsPerElement, std::vector<float>& dataVec)
-    {
-        const auto bufferIndex = static_cast<uint8_t>(bufferType);
-        if (!dataVec.empty())
-            _glBuffers[bufferIndex] = renderer->createGpuBuffer(componentsPerElement, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, dataVec.data());
-        else
-            _glBuffers[bufferIndex] = renderer->createGpuBuffer(componentsPerElement, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr);
-    }
-
-    void clearFromAllContexts()
-    {
-        for (auto& v : _vertexArray)
-            glDeleteVertexArrays(1, &(v.second));
-
-        _vertexArray.clear();
-    }
-
-    void updateTemporaryBuffers(Renderer* renderer, Mesh::MeshContainer* deserializedMesh)
-    {
-        _temporaryVerticesNumber = deserializedMesh->vertices.size();
-        _temporaryBufferSize = _temporaryVerticesNumber;
-
-        allocateOrInitTemporaryBuffer(renderer, Geometry::BufferType::Vertex, 4, _temporaryVerticesNumber, reinterpret_cast<char*>(deserializedMesh->vertices.data()));
-        allocateOrInitTemporaryBuffer(renderer, Geometry::BufferType::TexCoords, 2, _temporaryVerticesNumber, reinterpret_cast<char*>(deserializedMesh->uvs.data()));
-        allocateOrInitTemporaryBuffer(renderer, Geometry::BufferType::Normal, 4, _temporaryVerticesNumber, reinterpret_cast<char*>(deserializedMesh->normals.data()));
-        allocateOrInitTemporaryBuffer(renderer, Geometry::BufferType::Annexe, 4, _temporaryVerticesNumber, reinterpret_cast<char*>(deserializedMesh->annexe.data()));
-    }
-
-    void update(bool& buffersDirty)
-    {
-        GLFWwindow* context = glfwGetCurrentContext();
-        auto vertexArrayIt = _vertexArray.find(context);
-        if (vertexArrayIt == _vertexArray.end() || buffersDirty)
-        {
-            if (vertexArrayIt == _vertexArray.end())
-            {
-                vertexArrayIt = (_vertexArray.emplace(std::make_pair(context, 0))).first;
-                vertexArrayIt->second = 0;
-                glGenVertexArrays(1, &(vertexArrayIt->second));
-            }
-
-            glBindVertexArray(vertexArrayIt->second);
-
-            for (uint32_t idx = 0; idx < _glBuffers.size(); ++idx)
-            {
-
-                const auto& buffers = (_useAlternativeBuffers && _glAlternativeBuffers[0] != nullptr) ? _glAlternativeBuffers : _glBuffers;
-
-                glBindBuffer(GL_ARRAY_BUFFER, buffers[idx]->getId());
-                glVertexAttribPointer((GLuint)idx, buffers[idx]->getElementSize(), GL_FLOAT, GL_FALSE, 0, 0);
-                glEnableVertexAttribArray((GLuint)idx);
-            }
-
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-            glBindVertexArray(0);
-
-            buffersDirty = false;
-        }
-    }
-
-    void useAlternativeBuffers(bool isActive)
-    {
-        _useAlternativeBuffers = isActive;
-    }
+    /**
+     * Activate alternative buffers for draw
+     * \param isActive If true, use alternative buffers
+     */
+    virtual void useAlternativeBuffers(bool isActive) = 0;
 
   private:
-    void setVerticesNumber(uint verticesNumber)
-    {
-        _verticesNumber = verticesNumber;
-    }
-
-    void allocateOrInitTemporaryBuffer(Renderer* renderer, Geometry::BufferType bufferType, uint componentsPerElement, uint tempVerticesNumber, char* data)
-    {
-        const auto bufferIndex = static_cast<uint8_t>(bufferType);
-        if (!_glTemporaryBuffers[bufferIndex])
-            _glTemporaryBuffers[bufferIndex] = renderer->createGpuBuffer(componentsPerElement, GL_FLOAT, GL_STATIC_DRAW, tempVerticesNumber, reinterpret_cast<GLvoid*>(data));
-        else
-            _glTemporaryBuffers[bufferIndex]->setBufferFromVector({data, data + tempVerticesNumber * sizeof(float) * componentsPerElement});
-    }
-
-  private:
-    std::map<GLFWwindow*, GLuint> _vertexArray;
-    GLuint _feedbackQuery;
-
-    std::array<std::shared_ptr<GpuBuffer>, 4> _glBuffers{};
-    std::array<std::shared_ptr<GpuBuffer>, 4> _glAlternativeBuffers{}; // Alternative buffers used for rendering
-    std::array<std::shared_ptr<GpuBuffer>, 4> _glTemporaryBuffers{};   // Temporary buffers used for feedback
-
-    GLuint _feedbackMaxNbrPrimitives{0};
-
-    GLuint _verticesNumber{0};
-    GLuint _temporaryVerticesNumber{0};
-    int _alternativeVerticesNumber{0};
-
-    GLuint _temporaryBufferSize{0};
-    GLuint _alternativeBufferSize{0};
-
-    bool _useAlternativeBuffers{false};
+    /**
+     * Get whether any alternative buffer is missing
+     * \return Return true if one of the alternative buffers is missing
+     */
+    virtual bool anyAlternativeBufferMissing() const = 0;
 };
 
 } // namespace Splash::gfx

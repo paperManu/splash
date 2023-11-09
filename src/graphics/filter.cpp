@@ -32,7 +32,7 @@ Filter::Filter(RootObject* root)
     // Setup the virtual screen
     _screen = std::make_shared<Object>(_root);
     _screen->setAttribute("fill", {"image_filter"});
-    auto virtualScreen = std::make_shared<Geometry>(_root);
+    auto virtualScreen = _renderer->createGeometry(_root);
     _screen->addGeometry(virtualScreen);
 }
 

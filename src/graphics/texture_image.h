@@ -45,6 +45,11 @@ namespace Splash
 class Texture_Image : public Texture
 {
   public:
+    /**
+     * Constructor
+     * \param root Root object
+     * \param gfxImpl Specialization of a gfx::Texture_ImageImpl for handling rendering
+     */
     explicit Texture_Image(RootObject* root, std::unique_ptr<gfx::Texture_ImageImpl> gfxImpl);
 
     /**
