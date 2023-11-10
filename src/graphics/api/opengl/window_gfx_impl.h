@@ -69,9 +69,10 @@ class WindowGfxImpl : public Splash::gfx::WindowGfxImpl
 
     /**
      * Setup the window for beginning rendering
-     * \param windowRect Window position and size
+     * \param width Width of the rendering viewport
+     * \param height Height of the rendering viewport
      */
-    void beginRender(int windowRect[4]) final;
+    void beginRender(uint32_t width, uint32_t height) final;
 
     /**
      * End rendering for this window
@@ -135,9 +136,10 @@ class WindowGfxImpl : public Splash::gfx::WindowGfxImpl
      * \param windowIndex Window index, among all of Splash windows
      * \param srgb True if the window is rendered in the sRGB color space
      * \param renderTextureUpdated True if the render textures have been updated
-     * \param windowRect Window position and size
+     * \param width Width of the rendering viewport
+     * \param height Height of the rendering viewport
      */
-    void swapBuffers(int windowIndex, bool srgb, bool& renderTextureUpdated, int windowRect[4]) final;
+    void swapBuffers(int windowIndex, bool srgb, bool& renderTextureUpdated, uint32_t width, uint32_t height) final;
 
   private:
     GLuint _readFbo{0};

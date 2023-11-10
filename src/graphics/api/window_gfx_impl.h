@@ -68,9 +68,10 @@ class WindowGfxImpl
 
     /**
      * Setup the window for beginning rendering
-     * \param windowRect Rendering position and size
+     * \param width Width of the rendering viewport
+     * \param height Height of the rendering viewport
      */
-    virtual void beginRender(int windowRect[4]) = 0;
+    virtual void beginRender(uint32_t width, uint32_t height) = 0;
 
     /**
      * End rendering for this window
@@ -134,9 +135,10 @@ class WindowGfxImpl
      * \param windowIndex Window index, among all of Splash windows
      * \param srgb True if the window is rendered in the sRGB color space
      * \param renderTextureUpdated True if the render textures have been updated
-     * \param windowRect Position and size of the region to copy
+     * \param width Width of the rendering viewport
+     * \param height Height of the rendering viewport
      */
-    virtual void swapBuffers(int windowIndex, bool _srgb, bool& _renderTextureUpdated, int _windowRect[4]) = 0;
+    virtual void swapBuffers(int windowIndex, bool _srgb, bool& _renderTextureUpdated, uint32_t width, uint32_t height) = 0;
 };
 
 } // namespace gfx

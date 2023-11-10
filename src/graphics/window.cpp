@@ -321,7 +321,7 @@ void Window::render()
         _resized = false;
     }
 
-    _gfxImpl->beginRender(_windowRect);
+    _gfxImpl->beginRender(_windowRect[2], _windowRect[3]);
 
     // If we are in synchronization testing mode
     if (_swapSynchronizationTesting)
@@ -400,7 +400,7 @@ void Window::swapBuffers()
     // Only one window will wait for vblank, the others draws directly into front buffer
     const auto windowIndex = _swappableWindowsCount++;
 
-    _gfxImpl->swapBuffers(windowIndex, _srgb, _renderTextureUpdated, _windowRect);
+    _gfxImpl->swapBuffers(windowIndex, _srgb, _renderTextureUpdated, _windowRect[2], _windowRect[3]);
 
     _frontBufferTimestamp = _backBufferTimestamp;
     _presentationDelay = Timer::getTime() - _frontBufferTimestamp;

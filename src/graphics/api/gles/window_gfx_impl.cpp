@@ -70,9 +70,9 @@ void WindowGfxImpl::resetSyncFence()
 }
 
 /*************/
-void WindowGfxImpl::beginRender(int windowRect[4])
+void WindowGfxImpl::beginRender(uint32_t width, uint32_t height)
 {
-    glViewport(0, 0, windowRect[2], windowRect[3]);
+    glViewport(0, 0, width, height);
 
 #ifdef DEBUG
     glGetError();
@@ -116,7 +116,7 @@ void WindowGfxImpl::init(Scene* scene)
 }
 
 /*************/
-void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureUpdated, int windowRect[4])
+void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureUpdated, uint32_t width, uint32_t height)
 {
     // OpenGL ES doesn't seem to support rendering directly to the frontbuffer, so instead, we render to the back buffer and swap.
     //
@@ -167,7 +167,7 @@ void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureU
 
     // Copy the rendered texture to the back/front buffer
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _readFbo);
-    glBlitFramebuffer(windowRect[0], windowRect[1], windowRect[2], windowRect[3], windowRect[0], windowRect[1], windowRect[2], windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
     if (srgb)

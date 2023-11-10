@@ -70,9 +70,9 @@ void WindowGfxImpl::resetSyncFence()
 }
 
 /*************/
-void WindowGfxImpl::beginRender(int windowRect[4])
+void WindowGfxImpl::beginRender(uint32_t width, uint32_t height)
 {
-    glViewport(windowRect[0], windowRect[1], windowRect[2], windowRect[3]);
+    glViewport(0, 0, width, height);
 
 #ifdef DEBUG
     glGetError();
@@ -116,7 +116,7 @@ void WindowGfxImpl::init(Scene* scene)
 }
 
 /*************/
-void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureUpdated, int windowRect[4])
+void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureUpdated, uint32_t width, uint32_t height)
 {
     /* Back to front buffer swap is done a bit differently than what is usually done
      * in most software. To understand why and how it works, you have to know that
@@ -183,8 +183,7 @@ void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureU
     }
 
     // Copy the rendered texture to the back/front buffer
-    glBlitNamedFramebuffer(
-        _readFbo, 0, windowRect[0], windowRect[1], windowRect[2], windowRect[3], windowRect[0], windowRect[1], windowRect[2], windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBlitNamedFramebuffer(_readFbo, 0, 0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     if (srgb)
         glDisable(GL_FRAMEBUFFER_SRGB);
