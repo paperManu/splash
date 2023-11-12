@@ -17,6 +17,11 @@
  * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ * @geometry_gfx_impl.h
+ * Implementation of GeometryGfx for OpenGL
+ */
+
 #ifndef SPLASH_GFX_OPENGL_GEOMETRY_GFX_IMPL_H
 #define SPLASH_GFX_OPENGL_GEOMETRY_GFX_IMPL_H
 

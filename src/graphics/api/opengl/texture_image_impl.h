@@ -18,8 +18,8 @@
  */
 
 /*
- * @opengl_texture_image.h
- * Contains OpenGL 4.5 specific functionality for textures.
+ * @texture_image_impl.h
+ * Implementation of Texture_Image for OpenGL
  */
 
 #ifndef SPLASH_GFX_OPENGL_TEXTURE_IMAGE_H

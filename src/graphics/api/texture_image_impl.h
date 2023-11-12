@@ -17,6 +17,11 @@
  * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ * @texture_image_impl.h
+ * Base class for Texture_Image API implementations
+ */
+
 #ifndef SPLASH_GFX_TEXTURE_IMAGE_IMPL_H
 #define SPLASH_GFX_TEXTURE_IMAGE_IMPL_H
 

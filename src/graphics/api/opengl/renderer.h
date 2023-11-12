@@ -17,6 +17,11 @@
  * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ * @renderer.h
+ * Implementation of Renderer for OpenGL
+ */
+
 #ifndef SPLASH_OPENGL_RENDERER_H
 #define SPLASH_OPENGL_RENDERER_H
 

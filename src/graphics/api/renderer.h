@@ -17,6 +17,11 @@
  * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ * @renderer.h
+ * Base class for renderer, implementation specific rendering API
+ */
+
 #ifndef SPLASH_RENDERER_H
 #define SPLASH_RENDERER_H
 

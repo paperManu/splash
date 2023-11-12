@@ -17,6 +17,11 @@
  * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ * @gpu_buffer.h
+ * Implementation of GpuBuffer for OpenGL ES
+ */
+
 #ifndef SPLASH_GLES_GPU_BUFFER_H
 #define SPLASH_GLES_GPU_BUFFER_H
 

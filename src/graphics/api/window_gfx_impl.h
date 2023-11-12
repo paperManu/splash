@@ -17,6 +17,11 @@
  * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ * @window_gfx_impl.h
+ * Base class for window API implementations
+ */
+
 #ifndef SPLASH_GFX_WINDOW_GFX_IMPL
 #define SPLASH_GFX_WINDOW_GFX_IMPL
 

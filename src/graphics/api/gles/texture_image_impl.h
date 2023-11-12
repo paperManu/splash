@@ -18,8 +18,8 @@
  */
 
 /*
- * @gles_texture_image.h
- * Contains OpenGL ES 3.x specific functionality for textures.
+ * @texture_image_impl.h
+ * Implementation of Texture_Image for OpenGL ES
  */
 
 #ifndef SPLASH_GFX_GLES_TEXTURE_IMAGE_IMPL_H

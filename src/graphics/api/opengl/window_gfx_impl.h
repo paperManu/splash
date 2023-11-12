@@ -17,6 +17,11 @@
  * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ * @window_gfx_impl.h
+ * Implementation ofr WindowGfx for OpenGL
+ */
+
 #ifndef SPLASH_GFX_GL_WINDOW_IMPL_H
 #define SPLASH_GFX_GL_WINDOW_IMPL_H
 
