@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Emmanuel Durand
+ * Copyright (C) 2013 Splash authors
  *
  * This file is part of Splash.
  *
@@ -29,17 +29,24 @@
 #include <chrono>
 #include <glm/glm.hpp>
 #include <map>
+#include <memory>
 #include <utility>
 
 #include "./core/constants.h"
 
 #include "./core/attribute.h"
 #include "./core/buffer_object.h"
-#include "./graphics/gpu_buffer.h"
+#include "./graphics/api/gpu_buffer.h"
+#include "./graphics/api/renderer.h"
 #include "./mesh/mesh.h"
 
 namespace Splash
 {
+
+namespace gfx
+{
+class GeometryGfxImpl;
+}
 
 class Geometry : public BufferObject
 {
@@ -47,8 +54,8 @@ class Geometry : public BufferObject
     enum class BufferType : uint8_t
     {
         Vertex = 0,
-        Normal,
         TexCoords,
+        Normal,
         Annexe
     };
 
@@ -56,8 +63,9 @@ class Geometry : public BufferObject
     /**
      * Constructor
      * \param root Root object
+     * \param gfxImpl Specialization of a gfx::GeometryGfxImpl for handling rendering
      */
-    Geometry(RootObject* root);
+    explicit Geometry(RootObject* root, std::unique_ptr<gfx::GeometryGfxImpl> gfxImpl);
 
     /**
      * Destructor
@@ -95,18 +103,13 @@ class Geometry : public BufferObject
      */
     void deactivateFeedback();
 
-    /**
-     * Get a copy of the given GPU buffer
-     * \param type GPU buffer type
-     * \return Return a vector containing a copy of the buffer
-     */
-    std::vector<char> getGpuBufferAsVector(Geometry::BufferType type);
+    std::vector<char> getGpuBufferAsVector(Geometry::BufferType type, bool forceAlternativeBuffer = false) const;
 
     /**
      * Get the number of vertices for this geometry
      * \return Return the vertice count
      */
-    int getVerticesNumber() const { return _useAlternativeBuffers ? _alternativeVerticesNumber : _verticesNumber; }
+    uint getVerticesNumber() const;
 
     /**
      * Get the geometry as serialized
@@ -177,26 +180,13 @@ class Geometry : public BufferObject
   private:
     bool _onMasterScene{false};
 
+    std::unique_ptr<gfx::GeometryGfxImpl> _gfxImpl;
+
     std::shared_ptr<Mesh> _mesh;
     std::unique_ptr<Mesh::MeshContainer> _deserializedMesh{nullptr};
 
-    std::map<GLFWwindow*, GLuint> _vertexArray;
-    std::array<std::shared_ptr<GpuBuffer>, 4> _glBuffers{};
-    std::array<std::shared_ptr<GpuBuffer>, 4> _glAlternativeBuffers{}; // Alternative buffers used for rendering
-    std::array<std::shared_ptr<GpuBuffer>, 4> _glTemporaryBuffers{};   // Temporary buffers used for feedback
     bool _buffersDirty{false};
     bool _buffersResized{false}; // Holds whether the alternative buffers have been resized in the previous feedback
-    bool _useAlternativeBuffers{false};
-
-    int _verticesNumber{0};
-    int _alternativeVerticesNumber{0};
-    int _alternativeBufferSize{0};
-    int _temporaryVerticesNumber{0};
-    int _temporaryBufferSize{0};
-
-    // Transform feedback
-    GLuint _feedbackQuery;
-    int _feedbackMaxNbrPrimitives{0};
 
     /**
      * Initialization
@@ -207,6 +197,9 @@ class Geometry : public BufferObject
      * Register new functors to modify attributes
      */
     void registerAttributes();
+
+    void updateBuffers();
+    void updateTemporaryBuffers();
 };
 
 } // namespace Splash

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Emmanuel Durand
+ * Copyright (C) 2016 Splash authors
  *
  * This file is part of Splash.
  *
@@ -167,6 +167,6 @@ bool Factory::isSubtype(const std::string& type)
     return static_cast<bool>(std::dynamic_pointer_cast<T>(object));
 }
 
-} // end of namespace
+} // namespace Splash
 
 #endif

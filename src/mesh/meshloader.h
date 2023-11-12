@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Emmanuel Durand
+ * Copyright (C) 2015 Splash authors
  *
  * This file is part of Splash.
  *
@@ -356,7 +356,7 @@ class Obj final : public Base
     std::vector<std::vector<FaceVertex>> _faces;
 };
 
-} // end of namespace
-} // end of namespace
+} // namespace Loader
+} // namespace Splash
 
 #endif

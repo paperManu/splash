@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Emmanuel Durand
+ * Copyright (C) 2016 Splash authors
  *
  * This file is part of Splash.
  *
@@ -174,6 +174,6 @@ class Warp final : public Texture
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_WARP_H

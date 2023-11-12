@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Emmanuel Durand
+ * Copyright (C) 2014 Splash authors
  *
  * This file is part of Splash.
  *
@@ -169,6 +169,6 @@ bool Link::sendMessage(const std::string& name, const std::string& attribute, co
     return sendMessage(name, attribute, convertedMsg);
 }
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_LINK_H

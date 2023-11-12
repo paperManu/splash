@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Emmanuel Durand
+ * Copyright (C) 2017 Splash authors
  *
  * This file is part of Splash.
  *
@@ -50,6 +50,6 @@ class GuiMeshes : public GuiWidget
     void replaceMesh(const std::string& previousMedia, const std::string& media, const std::string& type);
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

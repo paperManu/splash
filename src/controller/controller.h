@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Emmanuel Durand
+ * Copyright (C) 2016 Splash authors
  *
  * This file is part of Splash.
  *
@@ -184,7 +184,7 @@ class ControllerObject : public GraphObject
      * \param name Object name
      * \param wait time as uint32. Will be cast to milliseconds
      */
-    void waitForObjectCreation(const std::string& name, uint32_t waitTime=15)
+    void waitForObjectCreation(const std::string& name, uint32_t waitTime = 15)
     {
         while (!checkObjectExists(name))
             std::this_thread::sleep_for(static_cast<std::chrono::milliseconds>(waitTime));
@@ -266,6 +266,6 @@ std::vector<std::shared_ptr<T>> ControllerObject::getObjectsOfBaseType() const
     return objects;
 }
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_CONTROLLER_H

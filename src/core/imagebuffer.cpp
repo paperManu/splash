@@ -106,4 +106,4 @@ void ImageBuffer::zero()
         memset(_buffer.data(), 0, _buffer.size());
 }
 
-} // end of namespace
+} // namespace Splash

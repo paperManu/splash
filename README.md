@@ -96,27 +96,36 @@ The packages necessary to compile Splash are the following:
 sudo apt install build-essential git-core cmake libxrandr-dev libxi-dev \
     mesa-common-dev libgsl0-dev libatlas3-base libgphoto2-dev libz-dev \
     libxinerama-dev libxcursor-dev python3-dev yasm portaudio19-dev \
-    python3-numpy libopencv-dev libjsoncpp-dev libx264-dev libx265-dev
+    python3-numpy libopencv-dev libjsoncpp-dev libavcodec-dev libavformat-dev \
+    libavutil-dev libswscale-dev
 
 # Non mandatory libraries needed to link against system libraries only
-sudo apt install libglfw3-dev libglm-dev libavcodec-dev libavformat-dev \
-    libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev
+sudo apt install libglfw3-dev libglm-dev libsnappy-dev libzmq3-dev
 ```
 
 - Fedora 38:
 
+If not already installed, add the RPM Fusion additional package repository (needed for some of the following dependencies). This only adds the free repository:
+
 ```bash
-sudo dnf install gcc g++ cmake gsl-dev atlas-devel libgphoto2-devel python3-devel \
-    yasm portaudio-devel python3-numpy opencv-devel jsoncpp-devel x264-devel \
-    x265-devel libuuid-devel libX11-devel libXrandr-devel libXinerama-devel \
-    libXcursor-devel libXi-devel mesa-libGL-devel
+sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+```
+
+Then install the dependencies:
+
+```bash
+sudo dnf install gcc g++ cmake gsl-devel atlas-devel libgphoto2-devel python3-devel \
+    yasm portaudio-devel python3-numpy opencv-devel jsoncpp-devel libuuid-devel \
+    libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel \
+    mesa-libGL-devel libavcodec-free-devel libavformat-free-devel libavutil-free-devel \
+    libswscale-free-devel
 ```
 
 - Archlinux (not well maintained, please signal any issue):
 
 ```bash
 pacman -Sy git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcursor jsoncpp \
-    mesa glm gsl libgphoto2 python3 portaudio zip zlib x264 x265 opencv qt5-base vtk hdf5 glew
+    mesa glm gsl libgphoto2 python3 portaudio zip zlib ffmpeg opencv qt5-base vtk hdf5 glew
 ```
 
 Once everything is installed, you can go on with building Splash. To build and link it against the bundled libraries:

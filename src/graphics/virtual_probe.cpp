@@ -1,15 +1,13 @@
 #include "./graphics/virtual_probe.h"
 
-#include "./utils/scope_guard.h"
-
 #include <glm/gtc/matrix_transform.hpp>
+
+#include "./utils/scope_guard.h"
 
 using namespace glm;
 
 namespace Splash
 {
-
-extern void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
 
 /*************/
 VirtualProbe::VirtualProbe(RootObject* root)
@@ -92,11 +90,10 @@ void VirtualProbe::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 void VirtualProbe::render()
 {
 #ifdef DEBUGGL
-    glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(this));
-
+    gfx::Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
     OnScopeExit
     {
-        glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(_root));
+        gfx::Renderer::setGlMsgCallbackData(_root->getGlMsgCallbackDataPtr());
     };
 #endif
 
@@ -188,7 +185,7 @@ void VirtualProbe::setupFBO()
 
     _screen = std::make_unique<Object>(_root);
     _screen->setAttribute("fill", {"cubemap_projection"});
-    auto virtualScreen = std::make_shared<Geometry>(_root);
+    auto virtualScreen = _renderer->createGeometry(_root);
     _screen->addGeometry(virtualScreen);
     _screen->addTexture(_fbo->getColorTexture());
 }
@@ -224,7 +221,8 @@ void VirtualProbe::setOutputSize(int width, int height)
 /*************/
 void VirtualProbe::registerAttributes()
 {
-    addAttribute("position",
+    addAttribute(
+        "position",
         [&](const Values& args) {
             _position = dvec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
             return true;
@@ -235,7 +233,8 @@ void VirtualProbe::registerAttributes()
         {'r', 'r', 'r'});
     setAttributeDescription("position", "Set the virtual probe position");
 
-    addAttribute("projection",
+    addAttribute(
+        "projection",
         [&](const Values& args) {
             auto type = args[0].as<std::string>();
             if (type == "equirectangular")
@@ -265,7 +264,8 @@ void VirtualProbe::registerAttributes()
         {'s'});
     setAttributeDescription("projection", "Projection type, can be equirectangular or spherical");
 
-    addAttribute("rotation",
+    addAttribute(
+        "rotation",
         [&](const Values& args) {
             _rotation = dvec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
             return true;
@@ -276,7 +276,8 @@ void VirtualProbe::registerAttributes()
         {'r', 'r', 'r'});
     setAttributeDescription("rotation", "Set the virtual probe rotation");
 
-    addAttribute("size",
+    addAttribute(
+        "size",
         [&](const Values& args) {
             _newWidth = args[0].as<int>();
             _newHeight = args[1].as<int>();
@@ -288,7 +289,8 @@ void VirtualProbe::registerAttributes()
         {'i', 'i'});
     setAttributeDescription("size", "Set the render size");
 
-    addAttribute("sphericalFov",
+    addAttribute(
+        "sphericalFov",
         [&](const Values& args) {
             auto value = args[0].as<float>();
             if (value < 1.0 || value > 360.0)
@@ -301,4 +303,4 @@ void VirtualProbe::registerAttributes()
     setAttributeDescription("sphericalFov", "Field of view for the spherical projection");
 }
 
-} // end of namespace
+} // namespace Splash

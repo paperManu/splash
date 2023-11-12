@@ -9,21 +9,21 @@ using namespace Splash;
 
 namespace GraphObjectTests
 {
-    /*************/
-    class GraphObjectMock : public GraphObject
+/*************/
+class GraphObjectMock : public GraphObject
+{
+  public:
+    GraphObjectMock(RootObject* root)
+        : GraphObject(root)
     {
-      public:
-        GraphObjectMock(RootObject* root)
-            : GraphObject(root)
-        {
-            _renderingPriority = Priority::NO_RENDER;
-        }
-    
-        bool isConnectedToRemote() const { return _isConnectedToRemote; }
-    
-        bool linkIt(const std::shared_ptr<GraphObject>&) override { return true; }
-    };
-}
+        _renderingPriority = Priority::NO_RENDER;
+    }
+
+    bool isConnectedToRemote() const { return _isConnectedToRemote; }
+
+    bool linkIt(const std::shared_ptr<GraphObject>&) override { return true; }
+};
+} // namespace GraphObjectTests
 
 /*************/
 TEST_CASE("Testing GraphObject getters and setters")

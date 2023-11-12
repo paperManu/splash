@@ -15,46 +15,46 @@ using namespace Splash;
 
 namespace RootObjectTests
 {
-    /*************/
-    class RootObjectMock : public RootObject
+/*************/
+class RootObjectMock : public RootObject
+{
+  public:
+    Values _testValue{};
+
+  public:
+    RootObjectMock()
+        : RootObject()
     {
-      public:
-        Values _testValue{};
-    
-      public:
-        RootObjectMock()
-            : RootObject()
-        {
-            registerAttributes();
-            _link = std::make_unique<Link>(this, "mock", Link::ChannelType::zmq);
-            _name = "world";
-            _tree.setName(_name);
-        }
-    
-        void step()
-        {
-            _tree.processQueue(true);
-            executeTreeCommands();
-            runTasks();
-            updateTreeFromObjects();
-            propagateTree();
-            waitSignalBufferObjectUpdated(100);
-        }
-    
-      private:
-        void registerAttributes()
-        {
-            addAttribute(
-                "testValue",
-                [&](const Values& args) {
-                    _testValue = args;
-                    return true;
-                },
-                [&]() -> Values { return _testValue; },
-                {});
-        }
-    };
-}
+        registerAttributes();
+        _link = std::make_unique<Link>(this, "mock", Link::ChannelType::zmq);
+        _name = "world";
+        _tree.setName(_name);
+    }
+
+    void step()
+    {
+        _tree.processQueue(true);
+        executeTreeCommands();
+        runTasks();
+        updateTreeFromObjects();
+        propagateTree();
+        waitSignalBufferObjectUpdated(100);
+    }
+
+  private:
+    void registerAttributes()
+    {
+        addAttribute(
+            "testValue",
+            [&](const Values& args) {
+                _testValue = args;
+                return true;
+            },
+            [&]() -> Values { return _testValue; },
+            {});
+    }
+};
+} // namespace RootObjectTests
 
 /*************/
 TEST_CASE("Testing RootObject construction")

@@ -26,65 +26,14 @@ before_script:
     ccache wget curl build-essential git-core libjsoncpp-dev zip cmake automake libtool
     libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev
     libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev
-    libopencv-dev libx264-dev libx265-dev software-properties-common
+    libopencv-dev software-properties-common uuid-dev libavcodec-dev libavformat-dev
+    libavutil-dev libswscale-dev
 
   # CCache stuff
   - mkdir -p ccache
   - export CCACHE_BASEDIR=${PWD}
   - export CCACHE_DIR=${PWD}/ccache
   - export PATH="/usr/lib/ccache:${PATH}"
-
-test:20.04:gcc-bundled-libs:
-  stage: test
-  image: ubuntu:20.04
-  script: 
-    # Prepare bundled dependencies
-    - ./make_deps.sh
-
-    # Test using bundled libs
-    - rm -rf build && mkdir build
-    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
-    - make -sC build -j$(nproc)
-    - make check -sC build
-    - ./build/src/splash --child --prefix unittest &
-    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
-  except:
-    - /^debian.*$/
-
-test:20.04:clang-bundled-libs:
-  stage: test
-  image: ubuntu:20.04
-  script: 
-    # Prepare bundled dependencies
-    - ./make_deps.sh
-
-    # Test using Clang
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends clang
-    - rm -rf build && mkdir build
-    - CC=clang CXX=clang++ cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
-    - make -sC build -j$(nproc)
-    - make check -sC build
-    - ./build/src/splash --child --prefix unittest &
-    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
-  except:
-    - /^debian.*$/
-
-test:20.04:gcc-system-libs:
-  stage: test
-  image: ubuntu:20.04
-  script: 
-    # Test using system libs
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
-      libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev
-    - rm -rf build && mkdir build
-    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
-    - make -sC build -j$(nproc)
-    - make check -sC build
-    - ./build/src/splash --child --prefix unittest &
-    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
-  except:
-    - website
-    - /^debian.*$/
 
 test:22.04:gcc-bundled-libs:
   stage: test
@@ -100,52 +49,83 @@ test:22.04:gcc-bundled-libs:
     - make check -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
-  except:
-    - /^debian.*$/
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH != '/^debian.*$/'
+    - if: $CI_COMMIT_BRANCH == 'master'
+    - if: $CI_COMMIT_BRANCH == 'develop'
 
-test:22.04:clang-bundled-libs:
+test:23.10:gcc-bundled-libs:
   stage: test
-  image: ubuntu:22.04
+  image: ubuntu:23.10
   script: 
     # Prepare bundled dependencies
     - ./make_deps.sh
 
-    # Test using Clang
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends clang
+    # Test using bundled libs
     - rm -rf build && mkdir build
-    - CC=clang CXX=clang++ cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
     - make check -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
-  except:
-    - /^debian.*$/
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH != '/^debian.*$/'
+    - if: $CI_COMMIT_BRANCH == 'master'
+    - if: $CI_COMMIT_BRANCH == 'develop'
 
-test:22.04:gcc-system-libs:
+test:23.10:clang-system-libs:
   stage: test
-  image: ubuntu:22.04
+  image: ubuntu:23.10
   script: 
-    # Test using system libs
+    # Test using Clang with system libs
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
-      libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev
+      libsnappy-dev libzmq3-dev clang
     - rm -rf build && mkdir build
-    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
+    - CC=clang CXX=clang++ cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
     - make -sC build -j$(nproc)
     - make check -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
-  except:
-    - website
-    - /^debian.*$/
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH != '/^debian.*$/'
+    - if: $CI_COMMIT_BRANCH == 'master'
+    - if: $CI_COMMIT_BRANCH == 'develop'
+ 
+test:fedora:gcc-bundled-libs:
+  stage: test
+  image: fedora:latest
+  allow_failure: true
+  before_script:
+    # We need a few additional dependencies from the RPM Fusion repository
+    - dnf install --assumeyes https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+    - dnf update --assumeyes
+    - dnf install --assumeyes gcc g++ cmake gsl-devel atlas-devel libgphoto2-devel python3-devel 
+        yasm portaudio-devel python3-numpy opencv-devel jsoncpp-devel libuuid-devel libX11-devel
+        libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel mesa-libGL-devel ccache
+        libavcodec-free-devel libavformat-free-devel libavutil-free-devel libswscale-free-devel
+    - mkdir -p ccache
+    - export CCACHE_BASEDIR=${PWD}
+    - export CCACHE_DIR=${PWD}/ccache
+    - export PATH="/usr/lib/ccache:${PATH}"
+    - ./make_deps.sh
+    - rm -rf build && mkdir build && cd build
+  script:
+    - cmake -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr ..
+    - make -j$(nproc)
+    - make check
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH != '/^debian.*$/'
+    - if: $CI_COMMIT_BRANCH == 'master'
+    - if: $CI_COMMIT_BRANCH == 'develop'
 
-test:archlinux:
+test:archlinux:gcc-bundled-libs:
   stage: test
   image: archlinux:latest
   allow_failure: true
   before_script:
     - pacman -Syyu --noconfirm --disable-download-timeout
     - pacman -Sy --noconfirm --disable-download-timeout git cmake make gcc yasm ccache pkgconfig libxi libxinerama libxrandr
-      libxcursor jsoncpp mesa gsl libgphoto2 python3 portaudio zip zlib x264 x265 opencv qt5-base vtk
+      libxcursor jsoncpp mesa gsl libgphoto2 python3 portaudio zip zlib ffmpeg opencv qt5-base vtk
       hdf5 glew fmt openmpi
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
@@ -157,15 +137,15 @@ test:archlinux:
     - cmake -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make check
-  except:
-    - /^debian.*$/
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH == 'archlinux'
 
 #
 # Test coverage
 #
 coverage:
   stage: coverage
-  image: ubuntu:20.04
+  image: ubuntu:22.04
   script: 
     # Install coverage tools
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends lcov zip
@@ -180,35 +160,15 @@ coverage:
     name: "splash_coverage_${CI_BUILD_REF_NAME}"
     paths:
     - "coverage.zip"
-  only:
-    - develop
-    - master
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'master'
+    - if: $CI_COMMIT_BRANCH == 'develop'
 
 #
 # ┏━┓┏━┓┏━╸╻┏ ┏━┓┏━╸┏━╸
 # ┣━┛┣━┫┃  ┣┻┓┣━┫┃╺┓┣╸ 
 # ╹  ╹ ╹┗━╸╹ ╹╹ ╹┗━┛┗━╸
 #
-package:debian:20.04:
-  stage: deploy
-  image: ubuntu:20.04
-  script:
-    # Build package
-    - ./make_deps.sh
-    - rm -rf build && mkdir build && cd build
-    - cmake -DBUILD_GENERIC_ARCH=ON -DWITH_LTO=ON -DCMAKE_INSTALL_PREFIX=/usr ..
-    - make -j$(nproc)
-    - make package
-    - mv *.deb ../
-  only:
-    - tags
-    - master
-  artifacts:
-    name: "splash_${CI_BUILD_REF_NAME}"
-    paths:
-      - "*.deb"
-      - "*.tar.bz2"
-
 package:debian:22.04:
   stage: deploy
   image: ubuntu:22.04
@@ -220,9 +180,29 @@ package:debian:22.04:
     - make -j$(nproc)
     - make package
     - mv *.deb ../
-  only:
-    - tags
-    - master
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == 'master'
+  artifacts:
+    name: "splash_${CI_BUILD_REF_NAME}"
+    paths:
+      - "*.deb"
+      - "*.tar.bz2"
+
+package:debian:23.10:
+  stage: deploy
+  image: ubuntu:23.10
+  script:
+    # Build package
+    - ./make_deps.sh
+    - rm -rf build && mkdir build && cd build
+    - cmake -DBUILD_GENERIC_ARCH=ON -DWITH_LTO=ON -DCMAKE_INSTALL_PREFIX=/usr ..
+    - make -j$(nproc)
+    - make package
+    - mv *.deb ../
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == 'master'
   artifacts:
     name: "splash_${CI_BUILD_REF_NAME}"
     paths:
@@ -231,20 +211,19 @@ package:debian:22.04:
 
 package:blender_addon:
   stage: deploy
-  image: ubuntu:20.04
+  image: ubuntu:22.04
   before_script:
     - apt update -qq
     - DEBIAN_FRONTEND=noninteractive apt install -y git git-lfs zip cmake build-essential pkg-config
-
   script:
     # Build the Blender addon
     - rm -rf build && mkdir build && cd build
     - cmake -DBUILD_CODE=OFF ..
     - make blenderSplash
     - mv addons/blender/*.tar.bz2 ../
-  only:
-    - tags
-    - master
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == 'master'
   artifacts:
     name: "splash_blender_addon_${CI_BUILD_REF_NAME}"
     paths:
@@ -258,8 +237,8 @@ package:fullsources:
   script:
     # This job packages the whole sources, including the submodules
     - tar cvzf splash.tar.gz --exclude='.git' --exclude='ccache' .
-  only:
-    - tags
+  rules:
+    - if: $CI_COMMIT_TAG
   artifacts:
     paths:
       - splash.tar.gz
@@ -278,7 +257,7 @@ include:
 #
 static_analysis:
   stage: test
-  image: ubuntu:20.04
+  image: ubuntu:22.04
   script:
     - git submodule update --init
     - ./make_deps.sh
@@ -294,8 +273,8 @@ static_analysis:
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libpcre3-dev cppcheck
     - make static_analysis
     - mv tests/static_analysis_result.txt ../
-  only:
-    - static_analysis
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'static_analysis'
   artifacts:
     name: "splash_static_analysis_${CI_BUILD_REF_NAME}"
     paths:
@@ -308,7 +287,7 @@ static_analysis:
 #
 pages:
   stage: deploy
-  image: ubuntu:20.04
+  image: ubuntu:22.04
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
   script:
@@ -316,8 +295,9 @@ pages:
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends doxygen
     - mkdir -p build && pushd build
     - cmake -DBUILD_CODE=OFF .. && make doc && cp -r docs/html ../public
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'develop'
+    - if: $CI_COMMIT_BRANCH == 'master'
   artifacts:
     paths:
       - public
-  # only:
-  #   - develop

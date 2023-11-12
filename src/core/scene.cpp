@@ -9,7 +9,6 @@
 #include "./controller/controller_blender.h"
 #include "./controller/controller_gui.h"
 #include "./core/constants.h"
-#include "./network/link.h"
 #include "./graphics/camera.h"
 #include "./graphics/filter.h"
 #include "./graphics/geometry.h"
@@ -22,6 +21,7 @@
 #include "./image/image.h"
 #include "./image/queue.h"
 #include "./mesh/mesh.h"
+#include "./network/link.h"
 #include "./userinput/userinput_dragndrop.h"
 #include "./userinput/userinput_joystick.h"
 #include "./userinput/userinput_keyboard.h"
@@ -53,15 +53,11 @@ namespace Splash
 {
 
 bool Scene::_hasNVSwapGroup{false};
-std::vector<int> Scene::_glVersion{0, 0};
-std::string Scene::_glVendor{};
-std::string Scene::_glRenderer{};
 std::vector<std::string> Scene::_ghostableTypes{"camera", "warp"};
 
 /*************/
 Scene::Scene(Context context)
     : RootObject(context)
-    , _objectLibrary(dynamic_cast<RootObject*>(this))
 {
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
@@ -97,18 +93,21 @@ Scene::Scene(Context context)
 /*************/
 Scene::~Scene()
 {
-    // Cleanup every object
-    if (_mainWindow)
+    // No renderer, probably means we failed to init anyway so no clean up is needed.
+    if (_renderer)
     {
-        _mainWindow->setAsCurrentContext();
-        std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex); // We don't want any friend to try accessing the objects
+        if (const auto mainWindow = _renderer->getMainWindow(); mainWindow)
+        {
+            mainWindow->setAsCurrentContext();
+            std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex); // We don't want any friend to try accessing the objects
 
-        // Free objects cleanly
-        for (auto& obj : _objects)
-            obj.second.reset();
-        _objects.clear();
+            // Free objects manually
+            for (auto& obj : _objects)
+                obj.second.reset();
+            _objects.clear();
 
-        _mainWindow->releaseContext();
+            mainWindow->releaseContext();
+        }
     }
 
 #ifdef DEBUG
@@ -254,7 +253,7 @@ void Scene::remove(const std::string& name)
 /*************/
 void Scene::render()
 {
-#ifndef PROFILE_GPU
+#ifdef PROFILE_GPU
     PROFILEGL(Constants::GL_TIMING_TIME_PER_FRAME);
 #endif
 
@@ -263,7 +262,6 @@ void Scene::render()
     bool expectedAtomicValue = false;
     if (!_doUploadTextures.compare_exchange_strong(expectedAtomicValue, false, std::memory_order_acq_rel))
     {
-        TracyGpuZone("Upload textures");
         ZoneScopedN("Upload textures");
 
         Timer::get() << "textureUpload";
@@ -273,7 +271,6 @@ void Scene::render()
             auto texture = std::dynamic_pointer_cast<Texture>(obj.second);
             if (texture)
             {
-                TracyGpuZone("Uploading a texture");
                 ZoneScopedN("Uploading a texture");
                 ZoneName(obj.first.c_str(), obj.first.size());
 
@@ -284,7 +281,6 @@ void Scene::render()
     }
 
     {
-        TracyGpuZone("Scene rendering");
         ZoneScopedN("Scene rendering");
 
         // Create lists of objects to update and to render
@@ -333,7 +329,6 @@ void Scene::render()
         // See GraphObject::getRenderingPriority() for precision about priorities
         for (const auto& objPriority : objectList)
         {
-            TracyGpuZone("Render bin");
             ZoneScopedN("Render bin");
 
             if (objPriority.second.size() != 0)
@@ -345,7 +340,6 @@ void Scene::render()
 
             for (auto& obj : objPriority.second)
             {
-                TracyGpuZone("Rendering an object");
                 ZoneScopedN("Rendering an object");
                 ZoneName(obj->getName().c_str(), obj->getName().size());
 
@@ -372,7 +366,6 @@ void Scene::render()
     }
 
     {
-        TracyGpuZone("Swap");
         ZoneScopedN("Swap");
 
         // Swap all buffers at once
@@ -385,7 +378,7 @@ void Scene::render()
 
     TracyGpuCollect;
 
-#ifndef PROFILE_GPU
+#ifdef PROFILE_GPU
     ProfilerGL::get().gatherTimings();
     ProfilerGL::get().processTimings();
     const auto glTimings = ProfilerGL::get().getTimings();
@@ -401,13 +394,14 @@ void Scene::run()
 {
     tracy::SetThreadName("Scene");
 
-    if (!_mainWindow)
+    if (!_isInitialized)
     {
         Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - No rendering context has been created" << Log::endl;
         return;
     }
 
-    _mainWindow->setAsCurrentContext();
+    auto mainWindow = _renderer->getMainWindow();
+    mainWindow->setAsCurrentContext();
     TracyGpuContext;
 
     while (_isRunning)
@@ -480,7 +474,7 @@ void Scene::run()
 
         FrameMarkEnd("Scene");
     }
-    _mainWindow->releaseContext();
+    mainWindow->releaseContext();
 
     signalBufferObjectUpdated();
 
@@ -519,7 +513,7 @@ void Scene::setAsMaster(const std::string& configFilePath)
 
     _isMaster = true;
 
-    _gui = std::make_shared<Gui>(_mainWindow, this);
+    _gui = std::make_shared<Gui>(_renderer->getMainWindow(), this);
     if (_gui)
     {
         _gui->setName("gui");
@@ -583,7 +577,8 @@ std::shared_ptr<GlWindow> Scene::getNewSharedWindow(const std::string& name)
     std::string windowName;
     name.size() == 0 ? windowName = "Splash::Window" : windowName = "Splash::" + name;
 
-    if (!_mainWindow)
+    auto mainWindow = _renderer->getMainWindow();
+    if (!mainWindow)
     {
         Log::get() << Log::WARNING << __FUNCTION__ << " - Main window does not exist, unable to create new shared window" << Log::endl;
         return {nullptr};
@@ -592,17 +587,17 @@ std::shared_ptr<GlWindow> Scene::getNewSharedWindow(const std::string& name)
     // The GL version is the same as in the initialization, so we don't have to reset it here
     glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
     glfwWindowHint(GLFW_VISIBLE, false);
-    GLFWwindow* window = glfwCreateWindow(512, 512, windowName.c_str(), NULL, _mainWindow->get());
+    GLFWwindow* window = glfwCreateWindow(512, 512, windowName.c_str(), NULL, mainWindow->get());
     if (!window)
     {
         Log::get() << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;
         return {nullptr};
     }
-    auto glWindow = std::make_shared<GlWindow>(window, _mainWindow->get());
+    auto glWindow = std::make_shared<GlWindow>(window, mainWindow->get());
 
     glWindow->setAsCurrentContext();
 #ifdef DEBUGGL
-    glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(this));
+    gfx::Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
 #endif
@@ -634,111 +629,17 @@ std::shared_ptr<GlWindow> Scene::getNewSharedWindow(const std::string& name)
 }
 
 /*************/
-std::vector<int> Scene::findGLVersion()
-{
-    std::vector<std::vector<int>> glVersionList{{4, 5}};
-    std::vector<int> detectedVersion{0, 0};
-
-    for (auto version : glVersionList)
-    {
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, version[0]);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, version[1]);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
-        glfwWindowHint(GLFW_DEPTH_BITS, 24);
-        glfwWindowHint(GLFW_VISIBLE, false);
-        GLFWwindow* window = glfwCreateWindow(512, 512, "test_window", NULL, NULL);
-
-        if (window)
-        {
-            detectedVersion = version;
-            glfwDestroyWindow(window);
-            break;
-        }
-    }
-
-    return detectedVersion;
-}
-
-/*************/
 void Scene::init(const std::string& name)
 {
-    glfwSetErrorCallback(glfwErrorCallback);
+    _renderer = gfx::Renderer::create(_context.renderingApi);
 
-    // GLFW stuff
-    if (!glfwInit())
-    {
-        Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
-        _isInitialized = false;
+    if (!_renderer)
         return;
-    }
 
-    auto glVersion = findGLVersion();
-    if (glVersion[0] == 0)
-    {
-        Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to find a suitable GL version (higher than 4.3)" << Log::endl;
-        _isInitialized = false;
-        return;
-    }
+    _objectLibrary = std::make_unique<ObjectLibrary>(this);
 
-    _glVersion = glVersion;
-    Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - GL version: " << glVersion[0] << "." << glVersion[1] << Log::endl;
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, glVersion[0]);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, glVersion[1]);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef DEBUGGL
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
-#else
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
-#endif
-    glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
-    glfwWindowHint(GLFW_DEPTH_BITS, 24);
-    glfwWindowHint(GLFW_VISIBLE, false);
-
-    GLFWwindow* window = glfwCreateWindow(512, 512, name.c_str(), NULL, NULL);
-
-    if (!window)
-    {
-        Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - Unable to create a GLFW window" << Log::endl;
-        _isInitialized = false;
-        return;
-    }
-
-    _mainWindow = std::make_shared<GlWindow>(window, window);
     _isInitialized = true;
-
-    _mainWindow->setAsCurrentContext();
-    gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-
-    // Get hardware information
-    _glVendor = std::string(reinterpret_cast<const char*>(glGetString(GL_VENDOR)));
-    _glRenderer = std::string(reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
-    Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - GL vendor: " << _glVendor << Log::endl;
-    Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - GL renderer: " << _glRenderer << Log::endl;
-
-// Activate GL debug messages
-#ifdef DEBUGGL
-    glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(this));
-    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
-    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
-#endif
-
-// Check for swap groups
-#ifdef GLX_NV_swap_group
-    if (glfwExtensionSupported("GLX_NV_swap_group"))
-    {
-        PFNGLXQUERYMAXSWAPGROUPSNVPROC nvGLQueryMaxSwapGroups = (PFNGLXQUERYMAXSWAPGROUPSNVPROC)glfwGetProcAddress("glXQueryMaxSwapGroupsNV");
-        if (!nvGLQueryMaxSwapGroups(glfwGetX11Display(), 0, &_maxSwapGroups, &_maxSwapBarriers))
-            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Unable to get NV max swap groups / barriers" << Log::endl;
-        else
-            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - NV max swap groups: " << _maxSwapGroups << " / barriers: " << _maxSwapBarriers << Log::endl;
-
-        if (_maxSwapGroups != 0)
-            _hasNVSwapGroup = true;
-    }
-#endif
-    _mainWindow->releaseContext();
+    _renderer->init(name);
 }
 
 /*************/
@@ -820,11 +721,13 @@ void glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severit
     }
 
     if (userParam == nullptr)
-        Log::get() << logType << messageString << " - Object: unknown" << " - " << message << Log::endl;
+        Log::get() << logType << messageString << " - Object: unknown"
+                   << " - " << message << Log::endl;
     else if (const auto userParamsAsGraphObject = dynamic_cast<const GraphObject*>(userParamsAsObj); userParamsAsGraphObject != nullptr)
-        Log::get() << logType << messageString << " - Object "  << userParamsAsGraphObject->getName() << " of type " << userParamsAsGraphObject->getType() << " - " << message << Log::endl;
+        Log::get() << logType << messageString << " - Object " << userParamsAsGraphObject->getName() << " of type " << userParamsAsGraphObject->getType() << " - " << message
+                   << Log::endl;
     else
-        Log::get() << logType << messageString << " - Object "  << userParamsAsObj->getName() << " - " << message << Log::endl;
+        Log::get() << logType << messageString << " - Object " << userParamsAsObj->getName() << " - " << message << Log::endl;
 }
 
 /*************/
@@ -863,7 +766,10 @@ void Scene::registerAttributes()
                 bool expectedAtomicValue = false;
                 while (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true, std::memory_order_acquire))
                     std::this_thread::sleep_for(chrono::milliseconds(1));
-                OnScopeExit { _objectsCurrentlyUpdated.store(false, std::memory_order_release); };
+                OnScopeExit
+                {
+                    _objectsCurrentlyUpdated.store(false, std::memory_order_release);
+                };
 
                 std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
 
@@ -947,8 +853,7 @@ void Scene::registerAttributes()
 
     addAttribute("sync",
         [&](const Values&) {
-            addTask([=]() { 
-            sendMessageToWorld("answerMessage", {"sync", _name}); });
+            addTask([=]() { sendMessageToWorld("answerMessage", {"sync", _name}); });
             return true;
         },
         {});

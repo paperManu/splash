@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Emmanuel Durand
+ * Copyright (C) 2021 Splash authors
  *
  * This file is part of Splash.
  *
@@ -45,9 +45,7 @@ std::atomic_int bufferCount{0};
 std::mutex copyMutex{};
 std::condition_variable copyCondition{};
 
-void nop(void*, void*)
-{
-}
+void nop(void*, void*) {}
 
 int main()
 {

@@ -93,7 +93,7 @@ bool Attribute::operator()(const Values& args)
         return false;
     }
 
-    const auto returnValue =  _setFunc(args);
+    const auto returnValue = _setFunc(args);
 
     // Run all set callbacks
     if (!_callbacks.empty())
@@ -156,4 +156,4 @@ bool Attribute::unregisterCallback(const CallbackHandle& handle)
     return true;
 }
 
-} // end of namespace
+} // namespace Splash

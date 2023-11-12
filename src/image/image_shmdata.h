@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Emmanuel Durand
+ * Copyright (C) 2014 Splash authors
  *
  * This file is part of Splash.
  *
@@ -132,6 +132,6 @@ inline int clamp(int v, int a, int b)
     return v < a ? a : v > b ? b : v;
 }
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_IMAGE_SHMDATA_H

@@ -10,9 +10,7 @@ Mouse::Mouse(RootObject* root)
 }
 
 /*************/
-Mouse::~Mouse()
-{
-}
+Mouse::~Mouse() {}
 
 /*************/
 void Mouse::updateMethod()
@@ -72,4 +70,4 @@ void Mouse::updateMethod()
     }
 }
 
-} // end of namespace
+} // namespace Splash

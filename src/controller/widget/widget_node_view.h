@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Emmanuel Durand
+ * Copyright (C) 2014 Splash authors
  *
  * This file is part of Splash.
  *
@@ -76,6 +76,6 @@ class GuiNodeView : public GuiWidget
     void initializeNodePositions(const std::vector<std::string>& objectNames);
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

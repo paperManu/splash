@@ -130,4 +130,4 @@ void Speaker::registerAttributes()
     GraphObject::registerAttributes();
 }
 
-} // end of namespace
+} // namespace Splash

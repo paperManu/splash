@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Emmanuel Durand
+ * Copyright (C) 2017 Splash authors
  *
  * This file is part of Splash.
  *
@@ -47,6 +47,6 @@ class GuiFilters : public GuiWidget
     std::string _selectedFilterName;
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

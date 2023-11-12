@@ -13,9 +13,7 @@ DragNDrop::DragNDrop(RootObject* root)
 }
 
 /*************/
-DragNDrop::~DragNDrop()
-{
-}
+DragNDrop::~DragNDrop() {}
 
 /*************/
 void DragNDrop::updateMethod()
@@ -30,4 +28,4 @@ void DragNDrop::updateMethod()
     }
 }
 
-} // end of namespace
+} // namespace Splash

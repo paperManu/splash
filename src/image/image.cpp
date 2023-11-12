@@ -9,8 +9,8 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 
-#include "./core/serializer.h"
 #include "./core/serialize/serialize_imagebuffer.h"
+#include "./core/serializer.h"
 #include "./utils/log.h"
 #include "./utils/osutils.h"
 #include "./utils/timer.h"
@@ -19,27 +19,10 @@ namespace Splash
 {
 
 /*************/
-Image::Image(RootObject* root)
+Image::Image(RootObject* root, const std::optional<ImageBufferSpec> spec)
     : BufferObject(root)
     , _image(std::make_unique<ImageBuffer>())
     , _bufferImage(std::make_unique<ImageBuffer>())
-{
-    init();
-    _renderingPriority = Priority::MEDIA;
-}
-
-/*************/
-Image::Image(RootObject* root, const ImageBufferSpec& spec)
-    : BufferObject(root)
-    , _image(std::make_unique<ImageBuffer>())
-    , _bufferImage(std::make_unique<ImageBuffer>())
-{
-    init();
-    set(spec.width, spec.height, spec.channels, spec.type);
-}
-
-/*************/
-void Image::init()
 {
     _type = "image";
     registerAttributes();
@@ -48,7 +31,17 @@ void Image::init()
     if (!_root)
         return;
 
-    createDefaultImage();
+    if (spec)
+    {
+        initFromSpec(*spec);
+    }
+    else
+    {
+        // No spec passed, create an image with the default spec.
+        initFromSpec(ImageBufferSpec(128, 128, 4, 32, ImageBufferSpec::Type::UINT8));
+        _renderingPriority = Priority::MEDIA;
+    }
+
     update();
 }
 
@@ -307,9 +300,30 @@ bool Image::write(const std::string& filename)
 }
 
 /*************/
-void Image::createDefaultImage()
+RgbValue Image::readPixel(uint x, uint y) const
 {
-    ImageBufferSpec spec(128, 128, 4, 32, ImageBufferSpec::Type::UINT8);
+    const auto* imageBytes = static_cast<const uint8_t*>(data());
+    const auto spec = getSpec();
+
+    assert(_image && "Image is uninitialized!"); // Make sure the image is already initialized
+    assert(spec.type == ImageBufferSpec::Type::UINT8 && "Only UINT8 textures support reading pixels.");
+    assert(spec.format == "RGBA" && "Only RGBA textures support reading pixels.");
+    assert(spec.bpp == 32 && spec.channels == 4 && "Only 8 bits per channel textures support reading pixels.");
+
+    // Note that since x and  y are already unsigned, they should always be > 0.
+    // However, if a negative value is passed, it should result in a very large unsigned value.
+    assert(x < spec.width && "Pixel x is outside of image");
+    assert(y < spec.height && "Pixel y is outside of image");
+
+    assert(imageBytes != nullptr && "Image doesn't contain any data");
+
+    auto index = (x + y * spec.width) * 4;
+    return RgbValue(imageBytes[index], imageBytes[index + 1], imageBytes[index + 2]);
+}
+
+/*************/
+void Image::initFromSpec(const ImageBufferSpec& spec)
+{
     ImageBuffer img(spec);
     img.zero();
 
@@ -348,7 +362,8 @@ void Image::registerAttributes()
 {
     BufferObject::registerAttributes();
 
-    addAttribute("flip",
+    addAttribute(
+        "flip",
         [&](const Values& args) {
             _flip = args[0].as<bool>();
             return true;
@@ -357,7 +372,8 @@ void Image::registerAttributes()
         {'b'});
     setAttributeDescription("flip", "Mirrors the image on the Y axis");
 
-    addAttribute("flop",
+    addAttribute(
+        "flop",
         [&](const Values& args) {
             _flop = args[0].as<bool>();
             return true;
@@ -366,7 +382,8 @@ void Image::registerAttributes()
         {'b'});
     setAttributeDescription("flop", "Mirrors the image on the X axis");
 
-    addAttribute("file",
+    addAttribute(
+        "file",
         [&](const Values& args) {
             _filepath = args[0].as<std::string>();
             if (_filepath.empty())
@@ -377,7 +394,8 @@ void Image::registerAttributes()
         {'s'});
     setAttributeDescription("file", "Image file to load");
 
-    addAttribute("reload",
+    addAttribute(
+        "reload",
         [&](const Values&) {
             read(_filepath);
             return true;
@@ -386,7 +404,8 @@ void Image::registerAttributes()
         {});
     setAttributeDescription("reload", "Reload the file");
 
-    addAttribute("srgb",
+    addAttribute(
+        "srgb",
         [&](const Values& args) {
             _srgb = args[0].as<bool>();
             return true;
@@ -403,7 +422,8 @@ void Image::registerAttributes()
         {'b'});
     setAttributeDescription("benchmark", "Set to true to resend the image even when not updated");
 
-    addAttribute("pattern",
+    addAttribute(
+        "pattern",
         [&](const Values& args) {
             if (_showPattern != args[0].as<bool>())
             {
@@ -419,7 +439,8 @@ void Image::registerAttributes()
         {'b'});
     setAttributeDescription("pattern", "Set to true to replace the image with a pattern");
 
-    addAttribute("mediaInfo",
+    addAttribute(
+        "mediaInfo",
         [&](const Values& args) {
             std::lock_guard<std::mutex> lock(_mediaInfoMutex);
             _mediaInfo = args;

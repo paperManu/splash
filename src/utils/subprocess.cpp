@@ -22,7 +22,10 @@ Subprocess::Subprocess(const std::string& command, const std::string& args, cons
     const auto allArgs = command + " " + args;
 
     wordexp_t argsAsWords;
-    OnScopeExit { wordfree(&argsAsWords); };
+    OnScopeExit
+    {
+        wordfree(&argsAsWords);
+    };
     if (wordexp(allArgs.c_str(), &argsAsWords, 0) != 0)
     {
         _success = false;
@@ -30,7 +33,10 @@ Subprocess::Subprocess(const std::string& command, const std::string& args, cons
     }
 
     wordexp_t envAsWords;
-    OnScopeExit { wordfree(&envAsWords); };
+    OnScopeExit
+    {
+        wordfree(&envAsWords);
+    };
     if (wordexp(env.c_str(), &envAsWords, 0) != 0)
     {
         _success = false;
@@ -88,4 +94,4 @@ bool Subprocess::isRunning()
 
     return false;
 }
-} // namespace Splash
+} // namespace Splash::Utils

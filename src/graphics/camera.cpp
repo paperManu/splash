@@ -20,8 +20,8 @@
 #include "./utils/cgutils.h"
 #include "./utils/log.h"
 #include "./utils/osutils.h"
-#include "./utils/timer.h"
 #include "./utils/scope_guard.h"
+#include "./utils/timer.h"
 
 #define SCISSOR_WIDTH 8
 #define WORLDMARKER_SCALE 0.0003
@@ -63,8 +63,6 @@ using namespace glm;
 
 namespace Splash
 {
-
-extern void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
 
 /*************/
 Camera::Camera(RootObject* root)
@@ -557,11 +555,10 @@ Values Camera::pickVertexOrCalibrationPoint(float x, float y)
 void Camera::render()
 {
 #ifdef DEBUGGL
-    glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(this));
-
+    gfx::Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
     OnScopeExit
     {
-        glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(_root));
+        gfx::Renderer::setGlMsgCallbackData(_root->getGlMsgCallbackDataPtr());
     };
 #endif
 
@@ -679,7 +676,7 @@ void Camera::render()
                 auto object = objWeakPtr.lock();
                 auto points = object->getCalibrationPoints();
 
-                auto worldMarker = scene->getObjectLibrary().getModel("3d_marker");
+                auto worldMarker = scene->getObjectLibrary()->getModel("3d_marker");
                 if (worldMarker != nullptr)
                 {
                     for (auto& point : points)
@@ -701,8 +698,8 @@ void Camera::render()
         // Draw the calibration points
         if (_displayCalibration)
         {
-            auto worldMarker = scene->getObjectLibrary().getModel("3d_marker");
-            auto screenMarker = scene->getObjectLibrary().getModel("2d_marker");
+            auto worldMarker = scene->getObjectLibrary()->getModel("3d_marker");
+            auto screenMarker = scene->getObjectLibrary()->getModel("2d_marker");
             if (worldMarker != nullptr && screenMarker != nullptr)
             {
                 for (uint32_t i = 0; i < _calibrationPoints.size(); ++i)
@@ -746,7 +743,7 @@ void Camera::render()
         // Draw the additionals objects
         for (auto& object : _drawables)
         {
-            auto model = scene->getObjectLibrary().getModel(object.model);
+            auto model = scene->getObjectLibrary()->getModel(object.model);
             if (model != nullptr)
             {
                 auto rtMatrix = glm::inverse(object.rtMatrix);
@@ -1058,10 +1055,10 @@ void Camera::loadDefaultModels()
 
     for (auto& file : files)
     {
-        if (!scene->getObjectLibrary().loadModel(file.first, file.second))
+        if (!scene->getObjectLibrary()->loadModel(file.first, file.second))
             continue;
 
-        auto object = scene->getObjectLibrary().getModel(file.first);
+        auto object = scene->getObjectLibrary()->getModel(file.first);
         assert(object != nullptr);
 
         object->setAttribute("fill", {"color"});

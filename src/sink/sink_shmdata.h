@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Emmanuel Durand
+ * Copyright (C) 2017 Splash authors
  *
  * This file is part of Splash.
  *
@@ -27,8 +27,8 @@
 
 #include <shmdata/writer.hpp>
 
-#include "./utils/osutils.h"
 #include "./sink/sink.h"
+#include "./utils/osutils.h"
 
 namespace Splash
 {
@@ -60,6 +60,6 @@ class Sink_Shmdata final : public Sink
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

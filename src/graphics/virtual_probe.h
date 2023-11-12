@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Emmanuel Durand
+ * Copyright (C) 2013 Splash authors
  *
  * This file is part of Splash.
  *
@@ -162,6 +162,6 @@ class VirtualProbe final : public Texture
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

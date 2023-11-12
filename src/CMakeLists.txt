@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2016 Emmanuel Durand
+# Copyright (C) 2016 Splash authors
 #
 # This file is part of Splash.
 #
@@ -31,7 +31,7 @@ set_source_files_properties(
     ../external/imgui/imgui_tables.cpp
     ../external/imgui/imgui_widgets.cpp
     ../external/imgui/imgui.cpp
-	../external/hap/source/hap.c
+    ../external/hap/source/hap.c
     PROPERTIES COMPILE_FLAGS "-Wno-error -Wno-all -Wno-extra -Wno-sign-compare -Wno-deprecated-declarations"
 )
 
@@ -53,6 +53,13 @@ if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
       image/image.cpp
       PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers"
   )
+
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set_source_files_properties(
+        image/image.cpp
+        PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-stringop-overflow"
+    )
+  endif()
 endif()
 
 #
@@ -148,6 +155,16 @@ target_sources(splash-${API_VERSION} PRIVATE
     controller/widget/widget_textures_view.cpp
     controller/widget/widget_tree.cpp
     controller/widget/widget_warp.cpp
+    graphics/api/gpu_buffer.cpp
+    graphics/api/renderer.cpp
+    graphics/api/gles/geometry_gfx_impl.cpp
+    graphics/api/gles/gpu_buffer.cpp
+    graphics/api/gles/texture_image_gfx_impl.cpp
+    graphics/api/gles/window_gfx_impl.cpp
+    graphics/api/opengl/geometry_gfx_impl.cpp
+    graphics/api/opengl/gpu_buffer.cpp
+    graphics/api/opengl/texture_image_gfx_impl.cpp
+    graphics/api/opengl/window_gfx_impl.cpp
     graphics/camera.cpp
     graphics/filter.cpp
     graphics/filter_black_level.cpp
@@ -155,7 +172,6 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/filter_custom.cpp
     graphics/framebuffer.cpp
     graphics/geometry.cpp
-    graphics/gpu_buffer.cpp
     graphics/object.cpp
     graphics/object_library.cpp
     graphics/shader.cpp
@@ -191,7 +207,7 @@ target_sources(splash-${API_VERSION} PRIVATE
 )
 
     target_sources(splash-${API_VERSION} PRIVATE
-	    ../external/glad/core/src/glad_core.c
+        ../external/glad/core/src/glad_core.c
         image/image_v4l2.cpp
     )
 
@@ -251,13 +267,13 @@ if (HAVE_PYTHON)
         set_source_files_properties(
             controller/controller_pythonembedded.cpp
             controller/python/python_sink.cpp
-	    PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-cast-function-type"
+        PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-cast-function-type"
         )
     elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         set_source_files_properties(
             controller/controller_pythonembedded.cpp
             controller/python/python_sink.cpp
-	    PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers"
+        PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers"
         )
     endif()
 
@@ -281,15 +297,14 @@ target_link_libraries(splash-${API_VERSION} snappy)
 target_link_libraries(splash-${API_VERSION} glfw)
 target_link_libraries(splash-${API_VERSION} dl) # Needed for Tracy
 if (USE_SYSTEM_LIBS)
-    target_link_libraries(splash-${API_VERSION} ${FFMPEG_LIBRARIES})
     target_link_libraries(splash-${API_VERSION} zmq)
 else()
-    target_link_libraries(splash-${API_VERSION} ${FFMPEG_STATIC_LIBRARIES})
     target_link_libraries(splash-${API_VERSION} zmq.a)
 endif()
 # System libs
 target_link_libraries(splash-${API_VERSION} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(splash-${API_VERSION} ${JSONCPP_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} ${FFMPEG_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GSL_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${SHMDATA_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GPHOTO_LIBRARIES})

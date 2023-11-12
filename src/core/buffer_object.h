@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Emmanuel Durand
+ * Copyright (C) 2017 Splash authors
  *
  * This file is part of Splash.
  *
@@ -173,7 +173,7 @@ class BufferObject : public GraphObject
      * the buffer to be updated from multiple places
      * at the same time
      */
-    mutable Spinlock _updateMutex;              //!< Update mutex, which prevents content buffer switcher
+    mutable Spinlock _updateMutex; //!< Update mutex, which prevents content buffer switcher
 
     /**
      * Read mutex, used to prevent the buffer content to
@@ -188,7 +188,7 @@ class BufferObject : public GraphObject
     bool _updatedBuffer{false}; //!< True if the BufferObject has been updated
 
     SerializedObject _serializedObject; //!< Internal buffer object
-    bool _newSerializedObject{false};                             //!< Set to true during serialized object processing
+    bool _newSerializedObject{false};   //!< Set to true during serialized object processing
 
     /**
      * Updates the timestamp of the object. Also, set the update flag to true.

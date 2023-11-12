@@ -6,8 +6,8 @@
 #include "./graphics/texture_image.h"
 #include "./utils/cgutils.h"
 #include "./utils/log.h"
-#include "./utils/timer.h"
 #include "./utils/scope_guard.h"
+#include "./utils/timer.h"
 
 #define CONTROL_POINT_SCALE 0.02
 #define WORLDMARKER_SCALE 0.0003
@@ -18,8 +18,6 @@
 
 namespace Splash
 {
-
-extern void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
 
 /*************/
 Warp::Warp(RootObject* root)
@@ -128,11 +126,10 @@ void Warp::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 void Warp::render()
 {
 #ifdef DEBUGGL
-    glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(this));
-
+    gfx::Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
     OnScopeExit
     {
-        glDebugMessageCallback(glMsgCallback, reinterpret_cast<void*>(_root));
+        gfx::Renderer::setGlMsgCallbackData(_root->getGlMsgCallbackDataPtr());
     };
 #endif
 
@@ -186,7 +183,7 @@ void Warp::render()
             auto scene = dynamic_cast<Scene*>(_root);
             assert(scene != nullptr);
 
-            auto pointModel = scene->getObjectLibrary().getModel("3d_marker");
+            auto pointModel = scene->getObjectLibrary()->getModel("3d_marker");
 
             auto controlPoints = _screenMesh->getControlPoints();
             auto point = controlPoints[_selectedControlPointIndex];
@@ -252,10 +249,10 @@ void Warp::loadDefaultModels()
 
     for (auto& file : files)
     {
-        if (!scene->getObjectLibrary().loadModel(file.first, file.second))
+        if (!scene->getObjectLibrary()->loadModel(file.first, file.second))
             continue;
 
-        auto object = scene->getObjectLibrary().getModel(file.first);
+        auto object = scene->getObjectLibrary()->getModel(file.first);
         assert(object != nullptr);
 
         object->setAttribute("fill", {"color"});
@@ -271,7 +268,7 @@ void Warp::setupFBO()
     // Setup the virtual screen
     _screen = std::make_shared<Object>(_root);
     _screen->setAttribute("fill", {"warp"});
-    auto virtualScreen = std::make_shared<Geometry>(_root);
+    auto virtualScreen = _renderer->createGeometry(_root);
     _screenMesh = std::make_shared<Mesh_BezierPatch>(_root);
     virtualScreen->linkTo(_screenMesh);
     _screen->addGeometry(virtualScreen);

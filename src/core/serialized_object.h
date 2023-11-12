@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Emmanuel Durand
+ * Copyright (C) 2015 Splash authors
  *
  * This file is part of Splash.
  *
@@ -101,6 +101,6 @@ struct SerializedObject
     ResizableArray<uint8_t> _data{};
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_SERIALIZED_OBJECT_H

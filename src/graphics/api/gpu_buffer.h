@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Emmanuel Durand
+ * Copyright (C) 2015 Splash authors
  *
  * This file is part of Splash.
  *
@@ -28,14 +28,14 @@
 #include <chrono>
 #include <glm/glm.hpp>
 #include <map>
+#include <memory>
 #include <vector>
 
-#include "./core/constants.h"
-
 #include "./core/attribute.h"
+#include "./core/constants.h"
 #include "./mesh/mesh.h"
 
-namespace Splash
+namespace Splash::gfx
 {
 
 class GpuBuffer
@@ -43,38 +43,18 @@ class GpuBuffer
   public:
     /**
      * Constructor
-     * \param elementSize Component count for each entry
-     * \param type Component type, as per OpenGL specs
-     * \param usage Buffer usage, as per OpenGL specs
-     * \param size Number of entries
-     * \param data Pointer to data to initialized the buffer with
      */
-    GpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data = nullptr);
+    GpuBuffer() = default;
 
     /**
      * Destructor
      */
-    ~GpuBuffer();
+    virtual ~GpuBuffer();
 
-    /**
-     * Copy constructor
-     */
-    GpuBuffer(const GpuBuffer& o)
-    {
-        _size = o._size;
-        _baseSize = o._baseSize;
-        _elementSize = o._elementSize;
-        _type = o._type;
-        _usage = o._usage;
-
-        glGenBuffers(1, &_glId);
-        glBindBuffer(GL_ARRAY_BUFFER, _glId);
-        glBufferData(GL_ARRAY_BUFFER, _size * _elementSize * _baseSize, nullptr, _usage);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-    }
+    GpuBuffer(GpuBuffer&) = default;
     GpuBuffer& operator=(const GpuBuffer&) = delete;
     GpuBuffer(GpuBuffer&&) = delete;
-    GpuBuffer& operator=(GpuBuffer&&) = default;
+    GpuBuffer& operator=(GpuBuffer&&) = delete;
 
     /**
      * Bool pattern
@@ -140,17 +120,88 @@ class GpuBuffer
      */
     void setBufferFromVector(const std::vector<char>& buffer);
 
-  private:
+  protected:
     GLuint _glId{0};
     size_t _size{0};
     size_t _baseSize{0};   // component size, dependent of the type
     GLint _elementSize{0}; // Number of components per vector
     GLenum _type{0};
     GLenum _usage{0};
-
     GLuint _copyBufferId{0};
+
+    const static inline std::unordered_map<GLenum, size_t> typeToSize = {{GL_FLOAT, sizeof(float)},
+        {GL_INT, sizeof(int)},
+        {GL_UNSIGNED_INT, sizeof(unsigned int)},
+        {GL_SHORT, sizeof(short)},
+        {GL_UNSIGNED_BYTE, sizeof(unsigned char)},
+        {GL_BYTE, sizeof(char)}};
+
+    void init(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data);
+
+    /**
+     * Resize a buffer
+     * \param bufferId Buffer handle
+     * \param size New size
+     */
+    void resizeBuffer(GLuint& bufferId, GLsizeiptr size);
+
+    /**
+     * Generate a new buffer and bind it
+     * \return Return the buffer handle
+     */
+    GLuint generateAndBindBuffer();
+
+    /**
+     * Set the buffer to zero.
+     * The buffer is considered to have already been allocated.
+     */
+    virtual void zeroBuffer() = 0;
+
+    /**
+     * Alocate and initializes the buffer given its handle
+     * \param bufferId Handle of the buffer
+     * \param target Usage target
+     * \param size Data size
+     * \param data Pointer to the data
+     * \param  usage Usage pattern
+     */
+    virtual void allocateBufferData(GLuint bufferId, GLenum target, GLsizeiptr size, const GLvoid* data, GLenum usage) = 0;
+
+    /**
+     * Copy data between buffers
+     * \param fromId Handle of the source buffer
+     * \param toId Handle of the target buffer
+     * \param size Size (in bytes) of the data to copy
+     */
+    virtual void copyBetweenBuffers(GLuint fromId, GLuint toId, GLsizeiptr size) = 0;
+
+    /**
+     * Read a buffer and return it
+     * \param bufferId Handle of the buffer
+     * \param bytesToRead Total bytes to read from the bufer
+     * \return Return a std::vector<char> containing the data
+     */
+    virtual std::vector<char> readBufferFromGpu(GLuint bufferId, GLsizeiptr bytesToRead) = 0;
+
+    /**
+     * Wrapper around glGetBufferParameteriv
+     * \param bufferId Buffer handle
+     * \param target Target usage
+     * \param value Value
+     * \param data Pre-allocated pointer to data, to hold the parameter
+     */
+    virtual void getBufferParameteriv(GLuint bufferId, GLenum target, GLenum value, GLint* data) = 0;
+
+    /**
+     * Wrapper around glBufferSubData
+     * \param bufferId Buffer handle
+     * \param target Target usage
+     * \param size Data size
+     * \param data Pointer to the data to set the bufer to
+     */
+    virtual void setBufferData(GLuint bufferId, GLenum target, GLsizeiptr size, const GLvoid* data) = 0;
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_GPU_BUFFER_H

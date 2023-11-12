@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Emmanuel Durand
+ * Copyright (C) 2023 Splash authors
  *
  * This file is part of Splash.
  *
@@ -18,8 +18,8 @@
  */
 
 /*
- * @texture.h
- * The Texture_Image base class
+ * @texture_image.h
+ * The Texture_Image base class. Contains normal and virtual functions needed to use both OpenGL 4.5 and OpenGL ES textures.
  */
 
 #ifndef SPLASH_TEXTURE_IMAGE_H
@@ -34,6 +34,7 @@
 #include "./core/constants.h"
 
 #include "./core/attribute.h"
+#include "./graphics/api/texture_image_gfx_impl.h"
 #include "./graphics/texture.h"
 #include "./image/image.h"
 #include "./utils/cgutils.h"
@@ -41,67 +42,51 @@
 namespace Splash
 {
 
-class Texture_Image final : public Texture
+class Texture_Image : public Texture
 {
   public:
     /**
      * Constructor
      * \param root Root object
-     * \param width Width
-     * \param height Height
-     * \param pixelFormat String describing the pixel format. Accepted values are RGB, RGBA, sRGBA, RGBA16, R16, YUYV, UYVY, D
-     * \param data Pointer to data to use to initialize the texture
-     * \param multisample Sample count for MSAA
-     * \param cubemap True to request a cubemap
+     * \param gfxImpl Specialization of a gfx::Texture_ImageGfxImpl for handling rendering
      */
-    explicit Texture_Image(RootObject* root);
-    Texture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisample = 0, bool cubemap = false);
+    explicit Texture_Image(RootObject* root, std::unique_ptr<gfx::Texture_ImageGfxImpl> gfxImpl);
 
     /**
      * Destructor
      */
-    ~Texture_Image() final;
-
-    /**
-     * Constructors/operators
-     */
-    Texture_Image(const Texture_Image&) = delete;
-    Texture_Image& operator=(const Texture_Image&) = delete;
-    Texture_Image(Texture_Image&&) = delete;
-    Texture_Image& operator=(Texture_Image&&) = delete;
-
-    /**
-     * Sets the specified buffer as the texture on the device
-     * \param img Image to set the texture from
-     */
-    Texture_Image& operator=(const std::shared_ptr<Image>& img);
+    virtual ~Texture_Image();
 
     /**
      * Bind this texture
      */
-    void bind() override;
+    virtual void bind() override { _gfxImpl->bind(); }
 
     /**
      * Unbind this texture
      */
-    void unbind() override;
+    virtual void unbind() override
+    {
+        _gfxImpl->unbind();
+        _lastDrawnTimestamp = Timer::getTime();
+    };
 
     /**
      * Generate the mipmaps for the texture
      */
-    void generateMipmap() const;
+    virtual void generateMipmap() const { _gfxImpl->generateMipmap(); };
+
+    /**
+     * Get the id of the texture (API dependant)
+     * \return Return the texture id
+     */
+    GLuint getTexId() const final { return _gfxImpl->getTexId(); }
 
     /**
      * Computed the mean value for the image
      * \return Return the mean RGB value
      */
     RgbValue getMeanValue() const;
-
-    /**
-     * Get the id of the gl texture
-     * \return Return the texture id
-     */
-    GLuint getTexId() const final { return _glTex; }
 
     /**
      * Get the shader parameters related to this texture. Texture should be locked first.
@@ -118,9 +103,10 @@ class Texture_Image final : public Texture
 
     /**
      * Read the texture and returns an Image
+     * \param level The mipmap level we wish to read the texture at.
      * \return Return the image
      */
-    std::shared_ptr<Image> read();
+    std::shared_ptr<Image> read(int level = 0) const;
 
     /**
      * Set the buffer size / type / internal format
@@ -131,7 +117,7 @@ class Texture_Image final : public Texture
      * \param multisample Sample count for MSAA
      * \param cubemap True to request a cubemap
      */
-    void reset(int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisampled = 0, bool cubemap = false);
+    void reset(int width, int height, const std::string& pixelFormat, int multisample = 0, bool cubemap = false);
 
     /**
      * Modify the size of the texture
@@ -144,14 +130,33 @@ class Texture_Image final : public Texture
      * Enable / disable clamp to edge
      * \param active If true, enables clamping
      */
-    void setClampToEdge(bool active) { _glTextureWrap = active ? GL_CLAMP_TO_EDGE : GL_REPEAT; }
+    void setClampToEdge(bool active) { _gfxImpl->setClampToEdge(active); }
 
     /**
      * Update the texture according to the owned Image
      */
     void update() final;
 
+    /**
+     * Clears and updates the following uniforms: `flip`, `flop`, and `encoding`.
+     */
+    void updateShaderUniforms(const ImageBufferSpec& spec, const std::shared_ptr<Image> img);
+
   protected:
+    /**
+     * Constructors/operators
+     */
+    Texture_Image(const Texture_Image&) = delete;
+    Texture_Image& operator=(const Texture_Image&) = delete;
+    Texture_Image(Texture_Image&&) = delete;
+    Texture_Image& operator=(Texture_Image&&) = delete;
+
+    /**
+     * Sets the specified buffer as the texture on the device
+     * \param img Image to set the texture from
+     */
+    Texture_Image& operator=(const std::shared_ptr<Image>& img);
+
     /**
      * Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
@@ -164,35 +169,21 @@ class Texture_Image final : public Texture
      */
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
-  private:
+  protected:
     enum ColorEncoding : int32_t
     {
-        RGB=0,
-        BGR=1,
-        UYVY=2,
-        YUYV=3,
-        YCoCg=4
+        RGB = 0,
+        BGR = 1,
+        UYVY = 2,
+        YUYV = 3,
+        YCoCg = 4
     };
 
-    GLuint _glTex{0};
-    GLuint _pbos[2];
-    GLubyte* _pbosPixels[2];
-
-    int _multisample{0};
-    bool _cubemap{false};
-    int _pboUploadIndex{0};
     int64_t _lastDrawnTimestamp{0};
 
-    // Store some texture parameters
-    static const int _texLevels = 4;
-    bool _filtering{false};
-    GLenum _texFormat{GL_RGB}, _texType{GL_UNSIGNED_BYTE};
     std::string _pixelFormat{"RGBA"};
-    GLint _texInternalFormat{GL_RGBA};
-    GLint _glTextureWrap{GL_REPEAT};
-
-    // And some temporary attributes
-    GLint _activeTexture{0}; // Texture unit to which the texture is bound
+    int _multisample{0};
+    bool _cubemap{false}, _filtering;
 
     std::weak_ptr<Image> _img;
 
@@ -205,25 +196,12 @@ class Texture_Image final : public Texture
     void init();
 
     /**
-     * Get GL channel order according to spec.format
-     * \param spec Specification
-     * \return Return the GL channel order (GL_RGBA, GL_BGRA, ...)
-     */
-    GLenum getChannelOrder(const ImageBufferSpec& spec);
-
-    /**
-     * Update the pbos according to the parameters
-     * \param width Width
-     * \param height Height
-     * \param bytes Bytes per pixel
-     * \return Return true if all went well
-     */
-    bool updatePbos(int width, int height, int bytes);
-
-    /**
      * Register new functors to modify attributes
      */
     void registerAttributes();
+
+  private:
+    std::unique_ptr<gfx::Texture_ImageGfxImpl> _gfxImpl;
 };
 
 } // namespace Splash

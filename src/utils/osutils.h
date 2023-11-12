@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Emmanuel Durand
+ * Copyright (C) 2015 Splash authors
  *
  * This file is part of Splash.
  *
@@ -191,7 +191,7 @@ inline std::string getPathFromFilePath(const std::string& filepath, const std::s
 {
     auto path = std::filesystem::path(filepath);
 
-    if(path.is_absolute())
+    if (path.is_absolute())
     {
         if (isDir(path))
             return path;
@@ -256,7 +256,9 @@ inline std::vector<std::string> listDirContent(const std::string& path)
 
     std::vector<std::string> files{};
     auto dir_iterator = std::filesystem::directory_iterator(clean_path);
-    std::transform(std::filesystem::begin(dir_iterator), std::filesystem::end(dir_iterator), std::back_inserter(files), [&clean_path](auto dir_entry) { return dir_entry.path().lexically_relative(clean_path); });
+    std::transform(std::filesystem::begin(dir_iterator), std::filesystem::end(dir_iterator), std::back_inserter(files), [&clean_path](auto dir_entry) {
+        return dir_entry.path().lexically_relative(clean_path);
+    });
 
     return files;
 }

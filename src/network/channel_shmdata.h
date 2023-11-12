@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Emmanuel Durand
+ * Copyright (C) 2021 Splash authors
  *
  * This file is part of Splash.
  *
@@ -29,8 +29,8 @@
 #include <memory>
 #include <mutex>
 #include <string>
-#include <unordered_map>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 #include <shmdata/follower.hpp>

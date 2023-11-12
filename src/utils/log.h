@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Emmanuel Durand
+ * Copyright (C) 2013 Splash authors
  *
  * This file is part of Log.
  *
@@ -275,10 +275,7 @@ class Log
     /**
      * Get whether the logger is locked by the current thread
      */
-    bool isLockedByCurrentThread()
-    {
-        return std::this_thread::get_id() == _lockedThreadId;
-    }
+    bool isLockedByCurrentThread() { return std::this_thread::get_id() == _lockedThreadId; }
 
     /**
      * Unlock the logger, if it is locked by the current thread

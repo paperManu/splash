@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Emmanuel Durand
+ * Copyright (C) 2015 Splash authors
  *
  * This file is part of Splash.
  *
@@ -190,6 +190,6 @@ bool Speaker::addToQueue(const ResizableArray<T>& buffer)
     return true;
 }
 
-} // end of namespace
+} // namespace Splash
 
 #endif

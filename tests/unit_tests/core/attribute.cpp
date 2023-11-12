@@ -8,7 +8,8 @@ using namespace Splash;
 TEST_CASE("Testing Attribute usage")
 {
     int value = 0;
-    auto attr = Attribute("attribute",
+    auto attr = Attribute(
+        "attribute",
         [&](const Values& args) {
             value = args[0].as<int>();
             return true;

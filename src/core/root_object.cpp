@@ -614,7 +614,6 @@ Values RootObject::sendMessageWithAnswer(const std::string& name, const std::str
     assert(_link);
     assert(_link->isReady());
 
-
     std::lock_guard<std::mutex> lock(_answerMutex);
     _answerExpected = attribute;
 

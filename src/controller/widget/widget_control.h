@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Emmanuel Durand
+ * Copyright (C) 2014 Splash authors
  *
  * This file is part of Splash.
  *
@@ -47,6 +47,6 @@ class GuiControl : public GuiWidget
     std::string _targetObjectName{};
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

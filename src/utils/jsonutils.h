@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Emmanuel Durand
+ * Copyright (C) 2018 Splash authors
  *
  * This file is part of Splash.
  *
@@ -63,7 +63,7 @@ bool loadJsonFile(const std::string& filename, Json::Value& configuration);
  */
 Values jsonToValues(const Json::Value& values);
 
-} // end of namespace
-} // end of namespace
+} // namespace Utils
+} // namespace Splash
 
 #endif

@@ -1,8 +1,8 @@
 #include "./mesh/mesh.h"
 
 #include "./core/root_object.h"
-#include "./core/serializer.h"
 #include "./core/serialize/serialize_mesh.h"
+#include "./core/serializer.h"
 #include "./mesh/meshloader.h"
 #include "./utils/log.h"
 #include "./utils/osutils.h"

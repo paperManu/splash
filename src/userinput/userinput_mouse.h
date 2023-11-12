@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Emmanuel Durand
+ * Copyright (C) 2016 Splash authors
  *
  * This file is part of Splash.
  *
@@ -59,6 +59,6 @@ class Mouse final : public UserInput
     void updateMethod() final;
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_USERINPUT_MOUSE_H

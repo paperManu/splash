@@ -47,6 +47,7 @@ Shader::Shader(ProgramType type)
         _shaders[tess_ctrl] = glCreateShader(GL_TESS_CONTROL_SHADER);
         _shaders[tess_eval] = glCreateShader(GL_TESS_EVALUATION_SHADER);
         _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
+        _shaders[fragment] = glCreateShader(GL_FRAGMENT_SHADER);
 
         registerFeedbackAttributes();
 
@@ -217,7 +218,7 @@ bool Shader::setSource(const std::map<ShaderType, std::string>& sources)
 
     bool status = true;
     if (sources.find(ShaderType::vertex) == sources.end())
-        status = setSource(ShaderSources.VERSION_DIRECTIVE_GL4 + ShaderSources.VERTEX_SHADER_DEFAULT, ShaderType::vertex);
+        status = setSource(ShaderSources.VERSION_DIRECTIVE_GL32_ES + ShaderSources.VERTEX_SHADER_DEFAULT, ShaderType::vertex);
     for (auto& [shaderType, source] : sources)
         status = status && setSource(source, shaderType);
 
@@ -469,8 +470,21 @@ void Shader::parseUniforms(const std::string& src)
                 continue;
             }
 
+            const auto uniformIndex = glGetUniformLocation(_program, name.c_str());
+
+            if (uniformIndex == -1)
+            {
+                // If a uniform is unused (perhaps due to its code path being removed by an ifdef), the compiler removes it from the shader altogether, as if it's never been there.
+                // I think renderdoc can be helpful with debugging this kind of stuff. Anyway, it might not be strictly an error depending on how you structure the code.
+                // In Splash, the ifdef trick is used a lot to enable/disable features, so some uniforms are removed between different shader versions.
+                Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Uniform \"" << name << "\" with type \"" << type << "\" "
+                           << "was not found in the shader. You might have forgotten it or it might have been optimized out" << Log::endl;
+
+                continue;
+            }
+
             _uniforms[name].type = type;
-            _uniforms[name].glIndex = glGetUniformLocation(_program, name.c_str());
+            _uniforms[name].glIndex = uniformIndex;
             _uniforms[name].elementSize = type.find("mat") != std::string::npos ? elementSize * elementSize : elementSize;
             _uniforms[name].arraySize = arraySize;
             _uniformsDocumentation[name] = documentation;
@@ -780,10 +794,11 @@ void Shader::registerAttributes()
 /*************/
 void Shader::registerGraphicAttributes()
 {
-    addAttribute("fill",
+    addAttribute(
+        "fill",
         [&](const Values& args) {
             // Get additionnal shading options
-            std::string options = ShaderSources.VERSION_DIRECTIVE_GL4;
+            std::string options = ShaderSources.VERSION_DIRECTIVE_GL32_ES;
             for (uint32_t i = 1; i < args.size(); ++i)
                 options += "#define " + args[i].as<std::string>() + "\n";
 
@@ -950,7 +965,8 @@ void Shader::registerGraphicAttributes()
         {'s'});
     setAttributeDescription("fill", "Set the filling mode");
 
-    addAttribute("sideness",
+    addAttribute(
+        "sideness",
         [&](const Values& args) {
             _sideness = (Shader::Sideness)args[0].as<int>();
             return true;
@@ -969,7 +985,7 @@ void Shader::registerComputeAttributes()
                 return false;
 
             // Get additionnal shading options
-            std::string options = ShaderSources.VERSION_DIRECTIVE_GL4;
+            std::string options = ShaderSources.VERSION_DIRECTIVE_GL32_ES;
             for (uint32_t i = 1; i < args.size(); ++i)
                 options += "#define " + args[i].as<std::string>() + "\n";
 
@@ -1014,7 +1030,7 @@ void Shader::registerFeedbackAttributes()
                 return false;
 
             // Get additionnal shader options
-            std::string options = ShaderSources.VERSION_DIRECTIVE_GL4;
+            std::string options = ShaderSources.VERSION_DIRECTIVE_GL32_ES;
             for (uint32_t i = 1; i < args.size(); ++i)
                 options += "#define " + args[i].as<std::string>() + "\n";
 
@@ -1025,6 +1041,10 @@ void Shader::registerFeedbackAttributes()
                 setSource(options + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_ctrl);
                 setSource(options + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_eval);
                 setSource(options + ShaderSources.GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, geometry);
+
+                // Need a fragment shader (even an empty one) for OpenGL ES 3.2.
+                setSource(options + ShaderSources.FRAGMENT_SHADER_EMPTY, fragment);
+
                 compileProgram();
             }
 

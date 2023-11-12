@@ -9,31 +9,31 @@ using namespace Splash;
 
 namespace BufferObjectTests
 {
-    /*************/
-    class BufferObjectMock : public BufferObject
+/*************/
+class BufferObjectMock : public BufferObject
+{
+  public:
+    BufferObjectMock()
+        : BufferObject(nullptr)
     {
-      public:
-        BufferObjectMock()
-            : BufferObject(nullptr)
-        {
-        }
-    
-        bool tryLockRead()
-        {
-            if (_readMutex.try_lock())
-                return true;
-            return false;
-        }
-    
-        bool deserialize(SerializedObject&& obj) final
-        {
-            updateTimestamp();
+    }
+
+    bool tryLockRead()
+    {
+        if (_readMutex.try_lock())
             return true;
-        }
-    
-        SerializedObject serialize() const final { return {}; }
-    };
-}
+        return false;
+    }
+
+    bool deserialize(SerializedObject&& obj) final
+    {
+        updateTimestamp();
+        return true;
+    }
+
+    SerializedObject serialize() const final { return {}; }
+};
+} // namespace BufferObjectTests
 
 /*************/
 TEST_CASE("Testing BufferObject locking")

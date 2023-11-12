@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Emmanuel Durand
+ * Copyright (C) 2017 Splash authors
  *
  * This file is part of Splash.
  *
@@ -220,8 +220,8 @@ class Attribute
 
     std::string _name{"noname"};        // Name of the attribute
     std::string _objectName{"unknown"}; // Name of the object holding this attribute
-    std::string _description{};       // Attribute description
-    std::vector<char> _valuesTypes{}; // List of the types held in _values
+    std::string _description{};         // Attribute description
+    std::vector<char> _valuesTypes{};   // List of the types held in _values
 
     std::function<bool(const Values&)> _setFunc{}; // Setter function
     std::function<const Values()> _getFunc{};      // Getter function

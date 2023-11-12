@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Emmanuel Durand
+ * Copyright (C) 2013 Splash authors
  *
  * This file is part of Splash.
  *
@@ -38,6 +38,7 @@
 
 #include "./core/attribute.h"
 #include "./core/graph_object.h"
+#include "./graphics/api/window_gfx_impl.h"
 #include "./graphics/gl_window.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
@@ -145,7 +146,7 @@ class Window final : public GraphObject
      * Check whether the given GLFW window is related to this object
      * \return Return true if the GLFW window is held by this object
      */
-    bool isWindow(GLFWwindow* w) const { return (w == _window->get() ? true : false); }
+    bool isWindow(GLFWwindow* w) const { return (_gfxImpl->getGlfwWindow() == w ? true : false); }
 
     /**
      * Render this window to screen
@@ -189,8 +190,8 @@ class Window final : public GraphObject
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
   private:
+    std::unique_ptr<gfx::WindowGfxImpl> _gfxImpl;
     bool _isInitialized{false};
-    std::shared_ptr<GlWindow> _window;
 
     int64_t _backBufferTimestamp{0};
     int64_t _frontBufferTimestamp{0};
@@ -212,12 +213,7 @@ class Window final : public GraphObject
     static int _swappableWindowsCount;
 
     // Offscreen rendering related objects
-    GLuint _renderFbo{0};
-    GLuint _readFbo{0};
     bool _renderTextureUpdated{false};
-    std::shared_ptr<Texture_Image> _depthTexture{nullptr};
-    std::shared_ptr<Texture_Image> _colorTexture{nullptr};
-    GLsync _renderFence{nullptr};
 
     std::shared_ptr<Object> _screen;
     std::shared_ptr<Object> _screenGui;
@@ -250,12 +246,6 @@ class Window final : public GraphObject
      * Update size and position parameters based on the real window parameters
      */
     void updateSizeAndPos();
-
-    /**
-     * Set FBOs up
-     */
-    void setupFBOs();
-    void setupReadFBO();
 
     /**
      * Register new attributes
@@ -298,6 +288,6 @@ class Window final : public GraphObject
     void updateWindowShape();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_WINDOW_H

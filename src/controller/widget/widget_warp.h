@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Emmanuel Durand
+ * Copyright (C) 2014 Splash authors
  *
  * This file is part of Splash.
  *
@@ -56,6 +56,6 @@ class GuiWarp : public GuiWidget
     void processMouseEvents(const std::shared_ptr<Warp>& warp, int warpWidth, int warpHeight);
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

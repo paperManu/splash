@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Emmanuel Durand
+ * Copyright (C) 2018 Splash authors
  *
  * This file is part of Splash.
  *
@@ -41,6 +41,6 @@ class GuiTexturesView : public GuiWidget
     void render() final;
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_WIDGET_TEXTURES_VIEW_H

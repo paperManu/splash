@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Emmanuel Durand
+ * Copyright (C) 2013 Splash authors
  *
  * This file is part of Splash.
  *
@@ -90,10 +90,10 @@ class World : public RootObject
     std::string _clockDeviceName{""};          //!< Name of the input sound source for the master clock
 #endif
 
-    bool _status{true};        //!< Exit status
-    bool _quit{false};         //!< True if the World should quit
-    static World* _that;       //!< Pointer to the World
-    struct sigaction _signals; //!< System signals
+    bool _status{true};               //!< Exit status
+    bool _quit{false};                //!< True if the World should quit
+    static World* _that;              //!< Pointer to the World
+    struct sigaction _signals;        //!< System signals
     bool _enforceCoreAffinity{false}; //!< If true, World and Scenes have their affinity fixed in specific, separate cores
     bool _enforceRealtime{false};     //!< If true, realtime scheduling is asked to the system, if possible
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Emmanuel Durand
+ * Copyright (C) 2015 Splash authors
  *
  * This file is part of Splash.
  *
@@ -479,7 +479,7 @@ struct Value
 
     /**
      * Check whether the current value is convertible to the given type
-     * If the Value given as parameter is of type Integer, it 
+     * If the Value given as parameter is of type Integer, it
      * can be converted to a Real. All other conversions are forbidden
      * \param v Other value to compute type with
      * \return Return true if the conversion is possible

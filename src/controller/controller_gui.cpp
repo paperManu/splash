@@ -2,7 +2,6 @@
 
 #include <fstream>
 
-#include "./core/constants.h"
 #include "./controller/controller.h"
 #include "./controller/widget/widget_calibration.h"
 #include "./controller/widget/widget_camera.h"
@@ -16,6 +15,7 @@
 #include "./controller/widget/widget_textures_view.h"
 #include "./controller/widget/widget_tree.h"
 #include "./controller/widget/widget_warp.h"
+#include "./core/constants.h"
 #include "./core/scene.h"
 #include "./graphics/camera.h"
 #include "./graphics/object.h"
@@ -47,7 +47,6 @@ Gui::Gui(std::shared_ptr<GlWindow> w, RootObject* s)
     _type = "gui";
     _renderingPriority = Priority::GUI;
 
-    _scene = dynamic_cast<Scene*>(s);
     if (w.get() == nullptr || _scene == nullptr)
         return;
 
@@ -111,7 +110,7 @@ void Gui::loadIcon()
         return;
     }
 
-    _splashLogo = std::make_shared<Texture_Image>(_scene);
+    _splashLogo = _renderer->createTexture_Image(_scene);
     _splashLogo->linkTo(image);
     _splashLogo->update();
 }
@@ -1041,7 +1040,8 @@ void Gui::initImGui(int width, int height)
 
     // Initialize GL stuff for ImGui
     const std::string vertexShader{R"(
-        #version 330 core
+        #version 320 es
+        precision mediump float;
 
         uniform mat4 ProjMtx;
         in vec2 Position;
@@ -1059,7 +1059,8 @@ void Gui::initImGui(int width, int height)
     )"};
 
     const std::string fragmentShader{R"(
-        #version 330 core
+        #version 320 es
+        precision mediump float;
 
         uniform sampler2D Texture;
         in vec2 Frag_UV;
@@ -1106,10 +1107,10 @@ void Gui::initImGui(int width, int height)
     _imGuiUVLocation = glGetAttribLocation(_imGuiShaderHandle, "UV");
     _imGuiColorLocation = glGetAttribLocation(_imGuiShaderHandle, "Color");
 
-    glCreateBuffers(1, &_imGuiVboHandle);
-    glCreateBuffers(1, &_imGuiElementsHandle);
+    glGenBuffers(1, &_imGuiVboHandle);
+    glGenBuffers(1, &_imGuiElementsHandle);
 
-    glCreateVertexArrays(1, &_imGuiVaoHandle);
+    glGenVertexArrays(1, &_imGuiVaoHandle);
     glBindVertexArray(_imGuiVaoHandle);
     glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
     glEnableVertexAttribArray(_imGuiPositionLocation);
@@ -1354,7 +1355,8 @@ void Gui::initImWidgets()
             stats[branchName + "_warp"] = runningAverage(stats[branchName + "_warp"], getLeafValue(durationPath + "/warp"));
             stats[branchName + "_glWindow"] = runningAverage(stats[branchName + "_glWindow"], getLeafValue(durationPath + "/window"));
             stats[branchName + "_swap"] = runningAverage(stats[branchName + "_swap"], getLeafValue(durationPath + "/swap"));
-            stats[branchName + "_gl_time_per_frame"] = runningAverage(stats[branchName + "_gl_time_per_frame"], getLeafValue(durationPath + "/" + Constants::GL_TIMING_PREFIX + Constants::GL_TIMING_TIME_PER_FRAME));
+            stats[branchName + "_gl_time_per_frame"] =
+                runningAverage(stats[branchName + "_gl_time_per_frame"], getLeafValue(durationPath + "/" + Constants::GL_TIMING_PREFIX + Constants::GL_TIMING_TIME_PER_FRAME));
 
             stream << "- " + branchName + ":\n";
             stream << "    GPU:\n";

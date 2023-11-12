@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Emmanuel Durand
+ * Copyright (C) 2014 Splash authors
  *
  * This file is part of Splash.
  *
@@ -56,6 +56,6 @@ class GuiMedia : public GuiWidget
     void replaceMedia(const std::string& previousMedia, const std::string& alias, const std::string& type);
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

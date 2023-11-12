@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Emmanuel Durand
+ * Copyright (C) 2014 Splash authors
  *
  * This file is part of Splash.
  *
@@ -123,6 +123,6 @@ class GuiCamera : public GuiWidget
     void drawVirtualProbes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

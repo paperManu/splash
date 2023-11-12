@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "./core/root_object.h"
+#include "./core/scene.h"
 
 namespace Splash
 {
@@ -13,6 +14,12 @@ GraphObject::GraphObject(RootObject* root)
 {
     initializeTree();
     registerAttributes();
+
+    _scene = dynamic_cast<Scene*>(root);
+    if (_scene != nullptr)
+        _renderer = _scene->getRenderer();
+    else
+        _renderer = nullptr;
 }
 
 /*************/
@@ -283,14 +290,13 @@ void GraphObject::registerAttributes()
         },
         {'s'});
 
-    addAttribute("lockedAttributes",
-        [&]() -> Values{
-            std::unique_lock<std::recursive_mutex> lock(_attribMutex);
-            Values lockedAttributes;
-            for (const auto& attr : _lockedAttributes)
-                lockedAttributes.push_back(Value(attr));
-            return lockedAttributes;
-        });
+    addAttribute("lockedAttributes", [&]() -> Values {
+        std::unique_lock<std::recursive_mutex> lock(_attribMutex);
+        Values lockedAttributes;
+        for (const auto& attr : _lockedAttributes)
+            lockedAttributes.push_back(Value(attr));
+        return lockedAttributes;
+    });
 
     addAttribute(
         "timestamp", [](const Values&) { return true; }, [&]() -> Values { return {getTimestamp()}; }, {'i'});
@@ -390,6 +396,14 @@ void GraphObject::uninitializeTree()
     auto path = "/" + _root->getName() + "/objects/" + _name;
     if (tree->hasBranchAt(path))
         tree->removeBranchAt(path);
+}
+
+/*************/
+const gfx::Renderer::GlMsgCallbackData* GraphObject::getGlMsgCallbackDataPtr()
+{
+    _glMsgCallbackData.name = _name;
+    _glMsgCallbackData.type = _type;
+    return &_glMsgCallbackData;
 }
 
 } // namespace Splash

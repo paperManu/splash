@@ -23,12 +23,13 @@
 TEST_CASE("Testing Calimiro integration to Splash")
 {
     bool result = false;
-    try {
+    try
+    {
         calimiro::Workspace workspace;
-	result = true;
+        result = true;
     }
-    catch (...) {}
+    catch (...)
+    {
+    }
     CHECK(result == true);
 }
-
-

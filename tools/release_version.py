@@ -28,7 +28,7 @@ blender_addon_init_file = os.path.join("addons", "blender", "splash", "__init__.
 
 version_pattern = "\s+VERSION (\d+).(\d+).(\d+)"
 git_path = "git@gitlab.com:splashmapper"
-git_project = "splash"
+git_project = "Splash"
 remote_repo = 'origin'
 bringup_branch = "master"
 working_branch = "develop"

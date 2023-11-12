@@ -1,7 +1,7 @@
 #include <doctest.h>
+#include <iostream>
 #include <random>
 #include <vector>
-#include <iostream>
 
 #include "./core/serialize/serialize_value.h"
 #include "./core/serializer.h"

@@ -180,8 +180,8 @@ std::string Sink_Shmdata_Encoded::generateCaps(const ImageBufferSpec& spec, uint
             profile = std::string(reinterpret_cast<char*>(profileStr));
     }
 
-    auto caps = "video/" + codec + ",stream-format=(string)byte_stream,alignment=(string)au,profile=(string)" + profile + ",width=(int)" + std::to_string(spec.width) + ",height=(int)" +
-                std::to_string(spec.height) + ",pixel-aspect-ratio=(fraction)1/1,framerate=(fraction)" + std::to_string(framerate) + "/1";
+    auto caps = "video/" + codec + ",stream-format=(string)byte_stream,alignment=(string)au,profile=(string)" + profile + ",width=(int)" + std::to_string(spec.width) +
+                ",height=(int)" + std::to_string(spec.height) + ",pixel-aspect-ratio=(fraction)1/1,framerate=(fraction)" + std::to_string(framerate) + "/1";
 
     return caps;
 }
@@ -256,7 +256,8 @@ void Sink_Shmdata_Encoded::registerAttributes()
 {
     Sink::registerAttributes();
 
-    addAttribute("bitrate",
+    addAttribute(
+        "bitrate",
         [&](const Values& args) {
             _bitRate = std::max(1000000, args[0].as<int>());
             _resetEncoding = true;
@@ -269,7 +270,8 @@ void Sink_Shmdata_Encoded::registerAttributes()
     addAttribute("caps", [&]() -> Values { return {_caps}; });
     setAttributeDescription("caps", "Generated caps");
 
-    addAttribute("codec",
+    addAttribute(
+        "codec",
         [&](const Values& args) {
             _codecName = args[0].as<std::string>();
             transform(_codecName.begin(), _codecName.end(), _codecName.begin(), ::tolower);
@@ -280,7 +282,8 @@ void Sink_Shmdata_Encoded::registerAttributes()
         {'s'});
     setAttributeDescription("codec", "Desired codec");
 
-    addAttribute("codecOptions",
+    addAttribute(
+        "codecOptions",
         [&](const Values& args) {
             _options = args[0].as<std::string>();
             _resetEncoding = true;
@@ -293,7 +296,8 @@ void Sink_Shmdata_Encoded::registerAttributes()
         "Options can be listed with the following terminal command:\n"
         "$ ffmpeg -h encoder=ENCODER_NAME");
 
-    addAttribute("socket",
+    addAttribute(
+        "socket",
         [&](const Values& args) {
             _path = args[0].as<std::string>();
             _previousSpec = ImageBufferSpec();
@@ -303,8 +307,9 @@ void Sink_Shmdata_Encoded::registerAttributes()
         {'s'});
     setAttributeDescription("socket", "Socket path to which data is sent");
 
-    addAttribute("caps", [&](const Values&) { return true; }, [&]() -> Values { return {_caps}; }, {'s'});
+    addAttribute(
+        "caps", [&](const Values&) { return true; }, [&]() -> Values { return {_caps}; }, {'s'});
     setAttributeDescription("caps", "Caps of the sent data");
 }
 
-} // end of namespace
+} // namespace Splash

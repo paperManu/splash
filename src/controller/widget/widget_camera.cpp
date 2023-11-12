@@ -142,7 +142,8 @@ void GuiCamera::render()
         revertCalibration();
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Revert the selected camera to its previous "
-                          "calibration\n(Ctrl+%s while hovering the view)", getLocalKeyName('Z'));
+                          "calibration\n(Ctrl+%s while hovering the view)",
+            getLocalKeyName('Z'));
     ImGui::SameLine();
 
     if (ImGui::Button("Reset camera") && _camera)
@@ -164,7 +165,8 @@ void GuiCamera::render()
         showAllCalibrationPoints(static_cast<Camera::CalibrationPointsVisibility>(_showCalibrationPoints));
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Show the target positions for the calibration "
-                          "points\n(%s while hovering the view)", getLocalKeyName('A'));
+                          "points\n(%s while hovering the view)",
+            getLocalKeyName('A'));
     ImGui::SameLine();
 
     static bool showAllCamerasPoints = false;
@@ -172,7 +174,8 @@ void GuiCamera::render()
         showAllCamerasCalibrationPoints();
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Show this camera's calibration points in other "
-                          "cameras\n(%s while hovering the view)", getLocalKeyName('O'));
+                          "cameras\n(%s while hovering the view)",
+            getLocalKeyName('O'));
     ImGui::SameLine();
 
     // Colorization of the wireframe rendering. Applied after the GUI camera
@@ -181,7 +184,8 @@ void GuiCamera::render()
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Activate colorization of the wireframe rendering, green "
                           "for selected camera and magenta for the other "
-                          "cameras\n(%s while hovering the view)", getLocalKeyName('V'));
+                          "cameras\n(%s while hovering the view)",
+            getLocalKeyName('V'));
     ImGui::SameLine();
 
     ImGui::Checkbox("Activate joystick", &_joystickActivated);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Emmanuel Durand
+ * Copyright (C) 2018 Splash authors
  *
  * This file is part of Splash.
  *
@@ -26,12 +26,19 @@
 #define SPLASH_GRAPH_OBJECT_H
 
 #include "./core/base_object.h"
+#include "./graphics/api/renderer.h"
 #include "./utils/dense_set.h"
 
 namespace Splash
 {
 
 class RootObject;
+class Scene;
+
+namespace gfx
+{
+class Renderer;
+}
 
 /*************/
 class GraphObject : public BaseObject
@@ -252,6 +259,8 @@ class GraphObject : public BaseObject
      */
     virtual void render() {}
 
+    virtual const gfx::Renderer::GlMsgCallbackData* getGlMsgCallbackDataPtr() override;
+
   protected:
     Category _category{Category::MISC};   //!< Object category, updated by the factory
     std::string _type{"baseobject"};      //!< Internal type
@@ -267,7 +276,10 @@ class GraphObject : public BaseObject
 
     bool _isConnectedToRemote{false}; //!< True if the object gets data from a World object
 
-    RootObject* _root;                                      //!< Root object, Scene or World
+    RootObject* _root;   //!< Root object, Scene or World
+    Scene* _scene;       //!< Pointer to the Scene, if any
+    gfx::Renderer* _renderer; //!< Pointer to the graphic renderer
+
     std::vector<std::weak_ptr<GraphObject>> _linkedObjects; //!< Linked objects
 
     /**

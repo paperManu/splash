@@ -2,7 +2,6 @@
 
 #include "./controller/controller_blender.h"
 #include "./core/constants.h"
-#include "./network/link.h"
 #include "./core/scene.h"
 #include "./graphics/camera.h"
 #include "./graphics/filter.h"
@@ -21,6 +20,7 @@
 #include "./image/image_list.h"
 #include "./image/queue.h"
 #include "./mesh/mesh.h"
+#include "./network/link.h"
 #include "./sink/sink.h"
 #include "./utils/jsonutils.h"
 #include "./utils/log.h"
@@ -225,7 +225,13 @@ void Factory::registerObjects()
         "Custom filter, which can take a GLSL fragment shader source to process the input texture(s).",
         true);
 
-    _objectBook["geometry"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Geometry>(root)); },
+    _objectBook["geometry"] = Page(
+        [&](RootObject* root) {
+            if (_scene)
+                return std::dynamic_pointer_cast<GraphObject>(_scene->getRenderer()->createGeometry(root));
+
+            return std::shared_ptr<GraphObject>(nullptr);
+        },
         GraphObject::Category::MISC,
         "Geometry",
         "Intermediary object holding vertices, UV and normal coordinates of a projection surface.");
@@ -413,7 +419,14 @@ void Factory::registerObjects()
         "Allows for creating a timed playlist of image sources.",
         true);
 
-    _objectBook["texture_image"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Texture_Image>(root)); },
+    _objectBook["texture_image"] = Page(
+        [&](RootObject* root) {
+            // Root must exist for the renderer to work (indicates normal operation, root is null for tests)
+            if (_scene)
+                return std::dynamic_pointer_cast<GraphObject>(_scene->getRenderer()->createTexture_Image(root));
+
+            return std::shared_ptr<GraphObject>(nullptr);
+        },
         GraphObject::Category::TEXTURE,
         "texture image",
         "Texture object created from an Image object.",

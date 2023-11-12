@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Emmanuel Durand
+ * Copyright (C) 2014 Splash authors
  *
  * This file is part of Splash.
  *
@@ -45,6 +45,6 @@ class GuiGraph : public GuiWidget
     std::map<std::string, std::deque<unsigned long long>> _durationGraph;
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

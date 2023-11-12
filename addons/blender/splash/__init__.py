@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2015 Emmanuel Durand
+# Copyright (C) 2015 Splash authors
 #
 # This file is part of Splash (http://github.com/paperManu/splash)
 #
@@ -19,8 +19,8 @@
 
 bl_info = {
     "name": "Splash output",
-    "author": "Emmanuel Durand",
-    "version": (0, 9, 40),
+    "author": "Splash authors",
+    "version": (0, 10, 0),
     "blender": (2, 80, 0),
     "location": "3D View > Toolbox, File > Export",
     "description": "Utility tools to connect Blender to the Splash videomapper",

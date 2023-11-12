@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Emmanuel Durand
+ * Copyright (C) 2014 Splash authors
  *
  * This file is part of Splash.
  *
@@ -37,26 +37,26 @@
 
 namespace Splash::Constants
 {
-    static const char ALL_PEERS[] = "__ALL__";
-    static const char DEFAULT_FILE_ENV[] = "SPLASH_DEFAULTS";
+static const char ALL_PEERS[] = "__ALL__";
+static const char DEFAULT_FILE_ENV[] = "SPLASH_DEFAULTS";
 
-    static const char FILE_CONFIGURATION[] = "splashConfiguration";
-    static const char FILE_PROJECT[] = "splashProject";
+static const char FILE_CONFIGURATION[] = "splashConfiguration";
+static const char FILE_PROJECT[] = "splashProject";
 
-    static const char CAMERA_LINK[] = "__camera_link";
+static const char CAMERA_LINK[] = "__camera_link";
 
-    static const char GL_VENDOR_NVIDIA[] = "NVIDIA Corporation";
-    static const char GL_VENDOR_AMD[] = "X.Org";
-    static const char GL_VENDOR_INTEL[] = "Intel";
+static const char GL_VENDOR_NVIDIA[] = "NVIDIA Corporation";
+static const char GL_VENDOR_AMD[] = "X.Org";
+static const char GL_VENDOR_INTEL[] = "Intel";
 
-    static const char GL_TIMING_PREFIX[] = "__gl_timing_";
-    static const char GL_TIMING_TIME_PER_FRAME[] = "time_per_frame";
-    static const char GL_TIMING_TEXTURES_UPLOAD[] = "texture_upload";
-    static const char GL_TIMING_RENDERING[] = "rendering";
-    static const char GL_TIMING_SWAP[] = "swap";
+static const char GL_TIMING_PREFIX[] = "__gl_timing_";
+static const char GL_TIMING_TIME_PER_FRAME[] = "time_per_frame";
+static const char GL_TIMING_TEXTURES_UPLOAD[] = "texture_upload";
+static const char GL_TIMING_RENDERING[] = "rendering";
+static const char GL_TIMING_SWAP[] = "swap";
 
-    static const uint32_t CONNECTION_TIMEOUT = 5;
-}
+static const uint32_t CONNECTION_TIMEOUT = 5;
+} // namespace Splash::Constants
 
 #define PRINT_FUNCTION_LINE std::cout << "------> " << __PRETTY_FUNCTION__ << "::" << __LINE__ << std::endl;
 

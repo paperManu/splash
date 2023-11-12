@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Emmanuel Durand
+ * Copyright (C) 2013 Splash authors
  *
  * This file is part of Splash.
  *
@@ -34,6 +34,7 @@
 #include "./core/buffer_object.h"
 #include "./core/imagebuffer.h"
 #include "./core/root_object.h"
+#include "./utils/cgutils.h"
 
 namespace Splash
 {
@@ -44,15 +45,9 @@ class Image : public BufferObject
     /**
      * Constructor
      * \param root Root object
-     */
-    Image(RootObject* root);
-
-    /**
-     * Constructor
-     * \param root Root object
      * \param spec Image specifications
      */
-    Image(RootObject* root, const ImageBufferSpec& spec);
+    Image(RootObject* root, const std::optional<ImageBufferSpec> spec = std::nullopt);
 
     /**
      * Destructor
@@ -165,6 +160,14 @@ class Image : public BufferObject
      */
     bool write(const std::string& filename);
 
+    /**
+     * Read the RGB value at the specified x and y pixel locations. Assumes the image is RGBA and that each channel occupies one byte.
+     * Also assumes that the x and y positions are within the bounds of the current mipmap level that's loaded.
+     * Currently this suppors only RGBA 32bpp images
+     * \return The RGB value at (x, y)
+     */
+    RgbValue readPixel(uint x, uint y) const;
+
   protected:
     std::unique_ptr<ImageBuffer> _image{nullptr};
     std::unique_ptr<ImageBuffer> _bufferImage{nullptr};
@@ -180,8 +183,8 @@ class Image : public BufferObject
     bool _srgb{true};
     bool _benchmark{false};
 
-    void createDefaultImage(); //< Create a default black image
-    void createPattern();      //< Create a default pattern
+    void initFromSpec(const ImageBufferSpec& spec); //< Create an unintialized image with the passed spec.
+    void createPattern();                           //< Create a default pattern
 
     /**
      * Update the _mediaInfo member
@@ -221,7 +224,7 @@ class Image : public BufferObject
     /**
      * Base init for the class
      */
-    void init();
+    void init(std::optional<const ImageBufferSpec> spec = std::nullopt);
 };
 
 } // namespace Splash

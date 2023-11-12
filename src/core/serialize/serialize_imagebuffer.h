@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Emmanuel Durand
+ * Copyright (C) 2021 Splash authors
  *
  * This file is part of Splash.
  *
@@ -27,8 +27,8 @@
 
 #include <iostream>
 
-#include "./core/serializer.h"
 #include "./core/imagebuffer.h"
+#include "./core/serializer.h"
 
 namespace Splash::Serial::detail
 {

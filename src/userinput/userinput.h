@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Emmanuel Durand
+ * Copyright (C) 2016 Splash authors
  *
  * This file is part of Splash.
  *
@@ -170,6 +170,6 @@ class UserInput : public GraphObject
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_USERINPUT_H

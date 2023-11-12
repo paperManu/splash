@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Emmanuel Durand
+ * Copyright (C) 2017 Splash authors
  *
  * This file is part of Splash.
  *
@@ -123,6 +123,6 @@ class Sound_Engine
     PaStream* _portAudioStream{nullptr};
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_SOUND_ENGINE_H

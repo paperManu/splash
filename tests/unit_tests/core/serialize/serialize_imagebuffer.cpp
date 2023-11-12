@@ -20,8 +20,8 @@
 #include <doctest.h>
 
 #include "./core/imagebuffer.h"
-#include "./core/serializer.h"
 #include "./core/serialize/serialize_imagebuffer.h"
+#include "./core/serializer.h"
 
 using namespace Splash;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Emmanuel Durand
+ * Copyright (C) 2014 Splash authors
  *
  * This file is part of Splash.
  *
@@ -47,8 +47,6 @@
 
 namespace Splash
 {
-
-class Scene;
 
 /*************/
 class Gui final : public ControllerObject
@@ -221,7 +219,6 @@ class Gui final : public ControllerObject
 
     bool _isInitialized{false};
     std::shared_ptr<GlWindow> _glWindow;
-    Scene* _scene{nullptr};
     Window* _window{nullptr};
 
     std::unique_ptr<Framebuffer> _fbo{nullptr};

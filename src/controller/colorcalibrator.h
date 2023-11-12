@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Emmanuel Durand
+ * Copyright (C) 2015 Splash authors
  *
  * This file is part of Splash.
  *
@@ -25,8 +25,8 @@
 #ifndef SPLASH_COLORCALIBRATOR_H
 #define SPLASH_COLORCALIBRATOR_H
 
-#include <mutex>
 #include <future>
+#include <mutex>
 #include <utility>
 
 #include <glm/glm.hpp>
@@ -113,7 +113,7 @@ class ColorCalibrator : public ControllerObject
     // Attributes
     //
     std::shared_ptr<Image> _grabber{nullptr};
-    bool _grabberAuto {false};
+    bool _grabberAuto{false};
     cv::Mat _crf{};
 
     unsigned int _colorCurveSamples{5};     //!< Number of samples for each channels to create the color curves
@@ -213,6 +213,6 @@ class ColorCalibrator : public ControllerObject
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

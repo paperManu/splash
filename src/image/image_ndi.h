@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Emmanuel Durand
+ * Copyright (C) 2021 Splash authors
  *
  * This file is part of Splash.
  *
@@ -82,6 +82,6 @@ class Image_NDI final : public Image
     void registerAttributes();
 };
 
-}
+} // namespace Splash
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Emmanuel Durand
+ * Copyright (C) 2013 Splash authors
  *
  * This file is part of Splash.
  *
@@ -33,8 +33,8 @@
 
 #include "./core/attribute.h"
 #include "./core/graph_object.h"
+#include "./graphics/api/gpu_buffer.h"
 #include "./graphics/geometry.h"
-#include "./graphics/gpu_buffer.h"
 #include "./graphics/shader.h"
 #include "./graphics/texture.h"
 

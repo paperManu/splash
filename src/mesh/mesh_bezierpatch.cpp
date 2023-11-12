@@ -186,8 +186,8 @@ void Mesh_BezierPatch::updatePatch()
                 {
                     const auto iAsFloat = static_cast<float>(i);
                     const auto jAsFloat = static_cast<float>(j);
-                    float factor = _binomialCoeffsY[j] * pow(uv.y, jAsFloat) * pow(1.f - uv.y, static_cast<float>(_patch.size.y) - 1.f - jAsFloat) * _binomialCoeffsX[i] * pow(uv.x, iAsFloat) *
-                                   pow(1.f - uv.x, static_cast<float>(_patch.size.x) - 1.f - iAsFloat);
+                    float factor = _binomialCoeffsY[j] * pow(uv.y, jAsFloat) * pow(1.f - uv.y, static_cast<float>(_patch.size.y) - 1.f - jAsFloat) * _binomialCoeffsX[i] *
+                                   pow(uv.x, iAsFloat) * pow(1.f - uv.x, static_cast<float>(_patch.size.x) - 1.f - iAsFloat);
                     vertex += factor * _patch.vertices[i + j * _patch.size.x];
                 }
             }
@@ -236,7 +236,8 @@ void Mesh_BezierPatch::registerAttributes()
 {
     Mesh::registerAttributes();
 
-    addAttribute("patchControl",
+    addAttribute(
+        "patchControl",
         [&](const Values& args) {
             const auto width = args[0].as<uint32_t>();
             const auto height = args[1].as<uint32_t>();
@@ -269,7 +270,8 @@ void Mesh_BezierPatch::registerAttributes()
         {'i', 'i'});
     setAttributeDescription("patchControl", "Set the control points positions");
 
-    addAttribute("patchSize",
+    addAttribute(
+        "patchSize",
         [&](const Values& args) {
             createPatch(std::max(args[0].as<int>(), 2), std::max(args[1].as<int>(), 2));
             return true;
@@ -280,7 +282,8 @@ void Mesh_BezierPatch::registerAttributes()
         {'i', 'i'});
     setAttributeDescription("patchSize", "Set the Bezier patch control resolution");
 
-    addAttribute("patchResolution",
+    addAttribute(
+        "patchResolution",
         [&](const Values& args) {
             _patchResolution = std::max(4, args[0].as<int>());
             _patchUpdated = true;
@@ -292,4 +295,4 @@ void Mesh_BezierPatch::registerAttributes()
     setAttributeDescription("patchResolution", "Set the Bezier patch final resolution");
 }
 
-} // end of namespace
+} // namespace Splash

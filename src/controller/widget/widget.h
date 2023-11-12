@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Emmanuel Durand
+ * Copyright (C) 2014 Splash authors
  *
  * This file is part of Splash.
  *
@@ -77,7 +77,7 @@ bool FileSelectorParseDir(const std::string& path, std::vector<std::string>& lis
  * \return Return true if the input has been validated
  */
 bool InputText(const char* label, std::string& str, ImGuiInputTextFlags flags = ImGuiInputTextFlags_None);
-}
+} // namespace SplashImGui
 
 /*************/
 class GuiWidget : public ControllerObject
@@ -124,6 +124,6 @@ class GuiWidget : public ControllerObject
     const char* getLocalKeyName(char key);
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_WIDGETS_H

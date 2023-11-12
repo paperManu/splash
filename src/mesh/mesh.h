@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Emmanuel Durand
+ * Copyright (C) 2013 Splash authors
  *
  * This file is part of Splash.
  *
@@ -52,7 +52,6 @@ class Mesh : public BufferObject
     };
 
   public:
-
     /**
      * Constructor
      * \param root Root object
@@ -176,6 +175,6 @@ class Mesh : public BufferObject
     void createDefaultMesh(int subdiv = 0);
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_MESH_H

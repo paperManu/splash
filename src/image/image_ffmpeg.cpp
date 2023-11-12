@@ -798,7 +798,8 @@ void Image_FFmpeg::registerAttributes()
 {
     Image::registerAttributes();
 
-    addAttribute("bufferSize",
+    addAttribute(
+        "bufferSize",
         [&](const Values& args) {
             int64_t sizeMB = std::max(16, args[0].as<int>());
             _maximumBufferSize = sizeMB * (int64_t)1048576;
@@ -808,17 +809,17 @@ void Image_FFmpeg::registerAttributes()
         {'i'});
     setAttributeDescription("bufferSize", "Set the maximum buffer size for the video (in MB)");
 
-    addAttribute("duration",
-        [&]() -> Values {
-            if (_avContext == nullptr)
-                return {0.f};
+    addAttribute("duration", [&]() -> Values {
+        if (_avContext == nullptr)
+            return {0.f};
 
-            return {getMediaDuration()};
-        });
+        return {getMediaDuration()};
+    });
     setAttributeDescription("duration", "Duration of the video file");
 
 #if HAVE_PORTAUDIO
-    addAttribute("audioDeviceOutput",
+    addAttribute(
+        "audioDeviceOutput",
         [&](const Values& args) {
             _audioDeviceOutput = args[0].as<std::string>();
             _audioDeviceOutputUpdated = true;
@@ -838,17 +839,17 @@ void Image_FFmpeg::registerAttributes()
         [&]() -> Values { return {static_cast<bool>(_loopOnVideo)}; },
         {'b'});
 
-    addAttribute("elapsed",
-        [&]() -> Values {
-            if (_avContext == nullptr)
-                return {0.f};
+    addAttribute("elapsed", [&]() -> Values {
+        if (_avContext == nullptr)
+            return {0.f};
 
-            float duration = std::max(0.f, static_cast<float>(_elapsedTime) / 1e6f);
-            return {duration};
-        });
+        float duration = std::max(0.f, static_cast<float>(_elapsedTime) / 1e6f);
+        return {duration};
+    });
     setAttributeDescription("elapsed", "Time elapsed since the beginning of the video");
 
-    addAttribute("pause",
+    addAttribute(
+        "pause",
         [&](const Values& args) {
             _paused = args[0].as<bool>();
             return true;
@@ -856,7 +857,8 @@ void Image_FFmpeg::registerAttributes()
         [&]() -> Values { return {_paused}; },
         {'b'});
 
-    addAttribute("seek",
+    addAttribute(
+        "seek",
         [&](const Values& args) {
             float seconds = args[0].as<float>();
             seek_async(seconds);
@@ -867,7 +869,8 @@ void Image_FFmpeg::registerAttributes()
         {'r'});
     setAttributeDescription("seek", "Change the read position in the video file");
 
-    addAttribute("trim",
+    addAttribute(
+        "trim",
         [&](const Values& args) {
             auto start = args[0].as<double>();
             auto end = args[1].as<double>();
@@ -893,7 +896,8 @@ void Image_FFmpeg::registerAttributes()
         {'r', 'r'});
     setAttributeDescription("trim", "Trim the video by setting the start and end times");
 
-    addAttribute("useClock",
+    addAttribute(
+        "useClock",
         [&](const Values& args) {
             _useClock = args[0].as<bool>();
             if (!_useClock)
@@ -906,7 +910,8 @@ void Image_FFmpeg::registerAttributes()
         [&]() -> Values { return {_useClock}; },
         {'b'});
 
-    addAttribute("videoFormat",
+    addAttribute(
+        "videoFormat",
         [&](const Values&) {
             // Video format string cannot be set from outside this class
             return true;
