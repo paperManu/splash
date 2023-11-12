@@ -18,7 +18,7 @@
  */
 
 /*
- * @texture_image_impl.h
+ * @texture_image_gfx_impl.h
  * Base class for Texture_Image API implementations
  */
 
@@ -31,10 +31,10 @@
 namespace Splash::gfx
 {
 
-class Texture_ImageImpl
+class Texture_ImageGfxImpl
 {
   public:
-    virtual ~Texture_ImageImpl() = default;
+    virtual ~Texture_ImageGfxImpl() = default;
 
     /**
      * Bind this texture

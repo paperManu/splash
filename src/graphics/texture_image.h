@@ -34,7 +34,7 @@
 #include "./core/constants.h"
 
 #include "./core/attribute.h"
-#include "./graphics/api/texture_image_impl.h"
+#include "./graphics/api/texture_image_gfx_impl.h"
 #include "./graphics/texture.h"
 #include "./image/image.h"
 #include "./utils/cgutils.h"
@@ -48,9 +48,9 @@ class Texture_Image : public Texture
     /**
      * Constructor
      * \param root Root object
-     * \param gfxImpl Specialization of a gfx::Texture_ImageImpl for handling rendering
+     * \param gfxImpl Specialization of a gfx::Texture_ImageGfxImpl for handling rendering
      */
-    explicit Texture_Image(RootObject* root, std::unique_ptr<gfx::Texture_ImageImpl> gfxImpl);
+    explicit Texture_Image(RootObject* root, std::unique_ptr<gfx::Texture_ImageGfxImpl> gfxImpl);
 
     /**
      * Destructor
@@ -201,7 +201,7 @@ class Texture_Image : public Texture
     void registerAttributes();
 
   private:
-    std::unique_ptr<gfx::Texture_ImageImpl> _gfxImpl;
+    std::unique_ptr<gfx::Texture_ImageGfxImpl> _gfxImpl;
 };
 
 } // namespace Splash

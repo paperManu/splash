@@ -26,9 +26,9 @@
 #define SPLASH_OPENGL_RENDERER_H
 
 #include "./graphics/api/opengl/geometry_gfx_impl.h"
-#include "./graphics/api/opengl/texture_image_impl.h"
-#include "./graphics/api/opengl/window_gfx_impl.h"
 #include "./graphics/api/opengl/gpu_buffer.h"
+#include "./graphics/api/opengl/texture_image_gfx_impl.h"
+#include "./graphics/api/opengl/window_gfx_impl.h"
 #include "./graphics/api/renderer.h"
 
 namespace Splash::gfx::opengl
@@ -56,7 +56,7 @@ class Renderer : public gfx::Renderer
 
     virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const override final
     {
-        return std::make_shared<Texture_Image>(root, std::make_unique<gfx::opengl::Texture_ImageImpl>());
+        return std::make_shared<Texture_Image>(root, std::make_unique<gfx::opengl::Texture_ImageGfxImpl>());
     };
 
     virtual std::unique_ptr<gfx::WindowGfxImpl> createWindowGfxImpl() const override final { return std::make_unique<gfx::opengl::WindowGfxImpl>(); }

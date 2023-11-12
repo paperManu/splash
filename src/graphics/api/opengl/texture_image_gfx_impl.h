@@ -18,19 +18,19 @@
  */
 
 /*
- * @texture_image_impl.h
+ * @texture_image_gfx_impl.h
  * Implementation of Texture_Image for OpenGL
  */
 
 #ifndef SPLASH_GFX_OPENGL_TEXTURE_IMAGE_H
 #define SPLASH_GFX_OPENGL_TEXTURE_IMAGE_H
 
-#include "./graphics/api/texture_image_impl.h"
+#include "./graphics/api/texture_image_gfx_impl.h"
 
 namespace Splash::gfx::opengl
 {
 
-class Texture_ImageImpl final : public Splash::gfx::Texture_ImageImpl
+class Texture_ImageGfxImpl final : public Splash::gfx::Texture_ImageGfxImpl
 {
   private:
     /**
@@ -48,21 +48,21 @@ class Texture_ImageImpl final : public Splash::gfx::Texture_ImageImpl
     /**
      * Constructor
      */
-    Texture_ImageImpl() = default;
+    Texture_ImageGfxImpl() = default;
 
     /**
      * Destructor
      */
-    virtual ~Texture_ImageImpl() override
+    virtual ~Texture_ImageGfxImpl() override
     {
         glDeleteTextures(1, &_glTex);
         glDeleteBuffers(2, _pbos);
     }
 
-    Texture_ImageImpl(const Texture_ImageImpl&) = delete;
-    Texture_ImageImpl& operator=(const Texture_ImageImpl&) = delete;
-    Texture_ImageImpl(Texture_ImageImpl&&) = delete;
-    Texture_ImageImpl& operator=(Texture_ImageImpl&&) = delete;
+    Texture_ImageGfxImpl(const Texture_ImageGfxImpl&) = delete;
+    Texture_ImageGfxImpl& operator=(const Texture_ImageGfxImpl&) = delete;
+    Texture_ImageGfxImpl(Texture_ImageGfxImpl&&) = delete;
+    Texture_ImageGfxImpl& operator=(Texture_ImageGfxImpl&&) = delete;
 
     virtual std::unordered_map<std::string, InitTuple> getPixelFormatToInitTable() const final;
 

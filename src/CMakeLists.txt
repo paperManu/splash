@@ -159,11 +159,11 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/api/renderer.cpp
     graphics/api/gles/geometry_gfx_impl.cpp
     graphics/api/gles/gpu_buffer.cpp
-    graphics/api/gles/texture_image_impl.cpp
+    graphics/api/gles/texture_image_gfx_impl.cpp
     graphics/api/gles/window_gfx_impl.cpp
     graphics/api/opengl/geometry_gfx_impl.cpp
     graphics/api/opengl/gpu_buffer.cpp
-    graphics/api/opengl/texture_image_impl.cpp
+    graphics/api/opengl/texture_image_gfx_impl.cpp
     graphics/api/opengl/window_gfx_impl.cpp
     graphics/camera.cpp
     graphics/filter.cpp

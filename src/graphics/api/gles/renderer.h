@@ -26,9 +26,9 @@
 #define SPLASH_GLES_RENDERER_H
 
 #include "./graphics/api/gles/geometry_gfx_impl.h"
-#include "./graphics/api/gles/texture_image_impl.h"
-#include "./graphics/api/gles/window_gfx_impl.h"
 #include "./graphics/api/gles/gpu_buffer.h"
+#include "./graphics/api/gles/texture_image_gfx_impl.h"
+#include "./graphics/api/gles/window_gfx_impl.h"
 #include "./graphics/api/renderer.h"
 
 namespace Splash::gfx::gles
@@ -51,7 +51,7 @@ class Renderer : public gfx::Renderer
 
     virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const override final
     {
-        return std::make_shared<Texture_Image>(root, std::make_unique<gfx::gles::Texture_ImageImpl>());
+        return std::make_shared<Texture_Image>(root, std::make_unique<gfx::gles::Texture_ImageGfxImpl>());
     };
 
     virtual std::unique_ptr<gfx::WindowGfxImpl> createWindowGfxImpl() const override final { return std::make_unique<gfx::gles::WindowGfxImpl>(); }

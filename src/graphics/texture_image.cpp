@@ -5,13 +5,13 @@
 #include "./image/image.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
-#include "graphics/api/texture_image_impl.h"
+#include "graphics/api/texture_image_gfx_impl.h"
 
 namespace Splash
 {
 
 /*************/
-Texture_Image::Texture_Image(RootObject* root, std::unique_ptr<gfx::Texture_ImageImpl> gfxImpl)
+Texture_Image::Texture_Image(RootObject* root, std::unique_ptr<gfx::Texture_ImageGfxImpl> gfxImpl)
     : Texture(root)
     , _gfxImpl(std::move(gfxImpl))
 {
@@ -39,7 +39,7 @@ Texture_Image& Texture_Image::operator=(const std::shared_ptr<Image>& img)
 /*************/
 RgbValue Texture_Image::getMeanValue() const
 {
-    int mipmapLevel = gfx::Texture_ImageImpl::_texLevels - 1;
+    int mipmapLevel = gfx::Texture_ImageGfxImpl::_texLevels - 1;
     const auto image = read(mipmapLevel);
     const auto imageSpec = image->getSpec(); // Invokes a mutex
     const auto width = imageSpec.width, height = imageSpec.height;
@@ -72,7 +72,7 @@ std::unordered_map<std::string, Values> Texture_Image::getShaderUniforms() const
 /*************/
 ImageBuffer Texture_Image::grabMipmap(unsigned int level) const
 {
-    int mipmapLevel = std::min<int>(level, gfx::Texture_ImageImpl::_texLevels);
+    int mipmapLevel = std::min<int>(level, gfx::Texture_ImageGfxImpl::_texLevels);
     // The copy constructor of `ImageBuffer`, which is returned by `std::shared_ptr<Image>::get()`, does a full copy of the underlying buffers.
     // So it is safe to return it from this method.
     return read(mipmapLevel)->get();
