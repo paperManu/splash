@@ -1,11 +1,11 @@
 * Emmanuel Durand
+* Tarek Yasser
 * Marie-Eve Dumas
 * Nicolas Bouillot
 * Frédéric Lestage
-* eva_decorps
+* Eva Décorps
 * Jérémie Soria
 * Christian Frisson
-* Tarek Yasser
 * Sergio Jiménez Herena
 * Pascal Huerst
 * Josh Beckwith
