@@ -26,7 +26,8 @@ before_script:
     ccache wget curl build-essential git-core libjsoncpp-dev zip cmake automake libtool
     libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev
     libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev
-    libopencv-dev libx264-dev libx265-dev software-properties-common uuid-dev
+    libopencv-dev software-properties-common uuid-dev libavcodec-dev libavformat-dev
+    libavutil-dev libswscale-dev
 
   # CCache stuff
   - mkdir -p ccache
@@ -78,7 +79,7 @@ test:23.10:clang-system-libs:
   script: 
     # Test using Clang with system libs
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
-      libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev clang
+      libsnappy-dev libzmq3-dev clang
     - rm -rf build && mkdir build
     - CC=clang CXX=clang++ cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
     - make -sC build -j$(nproc)
@@ -99,9 +100,9 @@ test:fedora:gcc-bundled-libs:
     - dnf install --assumeyes https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
     - dnf update --assumeyes
     - dnf install --assumeyes gcc g++ cmake gsl-devel atlas-devel libgphoto2-devel python3-devel 
-        yasm portaudio-devel python3-numpy opencv-devel jsoncpp-devel x264-devel x265-devel
-        libuuid-devel libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
-        mesa-libGL-devel ccache
+        yasm portaudio-devel python3-numpy opencv-devel jsoncpp-devel libuuid-devel libX11-devel
+        libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel mesa-libGL-devel ccache
+        libavcodec-free-devel libavformat-free-devel libavutil-free-devel libswscale-free-devel
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
@@ -124,7 +125,7 @@ test:archlinux:gcc-bundled-libs:
   before_script:
     - pacman -Syyu --noconfirm --disable-download-timeout
     - pacman -Sy --noconfirm --disable-download-timeout git cmake make gcc yasm ccache pkgconfig libxi libxinerama libxrandr
-      libxcursor jsoncpp mesa gsl libgphoto2 python3 portaudio zip zlib x264 x265 opencv qt5-base vtk
+      libxcursor jsoncpp mesa gsl libgphoto2 python3 portaudio zip zlib ffmpeg opencv qt5-base vtk
       hdf5 glew fmt openmpi
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
