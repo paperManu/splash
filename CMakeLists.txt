@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2016 Emmanuel Durand
+# Copyright (C) 2016 Splash authors
 #
 # This file is part of Splash.
 #
@@ -187,7 +187,7 @@ add_custom_target(uninstall
 # Creates package on Linux.
 #
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Splash, a modular multi-projector video-mapping software")
-set(CPACK_PACKAGE_VENDOR "Emmanuel Durand")
+set(CPACK_PACKAGE_VENDOR "Splash authors")
 set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
 set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
 set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Tarek Yasser
+ * Copyright (C) 2023 Splash authors
  *
  * This file is part of Splash.
  *

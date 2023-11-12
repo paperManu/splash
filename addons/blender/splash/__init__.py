@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2015 Emmanuel Durand
+# Copyright (C) 2015 Splash authors
 #
 # This file is part of Splash (http://github.com/paperManu/splash)
 #
@@ -19,7 +19,7 @@
 
 bl_info = {
     "name": "Splash output",
-    "author": "Emmanuel Durand",
+    "author": "Splash authors",
     "version": (0, 9, 41),
     "blender": (2, 80, 0),
     "location": "3D View > Toolbox, File > Export",

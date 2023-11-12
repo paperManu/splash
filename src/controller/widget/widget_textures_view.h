@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Emmanuel Durand
+ * Copyright (C) 2018 Splash authors
  *
  * This file is part of Splash.
  *
