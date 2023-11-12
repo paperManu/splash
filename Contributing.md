@@ -328,6 +328,10 @@ The website should be updated to match the new release. Also the [Flatpak packag
 
 Once a MR has been submitted, your changes will be reviewed and constructive feedback may be provided. Feedback isn't meant as an attack, but to help make sure the highest-quality code makes it into the project. Changes will be approved once required feedback has been addressed.
 
+### Additional documentation
+
+A few other less generic topics, related to code, are located in the `docs` subdirectory`.
+
 ## License
 
 By contributing to this repository, you agree that your contributions will be licensed in accordance to the [LICENSE](./License.md) document at the root of this repository.
