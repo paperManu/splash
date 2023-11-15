@@ -50,6 +50,7 @@ set(PROFILE_OPENGL OFF CACHE BOOL "Enable OpenGL profiling")
 set(USE_SYSTEM_LIBS OFF CACHE BOOL "Enable using system libraries instead of bundle ones")
 set(TEST_COVERAGE OFF CACHE BOOL "Enable test coverage")
 set(WITH_LTO OFF CACHE BOOL "Activate link time optimization (LTO)")
+set(WITH_SANITIZE OFF CACHE BOOL "Enable sanitize compile options")
 
 include(CheckIPOSupported)
 check_ipo_supported(RESULT IPO_SUPPORTED)

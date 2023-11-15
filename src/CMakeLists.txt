@@ -22,6 +22,17 @@
 #
 add_definitions(-Wall -Wextra -Werror)
 add_definitions(-Wno-unknown-pragmas)
+
+if (WITH_SANITIZE)
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        add_compile_options(-fsanitize=address -fsanitize=undefined)
+        add_link_options(-fsanitize=address -fsanitize=undefined)
+    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        add_compile_options(-fsanitize=address -fsanitize=undefined -fsanitize=integer)
+        add_link_options(-fsanitize=address -fsanitize=undefined -fsanitize=integer)
+    endif()
+endif()
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLM_ENABLE_EXPERIMENTAL")
 
 # Disable warnings for some specific files
