@@ -48,10 +48,10 @@ This project is made possible thanks to the [Society for Arts and Technologies](
 Splash relies on a few libraries to get the job done. The mandatory libraries are:
 
 - External dependencies:
+  - [FFmpeg](http://ffmpeg.org/) to read and write video files,
   - [OpenGL](http://opengl.org), which should be installed by the graphic driver,
   - [GSL](http://gnu.org/software/gsl) (GNU Scientific Library) to compute calibration,
 - External dependencies bundled as submodules:
-  - [FFmpeg](http://ffmpeg.org/) to read video files,
   - [GLFW](http://glfw.org) to handle the GL context creation,
   - [GLM](http://glm.g-truc.net) to ease matrix manipulation,
   - [Snappy](https://code.google.com/p/snappy/) to handle Hap codec decompression,
@@ -90,7 +90,7 @@ To install from the binary packages, please refer to [Splash documentation](http
 You can also compile Splash by hand, especially if you are curious about its internals or want to tinker with the code (or even, who knows, contribute!). Note that although what follows compiles the develop branch, it is more likely to contain bugs alongside new features / optimizations so if you experience crash you can try with the master branch.
 
 The packages necessary to compile Splash are the following:
-- Ubuntu 20.04 and derivatives:
+- Ubuntu 20.04 and newer:
 
 ```bash
 sudo apt install build-essential git-core cmake libxrandr-dev libxi-dev \
@@ -103,7 +103,7 @@ sudo apt install build-essential git-core cmake libxrandr-dev libxi-dev \
 sudo apt install libglfw3-dev libglm-dev libsnappy-dev libzmq3-dev
 ```
 
-- Fedora 38:
+- Fedora 39:
 
 If not already installed, add the RPM Fusion additional package repository (needed for some of the following dependencies). This only adds the free repository:
 

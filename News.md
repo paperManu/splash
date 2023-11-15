@@ -9,7 +9,7 @@ Improvements:
 * Removed ffmpeg submodule to always use system lib
 * Updated std_image
 * Updated CI to limit the number of jobs while keeping diversity
-* Dropped CI for Ubuntu 22.04, added CI for 23.10 to prepare next LTS
+* Dropped CI for Ubuntu 20.04, added CI for 23.10 to prepare next LTS
 
 Bugs fixed:
 * Fixed coverage issue
