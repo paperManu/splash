@@ -48,7 +48,7 @@ TEST_CASE("Testing Splash::DenseMap")
     CHECK(dmap.empty());
     dmap = DenseMap(std::move(otherMap));
     for (const auto& v : values)
-        CHECK(otherMap.at(v.first) == v.second);
+        CHECK(dmap.at(v.first) == v.second);
 
     dmap = DenseMap<int, float>({{1, 1.f}, {2, 2.f}, {3, 3.f}, {42, 3.14159f}});
     CHECK(dmap[1] == 1.f);

@@ -124,8 +124,8 @@ bool Geometry::deserialize(SerializedObject&& obj)
     auto mesh = Serial::detail::deserializer<Mesh::MeshContainer>(serializedMeshIt);
 
     bool doMatch = (mesh.vertices.size() == mesh.uvs.size());
-    doMatch = (mesh.vertices.size() == mesh.normals.size());
-    doMatch = (mesh.vertices.size() == mesh.annexe.size());
+    doMatch &= (mesh.vertices.size() == mesh.normals.size());
+    doMatch &= (mesh.vertices.size() == mesh.annexe.size());
 
     if (!doMatch)
     {

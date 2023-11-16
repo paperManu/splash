@@ -424,7 +424,7 @@ void Shader::parseUniforms(const std::string& src)
         }
         else
         {
-            if ((position = line.find("uniform")) == std::string::npos)
+            if (line.find("uniform") == std::string::npos)
                 continue;
 
             std::string type, name;
