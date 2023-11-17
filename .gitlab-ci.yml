@@ -5,9 +5,10 @@ variables:
   TRACY_NO_INVARIANT_CHECK: 1
 
 stages:
-  - build
   - test
-  - coverage
+  - analysis
+  - staging
+  - package
   - deploy
 
 cache:
@@ -16,83 +17,187 @@ cache:
 
 
 #
+# ┏━╸╻ ╻╺┳╸┏━╸┏┓╻┏━┓╻┏━┓┏┓╻┏━┓
+# ┣╸ ┏╋┛ ┃ ┣╸ ┃┗┫┗━┓┃┃ ┃┃┗┫┗━┓
+# ┗━╸╹ ╹ ╹ ┗━╸╹ ╹┗━┛╹┗━┛╹ ╹┗━┛
+#
+.amd64:
+  tags:
+    - amd64
+
+.arm64:
+  tags:
+    - arm64
+
+.ubuntu:
+  before_script:
+    - apt update -qq
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends ca-certificates
+      ccache wget curl build-essential git-core libjsoncpp-dev zip cmake automake libtool
+      libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev
+      libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev
+      libopencv-dev software-properties-common uuid-dev libavcodec-dev libavformat-dev
+      libavutil-dev libswscale-dev
+  
+    # CCache stuff
+    - mkdir -p ccache
+    - export CCACHE_BASEDIR=${PWD}
+    - export CCACHE_DIR=${PWD}/ccache
+    - export PATH="/usr/lib/ccache:${PATH}"
+
+#
 # ╺┳╸┏━╸┏━┓╺┳╸┏━┓
 #  ┃ ┣╸ ┗━┓ ┃ ┗━┓
 #  ╹ ┗━╸┗━┛ ╹ ┗━┛
 #
-before_script:
-  - apt update -qq
-  - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends ca-certificates
-    ccache wget curl build-essential git-core libjsoncpp-dev zip cmake automake libtool
-    libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev
-    libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev
-    libopencv-dev software-properties-common uuid-dev libavcodec-dev libavformat-dev
-    libavutil-dev libswscale-dev
-
-  # CCache stuff
-  - mkdir -p ccache
-  - export CCACHE_BASEDIR=${PWD}
-  - export CCACHE_DIR=${PWD}/ccache
-  - export PATH="/usr/lib/ccache:${PATH}"
-
-test:22.04:gcc-bundled-libs:
+test:22.04:gcc-amd64-bundled-libs:
   stage: test
+  extends:
+    - .amd64
+    - .ubuntu
   image: ubuntu:22.04
   script: 
-    # Prepare bundled dependencies
     - ./make_deps.sh
-
-    # Test using bundled libs
     - rm -rf build && mkdir build
-    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - cmake -B build -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
     - make check -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH != '/^debian.*$/'
-    - if: $CI_COMMIT_BRANCH == 'master'
-    - if: $CI_COMMIT_BRANCH == 'develop'
 
-test:23.10:gcc-bundled-libs:
+test:22.04:clang-amd64-system-libs:
   stage: test
-  image: ubuntu:23.10
-  script: 
-    # Prepare bundled dependencies
-    - ./make_deps.sh
-
-    # Test using bundled libs
-    - rm -rf build && mkdir build
-    - cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
-    - make -sC build -j$(nproc)
-    - make check -sC build
-    - ./build/src/splash --child --prefix unittest &
-    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
-  rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH != '/^debian.*$/'
-    - if: $CI_COMMIT_BRANCH == 'master'
-    - if: $CI_COMMIT_BRANCH == 'develop'
-
-test:23.10:clang-system-libs:
-  stage: test
-  image: ubuntu:23.10
+  extends:
+    - .amd64
+    - .ubuntu
+  image: ubuntu:22.04
   script: 
     # Test using Clang with system libs
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
       libsnappy-dev libzmq3-dev clang
     - rm -rf build && mkdir build
-    - CC=clang CXX=clang++ cmake -B build -DBUILD_GENERIC_ARCH=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
+    - CC=clang CXX=clang++ cmake -B build -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
     - make -sC build -j$(nproc)
     - make check -sC build
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH != '/^debian.*$/'
-    - if: $CI_COMMIT_BRANCH == 'master'
+
+#
+# ┏━┓┏┓╻┏━┓╻  ╻ ╻┏━┓╻┏━┓
+# ┣━┫┃┗┫┣━┫┃  ┗┳┛┗━┓┃┗━┓
+# ╹ ╹╹ ╹╹ ╹┗━╸ ╹ ┗━┛╹┗━┛
+#
+analysis:coverage:
+  stage: analysis
+  extends:
+    - .amd64
+    - .ubuntu
+  image: ubuntu:22.04
+  script: 
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends lcov zip
+    - ./make_deps.sh
+    - rm -rf build && mkdir build
+    - cmake -B build -DTEST_COVERAGE=ON
+    - make -sC build -j$(nproc)
+    - make -sC build check_coverage
+    - zip -r coverage.zip build/coverage
+  coverage: '/  lines......: \d+\.\d+/'
+  artifacts:
+    name: "splash_coverage_${CI_BUILD_REF_NAME}"
+    paths:
+    - "coverage.zip"
+  rules:
     - if: $CI_COMMIT_BRANCH == 'develop'
+
+analysis:static-analysis:
+  stage: analysis
+  extends:
+    - .amd64
+    - .ubuntu
+  image: ubuntu:23.10
+  script:
+    - DEBIAN_FRONTEND=noninteractive apt install -y clang-tools
+    - ./make_deps.sh
+    - rm -rf build && mkdir build
+    - scan-build cmake -B build -DCMAKE_BUILD_TYPE=Debug -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - scan-build -o ./analysis make -sC build -j$(nproc)
+  artifacts:
+    name: "splash_${CI_BUILD_REF_NAME}_analysis"
+    paths:
+      - "analysis"
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'staging'
+
+#
+# ┏━┓╺┳╸┏━┓┏━╸╻┏┓╻┏━╸
+# ┗━┓ ┃ ┣━┫┃╺┓┃┃┗┫┃╺┓
+# ┗━┛ ╹ ╹ ╹┗━┛╹╹ ╹┗━┛
+#
+staging:22.04:gcc-arm64-bundled-libs:
+  stage: staging
+  extends:
+    - .arm64
+    - .ubuntu
+  image: ubuntu:22.04
+  allow_failure: true
+  script: 
+    - ./make_deps.sh
+    - rm -rf build && mkdir build
+    - cmake -B build -DCMAKE_BUILD_TYPE=Debug -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - make -sC build -j$(nproc)
+    - make check -sC build
+    - make package -sC build
+    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'staging'
+
+staging:23.10:gcc-amd64-system-libs:
+  stage: staging
+  extends:
+    - .amd64
+    - .ubuntu
+  image: ubuntu:23.10
+  script: 
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
+      libsnappy-dev libzmq3-dev
+    - rm -rf build && mkdir build
+    - cmake -B build -DCMAKE_BUILD_TYPE=Debug -DPROFILE=ON -DWITH_SANITIZE=ON -DUSE_SYSTEM_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - make -sC build -j$(nproc)
+    - make check -sC build
+    - make package -sC build
+    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'staging'
+
+staging:23.10:clang-amd64-system-libs:
+  stage: staging
+  extends:
+    - .amd64
+    - .ubuntu
+  image: ubuntu:23.10
+  script: 
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
+      libsnappy-dev libzmq3-dev clang
+    - rm -rf build && mkdir build
+    - CC=clang CXX=clang++ cmake -B build -DCMAKE_BUILD_TYPE=Debug -DPROFILE=ON -DUSE_SYSTEM_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - make -sC build -j$(nproc)
+    - make check -sC build
+    - make package -sC build
+    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'staging'
  
-test:fedora:gcc-bundled-libs:
-  stage: test
+staging:fedora:gcc-amd64-system-bundled-libs:
+  stage: staging
+  extends:
+    - .amd64
   image: fedora:latest
   allow_failure: true
   before_script:
@@ -110,23 +215,24 @@ test:fedora:gcc-bundled-libs:
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build
   script:
-    - cmake -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr ..
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DPROFILE=ON -DWITH_SANITIZE=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make check
+    - make package
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH != '/^debian.*$/'
-    - if: $CI_COMMIT_BRANCH == 'master'
-    - if: $CI_COMMIT_BRANCH == 'develop'
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH == 'fedora'
+    - if: $CI_COMMIT_BRANCH == 'staging'
 
-test:archlinux:gcc-bundled-libs:
-  stage: test
+staging:archlinux:gcc-amd64-bundled-libs:
+  stage: staging
+  extends:
+    - .amd64
   image: archlinux:latest
   allow_failure: true
   before_script:
     - pacman -Syyu --noconfirm --disable-download-timeout
     - pacman -Sy --noconfirm --disable-download-timeout git cmake make gcc yasm ccache pkgconfig libxi libxinerama libxrandr
-      libxcursor jsoncpp mesa gsl libgphoto2 python3 portaudio zip zlib ffmpeg opencv qt5-base vtk
-      hdf5 glew fmt openmpi
+      libxcursor jsoncpp mesa gsl libgphoto2 python3 portaudio zip zlib ffmpeg opencv qt5-base vtk hdf5 glew fmt openmpi
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
@@ -134,35 +240,13 @@ test:archlinux:gcc-bundled-libs:
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build
   script:
-    - cmake -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr ..
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DPROFILE=ON -DWITH_SANITIZE=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make check
+    - make package
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH == 'archlinux'
-
-#
-# Test coverage
-#
-coverage:
-  stage: coverage
-  image: ubuntu:22.04
-  script: 
-    # Install coverage tools
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends lcov zip
-    - ./make_deps.sh
-    - rm -rf build && mkdir build
-    - cmake -B build -DTEST_COVERAGE=ON
-    - make -sC build -j$(nproc)
-    - make -sC build check_coverage
-    - zip -r coverage.zip build/coverage
-  coverage: '/  lines......: \d+\.\d+/'
-  artifacts:
-    name: "splash_coverage_${CI_BUILD_REF_NAME}"
-    paths:
-    - "coverage.zip"
-  rules:
-    - if: $CI_COMMIT_BRANCH == 'master'
-    - if: $CI_COMMIT_BRANCH == 'develop'
+    - if: $CI_COMMIT_BRANCH == 'staging'
 
 #
 # ┏━┓┏━┓┏━╸╻┏ ┏━┓┏━╸┏━╸
@@ -170,7 +254,9 @@ coverage:
 # ╹  ╹ ╹┗━╸╹ ╹╹ ╹┗━┛┗━╸
 #
 package:debian:22.04:
-  stage: deploy
+  stage: package
+  extends:
+    - .ubuntu
   image: ubuntu:22.04
   script:
     # Build package
@@ -180,17 +266,19 @@ package:debian:22.04:
     - make -j$(nproc)
     - make package
     - mv *.deb ../
-  rules:
-    - if: $CI_COMMIT_TAG
-    - if: $CI_COMMIT_BRANCH == 'master'
   artifacts:
     name: "splash_${CI_BUILD_REF_NAME}"
     paths:
       - "*.deb"
       - "*.tar.bz2"
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == 'master'
 
 package:debian:23.10:
-  stage: deploy
+  stage: package
+  extends:
+    - .ubuntu
   image: ubuntu:23.10
   script:
     # Build package
@@ -200,17 +288,19 @@ package:debian:23.10:
     - make -j$(nproc)
     - make package
     - mv *.deb ../
-  rules:
-    - if: $CI_COMMIT_TAG
-    - if: $CI_COMMIT_BRANCH == 'master'
   artifacts:
     name: "splash_${CI_BUILD_REF_NAME}"
     paths:
       - "*.deb"
       - "*.tar.bz2"
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == 'master'
 
 package:blender_addon:
-  stage: deploy
+  stage: package
+  extends:
+    - .ubuntu
   image: ubuntu:22.04
   before_script:
     - apt update -qq
@@ -221,72 +311,37 @@ package:blender_addon:
     - cmake -DBUILD_CODE=OFF ..
     - make blenderSplash
     - mv addons/blender/*.tar.bz2 ../
-  rules:
-    - if: $CI_COMMIT_TAG
-    - if: $CI_COMMIT_BRANCH == 'master'
   artifacts:
     name: "splash_blender_addon_${CI_BUILD_REF_NAME}"
     paths:
       - "*.tar.bz2"
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == 'master'
 
 package:fullsources:
-  stage: deploy
+  stage: package
   image: alpine
   before_script:
     - apk update && apk upgrade
   script:
     # This job packages the whole sources, including the submodules
     - tar cvzf splash.tar.gz --exclude='.git' --exclude='ccache' .
-  rules:
-    - if: $CI_COMMIT_TAG
   artifacts:
     paths:
       - splash.tar.gz
-
-# Includes for MPA packaging
-include:
-  # - remote: 'https://gitlab.com/sat-mtl/metalab/distributions/mpa-bionic-arm64-jetson/-/raw/main/.gitlab-ci-package.yml'
-  - remote: 'https://gitlab.com/sat-mtl/metalab/distributions/mpa-focal-amd64-nvidia/-/raw/main/.gitlab-ci-package.yml'
-  - remote: 'https://gitlab.com/sat-mtl/metalab/distributions/mpa-focal-arm64-jetson/-/raw/main/.gitlab-ci-package.yml'
-  - remote: 'https://gitlab.com/sat-mtl/metalab/distributions/mpa-jammy-amd64-nvidia/-/raw/main/.gitlab-ci-package.yml'
-
-#
-# ┏━┓╺┳╸┏━┓╺┳╸╻┏━╸   ┏━┓┏┓╻┏━┓╻  ╻ ╻┏━┓╻┏━┓
-# ┗━┓ ┃ ┣━┫ ┃ ┃┃     ┣━┫┃┗┫┣━┫┃  ┗┳┛┗━┓┃┗━┓
-# ┗━┛ ╹ ╹ ╹ ╹ ╹┗━╸   ╹ ╹╹ ╹╹ ╹┗━╸ ╹ ┗━┛╹┗━┛
-#
-static_analysis:
-  stage: test
-  image: ubuntu:22.04
-  script:
-    - git submodule update --init
-    - ./make_deps.sh
-    - rm -rf build && mkdir build && cd build
-    - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
-    - wget https://scan.coverity.com/download/linux64 --post-data "token=zkRfEWYxyAeJDlYYg9Hkkg&project=paperManu%2Fsplash"
-      -O coverity_tool.tgz
-    - tar xvzf coverity_tool.tgz
-    - $(ls | grep cov-analysis)/bin/cov-build --dir cov-int make -j$(nproc)
-    - tar caf splash-cov.bz2 cov-int
-    - curl --form token=zkRfEWYxyAeJDlYYg9Hkkg --form email=emmanueldurand@gmail.com --form file=@splash-cov.bz2
-      --form description="Splash" https://scan.coverity.com/builds?project=paperManu%2Fsplash
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libpcre3-dev cppcheck
-    - make static_analysis
-    - mv tests/static_analysis_result.txt ../
   rules:
-    - if: $CI_COMMIT_BRANCH == 'static_analysis'
-  artifacts:
-    name: "splash_static_analysis_${CI_BUILD_REF_NAME}"
-    paths:
-    - "static_analysis_result.txt"
+    - if: $CI_COMMIT_TAG
 
 #
-# ┏━╸╻╺┳╸╻  ┏━┓┏┓    ┏━┓┏━┓┏━╸┏━╸┏━┓
-# ┃╺┓┃ ┃ ┃  ┣━┫┣┻┓   ┣━┛┣━┫┃╺┓┣╸ ┗━┓
-# ┗━┛╹ ╹ ┗━╸╹ ╹┗━┛   ╹  ╹ ╹┗━┛┗━╸┗━┛
+# ╺┳┓┏━╸┏━┓╻  ┏━┓╻ ╻
+#  ┃┃┣╸ ┣━┛┃  ┃ ┃┗┳┛
+# ╺┻┛┗━╸╹  ┗━╸┗━┛ ╹ 
 #
 pages:
   stage: deploy
+  extends:
+    - .ubuntu
   image: ubuntu:22.04
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
