@@ -31,8 +31,7 @@ git_path = "git@gitlab.com:splashmapper"
 git_project = "Splash"
 remote_repo = 'origin'
 bringup_branch = "master"
-working_branch = "develop"
-releasing_branch = "releasing"
+staging_branch = "staging"
 success = True
 
 
@@ -203,23 +202,16 @@ def cleanup_folder() -> None:
 if __name__ == "__main__":
     assert(sys.version_info[0] == 3 and sys.version_info[1] > 6), f"This script must be ran with at least Python 3.7, detected Python {sys.version_info[0]}.{sys.version_info[1]}"
 
-    release_version = []
-    version_increase: VersionIncrease = VersionIncrease.PATCH
+    choice = input(f"Make sure that the CI for the staging {staging_branch} passed successfully before release\n"
+                   "Type 'yes if it did, anything else if it did not: ")
+
+    if choice != "yes":
+        print(f"Exiting following user check of the {staging_branch}.")
+        exit(0)
 
     cleanup_folder()
     os.mkdir(libs_root_path)
     os.chdir(libs_root_path)
-
-    choice = input("Is it a: \n\t1/ Major release \n\t2/ Minor release \n\t3/ Patch release?\n"
-                   "This will impact the new version number (x.y.z matches the choices 1.2.3.): ")
-    if choice == "1":
-        version_increase = VersionIncrease.MAJOR
-    elif choice == "2":
-        version_increase = VersionIncrease.MINOR
-    elif choice == "3":
-        version_increase = VersionIncrease.PATCH
-    else:
-        printerr("Wrong choice. Aborting the release.")
 
     lib_repo = f"{git_path}/{git_project}.git"
     if git_clone(lib_repo) != 0:
@@ -227,13 +219,12 @@ if __name__ == "__main__":
         exit(1)
 
     os.chdir(os.path.join(libs_root_path, git_project))
-    git_checkout(working_branch)
 
+    git_checkout(staging_branch)
     release_version = parse_version_number(git_project, version_pattern)
     assert(release_version != [-1, -1, -1])
-    increase_version_number(release_version, version_increase)
 
-    print("Version number updated, now building dependencies.")
+    print("Now building dependencies.")
 
     if subprocess.call("./make_deps.sh", shell=True) != 0:
         printerr("Error while building dependencies.")
@@ -251,56 +242,20 @@ if __name__ == "__main__":
 
     os.chdir(os.path.join(libs_root_path, git_project))
 
-    print("All unit tests passed successfully, now creating new branches for release.")
-
-    new_branch = f"{releasing_branch}/{release_version[0]}.{release_version[1]}.{release_version[2]}"
-    print(f"Creating branch {new_branch} for release of project {git_project}")
-    git_checkout(new_branch, True)
-
-    update_changelog(git_project, release_version)
-    update_config_file(git_project, release_version, version_pattern)
-    update_metainfo_file(git_project, release_version)
-
-    os.chdir(build_dir)
-    if subprocess.call("rm -rf * && cmake .. && make blenderSplash && make splash-launcher", shell=True) != 0:
-        printerr(f"{git_project} new version build failed, stopping the release.")
-    os.chdir(os.path.join(libs_root_path, git_project))
-    git_add([desktop_file, blender_addon_init_file])
-
-    git_commit("Updated News and version number")
+    print("All unit tests passed successfully, now merging the release branch into master.")
 
     assert(git_checkout(bringup_branch) == 0), f"Could not checkout branch {bringup_branch}"
-    assert(git_merge(new_branch, True) == 0), f"Merge from branch {new_branch} into {bringup_branch} did not work"
+    assert(git_merge(staging_branch, True) == 0), f"Merge from branch {staging_branch} into {bringup_branch} did not work"
 
     git_tag(f"{release_version[0]}.{release_version[1]}.{release_version[2]}")
 
     release_branch = f"release/{release_version[0]}.{release_version[1]}.{release_version[2]}"
     assert(git_checkout(release_branch, True) == 0), f"Could not create branch {release_branch}"
-    assert(git_checkout(new_branch) == 0), f"Could not checkout branch {bringup_branch}"
-
-    if version_increase == VersionIncrease.PATCH:
-        release_version[2] += 1
-    else:
-        release_version[2] = 1
-    update_config_file(git_project, release_version, version_pattern)
-
-    print("Updating the version number across the repository.")
-    os.chdir(build_dir)
-    if subprocess.call("rm -rf * && cmake .. && make blenderSplash && make splash-launcher", shell=True) != 0:
-        printerr(f"{git_project} new version build failed, stopping the release.")
-    os.chdir(os.path.join(libs_root_path, git_project))
-    git_add([desktop_file, blender_addon_init_file])
-
-    git_commit("Post-release version bump")
-
-    assert(git_checkout(working_branch) == 0), f"Could not checkout branch {working_branch}"
-    assert(git_merge(new_branch, True) == 0), f"Merge from branch {new_branch} into {working_branch} did not work"
 
     print("Pushing branches to remote.")
-    do_push=input(f"Do you want to push {bringup_branch} and {working_branch} branches to {remote_repo}? [y/N]")
+    do_push=input(f"Do you want to push {bringup_branch} and {release_branch} branches to {remote_repo}? [y/N]")
     if do_push == "y":
         assert(git_push(remote_repo, bringup_branch) == 0), f"Failed to push branch {bringup_branch} into {remote_repo}/{bringup_branch}"
         assert(git_push(remote_repo, release_branch) == 0), f"Failed to push branch {release_branch} into {remote_repo}/{release_branch}"
-        assert(git_push(remote_repo, working_branch) == 0), f"Failed to push branch {working_branch} into {remote_repo}/{working_branch}"
 
     success = True
