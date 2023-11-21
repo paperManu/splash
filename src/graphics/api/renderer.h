@@ -42,6 +42,7 @@ class Geometry;
 class GlWindow;
 class RootObject;
 class Texture_Image;
+class Warp;
 
 namespace gfx
 {
@@ -153,6 +154,13 @@ class Renderer
      * \return Return a shared pointer to a default Texture_Image
      */
     virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const = 0;
+
+    /**
+     * Create a Warp
+     * \param root Root object
+     * \return Return a shared pointer to a new Warp
+     */
+    virtual std::shared_ptr<Warp> createWarp(RootObject* root) const = 0;
 
     /**
      * Create a new Window

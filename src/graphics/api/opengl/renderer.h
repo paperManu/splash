@@ -29,8 +29,11 @@
 #include "./graphics/api/opengl/geometry_gfx_impl.h"
 #include "./graphics/api/opengl/gpu_buffer.h"
 #include "./graphics/api/opengl/texture_image_gfx_impl.h"
+#include "./graphics/api/opengl/warp_gfx_impl.h"
 #include "./graphics/api/opengl/window_gfx_impl.h"
 #include "./graphics/api/renderer.h"
+#include "./graphics/texture_image.h"
+#include "./graphics/warp.h"
 
 namespace Splash::gfx::opengl
 {
@@ -85,6 +88,13 @@ class Renderer : public gfx::Renderer
     {
         return std::make_shared<Texture_Image>(root, std::make_unique<gfx::opengl::Texture_ImageGfxImpl>());
     };
+
+    /**
+     * Create a Warp
+     * \param root Root object
+     * \return Return a shared pointer to a new Warp
+     */
+    virtual std::shared_ptr<Warp> createWarp(RootObject* root) const override final { return std::make_shared<Warp>(root, std::make_unique<gfx::opengl::WarpGfxImpl>()); }
 
     /**
      * Create a new Window

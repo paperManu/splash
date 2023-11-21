@@ -29,8 +29,11 @@
 #include "./graphics/api/gles/geometry_gfx_impl.h"
 #include "./graphics/api/gles/gpu_buffer.h"
 #include "./graphics/api/gles/texture_image_gfx_impl.h"
+#include "./graphics/api/gles/warp_gfx_impl.h"
 #include "./graphics/api/gles/window_gfx_impl.h"
 #include "./graphics/api/renderer.h"
+#include "./graphics/texture_image.h"
+#include "./graphics/warp.h"
 
 namespace Splash::gfx::gles
 {
@@ -80,6 +83,13 @@ class Renderer : public gfx::Renderer
     {
         return std::make_shared<Texture_Image>(root, std::make_unique<gfx::gles::Texture_ImageGfxImpl>());
     };
+
+    /**
+     * Create a Warp
+     * \param root Root object
+     * \return Return a shared pointer to a new Warp
+     */
+    virtual std::shared_ptr<Warp> createWarp(RootObject* root) const override final { return std::make_shared<Warp>(root, std::make_unique<gfx::gles::WarpGfxImpl>()); }
 
     /**
      * Create a new Window

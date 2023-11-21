@@ -20,14 +20,9 @@ namespace Splash
 {
 
 /*************/
-Warp::Warp(RootObject* root)
+Warp::Warp(RootObject* root, std::unique_ptr<gfx::WarpGfxImpl> gfxImpl)
     : Texture(root)
-{
-    init();
-}
-
-/*************/
-void Warp::init()
+    , _gfxImpl(std::move(gfxImpl))
 {
     _type = "warp";
     _renderingPriority = Priority::POST_CAMERA;
@@ -157,10 +152,8 @@ void Warp::render()
     }
 
     _fbo->bindDraw();
-    glViewport(0, 0, _spec.width, _spec.height);
 
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    _gfxImpl->setupViewport(_spec.width, _spec.height);
 
     _screen->activate();
     _screen->draw();
