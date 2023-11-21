@@ -89,6 +89,11 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
     virtual void deactivateFeedback() override final;
 
     /**
+     * Draw the geometry
+     */
+    void draw() const final;
+
+    /**
      * Get the number of vertices for this geometry
      * \return Return the vertice count
      */
@@ -103,6 +108,7 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
     /**
      * Get a copy of the given GPU buffer
      * \param type GPU buffer type
+     * \param forceAlternativeBuffers Force getting alternative buffers, even if not in use
      * \return Return a vector containing a copy of the buffer
      */
     virtual std::vector<char> getGpuBufferAsVector(int typeId, bool forceAlternativeBuffers) override final;
@@ -174,6 +180,8 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
     GLuint _alternativeBufferSize{0};
 
     bool _useAlternativeBuffers{false};
+    bool _activatedAsSharedBuffers{false};
+    bool _activatedForFeedback{false};
 
     /**
      * Set the number of vertices

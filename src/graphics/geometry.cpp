@@ -49,7 +49,6 @@ void Geometry::activateAsSharedBuffer()
 /*************/
 void Geometry::activateForFeedback()
 {
-    // TODO: Move this to the impl?
     const bool shouldResize = _buffersDirty || _gfxImpl->buffersTooSmall();
 
     if (shouldResize)
@@ -73,7 +72,13 @@ void Geometry::deactivateFeedback()
 }
 
 /*************/
-uint Geometry::getVerticesNumber() const
+void Geometry::draw() const
+{
+    _gfxImpl->draw();
+}
+
+/*************/
+uint32_t Geometry::getVerticesNumber() const
 {
     return _gfxImpl->getVerticesNumber();
 }

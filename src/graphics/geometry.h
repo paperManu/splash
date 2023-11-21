@@ -103,13 +103,24 @@ class Geometry : public BufferObject
      */
     void deactivateFeedback();
 
+    /**
+     * Draw the geometry with the currently active shader
+     */
+    void draw() const;
+
+    /**
+     * Get a copy of the given GPU buffer
+     * \param type GPU buffer type
+     * \param forceAlternativeBuffers Force getting alternative buffers, even if not in use
+     * \return Return a vector containing a copy of the buffer
+     */
     std::vector<char> getGpuBufferAsVector(Geometry::BufferType type, bool forceAlternativeBuffer = false) const;
 
     /**
      * Get the number of vertices for this geometry
      * \return Return the vertice count
      */
-    uint getVerticesNumber() const;
+    uint32_t getVerticesNumber() const;
 
     /**
      * Get the geometry as serialized

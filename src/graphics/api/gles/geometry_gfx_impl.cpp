@@ -29,6 +29,12 @@ void GeometryGfxImpl::activate()
 /*************/
 void GeometryGfxImpl::deactivate()
 {
+    if (_activatedAsSharedBuffers)
+    {
+        glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
+        _activatedAsSharedBuffers = false;
+    }
+
 #if DEBUG
     glBindVertexArray(0);
 #endif
@@ -41,6 +47,8 @@ void GeometryGfxImpl::activateAsSharedBuffer()
 
     for (uint i = 0; i < buffers.size(); i++)
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, i, buffers[i]->getId());
+
+    _activatedAsSharedBuffers = true;
 }
 
 /*************/
@@ -65,6 +73,7 @@ void GeometryGfxImpl::activateForFeedback()
     }
 
     glBeginQuery(GL_PRIMITIVES_GENERATED, _feedbackQuery);
+    _activatedForFeedback = true;
 }
 
 /*************/
@@ -88,10 +97,22 @@ void GeometryGfxImpl::deactivateFeedback()
     glGetQueryObjectuiv(_feedbackQuery, GL_QUERY_RESULT, &drawnPrimitives);
     _feedbackMaxNbrPrimitives = std::max(_feedbackMaxNbrPrimitives, drawnPrimitives);
     _temporaryVerticesNumber = drawnPrimitives * 3;
+
+    glMemoryBarrier(GL_TRANSFORM_FEEDBACK_BARRIER_BIT);
+    _activatedForFeedback = false;
 }
 
 /*************/
-uint GeometryGfxImpl::getVerticesNumber() const
+void GeometryGfxImpl::draw() const
+{
+    if (_activatedForFeedback)
+        glDrawArrays(GL_PATCHES, 0, getVerticesNumber());
+    else
+        glDrawArrays(GL_TRIANGLES, 0, getVerticesNumber());
+}
+
+/*************/
+uint32_t GeometryGfxImpl::getVerticesNumber() const
 {
     return _useAlternativeBuffers ? _alternativeVerticesNumber : _verticesNumber;
 }
@@ -110,11 +131,6 @@ bool GeometryGfxImpl::buffersTooSmall()
 }
 
 /*************/
-/**
- * Get a copy of the given GPU buffer
- * \param type GPU buffer type
- * \return Return a vector containing a copy of the buffer
- */
 std::vector<char> GeometryGfxImpl::getGpuBufferAsVector(int typeId, bool forceAlternativeBuffers = false)
 {
     if ((forceAlternativeBuffers || _useAlternativeBuffers) && _glAlternativeBuffers[typeId] != nullptr)

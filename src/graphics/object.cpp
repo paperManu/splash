@@ -202,7 +202,8 @@ void Object::draw()
         return;
 
     _shader->updateUniforms();
-    glDrawArrays(GL_TRIANGLES, 0, _geometries[0]->getVerticesNumber());
+    for (const auto& geometry : _geometries)
+        geometry->draw();
 }
 
 /*************/
@@ -475,13 +476,12 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
 
             geom->activateForFeedback();
             _feedbackShaderSubdivideCamera->activate();
-            glDrawArrays(GL_PATCHES, 0, geom->getVerticesNumber());
+            geom->draw();
             _feedbackShaderSubdivideCamera->deactivate();
 
             geom->deactivateFeedback();
             geom->deactivate();
 
-            glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
         } while (geom->hasBeenResized());
 
         geom->swapBuffers();
@@ -510,7 +510,6 @@ void Object::transferVisibilityFromTexToAttr(int width, int height, int primitiv
         geom->update();
         geom->activateAsSharedBuffer();
         _computeShaderTransferVisibilityToAttr->doCompute(width / 32 + 1, height / 32 + 1);
-        glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
         geom->deactivate();
     }
 }
@@ -556,8 +555,6 @@ void Object::computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 project
 
         _computeShaderComputeBlending->doCompute(verticesNbr / 3);
         geom->deactivate();
-
-        glMemoryBarrier(GL_TRANSFORM_FEEDBACK_BARRIER_BIT);
 
         if (_computeFarthestVisibleVertexDistance)
         {

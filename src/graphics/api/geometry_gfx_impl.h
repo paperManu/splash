@@ -89,6 +89,11 @@ class GeometryGfxImpl
     virtual void deactivateFeedback() = 0;
 
     /**
+     * Draw the geometry
+     */
+    virtual void draw() const = 0;
+
+    /**
      * Get the number of vertices for this geometry
      * \return Return the vertice count
      */
