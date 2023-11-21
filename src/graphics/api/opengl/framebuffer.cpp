@@ -16,8 +16,9 @@ Framebuffer::Framebuffer(RootObject* root)
 
     if (!_depthTexture)
     {
-        _depthTexture = _renderer->createTexture_Image(root, _width, _height, "D", _multisample);
+        _depthTexture = _renderer->createTexture_Image(root);
         assert(_depthTexture != nullptr);
+        _depthTexture->reset(_width, _height, "D", _multisample);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
 
@@ -25,9 +26,9 @@ Framebuffer::Framebuffer(RootObject* root)
     {
         _colorTexture = _renderer->createTexture_Image(root);
         assert(_colorTexture != nullptr);
+        _colorTexture->reset(_width, _height, "RGBA", _multisample);
         _colorTexture->setAttribute("clampToEdge", {true});
         _colorTexture->setAttribute("filtering", {false});
-        _colorTexture->reset(_width, _height, "RGBA", _multisample);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
     }
 

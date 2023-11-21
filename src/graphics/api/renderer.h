@@ -123,6 +123,18 @@ class Renderer
     std::shared_ptr<GlWindow> getMainWindow() { return _mainWindow; }
 
     /**
+     * Get a pointer to the data to be sent to the GL callback
+     * \return A raw pointer to the GL callback data
+     */
+    const Renderer::GlMsgCallbackData* getGlMsgCallbackDataPtr();
+
+    /**
+     * Set the user data for the GL callback
+     * \param data User data for the callback
+     */
+    static void setGlMsgCallbackData(const Renderer::GlMsgCallbackData* data) { glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<const void*>(data)); }
+
+    /**
      * Create a new Framebuffer
      * \param root Root object
      * \return Return a shared pointer to the newly created Framebuffer
@@ -139,34 +151,9 @@ class Renderer
     /**
      * Create a new Texture_Image
      * \param root Root object
-     * \param width Width
-     * \param height Height
-     * \param pixelFormat String describing the pixel format. Accepted values are RGB, RGBA, sRGBA, RGBA16, R16, YUYV, UYVY, D
-     * \param data Pointer to data to use to initialize the texture
-     * \param multisample Sample count for MSAA
-     * \param cubemap True to request a cubemap
-     * \return Return a shared pointer to a Texture_Image
-     */
-    std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, int multisample = 0, bool cubemap = false) const;
-
-    /**
-     * Create a new Texture_Image
-     * \param root Root object
      * \return Return a shared pointer to a default Texture_Image
      */
     virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const = 0;
-
-    /**
-     * Get a pointer to the data to be sent to the GL callback
-     * \return A raw pointer to the GL callback data
-     */
-    const Renderer::GlMsgCallbackData* getGlMsgCallbackDataPtr();
-
-    /**
-     * Set the user data for the GL callback
-     * \param data User data for the callback
-     */
-    static void setGlMsgCallbackData(const Renderer::GlMsgCallbackData* data) { glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<const void*>(data)); }
 
     /**
      * Create a new Window

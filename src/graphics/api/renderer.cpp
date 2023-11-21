@@ -233,15 +233,6 @@ std::unique_ptr<Renderer> Renderer::findGLVersion(std::optional<Renderer::Api> a
 }
 
 /*************/
-std::shared_ptr<Texture_Image> Renderer::createTexture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, int multisample, bool cubemap) const
-{
-    auto tex = createTexture_Image(root);
-    tex->reset(width, height, pixelFormat, multisample, cubemap);
-
-    return tex;
-}
-
-/*************/
 const Renderer::GlMsgCallbackData* Renderer::getGlMsgCallbackDataPtr()
 {
     _glMsgCallbackData.name = getApiSpecificVersion().toString();
