@@ -136,10 +136,9 @@ class Renderer
 
     /**
      * Create a new Framebuffer
-     * \param root Root object
      * \return Return a shared pointer to the newly created Framebuffer
      */
-    virtual std::unique_ptr<gfx::Framebuffer> createFramebuffer(RootObject* root) const = 0;
+    virtual std::unique_ptr<gfx::Framebuffer> createFramebuffer() const = 0;
 
     /**
      * Create a new Geometry

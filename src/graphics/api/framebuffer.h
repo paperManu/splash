@@ -28,7 +28,6 @@
 #include <memory>
 
 #include "./core/constants.h"
-#include "./core/graph_object.h"
 #include "./graphics/texture_image.h"
 
 namespace Splash
@@ -38,19 +37,18 @@ namespace gfx
 {
 
 /*************/
-class Framebuffer : public GraphObject
+class Framebuffer
 {
   public:
     /**
      * Constructor
      */
-    Framebuffer(RootObject* root)
-        : GraphObject(root){};
+    Framebuffer() = default;
 
     /**
      * Destructor
      */
-    virtual ~Framebuffer() override = default;
+    virtual ~Framebuffer() = default;
 
     /**
      * No copy constructor

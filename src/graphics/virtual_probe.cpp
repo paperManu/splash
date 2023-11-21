@@ -174,13 +174,13 @@ glm::dmat4 VirtualProbe::computeViewMatrix() const
 /*************/
 void VirtualProbe::setupFBO()
 {
-    _fbo = _renderer->createFramebuffer(_root);
+    _fbo = _renderer->createFramebuffer();
     _fbo->setSize(_width, _height);
     _fbo->setCubemap(true);
     _fbo->getColorTexture()->setAttribute("clampToEdge", {true});
     _fbo->getColorTexture()->setAttribute("filtering", {false});
 
-    _outFbo = _renderer->createFramebuffer(_root);
+    _outFbo = _renderer->createFramebuffer();
     _outFbo->setSize(_width, _height);
 
     _screen = std::make_unique<Object>(_root);

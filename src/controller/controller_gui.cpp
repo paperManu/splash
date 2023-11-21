@@ -54,7 +54,7 @@ Gui::Gui(std::shared_ptr<GlWindow> w, RootObject* s)
     _glWindow->setAsCurrentContext();
     glGetError();
 
-    _fbo = _renderer->createFramebuffer(_root);
+    _fbo = _renderer->createFramebuffer();
     _fbo->setResizable(true);
 
     _glWindow->releaseContext();

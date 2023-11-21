@@ -77,8 +77,8 @@ Camera::Camera(RootObject* root)
         return;
 
     // Intialize FBO, textures and everything OpenGL
-    _msFbo = _renderer->createFramebuffer(_root);
-    _outFbo = _renderer->createFramebuffer(_root);
+    _msFbo = _renderer->createFramebuffer();
+    _outFbo = _renderer->createFramebuffer();
     _msFbo->setMultisampling(_multisample);
     _msFbo->setSixteenBpc(_render16bits);
     _outFbo->setSixteenBpc(_render16bits);

@@ -37,7 +37,7 @@ class Framebuffer final : public Splash::gfx::Framebuffer
     /**
      * Constructor
      */
-    Framebuffer(RootObject* root);
+    Framebuffer();
 
     /**
      * Destructor

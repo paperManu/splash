@@ -1,5 +1,6 @@
 #include "./graphics/api/gles/framebuffer.h"
 
+#include "./graphics/api/gles/texture_image_gfx_impl.h"
 #include "./graphics/texture_image.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
@@ -7,15 +8,14 @@
 namespace Splash::gfx::gles
 {
 /*************/
-Framebuffer::Framebuffer(RootObject* root)
-    : gfx::Framebuffer(root)
+Framebuffer::Framebuffer()
 {
     glGenFramebuffers(1, &_fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
 
     if (!_depthTexture)
     {
-        _depthTexture = _renderer->createTexture_Image(root);
+        _depthTexture = std::make_shared<Texture_Image>(nullptr, std::make_unique<gfx::gles::Texture_ImageGfxImpl>());
         assert(_depthTexture != nullptr);
         _depthTexture->reset(_width, _height, "D", _multisample);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
@@ -23,7 +23,7 @@ Framebuffer::Framebuffer(RootObject* root)
 
     if (!_colorTexture)
     {
-        _colorTexture = _renderer->createTexture_Image(root);
+        _colorTexture = std::make_shared<Texture_Image>(nullptr, std::make_unique<gfx::gles::Texture_ImageGfxImpl>());
         assert(_colorTexture != nullptr);
         _colorTexture->reset(_width, _height, "RGBA", _multisample);
         _colorTexture->setAttribute("clampToEdge", {true});

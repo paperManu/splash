@@ -62,10 +62,9 @@ class Renderer : public gfx::Renderer
 
     /**
      * Create a new Framebuffer
-     * \param root Root object
      * \return Return a shared pointer to the newly created Framebuffer
      */
-    virtual std::unique_ptr<gfx::Framebuffer> createFramebuffer(RootObject* root) const override final { return std::make_unique<opengl::Framebuffer>(root); }
+    virtual std::unique_ptr<gfx::Framebuffer> createFramebuffer() const override final { return std::make_unique<opengl::Framebuffer>(); }
 
     /**
      * Create a new Geometry
