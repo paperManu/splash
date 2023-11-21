@@ -50,7 +50,7 @@ class Texture_Image : public Texture
      * \param root Root object
      * \param gfxImpl Specialization of a gfx::Texture_ImageGfxImpl for handling rendering
      */
-    explicit Texture_Image(RootObject* root, std::unique_ptr<gfx::Texture_ImageGfxImpl> gfxImpl);
+    explicit Texture_Image(RootObject* root, std::unique_ptr<gfx::Texture_ImageGfxImpl> gfxImpl = nullptr);
 
     /**
      * Destructor

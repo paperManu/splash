@@ -62,6 +62,7 @@ test:22.04:gcc-amd64-bundled-libs:
     - cmake -B build -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
     - make check -sC build
+    - ./build/src/splash --info
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
@@ -81,6 +82,7 @@ test:22.04:clang-amd64-system-libs:
     - CC=clang CXX=clang++ cmake -B build -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
     - make -sC build -j$(nproc)
     - make check -sC build
+    - ./build/src/splash --info
     - ./build/src/splash --child --prefix unittest &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:

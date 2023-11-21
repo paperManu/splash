@@ -36,7 +36,7 @@
 
 #include "./core/attribute.h"
 #include "./core/buffer_object.h"
-#include "./graphics/api/gpu_buffer.h"
+#include "./graphics/api/geometry_gfx_impl.h"
 #include "./graphics/api/renderer.h"
 #include "./mesh/mesh.h"
 
@@ -65,12 +65,12 @@ class Geometry : public BufferObject
      * \param root Root object
      * \param gfxImpl Specialization of a gfx::GeometryGfxImpl for handling rendering
      */
-    explicit Geometry(RootObject* root, std::unique_ptr<gfx::GeometryGfxImpl> gfxImpl);
+    explicit Geometry(RootObject* root, std::unique_ptr<gfx::GeometryGfxImpl> gfxImpl = nullptr);
 
     /**
      * Destructor
      */
-    ~Geometry() override;
+    ~Geometry() override = default;
 
     /**
      * No copy constructor, but a move one
@@ -187,11 +187,6 @@ class Geometry : public BufferObject
 
     bool _buffersDirty{false};
     bool _buffersResized{false}; // Holds whether the alternative buffers have been resized in the previous feedback
-
-    /**
-     * Initialization
-     */
-    void init();
 
     /**
      * Register new functors to modify attributes
