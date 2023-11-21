@@ -253,9 +253,7 @@ void Scene::remove(const std::string& name)
 /*************/
 void Scene::render()
 {
-#ifdef PROFILE_GPU
     PROFILEGL(Constants::GL_TIMING_TIME_PER_FRAME);
-#endif
 
     // We want to have as much time as possible for uploading the textures,
     // so we start it right now.
@@ -378,7 +376,6 @@ void Scene::render()
 
     TracyGpuCollect;
 
-#ifdef PROFILE_GPU
     ProfilerGL::get().gatherTimings();
     ProfilerGL::get().processTimings();
     const auto glTimings = ProfilerGL::get().getTimings();
@@ -386,7 +383,6 @@ void Scene::render()
         for (const auto& glTiming : threadTimings.second)
             Timer::get().setDuration(Constants::GL_TIMING_PREFIX + glTiming.getScope(), glTiming.getDuration() / 1000.0);
     ProfilerGL::get().clearTimings();
-#endif
 }
 
 /*************/
