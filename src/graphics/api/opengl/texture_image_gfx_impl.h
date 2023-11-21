@@ -95,10 +95,11 @@ class Texture_ImageGfxImpl final : public Splash::gfx::Texture_ImageGfxImpl
 
     /**
      * Read the texture and returns an Image
-     * \param level The mipmap level we wish to read the texture at.
+     * \param mipmapLevel The mipmap level we wish to read the texture at.
+     * \param spec Image spec of the Texture_Image holding this gfx implementation
      * \return Return the image
      */
-    std::shared_ptr<Image> read(RootObject* root, int mipmapLevel, ImageBufferSpec spec) const override;
+    std::shared_ptr<Image> read(int mipmapLevel, const ImageBufferSpec& spec) const override;
 
     /**
      * Resets the texture on the GPU side using the given parameters.

@@ -166,7 +166,7 @@ class Framebuffer : public GraphObject
     bool _16bits{false};
     bool _srgb{false};
     bool _cubemap{false};
-    bool _automaticResize{false}; // TODO: handle this correctly
+    bool _automaticResize{false};
     int _previousFbo{0};
 
     /**

@@ -65,10 +65,11 @@ class Texture_ImageGfxImpl
 
     /**
      * Read the texture and returns an Image
-     * \param level The mipmap level we wish to read the texture at.
+     * \param mipmapLevel The mipmap level we wish to read the texture at.
+     * \param spec Image spec of the Texture_Image holding this gfx implementation
      * \return Return the image
      */
-    virtual std::shared_ptr<Image> read(RootObject* root, int mipmapLevel, ImageBufferSpec spec) const = 0;
+    virtual std::shared_ptr<Image> read(int mipmapLevel, const ImageBufferSpec& spec) const = 0;
 
     /**
      * Resets the texture on the GPU side using the given parameters.

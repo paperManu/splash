@@ -43,21 +43,18 @@ void Texture_ImageGfxImpl::generateMipmap() const
 }
 
 /*************/
-std::shared_ptr<Image> Texture_ImageGfxImpl::read(RootObject* root, int mipmapLevel, ImageBufferSpec spec) const
+std::shared_ptr<Image> Texture_ImageGfxImpl::read(int mipmapLevel, const ImageBufferSpec& spec) const
 {
-    // Make sure read the width and height of the current mipmap level to avoid allocating
-    // extra unneeded memory.
-    GLint width = 0, height = 0;
     glBindTexture(_textureType, _glTex);
-    getTextureLevelParameteriv(_textureType, mipmapLevel, GL_TEXTURE_WIDTH, &width);
-    getTextureLevelParameteriv(_textureType, mipmapLevel, GL_TEXTURE_HEIGHT, &height);
-
-    spec.width = width;
-    spec.height = height;
-
-    auto img = std::make_shared<Image>(root, spec);
+    auto img = std::make_shared<Image>(nullptr, spec);
     getTextureImage(_glTex, _textureType, mipmapLevel, _texFormat, _texType, img->getSpec().rawSize(), const_cast<void*>(img->data()));
     return img;
+}
+
+/*************/
+void Texture_ImageGfxImpl::getTextureImage(GLuint textureId, GLenum /*textureType*/, GLint level, GLenum format, GLenum type, GLsizei bufSize, void* pixels) const
+{
+    glGetTextureImage(textureId, level, format, type, bufSize, pixels);
 }
 
 /*************/
@@ -114,12 +111,6 @@ std::pair<bool, std::optional<ImageBufferSpec>> Texture_ImageGfxImpl::update(std
 bool Texture_ImageGfxImpl::isCompressed(const ImageBufferSpec& spec) const
 {
     return spec.format == "RGB_DXT1" || spec.format == "RGBA_DXT5" || spec.format == "YCoCg_DXT5";
-}
-
-/*************/
-void Texture_ImageGfxImpl::getTextureImage(GLuint textureId, GLenum /*textureType*/, GLint level, GLenum format, GLenum type, GLsizei bufSize, void* pixels) const
-{
-    glGetTextureImage(textureId, level, format, type, bufSize, pixels);
 }
 
 /*************/
