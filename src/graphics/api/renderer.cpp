@@ -2,10 +2,10 @@
 
 #include "./core/base_object.h"
 #include "./core/graph_object.h"
-#include "./graphics/api/gpu_buffer.h"
-#include "./graphics/gl_window.h"
 #include "./graphics/api/gles/renderer.h"
+#include "./graphics/api/gpu_buffer.h"
 #include "./graphics/api/opengl/renderer.h"
+#include "./graphics/gl_window.h"
 #include "./graphics/texture_image.h"
 
 namespace Splash::gfx
@@ -249,4 +249,4 @@ const Renderer::GlMsgCallbackData* Renderer::getGlMsgCallbackDataPtr()
     return &_glMsgCallbackData;
 }
 
-}; // namespace Splash
+}; // namespace Splash::gfx

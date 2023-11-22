@@ -37,15 +37,16 @@
 namespace Splash
 {
 
+class BaseObject;
 class Geometry;
 class GlWindow;
 class RootObject;
-class BaseObject;
 class Texture_Image;
 
 namespace gfx
 {
 
+class Framebuffer;
 class GpuBuffer;
 
 struct ApiVersion
@@ -122,8 +123,16 @@ class Renderer
     std::shared_ptr<GlWindow> getMainWindow() { return _mainWindow; }
 
     /**
+     * Create a new Framebuffer
+     * \param root Root object
+     * \return Return a shared pointer to the newly created Framebuffer
+     */
+    virtual std::unique_ptr<gfx::Framebuffer> createFramebuffer(RootObject* root) const = 0;
+
+    /**
      * Create a new Geometry
      * \param root Root object
+     * \return Return a shared pointer to the newly created Geometry
      */
     virtual std::shared_ptr<Geometry> createGeometry(RootObject* root) const = 0;
 
@@ -160,6 +169,7 @@ class Renderer
     static void setGlMsgCallbackData(const Renderer::GlMsgCallbackData* data) { glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<const void*>(data)); }
 
     /**
+     * Create a new Window
      * \return A class containing the graphics API specific details of `Splash::Window`.
      */
     virtual std::unique_ptr<gfx::WindowGfxImpl> createWindowGfxImpl() const = 0;

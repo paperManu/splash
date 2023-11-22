@@ -25,7 +25,7 @@ Filter::Filter(RootObject* root)
     if (!_root)
         return;
 
-    _fbo = std::make_unique<Framebuffer>(_root);
+    _fbo = _renderer->createFramebuffer(_root);
     _fbo->getColorTexture()->setAttribute("filtering", {true});
     _fbo->setSixteenBpc(_sixteenBpc);
 

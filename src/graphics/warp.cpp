@@ -262,7 +262,7 @@ void Warp::loadDefaultModels()
 /*************/
 void Warp::setupFBO()
 {
-    _fbo = std::make_unique<Framebuffer>(_root);
+    _fbo = _renderer->createFramebuffer(_root);
     _fbo->setSixteenBpc(true);
 
     // Setup the virtual screen

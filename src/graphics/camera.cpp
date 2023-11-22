@@ -77,8 +77,8 @@ Camera::Camera(RootObject* root)
         return;
 
     // Intialize FBO, textures and everything OpenGL
-    _msFbo = std::make_unique<Framebuffer>(_root);
-    _outFbo = std::make_unique<Framebuffer>(_root);
+    _msFbo = _renderer->createFramebuffer(_root);
+    _outFbo = _renderer->createFramebuffer(_root);
     _msFbo->setMultisampling(_multisample);
     _msFbo->setSixteenBpc(_render16bits);
     _outFbo->setSixteenBpc(_render16bits);
@@ -772,7 +772,7 @@ void Camera::render()
     if (_multisample)
     {
         _msFbo->unbindDraw();
-        Framebuffer::blit(*_msFbo, *_outFbo);
+        _msFbo->blit(_outFbo.get());
     }
     else
     {

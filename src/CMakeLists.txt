@@ -168,10 +168,12 @@ target_sources(splash-${API_VERSION} PRIVATE
     controller/widget/widget_warp.cpp
     graphics/api/gpu_buffer.cpp
     graphics/api/renderer.cpp
+    graphics/api/gles/framebuffer.cpp
     graphics/api/gles/geometry_gfx_impl.cpp
     graphics/api/gles/gpu_buffer.cpp
     graphics/api/gles/texture_image_gfx_impl.cpp
     graphics/api/gles/window_gfx_impl.cpp
+    graphics/api/opengl/framebuffer.cpp
     graphics/api/opengl/geometry_gfx_impl.cpp
     graphics/api/opengl/gpu_buffer.cpp
     graphics/api/opengl/texture_image_gfx_impl.cpp
@@ -181,7 +183,6 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/filter_black_level.cpp
     graphics/filter_color_curves.cpp
     graphics/filter_custom.cpp
-    graphics/framebuffer.cpp
     graphics/geometry.cpp
     graphics/object.cpp
     graphics/object_library.cpp

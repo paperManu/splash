@@ -1,26 +1,29 @@
-#include "./graphics/framebuffer.h"
+#include "./graphics/api/gles/framebuffer.h"
 
+#include "./graphics/texture_image.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
-namespace Splash
+namespace Splash::gfx::gles
 {
 /*************/
 Framebuffer::Framebuffer(RootObject* root)
-    : GraphObject(root)
+    : gfx::Framebuffer(root)
 {
     glGenFramebuffers(1, &_fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
 
     if (!_depthTexture)
     {
-        _depthTexture = _renderer->createTexture_Image(nullptr, _width, _height, "D", _multisample);
+        _depthTexture = _renderer->createTexture_Image(root, _width, _height, "D", _multisample);
+        assert(_depthTexture != nullptr);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
 
     if (!_colorTexture)
     {
-        _colorTexture = _renderer->createTexture_Image(nullptr);
+        _colorTexture = _renderer->createTexture_Image(root);
+        assert(_colorTexture != nullptr);
         _colorTexture->setAttribute("clampToEdge", {true});
         _colorTexture->setAttribute("filtering", {false});
         _colorTexture->reset(_width, _height, "RGBA", _multisample);
@@ -73,10 +76,12 @@ void Framebuffer::bindRead()
 }
 
 /*************/
-void Framebuffer::blit(const Framebuffer& src, const Framebuffer& dst)
+void Framebuffer::blit(const Splash::gfx::Framebuffer* dst)
 {
+    const auto destFbo = dynamic_cast<const Splash::gfx::gles::Framebuffer*>(dst);
+    assert(destFbo != nullptr);
     glBlitNamedFramebuffer(
-        src.getFboId(), dst.getFboId(), 0, 0, src.getWidth(), src.getHeight(), 0, 0, dst.getWidth(), dst.getHeight(), GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+        getFboId(), destFbo->getFboId(), 0, 0, getWidth(), getHeight(), 0, 0, destFbo->getWidth(), destFbo->getHeight(), GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 }
 
 /*************/
@@ -89,46 +94,6 @@ float Framebuffer::getDepthAt(float x, float y)
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     return depth;
-}
-
-/*************/
-void Framebuffer::setCubemap(bool cubemap)
-{
-    if (cubemap != _cubemap)
-    {
-        _cubemap = cubemap;
-        setRenderingParameters();
-    }
-}
-
-/*************/
-void Framebuffer::setsRGB(bool srgb)
-{
-    if (srgb != _srgb)
-    {
-        _srgb = srgb;
-        setRenderingParameters();
-    }
-}
-
-/*************/
-void Framebuffer::setMultisampling(int samples)
-{
-    if (_multisample != samples)
-    {
-        _multisample = samples;
-        setRenderingParameters();
-    }
-}
-
-/*************/
-void Framebuffer::setSixteenBpc(bool sixteenbpc)
-{
-    if (_16bits != sixteenbpc)
-    {
-        _16bits = sixteenbpc;
-        setRenderingParameters();
-    }
 }
 
 /*************/
@@ -170,14 +135,6 @@ void Framebuffer::setSize(int width, int height)
 }
 
 /*************/
-void Framebuffer::setResizable(bool resizable)
-{
-    _automaticResize = resizable;
-    _depthTexture->setResizable(_automaticResize);
-    _colorTexture->setResizable(_automaticResize);
-}
-
-/*************/
 void Framebuffer::unbindDraw()
 {
     if (_fbo)
@@ -213,4 +170,4 @@ void Framebuffer::unbindRead()
     }
 }
 
-} // namespace Splash
+} // namespace Splash::gfx::gles

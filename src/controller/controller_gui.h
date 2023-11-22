@@ -41,8 +41,8 @@
 #endif
 #include "./controller/widget/widget.h"
 #include "./core/attribute.h"
+#include "./graphics/api/framebuffer.h"
 #include "./graphics/camera.h"
-#include "./graphics/framebuffer.h"
 #include "./userinput/userinput.h"
 
 namespace Splash
@@ -221,7 +221,7 @@ class Gui final : public ControllerObject
     std::shared_ptr<GlWindow> _glWindow;
     Window* _window{nullptr};
 
-    std::unique_ptr<Framebuffer> _fbo{nullptr};
+    std::unique_ptr<gfx::Framebuffer> _fbo{nullptr};
     float _width{512}, _height{512};
     bool _resized{false};
     int _initialGuiPos[2]{16, 16}; //!< Gui position at startup

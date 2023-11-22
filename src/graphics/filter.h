@@ -34,7 +34,7 @@
 #include "./core/constants.h"
 
 #include "./core/attribute.h"
-#include "./graphics/framebuffer.h"
+#include "./graphics/api/framebuffer.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"
@@ -126,7 +126,7 @@ class Filter : public Texture
   protected:
     std::vector<std::weak_ptr<Texture>> _inTextures;
     std::shared_ptr<Object> _screen;
-    std::unique_ptr<Framebuffer> _fbo{nullptr};
+    std::unique_ptr<gfx::Framebuffer> _fbo{nullptr};
 
     bool _shaderAttributesRegistered{false};
     std::unordered_map<std::string, Values> _filterUniforms; //!< Contains all filter uniforms
