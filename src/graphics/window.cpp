@@ -525,11 +525,6 @@ bool Window::setProjectionSurface()
     glfwShowWindow(_gfxImpl->getGlfwWindow());
     glfwSwapInterval(_swapInterval);
 
-// Setup the projection surface
-#ifdef DEBUG
-    glGetError();
-#endif
-
     _screen = std::make_shared<Object>(_root);
     _screen->setAttribute("fill", {"window"});
     auto virtualScreen = _renderer->createGeometry(_root);
@@ -539,12 +534,6 @@ bool Window::setProjectionSurface()
     _screenGui->setAttribute("fill", {"window"});
     virtualScreen = _renderer->createGeometry(_root);
     _screenGui->addGeometry(virtualScreen);
-
-#ifdef DEBUG
-    GLenum error = glGetError();
-    if (error)
-        Log::get() << Log::WARNING << __FUNCTION__ << " - Error while creating the projection surface: " << error << Log::endl;
-#endif
 
     _gfxImpl->releaseContext();
 
