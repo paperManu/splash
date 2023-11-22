@@ -25,11 +25,11 @@
 #ifndef SPLASH_OPENGL_RENDERER_H
 #define SPLASH_OPENGL_RENDERER_H
 
+#include "./graphics/api/opengl/filter_gfx_impl.h"
 #include "./graphics/api/opengl/framebuffer.h"
 #include "./graphics/api/opengl/geometry_gfx_impl.h"
 #include "./graphics/api/opengl/gpu_buffer.h"
 #include "./graphics/api/opengl/texture_image_gfx_impl.h"
-#include "./graphics/api/opengl/warp_gfx_impl.h"
 #include "./graphics/api/opengl/window_gfx_impl.h"
 #include "./graphics/api/renderer.h"
 #include "./graphics/texture_image.h"
@@ -64,6 +64,12 @@ class Renderer : public gfx::Renderer
     virtual void loadApiSpecificGlFunctions() const override final { gladLoadGLLoader((GLADloadproc)glfwGetProcAddress); };
 
     /**
+     * Create a new Filter graphics implementation
+     * \return Return a shared pointer to a new Filter
+     */
+    virtual std::unique_ptr<gfx::FilterGfxImpl> createFilterGfxImpl() const final { return std::make_unique<gfx::opengl::FilterGfxImpl>(); }
+
+    /**
      * Create a new Framebuffer
      * \return Return a shared pointer to the newly created Framebuffer
      */
@@ -88,13 +94,6 @@ class Renderer : public gfx::Renderer
     {
         return std::make_shared<Texture_Image>(root, std::make_unique<gfx::opengl::Texture_ImageGfxImpl>());
     };
-
-    /**
-     * Create a Warp
-     * \param root Root object
-     * \return Return a shared pointer to a new Warp
-     */
-    virtual std::shared_ptr<Warp> createWarp(RootObject* root) const override final { return std::make_shared<Warp>(root, std::make_unique<gfx::opengl::WarpGfxImpl>()); }
 
     /**
      * Create a new Window

@@ -18,44 +18,39 @@
  */
 
 /*
- * @warp_gfx_impl.h
- * Implementation of WarpGfxImpl for OpenGL
+ * @filter_gfx_impl.h
+ * Base class for Filter API implementations
  */
 
-#ifndef SPLASH_OPENGL_WARP_GFX_IMPL_H
-#define SPLASH_OPENGL_WARP_GFX_IMPL_H
+#ifndef SPLASH_FILTER_GFX_IMPL_H
+#define SPLASH_FILTER_GFX_IMPL_H
 
-#include "./graphics/api/warp_gfx_impl.h"
+#include "./core/constants.h"
 
-namespace Splash::gfx::opengl
+namespace Splash::gfx
 {
 
-class WarpGfxImpl : public gfx::WarpGfxImpl
+class FilterGfxImpl
 {
   public:
     /**
      * Constructor
      */
-    WarpGfxImpl() = default;
+    FilterGfxImpl() = default;
 
     /**
      * Destructor
      */
-    ~WarpGfxImpl() = default;
+    virtual ~FilterGfxImpl() = default;
 
     /**
-     * Setup the viewport for the warp
+     * Setup the viewport for the filter
      * \param width Viewport width
      * \param height Viewport height
      */
-    void setupViewport(uint32_t width, uint32_t height) override final
-    {
-        glViewport(0, 0, width, height);
-        glClearColor(0.0, 0.0, 0.0, 0.0);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    }
+    virtual void setupViewport(uint32_t width, uint32_t height) = 0;
 };
 
-} // namespace Splash::gfx::opengl
+} // namespace Splash::gfx
 
 #endif

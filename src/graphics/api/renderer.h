@@ -38,6 +38,7 @@ namespace Splash
 {
 
 class BaseObject;
+class Filter;
 class Geometry;
 class GlWindow;
 class RootObject;
@@ -47,6 +48,7 @@ class Warp;
 namespace gfx
 {
 
+class FilterGfxImpl;
 class Framebuffer;
 class GpuBuffer;
 
@@ -136,6 +138,12 @@ class Renderer
     static void setGlMsgCallbackData(const Renderer::GlMsgCallbackData* data) { glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<const void*>(data)); }
 
     /**
+     * Create a new Filter graphics implementation
+     * \return Return a shared pointer to a new Filter
+     */
+    virtual std::unique_ptr<gfx::FilterGfxImpl> createFilterGfxImpl() const = 0;
+
+    /**
      * Create a new Framebuffer
      * \return Return a shared pointer to the newly created Framebuffer
      */
@@ -154,13 +162,6 @@ class Renderer
      * \return Return a shared pointer to a default Texture_Image
      */
     virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const = 0;
-
-    /**
-     * Create a Warp
-     * \param root Root object
-     * \return Return a shared pointer to a new Warp
-     */
-    virtual std::shared_ptr<Warp> createWarp(RootObject* root) const = 0;
 
     /**
      * Create a new Window

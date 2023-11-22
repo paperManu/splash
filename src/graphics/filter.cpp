@@ -19,12 +19,13 @@ Filter::Filter(RootObject* root)
 {
     _type = "filter";
     _renderingPriority = Priority::FILTER;
-    registerAttributes();
+    Filter::registerAttributes();
 
     // This is used for getting documentation "offline"
     if (!_root)
         return;
 
+    _gfxImpl = _renderer->createFilterGfxImpl();
     _fbo = _renderer->createFramebuffer();
     _fbo->getColorTexture()->setAttribute("filtering", {true});
     _fbo->setSixteenBpc(_sixteenBpc);
@@ -241,9 +242,7 @@ void Filter::render()
     _spec.timestamp = timestamp;
 
     _fbo->bindDraw();
-    glViewport(0, 0, _spec.width, _spec.height);
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    _gfxImpl->setupViewport(_spec.width, _spec.height);
 
     _screen->activate();
     updateUniforms();

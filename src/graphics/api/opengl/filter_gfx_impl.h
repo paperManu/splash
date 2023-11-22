@@ -18,33 +18,33 @@
  */
 
 /*
- * @warp_gfx_impl.h
- * Implementation of WarpGfxImpl for OpenGL ES
+ * @filter_gfx_impl.h
+ * Implementation of FilterGfxImpl for OpenGL
  */
 
-#ifndef SPLASH_GLES_WARP_GFX_IMPL_H
-#define SPLASH_GLES_WARP_GFX_IMPL_H
+#ifndef SPLASH_OPENGL_FILTER_GFX_IMPL_H
+#define SPLASH_OPENGL_FILTER_GFX_IMPL_H
 
-#include "./graphics/api/warp_gfx_impl.h"
+#include "./graphics/api/filter_gfx_impl.h"
 
-namespace Splash::gfx::gles
+namespace Splash::gfx::opengl
 {
 
-class WarpGfxImpl : public gfx::WarpGfxImpl
+class FilterGfxImpl : public gfx::FilterGfxImpl
 {
   public:
     /**
      * Constructor
      */
-    WarpGfxImpl() = default;
+    FilterGfxImpl() = default;
 
     /**
      * Destructor
      */
-    ~WarpGfxImpl() = default;
+    ~FilterGfxImpl() = default;
 
     /**
-     * Setup the viewport for the warp
+     * Setup the viewport for the filter
      * \param width Viewport width
      * \param height Viewport height
      */
@@ -56,6 +56,6 @@ class WarpGfxImpl : public gfx::WarpGfxImpl
     }
 };
 
-} // namespace Splash::gfx::gles
+} // namespace Splash::gfx::opengl
 
 #endif

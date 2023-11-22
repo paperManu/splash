@@ -33,8 +33,8 @@
 #include "./core/constants.h"
 
 #include "./core/attribute.h"
+#include "./graphics/api/filter_gfx_impl.h"
 #include "./graphics/api/framebuffer.h"
-#include "./graphics/api/warp_gfx_impl.h"
 #include "./graphics/camera.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
@@ -52,7 +52,7 @@ class Warp final : public Texture
      * Constructor
      * \param root Root object
      */
-    explicit Warp(RootObject* root, std::unique_ptr<gfx::WarpGfxImpl> gfxImpl = nullptr);
+    explicit Warp(RootObject* root);
 
     /**
      * Destructor
@@ -138,7 +138,7 @@ class Warp final : public Texture
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
   private:
-    std::unique_ptr<gfx::WarpGfxImpl> _gfxImpl;
+    std::unique_ptr<gfx::FilterGfxImpl> _gfxImpl;
     std::weak_ptr<Texture> _inTexture;
     std::weak_ptr<Camera> _inCamera;
 

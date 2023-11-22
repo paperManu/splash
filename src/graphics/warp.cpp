@@ -20,9 +20,8 @@ namespace Splash
 {
 
 /*************/
-Warp::Warp(RootObject* root, std::unique_ptr<gfx::WarpGfxImpl> gfxImpl)
+Warp::Warp(RootObject* root)
     : Texture(root)
-    , _gfxImpl(std::move(gfxImpl))
 {
     _type = "warp";
     _renderingPriority = Priority::POST_CAMERA;
@@ -33,6 +32,7 @@ Warp::Warp(RootObject* root, std::unique_ptr<gfx::WarpGfxImpl> gfxImpl)
         return;
 
     // Intialize FBO, textures and everything OpenGL
+    _gfxImpl = _renderer->createFilterGfxImpl();
     setupFBO();
 
     loadDefaultModels();

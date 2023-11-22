@@ -34,6 +34,7 @@
 #include "./core/constants.h"
 
 #include "./core/attribute.h"
+#include "./graphics/api/filter_gfx_impl.h"
 #include "./graphics/api/framebuffer.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
@@ -154,6 +155,8 @@ class Filter : public Texture
     virtual void registerAttributes();
 
   private:
+    std::unique_ptr<gfx::FilterGfxImpl> _gfxImpl;
+
     // Filter parameters
     static constexpr int _defaultSize[2]{512, 512};
     int _sizeOverride[2]{-1, -1}; //!< If set to positive values, overrides the size given by input textures

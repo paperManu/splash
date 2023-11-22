@@ -444,14 +444,7 @@ void Factory::registerObjects()
         "Virtual screen used to simulate a virtual projection surface.",
         true);
 
-    _objectBook["warp"] = Page(
-        [&](RootObject* root) {
-            // Root must exist for the renderer to work (indicates normal operation, root is null for tests)
-            if (_scene)
-                return std::dynamic_pointer_cast<GraphObject>(_scene->getRenderer()->createWarp(root));
-            else
-                return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Warp>(root));
-        },
+    _objectBook["warp"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Warp>(root)); },
         GraphObject::Category::MISC,
         "warp",
         "Warping object, allows for deforming the output of a Camera.");
