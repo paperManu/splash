@@ -48,7 +48,27 @@ class FilterGfxImpl
      * \param width Viewport width
      * \param height Viewport height
      */
-    virtual void setupViewport(uint32_t width, uint32_t height) = 0;
+    virtual void setupViewport(uint32_t width, uint32_t height) const = 0;
+
+    /**
+     * Enable multisampling
+     */
+    virtual void enableMultisampling() const = 0;
+
+    /**
+     * Disable multisampling
+     */
+    virtual void disableMultisampling() const = 0;
+
+    /**
+     * Enable rendering to and from cubemap textures
+     */
+    virtual void enableCubemapRendering() const = 0;
+
+    /**
+     * Disable rendering to and from cubemap textures
+     */
+    virtual void disableCubemapRendering() const = 0;
 };
 
 } // namespace Splash::gfx

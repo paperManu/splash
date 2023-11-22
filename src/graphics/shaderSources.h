@@ -1351,7 +1351,7 @@ struct ShaderSources
 
             void main(void)
             {
-        #if TEXTURE_RECT
+        #ifdef TEXTURE_RECT
                 vec4 color = texture(_tex0, vertexIn.texCoord * _tex0_size);
         #else
                 vec4 color = texture(_tex0, vertexIn.texCoord);

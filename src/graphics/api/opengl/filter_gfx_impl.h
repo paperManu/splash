@@ -48,12 +48,33 @@ class FilterGfxImpl : public gfx::FilterGfxImpl
      * \param width Viewport width
      * \param height Viewport height
      */
-    void setupViewport(uint32_t width, uint32_t height) override final
+    void setupViewport(uint32_t width, uint32_t height) const override final
     {
         glViewport(0, 0, width, height);
         glClearColor(0.0, 0.0, 0.0, 0.0);
+        glEnable(GL_DEPTH_TEST);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
+
+    /**
+     * Enable multisampling
+     */
+    void enableMultisampling() const override final { glEnable(GL_MULTISAMPLE); }
+
+    /**
+     * Disable multisampling
+     */
+    void disableMultisampling() const override final { glDisable(GL_MULTISAMPLE); }
+
+    /**
+     * Enable rendering to and from cubemap textures
+     */
+    void enableCubemapRendering() const override final { glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS); }
+
+    /**
+     * Disable rendering to and from cubemap textures
+     */
+    void disableCubemapRendering() const override final { glDisable(GL_TEXTURE_CUBE_MAP_SEAMLESS); }
 };
 
 } // namespace Splash::gfx::opengl

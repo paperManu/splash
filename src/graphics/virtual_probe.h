@@ -141,6 +141,7 @@ class VirtualProbe final : public Texture
         Spherical = 1
     };
 
+    std::unique_ptr<gfx::FilterGfxImpl> _gfxImpl;
     std::unique_ptr<gfx::Framebuffer> _fbo{nullptr};
     std::unique_ptr<gfx::Framebuffer> _outFbo{nullptr};
     std::vector<std::weak_ptr<Object>> _objects{};
