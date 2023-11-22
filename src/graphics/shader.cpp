@@ -743,7 +743,7 @@ std::string Shader::getShaderInfoLog(GLint shader)
     glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
 
     auto str = std::string(static_cast<size_t>(length), '\0');
-    glGetProgramInfoLog(shader, length, &length, str.data());
+    glGetShaderInfoLog(shader, length, &length, str.data());
 
     return str;
 }
