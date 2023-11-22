@@ -106,6 +106,8 @@ void Framebuffer::setRenderingParameters()
 
     if (_srgb)
         _colorTexture->reset(spec.width, spec.height, "sRGBA", _multisample, _cubemap);
+    else if (_16bits)
+        _colorTexture->reset(spec.width, spec.height, "RGBA16", _multisample, _cubemap);
     else
         _colorTexture->reset(spec.width, spec.height, "RGBA", _multisample, _cubemap);
 
