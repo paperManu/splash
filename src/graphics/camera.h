@@ -44,6 +44,7 @@
 
 #include "./core/attribute.h"
 #include "./core/graph_object.h"
+#include "./graphics/api/camera_gfx_impl.h"
 #include "./graphics/api/framebuffer.h"
 #include "./graphics/geometry.h"
 #include "./graphics/object.h"
@@ -249,6 +250,7 @@ class Camera : public GraphObject
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
   private:
+    std::unique_ptr<gfx::CameraGfxImpl> _gfxImpl{nullptr};
     std::unique_ptr<gfx::Framebuffer> _msFbo{nullptr}, _outFbo{nullptr};
     std::vector<std::weak_ptr<Object>> _objects;
 

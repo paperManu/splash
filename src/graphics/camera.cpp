@@ -23,7 +23,6 @@
 #include "./utils/scope_guard.h"
 #include "./utils/timer.h"
 
-#define SCISSOR_WIDTH 8
 #define WORLDMARKER_SCALE 0.0003
 #define SCREENMARKER_SCALE 0.05
 #define MARKER_SELECTED                                                                                                                                                            \
@@ -75,6 +74,8 @@ Camera::Camera(RootObject* root)
     // This is used for getting documentation "offline"
     if (!_root)
         return;
+
+    _gfxImpl = _renderer->createCameraGfxImpl();
 
     // Intialize FBO, textures and everything OpenGL
     _msFbo = _renderer->createFramebuffer();
@@ -172,7 +173,7 @@ void Camera::computeVertexVisibility()
     }
 
     // Update the vertices visibility based on the result
-    glActiveTexture(GL_TEXTURE0);
+    _gfxImpl->activateTexture(0);
     _outFbo->getColorTexture()->bind();
     primitiveIdShift = 0;
     for (auto& o : _objects)
@@ -593,11 +594,7 @@ void Camera::render()
         _outFbo->setSize(spec.width, spec.height);
     }
 
-#ifdef DEBUG
-    glGetError();
-#endif
-    glViewport(0, 0, _width, _height);
-    glEnable(GL_DEPTH_TEST);
+    _gfxImpl->setupViewport(_width, _height);
 
     if (_multisample)
         _msFbo->bindDraw();
@@ -606,17 +603,15 @@ void Camera::render()
 
     if (_drawFrame)
     {
-        glClearColor(1.0, 0.5, 0.0, 1.0);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glEnable(GL_SCISSOR_TEST);
-        glScissor(SCISSOR_WIDTH, SCISSOR_WIDTH, _width - SCISSOR_WIDTH * 2, _height - SCISSOR_WIDTH * 2);
+        _gfxImpl->beginDrawFrame();
     }
 
     if (_flashBG)
-        glClearColor(_clearColor.r, _clearColor.g, _clearColor.b, _clearColor.a);
+        _gfxImpl->setClearColor(_clearColor.r, _clearColor.g, _clearColor.b, _clearColor.a);
     else
-        glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        _gfxImpl->setClearColor(0.0, 0.0, 0.0, 0.0);
+
+    _gfxImpl->clearViewport();
 
     if (!_hidden)
     {
@@ -765,8 +760,9 @@ void Camera::render()
     }
 
     if (_drawFrame)
-        glDisable(GL_SCISSOR_TEST);
-    glDisable(GL_DEPTH_TEST);
+        _gfxImpl->endDrawFrame();
+
+    _gfxImpl->endCameraRender();
 
     // Blit the result to resolve the multisampling
     if (_multisample)
@@ -790,12 +786,6 @@ void Camera::render()
 
     // Set the timestamp for the output texture
     _outFbo->getColorTexture()->setTimestamp(timestamp);
-
-#ifdef DEBUG
-    GLenum error = glGetError();
-    if (error)
-        Log::get() << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
-#endif
 }
 
 /*************/

@@ -48,6 +48,7 @@ class Warp;
 namespace gfx
 {
 
+class CameraGfxImpl;
 class FilterGfxImpl;
 class Framebuffer;
 class GpuBuffer;
@@ -138,14 +139,20 @@ class Renderer
     static void setGlMsgCallbackData(const Renderer::GlMsgCallbackData* data) { glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<const void*>(data)); }
 
     /**
+     * Create a new Camera graphics implementation
+     * \return Return a unique pointer to a new Camera
+     */
+    virtual std::unique_ptr<gfx::CameraGfxImpl> createCameraGfxImpl() const = 0;
+
+    /**
      * Create a new Filter graphics implementation
-     * \return Return a shared pointer to a new Filter
+     * \return Return a unique pointer to a new Filter
      */
     virtual std::unique_ptr<gfx::FilterGfxImpl> createFilterGfxImpl() const = 0;
 
     /**
      * Create a new Framebuffer
-     * \return Return a shared pointer to the newly created Framebuffer
+     * \return Return a unique pointer to the newly created Framebuffer
      */
     virtual std::unique_ptr<gfx::Framebuffer> createFramebuffer() const = 0;
 
