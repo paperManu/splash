@@ -27,6 +27,7 @@
 
 #include "./core/constants.h"
 #include "./graphics/api/camera_gfx_impl.h"
+#include "./utils/log.h"
 
 namespace Splash::gfx::opengl
 {
@@ -94,7 +95,7 @@ class CameraGfxImpl : public gfx::CameraGfxImpl
 #ifdef DEBUG
         GLenum error = glGetError();
         if (error)
-            Log::get() << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
+            Log::get() << Log::WARNING << "CameraGfxImpl::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
 #endif
     }
 
