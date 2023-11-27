@@ -58,12 +58,12 @@ Window::Window(RootObject* root)
         updateSwapInterval(scene->getSwapInterval());
     }
 
-    _isInitialized = setProjectionSurface();
-    if (!_isInitialized)
+    if (!_gfxImpl->windowExists())
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while creating the Window" << Log::endl;
     else
         Log::get() << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Window created successfully" << Log::endl;
 
+    setProjectionSurface();
     _viewProjectionMatrix = glm::ortho(-1.f, 1.f, -1.f, 1.f);
 
     setEventsCallbacks();
@@ -519,7 +519,7 @@ void Window::setEventsCallbacks()
 }
 
 /*************/
-bool Window::setProjectionSurface()
+void Window::setProjectionSurface()
 {
     _gfxImpl->setAsCurrentContext();
     glfwShowWindow(_gfxImpl->getGlfwWindow());
@@ -536,12 +536,6 @@ bool Window::setProjectionSurface()
     _screenGui->addGeometry(virtualScreen);
 
     _gfxImpl->releaseContext();
-
-#ifdef DEBUG
-    return error == 0 ? true : false;
-#else
-    return true;
-#endif
 }
 
 /*************/
