@@ -291,16 +291,6 @@ class Root
      */
     bool setValueForLeafAt(const std::string& path, const Value& value, int64_t timestamp = 0, bool force = false);
     bool setValueForLeafAt(const std::string& path, const Value& value, std::chrono::system_clock::time_point timestamp, bool force = false);
-    // The following overloads handle conversion from Values to Value (second
-    // argument)
-    bool setValueForLeafAt(const std::string& path, const Values& value, int64_t timestamp = 0, bool force = false)
-    {
-        return setValueForLeafAt(path, Value(value), timestamp, force);
-    }
-    bool setValueForLeafAt(const std::string& path, const Values& value, std::chrono::system_clock::time_point timestamp, bool force = false)
-    {
-        return setValueForLeafAt(path, Value(value), timestamp, force);
-    }
 
     /**
      * Get the seeds generated while modifying the tree
