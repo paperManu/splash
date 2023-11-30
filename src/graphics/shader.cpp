@@ -38,9 +38,10 @@ Shader::Shader(RootObject* root, ProgramType type)
     else if (type == prgFeedback)
     {
         _gfxImpl = _renderer->createFeedbackShader();
-        registerFeedbackAttributes();
-        setAttribute("feedbackPhase", {"tessellateFromCamera"});
+        selectFeedbackPhase(FeedbackPhase::TessellateFromCamera);
     }
+
+    GraphObject::registerAttributes();
 }
 
 /*************/
@@ -102,6 +103,31 @@ void Shader::selectComputePhase(ComputePhase phase)
         setSource(gfx::ShaderType::compute, options + ShaderSources.COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR);
         break;
     }
+}
+
+/*************/
+void Shader::selectFeedbackPhase(FeedbackPhase phase, const std::vector<std::string>& varyings)
+{
+    auto feedbackShader = dynamic_cast<gfx::FeedbackShaderGfxImpl*>(_gfxImpl.get());
+    assert(feedbackShader != nullptr);
+
+    std::string options = ShaderSources.VERSION_DIRECTIVE_GL32_ES;
+
+    switch (phase)
+    {
+    default:
+        assert(false);
+        break;
+    case FeedbackPhase::TessellateFromCamera:
+        setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
+        setSource(gfx::ShaderType::tess_ctrl, options + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
+        setSource(gfx::ShaderType::tess_eval, options + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
+        setSource(gfx::ShaderType::geometry, options + ShaderSources.GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
+        setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_EMPTY);
+        break;
+    }
+
+    feedbackShader->selectVaryings(varyings);
 }
 
 /*************/
@@ -377,55 +403,6 @@ void Shader::registerGraphicAttributes()
         [&]() -> Values { return {(int)_sideness}; },
         {'i'});
     setAttributeDescription("sideness", "If set to 0 or 1, the object is single-sided (back or front-sided). If set to 2, it is double-sided");
-}
-
-/*************/
-void Shader::registerFeedbackAttributes()
-{
-    GraphObject::registerAttributes();
-
-    addAttribute("feedbackPhase",
-        [&](const Values& args) {
-            assert(dynamic_cast<gfx::FeedbackShaderGfxImpl*>(_gfxImpl.get()) != nullptr);
-            if (args.size() < 1)
-                return false;
-
-            // Get additionnal shader options
-            std::string options = ShaderSources.VERSION_DIRECTIVE_GL32_ES;
-            for (uint32_t i = 1; i < args.size(); ++i)
-                options += "#define " + args[i].as<std::string>() + "\n";
-
-            if ("tessellateFromCamera" == args[0].as<std::string>())
-            {
-                _currentProgramName = args[0].as<std::string>();
-                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
-                setSource(gfx::ShaderType::tess_ctrl, options + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
-                setSource(gfx::ShaderType::tess_eval, options + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
-                setSource(gfx::ShaderType::geometry, options + ShaderSources.GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
-                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_EMPTY);
-            }
-
-            return true;
-        },
-        {});
-
-    addAttribute("feedbackVaryings",
-        [&](const Values& args) {
-            if (args.size() < 1)
-                return false;
-
-            auto feedbackShader = dynamic_cast<gfx::FeedbackShaderGfxImpl*>(_gfxImpl.get());
-            assert(feedbackShader != nullptr);
-
-            std::vector<std::string> varyingNames;
-            for (uint32_t i = 0; i < args.size(); ++i)
-                varyingNames.push_back(args[i].as<std::string>());
-
-            feedbackShader->selectVaryings(varyingNames);
-
-            return true;
-        },
-        {});
 }
 
 } // namespace Splash

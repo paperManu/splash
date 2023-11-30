@@ -86,6 +86,11 @@ class Shader final : public GraphObject
         TransferVisibilityToAttribute
     };
 
+    enum class FeedbackPhase : uint8_t
+    {
+        TessellateFromCamera
+    };
+
     /**
      * Constructor
      * \param type Shader type
@@ -152,6 +157,13 @@ class Shader final : public GraphObject
      * \param phase Compute phase to select
      */
     void selectComputePhase(ComputePhase phase);
+
+    /**
+     * Select the feedback phase to activate
+     * \param phase Feedback phase to select
+     * \param varyings Selected feedback varyings
+     */
+    void selectFeedbackPhase(FeedbackPhase phase, const std::vector<std::string>& varyings = {});
 
     /**
      * Set the model view and projection matrices
@@ -223,7 +235,6 @@ class Shader final : public GraphObject
      * Register new functors to modify attributes
      */
     void registerGraphicAttributes();
-    void registerFeedbackAttributes();
 };
 
 } // namespace Splash

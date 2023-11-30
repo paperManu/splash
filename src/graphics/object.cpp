@@ -437,8 +437,8 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
     if (!_feedbackShaderSubdivideCamera)
     {
         _feedbackShaderSubdivideCamera = std::make_shared<Shader>(_root, Shader::prgFeedback);
-        _feedbackShaderSubdivideCamera->setAttribute("feedbackPhase", {"tessellateFromCamera"});
-        _feedbackShaderSubdivideCamera->setAttribute("feedbackVaryings", {"GEOM_OUT.vertex", "GEOM_OUT.texCoord", "GEOM_OUT.normal", "GEOM_OUT.annexe"});
+        _feedbackShaderSubdivideCamera->selectFeedbackPhase(
+            Shader::FeedbackPhase::TessellateFromCamera, {"GEOM_OUT.vertex", "GEOM_OUT.texCoord", "GEOM_OUT.normal", "GEOM_OUT.annexe"});
     }
 
     assert(_feedbackShaderSubdivideCamera != nullptr);
