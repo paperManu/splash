@@ -140,6 +140,13 @@ class Shader final : public GraphObject
     std::map<std::string, std::string> getUniformsDocumentation() const;
 
     /**
+     * Set the model view and projection matrices
+     * \param mv View matrix
+     * \param mp Projection matrix
+     */
+    void setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp);
+
+    /**
      * Set a shader source
      * \param type Shader type
      * \param src Shader string
@@ -171,11 +178,12 @@ class Shader final : public GraphObject
     void setTexture(const std::shared_ptr<Texture>& texture, const GLuint textureUnit, const std::string& name);
 
     /**
-     * Set the model view and projection matrices
-     * \param mv View matrix
-     * \param mp Projection matrix
+     * Set the named uniform to the given value, if it exists.
+     * It can be called anytime and will be updated once the shader is active
+     * \param name Uniform name
+     * \param value Uniform value
      */
-    void setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp);
+    void setUniform(const std::string& name, const Value& value);
 
   private:
     ProgramType _programType{prgGraphic};
@@ -200,7 +208,6 @@ class Shader final : public GraphObject
     /**
      * Register new functors to modify attributes
      */
-    void registerAttributes();
     void registerGraphicAttributes();
     void registerComputeAttributes();
     void registerFeedbackAttributes();

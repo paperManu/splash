@@ -113,7 +113,7 @@ class ShaderGfxImpl
      * \param name Uniform name
      * \param value Uniform value
      */
-    virtual void setUniform(const std::string& name, const Values& value) = 0;
+    virtual void setUniform(const std::string& name, const Value& value) = 0;
 
     /**
      * Reset the given shader type

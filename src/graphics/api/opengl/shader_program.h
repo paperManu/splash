@@ -143,7 +143,7 @@ class Program
      * \param value Uniform value
      * \return Return true if the uniform has been set successfully
      */
-    bool setUniform(const std::string& name, const Values& value);
+    bool setUniform(const std::string& name, const Value& value);
 
     /**
      * Set the given uniform

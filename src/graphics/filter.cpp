@@ -288,20 +288,16 @@ void Filter::updateUniforms()
             obj->getAttribute("duration", duration);
             obj->getAttribute("remaining", remainingTime);
             if (remainingTime.size() == 1)
-                shader->setAttribute("uniform", {"_filmRemaining", remainingTime[0].as<float>()});
+                shader->setUniform("_filmRemaining", remainingTime[0].as<float>());
             if (duration.size() == 1)
-                shader->setAttribute("uniform", {"_filmDuration", duration[0].as<float>()});
+                shader->setUniform("_filmDuration", duration[0].as<float>());
         }
     }
 
     // Update uniforms specific to the current filtering shader
-    for (auto& uniform : _filterUniforms)
+    for (const auto& [name, value] : _filterUniforms)
     {
-        Values param;
-        param.push_back(uniform.first);
-        for (auto& v : uniform.second)
-            param.push_back(v);
-        shader->setAttribute("uniform", param);
+        shader->setUniform(name, value);
     }
 }
 

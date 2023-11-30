@@ -460,7 +460,7 @@ void Program::updateUniforms()
 }
 
 /*************/
-bool Program::setUniform(const std::string& name, const Values& value)
+bool Program::setUniform(const std::string& name, const Value& value)
 {
     auto uniformIt = _uniforms.find(name);
     if (uniformIt == _uniforms.end())
@@ -469,7 +469,10 @@ bool Program::setUniform(const std::string& name, const Values& value)
     if (uniformIt->second.glIndex == -1)
         return false;
 
-    uniformIt->second.values = value;
+    if (value.getType() == Value::Type::values)
+        uniformIt->second.values = value.as<Values>();
+    else
+        uniformIt->second.values = {value};
     _uniformsToUpdate.emplace_back(name);
 
     updateUniforms();

@@ -83,7 +83,7 @@ void Object::activate()
         if (_vertexBlendingActive)
         {
             shaderParameters.push_back("VERTEXBLENDING");
-            _shader->setAttribute("uniform", {"_farthestVertex", _farthestVisibleVertexDistance});
+            _shader->setUniform("_farthestVertex", _farthestVisibleVertexDistance);
         }
 
         if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
@@ -113,8 +113,8 @@ void Object::activate()
 
     // Set some uniforms
     _shader->setAttribute("sideness", {_sideness});
-    _shader->setAttribute("uniform", {"_normalExp", _normalExponent});
-    _shader->setAttribute("uniform", {"_color", _color.r, _color.g, _color.b, _color.a});
+    _shader->setUniform("_normalExp", _normalExponent);
+    _shader->setUniform("_color", {_color.r, _color.g, _color.b, _color.a});
 
     if (_geometries.size() > 0)
     {
@@ -130,13 +130,10 @@ void Object::activate()
 
         // Get texture specific uniforms and send them to the shader
         auto texUniforms = t->getShaderUniforms();
-        for (auto u : texUniforms)
+        for (const auto& [name, value] : texUniforms)
         {
-            Values parameters;
-            parameters.push_back(Value(t->getPrefix() + std::to_string(texUnit) + "_" + u.first));
-            for (auto value : u.second)
-                parameters.push_back(value);
-            _shader->setAttribute("uniform", parameters);
+            const auto uniformName = t->getPrefix() + std::to_string(texUnit) + "_" + name;
+            _shader->setUniform(uniformName, value);
         }
 
         texUnit++;
@@ -387,8 +384,8 @@ void Object::resetVisibility(int primitiveIdShift)
             geom->update();
             geom->activateAsSharedBuffer();
             auto verticesNbr = geom->getVerticesNumber();
-            _computeShaderResetVisibility->setAttribute("uniform", {"_vertexNbr", verticesNbr});
-            _computeShaderResetVisibility->setAttribute("uniform", {"_primitiveIdShift", primitiveIdShift});
+            _computeShaderResetVisibility->setUniform("_vertexNbr", verticesNbr);
+            _computeShaderResetVisibility->setUniform("_primitiveIdShift", primitiveIdShift);
             if (!_computeShaderResetVisibility->doCompute(verticesNbr / 3 / 128 + 1))
                 Log::get() << Log::WARNING << "Object::" << __FUNCTION__ << " - Error while computing the visibility" << Log::endl;
             geom->deactivate();
@@ -414,7 +411,7 @@ void Object::resetBlendingAttribute()
             geom->update();
             geom->activateAsSharedBuffer();
             auto verticesNbr = geom->getVerticesNumber();
-            _computeShaderResetBlendingAttributes->setAttribute("uniform", {"_vertexNbr", verticesNbr});
+            _computeShaderResetBlendingAttributes->setUniform("_vertexNbr", verticesNbr);
             _computeShaderResetBlendingAttributes->doCompute(verticesNbr / 3 / 128 + 1);
             geom->deactivate();
         }
@@ -446,10 +443,10 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
 
     assert(_feedbackShaderSubdivideCamera != nullptr);
 
-    _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_blendWidth", blendWidth});
-    _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_blendPrecision", blendPrecision});
-    _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_sideness", _sideness});
-    _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_fov", fovX, fovY});
+    _feedbackShaderSubdivideCamera->setUniform("_blendWidth", blendWidth);
+    _feedbackShaderSubdivideCamera->setUniform("_blendPrecision", blendPrecision);
+    _feedbackShaderSubdivideCamera->setUniform("_sideness", _sideness);
+    _feedbackShaderSubdivideCamera->setUniform("_fov", {fovX, fovY});
 
     for (auto& geom : _geometries)
     {
@@ -460,19 +457,19 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
 
             auto mv = viewMatrix * computeModelMatrix();
             auto mvAsValues = Values(glm::value_ptr(mv), glm::value_ptr(mv) + 16);
-            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mv", mvAsValues});
+            _feedbackShaderSubdivideCamera->setUniform("_mv", mvAsValues);
 
             auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
             auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
-            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mvp", mvpAsValues});
+            _feedbackShaderSubdivideCamera->setUniform("_mvp", mvpAsValues);
 
             auto ip = glm::inverse(projectionMatrix);
             auto ipAsValues = Values(glm::value_ptr(ip), glm::value_ptr(ip) + 16);
-            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_ip", ipAsValues});
+            _feedbackShaderSubdivideCamera->setUniform("_ip", ipAsValues);
 
             auto mNormal = projectionMatrix * glm::transpose(glm::inverse(viewMatrix * computeModelMatrix()));
             auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
-            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mNormal", mNormalAsValues});
+            _feedbackShaderSubdivideCamera->setUniform("_mNormal", mNormalAsValues);
 
             geom->activateForFeedback();
             _feedbackShaderSubdivideCamera->activate();
@@ -502,8 +499,8 @@ void Object::transferVisibilityFromTexToAttr(int width, int height, int primitiv
 
     assert(_computeShaderTransferVisibilityToAttr != nullptr);
 
-    _computeShaderTransferVisibilityToAttr->setAttribute("uniform", {"_texSize", static_cast<float>(width), static_cast<float>(height)});
-    _computeShaderTransferVisibilityToAttr->setAttribute("uniform", {"_idShift", primitiveIdShift});
+    _computeShaderTransferVisibilityToAttr->setUniform("_texSize", {static_cast<float>(width), static_cast<float>(height)});
+    _computeShaderTransferVisibilityToAttr->setUniform("_idShift", primitiveIdShift);
 
     for (auto& geom : _geometries)
     {
@@ -527,8 +524,8 @@ void Object::computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 project
 
     assert(_computeShaderComputeBlending != nullptr);
 
-    _computeShaderComputeBlending->setAttribute("uniform", {"_sideness", _sideness});
-    _computeShaderComputeBlending->setAttribute("uniform", {"_blendWidth", blendWidth});
+    _computeShaderComputeBlending->setUniform("_sideness", _sideness);
+    _computeShaderComputeBlending->setUniform("_blendWidth", blendWidth);
 
     _farthestVisibleVertexDistance = 0.f;
 
@@ -539,19 +536,19 @@ void Object::computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 project
 
         // Set uniforms
         const auto verticesNbr = geom->getVerticesNumber();
-        _computeShaderComputeBlending->setAttribute("uniform", {"_vertexNbr", verticesNbr});
+        _computeShaderComputeBlending->setUniform("_vertexNbr", verticesNbr);
 
         const auto mv = viewMatrix * computeModelMatrix();
         const auto mvAsValues = Values(glm::value_ptr(mv), glm::value_ptr(mv) + 16);
-        _computeShaderComputeBlending->setAttribute("uniform", {"_mv", mvAsValues});
+        _computeShaderComputeBlending->setUniform("_mv", mvAsValues);
 
         const auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
         const auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
-        _computeShaderComputeBlending->setAttribute("uniform", {"_mvp", mvpAsValues});
+        _computeShaderComputeBlending->setUniform("_mvp", mvpAsValues);
 
         const auto mNormal = projectionMatrix * glm::transpose(glm::inverse(viewMatrix * computeModelMatrix()));
         const auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
-        _computeShaderComputeBlending->setAttribute("uniform", {"_mNormal", mNormalAsValues});
+        _computeShaderComputeBlending->setUniform("_mNormal", mNormalAsValues);
 
         _computeShaderComputeBlending->doCompute(verticesNbr / 3);
         geom->deactivate();

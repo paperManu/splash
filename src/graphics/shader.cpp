@@ -42,8 +42,6 @@ Shader::Shader(RootObject* root, ProgramType type)
         registerFeedbackAttributes();
         setAttribute("feedbackPhase", {"tessellateFromCamera"});
     }
-
-    registerAttributes();
 }
 
 /*************/
@@ -80,6 +78,14 @@ std::map<std::string, Values> Shader::getUniforms() const
 std::map<std::string, std::string> Shader::getUniformsDocumentation() const
 {
     return _gfxImpl->getUniformsDocumentation();
+}
+
+/*************/
+void Shader::setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
+{
+    auto graphicShader = dynamic_cast<gfx::GraphicShaderGfxImpl*>(_gfxImpl.get());
+    assert(graphicShader != nullptr);
+    graphicShader->setModelViewProjectionMatrix(mv, mp);
 }
 
 /*************/
@@ -135,11 +141,9 @@ void Shader::setTexture(const std::shared_ptr<Texture>& texture, const GLuint te
 }
 
 /*************/
-void Shader::setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
+void Shader::setUniform(const std::string& name, const Value& value)
 {
-    auto graphicShader = dynamic_cast<gfx::GraphicShaderGfxImpl*>(_gfxImpl.get());
-    assert(graphicShader != nullptr);
-    graphicShader->setModelViewProjectionMatrix(mv, mp);
+    _gfxImpl->setUniform(name, value);
 }
 
 /*************/
@@ -177,33 +181,6 @@ std::string Shader::parseIncludes(const std::string& src)
     }
 
     return finalSources;
-}
-
-/*************/
-void Shader::registerAttributes()
-{
-    addAttribute("uniform",
-        [&](const Values& args) {
-            if (args.size() < 2)
-                return false;
-
-            const std::string uniformName = args[0].as<std::string>();
-            Values uniformArgs;
-            if (args[1].getType() != Value::Type::values)
-            {
-                for (uint32_t i = 1; i < args.size(); ++i)
-                    uniformArgs.push_back(args[i]);
-            }
-            else
-            {
-                uniformArgs = args[1].as<Values>();
-            }
-
-            _gfxImpl->setUniform(uniformName, uniformArgs);
-            return true;
-        },
-        {});
-    setAttributeDescription("uniform", {"Set the shader uniform to the given value, if it exists. This has to be called while the shader is active"});
 }
 
 /*************/

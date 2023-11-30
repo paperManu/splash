@@ -333,11 +333,9 @@ void Window::render()
     {
         _gfxImpl->clearScreen(glm::vec4(0.0, 0.0, 0.0, 1.0), false);
 
-        auto layout = _layout;
-        layout.push_front("_layout");
         _screen->activate();
-        _screen->getShader()->setAttribute("uniform", layout);
-        _screen->getShader()->setAttribute("uniform", {"_gamma", static_cast<float>(_srgb), _gammaCorrection});
+        _screen->getShader()->setUniform("layout", _layout);
+        _screen->getShader()->setUniform("_gamma", {static_cast<float>(_srgb), _gammaCorrection});
         _screen->draw();
         _screen->deactivate();
     }

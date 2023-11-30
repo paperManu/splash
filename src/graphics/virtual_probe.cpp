@@ -148,8 +148,8 @@ void VirtualProbe::render()
 
     _screen->activate();
     auto screenShader = _screen->getShader();
-    screenShader->setAttribute("uniform", {"_projectionType", static_cast<int>(_projectionType)});
-    screenShader->setAttribute("uniform", {"_sphericalFov", _sphericalFov});
+    screenShader->setUniform("_projectionType", static_cast<int>(_projectionType));
+    screenShader->setUniform("_sphericalFov", _sphericalFov);
     _screen->draw();
     _screen->deactivate();
 

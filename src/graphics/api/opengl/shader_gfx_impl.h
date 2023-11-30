@@ -86,7 +86,7 @@ class ShaderGfxImpl : virtual public gfx::ShaderGfxImpl
      * \param name Uniform name
      * \param value Uniform value
      */
-    virtual void setUniform(const std::string& name, const Values& value) override { _program->setUniform(name, value); }
+    virtual void setUniform(const std::string& name, const Value& value) override { _program->setUniform(name, value); }
 
     /**
      * Reset the given shader type
