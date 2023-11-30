@@ -78,6 +78,14 @@ class Shader final : public GraphObject
         window
     };
 
+    enum class ComputePhase : uint8_t
+    {
+        ResetVisibility,
+        ResetBlending,
+        ComputeCameraContribution,
+        TransferVisibilityToAttribute
+    };
+
     /**
      * Constructor
      * \param type Shader type
@@ -138,6 +146,12 @@ class Shader final : public GraphObject
      * \return Return a map of uniforms and their documentation
      */
     std::map<std::string, std::string> getUniformsDocumentation() const;
+
+    /**
+     * Select the compute phase to activate, with some arguments
+     * \param phase Compute phase to select
+     */
+    void selectComputePhase(ComputePhase phase);
 
     /**
      * Set the model view and projection matrices
@@ -209,7 +223,6 @@ class Shader final : public GraphObject
      * Register new functors to modify attributes
      */
     void registerGraphicAttributes();
-    void registerComputeAttributes();
     void registerFeedbackAttributes();
 };
 

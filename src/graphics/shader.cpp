@@ -33,8 +33,7 @@ Shader::Shader(RootObject* root, ProgramType type)
     else if (type == prgCompute)
     {
         _gfxImpl = _renderer->createComputeShader();
-        registerComputeAttributes();
-        setAttribute("computePhase", {"resetVisibility"});
+        selectComputePhase(ComputePhase::ResetVisibility);
     }
     else if (type == prgFeedback)
     {
@@ -78,6 +77,31 @@ std::map<std::string, Values> Shader::getUniforms() const
 std::map<std::string, std::string> Shader::getUniformsDocumentation() const
 {
     return _gfxImpl->getUniformsDocumentation();
+}
+
+/*************/
+void Shader::selectComputePhase(ComputePhase phase)
+{
+    std::string options = ShaderSources.VERSION_DIRECTIVE_GL32_ES;
+
+    switch (phase)
+    {
+    default:
+        assert(false);
+        break;
+    case ComputePhase::ResetVisibility:
+        setSource(gfx::ShaderType::compute, options + ShaderSources.COMPUTE_SHADER_RESET_VISIBILITY);
+        break;
+    case ComputePhase::ResetBlending:
+        setSource(gfx::ShaderType::compute, options + ShaderSources.COMPUTE_SHADER_RESET_BLENDING);
+        break;
+    case ComputePhase::ComputeCameraContribution:
+        setSource(gfx::ShaderType::compute, options + ShaderSources.COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION);
+        break;
+    case ComputePhase::TransferVisibilityToAttribute:
+        setSource(gfx::ShaderType::compute, options + ShaderSources.COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR);
+        break;
+    }
 }
 
 /*************/
@@ -353,46 +377,6 @@ void Shader::registerGraphicAttributes()
         [&]() -> Values { return {(int)_sideness}; },
         {'i'});
     setAttributeDescription("sideness", "If set to 0 or 1, the object is single-sided (back or front-sided). If set to 2, it is double-sided");
-}
-
-/*************/
-void Shader::registerComputeAttributes()
-{
-    addAttribute("computePhase",
-        [&](const Values& args) {
-            assert(dynamic_cast<gfx::ComputeShaderGfxImpl*>(_gfxImpl.get()) != nullptr);
-            if (args.size() < 1)
-                return false;
-
-            // Get additionnal shading options
-            std::string options = ShaderSources.VERSION_DIRECTIVE_GL32_ES;
-            for (uint32_t i = 1; i < args.size(); ++i)
-                options += "#define " + args[i].as<std::string>() + "\n";
-
-            if ("resetVisibility" == args[0].as<std::string>())
-            {
-                _currentProgramName = args[0].as<std::string>();
-                setSource(gfx::ShaderType::compute, options + ShaderSources.COMPUTE_SHADER_RESET_VISIBILITY);
-            }
-            else if ("resetBlending" == args[0].as<std::string>())
-            {
-                _currentProgramName = args[0].as<std::string>();
-                setSource(gfx::ShaderType::compute, options + ShaderSources.COMPUTE_SHADER_RESET_BLENDING);
-            }
-            else if ("computeCameraContribution" == args[0].as<std::string>())
-            {
-                _currentProgramName = args[0].as<std::string>();
-                setSource(gfx::ShaderType::compute, options + ShaderSources.COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION);
-            }
-            else if ("transferVisibilityToAttr" == args[0].as<std::string>())
-            {
-                _currentProgramName = args[0].as<std::string>();
-                setSource(gfx::ShaderType::compute, options + ShaderSources.COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR);
-            }
-
-            return true;
-        },
-        {});
 }
 
 /*************/

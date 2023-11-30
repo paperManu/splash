@@ -374,7 +374,7 @@ void Object::resetVisibility(int primitiveIdShift)
     if (!_computeShaderResetVisibility)
     {
         _computeShaderResetVisibility = std::make_shared<Shader>(_root, Shader::prgCompute);
-        _computeShaderResetVisibility->setAttribute("computePhase", {"resetVisibility"});
+        _computeShaderResetVisibility->selectComputePhase(Shader::ComputePhase::ResetVisibility);
     }
 
     if (_computeShaderResetVisibility)
@@ -401,7 +401,7 @@ void Object::resetBlendingAttribute()
     if (!_computeShaderResetBlendingAttributes)
     {
         _computeShaderResetBlendingAttributes = std::make_shared<Shader>(_root, Shader::prgCompute);
-        _computeShaderResetBlendingAttributes->setAttribute("computePhase", {"resetBlending"});
+        _computeShaderResetBlendingAttributes->selectComputePhase(Shader::ComputePhase::ResetBlending);
     }
 
     if (_computeShaderResetBlendingAttributes)
@@ -494,7 +494,7 @@ void Object::transferVisibilityFromTexToAttr(int width, int height, int primitiv
     if (!_computeShaderTransferVisibilityToAttr)
     {
         _computeShaderTransferVisibilityToAttr = std::make_shared<Shader>(_root, Shader::prgCompute);
-        _computeShaderTransferVisibilityToAttr->setAttribute("computePhase", {"transferVisibilityToAttr"});
+        _computeShaderTransferVisibilityToAttr->selectComputePhase(Shader::ComputePhase::TransferVisibilityToAttribute);
     }
 
     assert(_computeShaderTransferVisibilityToAttr != nullptr);
@@ -519,7 +519,7 @@ void Object::computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 project
     if (!_computeShaderComputeBlending)
     {
         _computeShaderComputeBlending = std::make_shared<Shader>(_root, Shader::prgCompute);
-        _computeShaderComputeBlending->setAttribute("computePhase", {"computeCameraContribution"});
+        _computeShaderComputeBlending->selectComputePhase(Shader::ComputePhase::ComputeCameraContribution);
     }
 
     assert(_computeShaderComputeBlending != nullptr);
