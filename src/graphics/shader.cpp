@@ -11,6 +11,7 @@
 #include "./graphics/api/compute_shader.h"
 #include "./graphics/api/feedback_shader.h"
 #include "./graphics/api/graphic_shader.h"
+#include "./graphics/programSources.h"
 #include "./graphics/shaderSources.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
@@ -28,7 +29,7 @@ Shader::Shader(RootObject* root, ProgramType type)
     {
         _gfxImpl = _renderer->createGraphicShader();
         registerGraphicAttributes();
-        setAttribute("fill", {"texture"});
+        selectFillMode("texture");
     }
     else if (type == prgCompute)
     {
@@ -83,7 +84,7 @@ std::map<std::string, std::string> Shader::getUniformsDocumentation() const
 /*************/
 void Shader::selectComputePhase(ComputePhase phase)
 {
-    std::string options = ShaderSources.VERSION_DIRECTIVE_GL32_ES;
+    std::string options = ShaderSources::VERSION_DIRECTIVE_GL32_ES;
 
     switch (phase)
     {
@@ -91,16 +92,16 @@ void Shader::selectComputePhase(ComputePhase phase)
         assert(false);
         break;
     case ComputePhase::ResetVisibility:
-        setSource(gfx::ShaderType::compute, options + ShaderSources.COMPUTE_SHADER_RESET_VISIBILITY);
+        setSource(gfx::ShaderType::compute, options + ShaderSources::COMPUTE_SHADER_RESET_VISIBILITY);
         break;
     case ComputePhase::ResetBlending:
-        setSource(gfx::ShaderType::compute, options + ShaderSources.COMPUTE_SHADER_RESET_BLENDING);
+        setSource(gfx::ShaderType::compute, options + ShaderSources::COMPUTE_SHADER_RESET_BLENDING);
         break;
     case ComputePhase::ComputeCameraContribution:
-        setSource(gfx::ShaderType::compute, options + ShaderSources.COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION);
+        setSource(gfx::ShaderType::compute, options + ShaderSources::COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION);
         break;
     case ComputePhase::TransferVisibilityToAttribute:
-        setSource(gfx::ShaderType::compute, options + ShaderSources.COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR);
+        setSource(gfx::ShaderType::compute, options + ShaderSources::COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR);
         break;
     }
 }
@@ -111,7 +112,7 @@ void Shader::selectFeedbackPhase(FeedbackPhase phase, const std::vector<std::str
     auto feedbackShader = dynamic_cast<gfx::FeedbackShaderGfxImpl*>(_gfxImpl.get());
     assert(feedbackShader != nullptr);
 
-    std::string options = ShaderSources.VERSION_DIRECTIVE_GL32_ES;
+    std::string options = ShaderSources::VERSION_DIRECTIVE_GL32_ES;
 
     switch (phase)
     {
@@ -119,11 +120,11 @@ void Shader::selectFeedbackPhase(FeedbackPhase phase, const std::vector<std::str
         assert(false);
         break;
     case FeedbackPhase::TessellateFromCamera:
-        setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
-        setSource(gfx::ShaderType::tess_ctrl, options + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
-        setSource(gfx::ShaderType::tess_eval, options + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
-        setSource(gfx::ShaderType::geometry, options + ShaderSources.GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
-        setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_EMPTY);
+        setSource(gfx::ShaderType::vertex, options + ShaderSources::VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
+        setSource(gfx::ShaderType::tess_ctrl, options + ShaderSources::TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
+        setSource(gfx::ShaderType::tess_eval, options + ShaderSources::TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
+        setSource(gfx::ShaderType::geometry, options + ShaderSources::GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
+        setSource(gfx::ShaderType::fragment, options + ShaderSources::FRAGMENT_SHADER_EMPTY);
         break;
     }
 
@@ -154,7 +155,7 @@ bool Shader::setSource(const std::map<gfx::ShaderType, std::string>& sources)
 
     bool status = true;
     if (sources.find(gfx::ShaderType::vertex) == sources.end())
-        status &= setSource(gfx::ShaderType::vertex, ShaderSources.VERSION_DIRECTIVE_GL32_ES + ShaderSources.VERTEX_SHADER_DEFAULT);
+        status &= setSource(gfx::ShaderType::vertex, ShaderSources::VERSION_DIRECTIVE_GL32_ES + ShaderSources::VERTEX_SHADER_DEFAULT);
     for (const auto& [shaderType, source] : sources)
         status &= setSource(shaderType, source);
 
@@ -214,8 +215,8 @@ std::string Shader::parseIncludes(const std::string& src)
         if ((position = line.find("#include")) != std::string::npos)
         {
             std::string includeName = line.substr(position + 9, std::string::npos);
-            auto includeIt = ShaderSources.INCLUDES.find(includeName);
-            if (includeIt == ShaderSources.INCLUDES.end())
+            auto includeIt = ShaderSources::INCLUDES.find(includeName);
+            if (includeIt == ShaderSources::INCLUDES.end())
             {
                 Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Could not find included shader named " << includeName << Log::endl;
             }
@@ -234,175 +235,61 @@ std::string Shader::parseIncludes(const std::string& src)
 }
 
 /*************/
-void Shader::registerGraphicAttributes()
+void Shader::selectFillMode(std::string_view mode, const std::vector<std::string>& parameters)
 {
-    addAttribute(
-        "fill",
-        [&](const Values& args) {
-            assert(dynamic_cast<gfx::GraphicShaderGfxImpl*>(_gfxImpl.get()) != nullptr);
-            // Get additionnal shading options
-            std::string options = ShaderSources.VERSION_DIRECTIVE_GL32_ES;
-            for (uint32_t i = 1; i < args.size(); ++i)
-                options += "#define " + args[i].as<std::string>() + "\n";
+    std::string options = ShaderSources::VERSION_DIRECTIVE_GL32_ES;
+    for (const auto& param : parameters)
+        options.append("#define ").append(param).append("\n");
 
-            if (args[0].as<std::string>() == "texture" && (_fill != texture || _shaderOptions != options))
-            {
-                _currentProgramName = args[0].as<std::string>();
-                _fill = texture;
-                _shaderOptions = options;
-                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_TEXTURE);
-                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
-                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_TEXTURE);
-            }
-            else if (args[0].as<std::string>() == "object_cubemap" && (_fill != object_cubemap || _shaderOptions != options))
-            {
-                _currentProgramName = args[0].as<std::string>();
-                _fill = object_cubemap;
-                _shaderOptions = options;
-                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_OBJECT_CUBEMAP);
-                setSource(gfx::ShaderType::geometry, options + ShaderSources.GEOMETRY_SHADER_OBJECT_CUBEMAP);
-                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_OBJECT_CUBEMAP);
-            }
-            else if (args[0].as<std::string>() == "cubemap_projection" && (_fill != cubemap_projection || _shaderOptions != options))
-            {
-                _currentProgramName = args[0].as<std::string>();
-                _fill = object_cubemap;
-                _shaderOptions = options;
-                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_CUBEMAP_PROJECTION);
-                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
-                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_CUBEMAP_PROJECTION);
-            }
-            else if (args[0].as<std::string>() == "image_filter" && (_fill != image_filter || _shaderOptions != options))
-            {
-                _currentProgramName = args[0].as<std::string>();
-                _fill = image_filter;
-                _shaderOptions = options;
-                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_FILTER);
-                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
-                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_IMAGE_FILTER);
-            }
-            else if (args[0].as<std::string>() == "blacklevel_filter" && (_fill != blacklevel_filter || _shaderOptions != options))
-            {
-                _currentProgramName = args[0].as<std::string>();
-                _fill = blacklevel_filter;
-                _shaderOptions = options;
-                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_FILTER);
-                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
-                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_BLACKLEVEL_FILTER);
-            }
-            else if (args[0].as<std::string>() == "color_curves_filter" && (_fill != color_curves_filter || _shaderOptions != options))
-            {
-                _currentProgramName = args[0].as<std::string>();
-                _fill = color_curves_filter;
-                _shaderOptions = options;
-                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_FILTER);
-                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
-                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_COLOR_CURVES_FILTER);
-            }
-            else if (args[0].as<std::string>() == "color" && (_fill != color || _shaderOptions != options))
-            {
-                _currentProgramName = args[0].as<std::string>();
-                _fill = color;
-                _shaderOptions = options;
-                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_MODELVIEW);
-                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
-                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_COLOR);
-            }
-            else if (args[0].as<std::string>() == "primitiveId" && (_fill != primitiveId || _shaderOptions != options))
-            {
-                _currentProgramName = args[0].as<std::string>();
-                _fill = primitiveId;
-                _shaderOptions = options;
-                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_MODELVIEW);
-                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
-                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_PRIMITIVEID);
-            }
-            else if (args[0].as<std::string>() == "userDefined" && (_fill != userDefined || _shaderOptions != options))
-            {
-                _currentProgramName = args[0].as<std::string>();
-                _fill = userDefined;
-                _shaderOptions = options;
-                if (_shadersSource.find(static_cast<int>(gfx::ShaderType::vertex)) == _shadersSource.end())
-                    setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_DEFAULT);
-                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
-                if (_shadersSource.find(static_cast<int>(gfx::ShaderType::fragment)) == _shadersSource.end())
-                    setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_DEFAULT_FILTER);
-            }
-            else if (args[0].as<std::string>() == "uv" && (_fill != uv || _shaderOptions != options))
-            {
-                _currentProgramName = args[0].as<std::string>();
-                _fill = uv;
-                _shaderOptions = options;
-                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_MODELVIEW);
-                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
-                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_UV);
-            }
-            else if (args[0].as<std::string>() == "warp" && (_fill != warp || _shaderOptions != options))
-            {
-                _currentProgramName = args[0].as<std::string>();
-                _fill = warp;
-                _shaderOptions = options;
-                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_WARP);
-                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
-                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_WARP);
-            }
-            else if (args[0].as<std::string>() == "warpControl" && (_fill != warpControl || _shaderOptions != options))
-            {
-                _currentProgramName = args[0].as<std::string>();
-                _fill = warpControl;
-                _shaderOptions = options;
-                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_WARP_WIREFRAME);
-                setSource(gfx::ShaderType::geometry, options + ShaderSources.GEOMETRY_SHADER_WARP_WIREFRAME);
-                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_WARP_WIREFRAME);
-            }
-            else if (args[0].as<std::string>() == "wireframe" && (_fill != wireframe || _shaderOptions != options))
-            {
-                _currentProgramName = args[0].as<std::string>();
-                _fill = wireframe;
-                _shaderOptions = options;
-                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_WIREFRAME);
-                setSource(gfx::ShaderType::geometry, options + ShaderSources.GEOMETRY_SHADER_WIREFRAME);
-                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_WIREFRAME);
-            }
-            else if (args[0].as<std::string>() == "window" && (_fill != window || _shaderOptions != options))
-            {
-                _currentProgramName = args[0].as<std::string>();
-                _fill = window;
-                _shaderOptions = options;
-                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_WINDOW);
-                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
-                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_WINDOW);
-            }
-            return true;
-        },
-        [&]() -> Values {
-            std::string fill;
-            if (_fill == texture)
-                fill = "texture";
-            else if (_fill == object_cubemap)
-                fill = "object_cubemap";
-            else if (_fill == color)
-                fill = "color";
-            else if (_fill == uv)
-                fill = "uv";
-            else if (_fill == wireframe)
-                fill = "wireframe";
-            else if (_fill == window)
-                fill = "window";
-            return {fill};
-        },
-        {'s'});
-    setAttributeDescription("fill", "Set the filling mode");
+    const auto& programSources = Splash::ProgramSources::Sources;
 
-    addAttribute(
-        "sideness",
-        [&](const Values& args) {
-            _sideness = (Shader::Sideness)args[0].as<int>();
-            return true;
-        },
-        [&]() -> Values { return {(int)_sideness}; },
-        {'i'});
-    setAttributeDescription("sideness", "If set to 0 or 1, the object is single-sided (back or front-sided). If set to 2, it is double-sided");
+    if (_currentProgramName == mode && _shaderOptions == options)
+        return;
+
+    _currentProgramName = mode;
+    _shaderOptions = options;
+
+    if (_currentProgramName == "userDefined")
+    {
+        _gfxImpl->removeShaderType(gfx::ShaderType::tess_eval);
+        _gfxImpl->removeShaderType(gfx::ShaderType::tess_ctrl);
+        _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
+        _gfxImpl->removeShaderType(gfx::ShaderType::compute);
+
+        if (_currentSources.find(static_cast<int>(gfx::ShaderType::vertex)) == _currentSources.end())
+            setSource(gfx::ShaderType::vertex, options.append(ShaderSources::VERTEX_SHADER_DEFAULT));
+        if (_currentSources.find(static_cast<int>(gfx::ShaderType::fragment)) == _currentSources.end())
+            setSource(gfx::ShaderType::fragment, options.append(ShaderSources::FRAGMENT_SHADER_DEFAULT_FILTER));
+
+        return;
+    }
+
+    if (const auto& programSourceIt = programSources.find(_currentProgramName); programSourceIt != programSources.end())
+    {
+        const auto& programSource = programSourceIt->second;
+
+        const auto applyShader = [&](gfx::ShaderType type) {
+            const auto source = programSource[type];
+            if (source.empty())
+                _gfxImpl->removeShaderType(type);
+            else
+                setSource(type, options + std::string(source));
+        };
+
+        applyShader(gfx::ShaderType::vertex);
+        applyShader(gfx::ShaderType::tess_ctrl);
+        applyShader(gfx::ShaderType::tess_eval);
+        applyShader(gfx::ShaderType::geometry);
+        applyShader(gfx::ShaderType::fragment);
+        applyShader(gfx::ShaderType::compute);
+
+        return;
+    }
+
+    Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Unknown fill mode " << mode << Log::endl;
 }
+
+/*************/
+void Shader::registerGraphicAttributes() {}
 
 } // namespace Splash

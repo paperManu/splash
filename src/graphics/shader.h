@@ -45,6 +45,9 @@ namespace Splash
 class Shader final : public GraphObject
 {
   public:
+    /*
+     * Enum for shader program types
+     */
     enum ProgramType
     {
         prgGraphic = 0,
@@ -59,25 +62,9 @@ class Shader final : public GraphObject
         inverted
     };
 
-    enum Fill
-    {
-        texture = 0,
-        texture_rect,
-        object_cubemap,
-        cubemap_projection,
-        color,
-        image_filter,
-        blacklevel_filter,
-        color_curves_filter,
-        primitiveId,
-        uv,
-        userDefined,
-        warp,
-        warpControl,
-        wireframe,
-        window
-    };
-
+    /**
+     * Enum for shader compute phases
+     */
     enum class ComputePhase : uint8_t
     {
         ResetVisibility,
@@ -86,11 +73,15 @@ class Shader final : public GraphObject
         TransferVisibilityToAttribute
     };
 
+    /**
+     * Enum for shader feedback phases
+     */
     enum class FeedbackPhase : uint8_t
     {
         TessellateFromCamera
     };
 
+  public:
     /**
      * Constructor
      * \param type Shader type
@@ -166,6 +157,13 @@ class Shader final : public GraphObject
     void selectFeedbackPhase(FeedbackPhase phase, const std::vector<std::string>& varyings = {});
 
     /**
+     * Select the fill mode for graphic shaders
+     * \param mode Fill mode
+     * \param parameters Fill parameters
+     */
+    void selectFillMode(std::string_view mode, const std::vector<std::string>& parameters = {});
+
+    /**
      * Set the model view and projection matrices
      * \param mv View matrix
      * \param mp Projection matrix
@@ -215,12 +213,11 @@ class Shader final : public GraphObject
     ProgramType _programType{prgGraphic};
     std::unique_ptr<gfx::ShaderGfxImpl> _gfxImpl;
 
-    std::unordered_map<int, std::string> _shadersSource;
+    std::unordered_map<int, std::string> _currentSources;
     std::vector<std::shared_ptr<Texture>> _textures; // Currently used textures
     std::string _currentProgramName{};
 
     // Rendering parameters
-    Fill _fill{texture};
     std::string _shaderOptions{""};
     Sideness _sideness{doubleSided};
 

@@ -70,7 +70,7 @@ void Object::activate()
     }
 
     // Set the shader depending on a few other parameters
-    Values shaderParameters{};
+    std::vector<std::string> shaderParameters{};
     for (uint32_t i = 0; i < _textures.size(); ++i)
         shaderParameters.push_back("TEX_" + std::to_string(i + 1));
     shaderParameters.push_back("TEXCOUNT " + std::to_string(_textures.size()));
@@ -89,26 +89,22 @@ void Object::activate()
         if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
             shaderParameters.push_back("TEXTURE_RECT");
 
-        shaderParameters.push_front("texture");
-        _shader->setAttribute("fill", shaderParameters);
+        _shader->selectFillMode("texture", shaderParameters);
     }
     else if (_fill == "filter")
     {
         if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
             shaderParameters.push_back("TEXTURE_RECT");
 
-        shaderParameters.push_front("filter");
-        _shader->setAttribute("fill", shaderParameters);
+        _shader->selectFillMode("filter", shaderParameters);
     }
     else if (_fill == "window")
     {
-        shaderParameters.push_front("window");
-        _shader->setAttribute("fill", shaderParameters);
+        _shader->selectFillMode("window", shaderParameters);
     }
     else
     {
-        shaderParameters.push_front(_fill);
-        _shader->setAttribute("fill", shaderParameters);
+        _shader->selectFillMode(_fill, shaderParameters);
     }
 
     // Set some uniforms

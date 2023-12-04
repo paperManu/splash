@@ -30,10 +30,7 @@
 
 #include "./core/constants.h"
 
-namespace Splash
-{
-
-struct ShaderSources
+namespace Splash::ShaderSources
 {
     const std::map<std::string, std::string> INCLUDES{//
         // Color encoding IDs, must match the IDs defined in
@@ -2001,8 +1998,6 @@ struct ShaderSources
     )"};
 
     const std::string FRAGMENT_SHADER_EMPTY = "void main() {}";
-
-} ShaderSources;
 
 } // namespace Splash
 
