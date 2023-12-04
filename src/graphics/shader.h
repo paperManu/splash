@@ -37,12 +37,13 @@
 #include "./core/attribute.h"
 #include "./core/graph_object.h"
 #include "./graphics/api/opengl/shader_gfx_impl.h"
+#include "./graphics/api/renderer.h"
 #include "./graphics/texture.h"
 
 namespace Splash
 {
 
-class Shader final : public GraphObject
+class Shader
 {
   public:
     /*
@@ -89,12 +90,12 @@ class Shader final : public GraphObject
      * Constructor
      * \param type Shader type
      */
-    explicit Shader(RootObject* root, ProgramType type = prgGraphic);
+    explicit Shader(gfx::Renderer* renderer, ProgramType type = prgGraphic);
 
     /**
      * Destructor
      */
-    ~Shader() override final = default;
+    ~Shader() = default;
 
     /**
      * Constructors/operators
@@ -213,6 +214,7 @@ class Shader final : public GraphObject
     void setUniform(const std::string& name, const Value& value);
 
   private:
+    gfx::Renderer* _renderer;
     std::unique_ptr<gfx::ShaderGfxImpl> _gfxImpl;
 
     std::unordered_map<int, std::string> _currentSources;
@@ -228,11 +230,6 @@ class Shader final : public GraphObject
      * \return Return the source with includes parsed
      */
     std::string parseIncludes(const std::string& src);
-
-    /**
-     * Register new functors to modify attributes
-     */
-    void registerGraphicAttributes();
 };
 
 } // namespace Splash

@@ -20,15 +20,12 @@ namespace Splash
 {
 
 /*************/
-Shader::Shader(RootObject* root, ProgramType type)
-    : GraphObject(root)
+Shader::Shader(gfx::Renderer* renderer, ProgramType type)
+    : _renderer(renderer)
 {
-    _type = "shader";
-
     if (type == prgGraphic)
     {
         _gfxImpl = _renderer->createGraphicShader();
-        registerGraphicAttributes();
         selectFillMode("texture");
     }
     else if (type == prgCompute)
@@ -41,8 +38,6 @@ Shader::Shader(RootObject* root, ProgramType type)
         _gfxImpl = _renderer->createFeedbackShader();
         selectFeedbackPhase(FeedbackPhase::TessellateFromCamera);
     }
-
-    GraphObject::registerAttributes();
 }
 
 /*************/
@@ -300,8 +295,5 @@ void Shader::selectFillMode(std::string_view mode, const std::vector<std::string
 
     Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Unknown fill mode " << mode << Log::endl;
 }
-
-/*************/
-void Shader::registerGraphicAttributes() {}
 
 } // namespace Splash

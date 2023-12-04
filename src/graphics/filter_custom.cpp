@@ -16,7 +16,7 @@ FilterCustom::FilterCustom(RootObject* root)
 /*************/
 bool FilterCustom::setFilterSource(const std::string& source)
 {
-    auto shader = std::make_shared<Shader>(_root);
+    auto shader = std::make_shared<Shader>(_renderer);
     // Save the value for all existing uniforms
     auto uniformValues = _filterUniforms;
 
