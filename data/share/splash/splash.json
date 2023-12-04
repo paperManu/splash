@@ -136,7 +136,7 @@
                "rotation" : [ 0, 0, 0 ],
                "savable" : [ true ],
                "scale" : [ 1, 1, 1 ],
-               "sideness" : [ 0 ],
+               "culling" : [ 0 ],
                "timestamp" : [ 1853296687 ],
                "type" : "object"
             },
@@ -228,7 +228,7 @@
          "swapInterval" : [ 1 ]
       }
    },
-   "version" : "0.8.49",
+   "version" : "0.10.1",
    "world" : {
       "clock" : [ 1884832083 ],
       "clockDeviceName" : [ "" ],

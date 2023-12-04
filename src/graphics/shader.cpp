@@ -132,6 +132,18 @@ void Shader::selectFeedbackPhase(FeedbackPhase phase, const std::vector<std::str
 }
 
 /*************/
+void Shader::setCulling(const Culling culling)
+{
+    _gfxImpl->setCulling(static_cast<gfx::Culling>(culling));
+}
+
+/*************/
+Shader::Culling Shader::getCulling() const
+{
+    return static_cast<Shader::Culling>(_gfxImpl->getCulling());
+}
+
+/*************/
 void Shader::setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 {
     auto graphicShader = dynamic_cast<gfx::GraphicShaderGfxImpl*>(_gfxImpl.get());

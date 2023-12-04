@@ -55,7 +55,10 @@ class Shader final : public GraphObject
         prgFeedback
     };
 
-    enum Sideness
+    /*
+     * Enum for culling
+     */
+    enum Culling
     {
         doubleSided = 0,
         singleSided,
@@ -120,16 +123,16 @@ class Shader final : public GraphObject
     bool doCompute(GLuint numGroupsX = 1, GLuint numGroupsY = 1);
 
     /**
-     * Set the sideness of the object
-     * \param side Sideness
+     * Set the culling for the graphic shader
+     * \param side Culling
      */
-    void setSideness(const Sideness side);
+    void setCulling(const Culling side);
 
     /**
-     * Get the sideness of the object
-     * \return Return the sideness
+     * Get the culling of the graphic shader
+     * \return Return the culling
      */
-    Sideness getSideness() const { return _sideness; }
+    Culling getCulling() const;
 
     /**
      * Get the list of uniforms in the shader program
@@ -210,7 +213,6 @@ class Shader final : public GraphObject
     void setUniform(const std::string& name, const Value& value);
 
   private:
-    ProgramType _programType{prgGraphic};
     std::unique_ptr<gfx::ShaderGfxImpl> _gfxImpl;
 
     std::unordered_map<int, std::string> _currentSources;
@@ -219,7 +221,6 @@ class Shader final : public GraphObject
 
     // Rendering parameters
     std::string _shaderOptions{""};
-    Sideness _sideness{doubleSided};
 
     /**
      * Parses the shader to replace includes by the corresponding sources

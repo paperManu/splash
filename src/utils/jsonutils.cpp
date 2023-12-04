@@ -177,6 +177,28 @@ bool checkAndUpgradeConfiguration(Json::Value& configuration)
         configuration = newConfig;
     }
 
+    if ((versionMajor == 0 && versionMinor < 10) || (versionMajor == 0 && versionMinor == 10 && versionMaintainance < 1))
+    {
+        Json::Value newConfig = configuration;
+        for (auto& scene : newConfig["scenes"])
+        {
+            if (!scene.isMember("objects"))
+                continue;
+
+            for (auto& object : scene["objects"])
+            {
+                if (object["type"] != "object" && !object.isMember("sideness"))
+                    continue;
+
+                Json::Value jsValue = object["sideness"];
+                object["culling"] = object["sideness"];
+                object.removeMember("sideness");
+            }
+        }
+
+        configuration = newConfig;
+    }
+
     configuration["version"] = std::string(PACKAGE_VERSION);
 
     return true;

@@ -415,7 +415,7 @@ class SplashObjectNode(SplashBaseNode):
                            self.inputs['Color'].default_value[1],
                            self.inputs['Color'].default_value[2],
                            self.inputs['Color'].default_value[3]]
-        values['sideness'] = int(self.sp_cullingModeProperty)
+        values['culling'] = int(self.sp_cullingModeProperty)
 
         return values
 

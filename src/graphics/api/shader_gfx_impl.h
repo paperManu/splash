@@ -101,6 +101,18 @@ class ShaderGfxImpl
     virtual std::map<std::string, std::string> getUniformsDocumentation() const = 0;
 
     /**
+     * Set the culling mode for the rendered geometry
+     * \param mode Culling mode
+     */
+    inline void setCulling(Culling mode) { _culling = mode; }
+
+    /**
+     * Get the culling mode
+     * \return Return the culling mode
+     */
+    inline Culling getCulling() const { return _culling; }
+
+    /**
      * Set the source for the given shader stage type
      * \param type Shader stage type
      * \param source Shader source
@@ -123,6 +135,7 @@ class ShaderGfxImpl
 
   protected:
     bool _isActive{false};
+    Culling _culling;
 };
 
 } // namespace Splash::gfx

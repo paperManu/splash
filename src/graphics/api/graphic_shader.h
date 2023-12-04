@@ -62,18 +62,6 @@ class GraphicShaderGfxImpl : virtual public ShaderGfxImpl
     virtual void deactivate() override = 0;
 
     /**
-     * Set the culling mode for the rendered geometry
-     * \param mode Culling mode
-     */
-    inline void setCulling(Culling mode) { _culling = mode; }
-
-    /**
-     * Get the culling mode
-     * \return Return the culling mode
-     */
-    inline Culling getCulling() const { return _culling; }
-
-    /**
      * Set the model view and projection matrices
      * \param mv View matrix
      * \param mp Projection matrix
@@ -98,7 +86,6 @@ class GraphicShaderGfxImpl : virtual public ShaderGfxImpl
 
   protected:
     std::vector<Texture*> _textures;
-    Culling _culling;
 };
 
 } // namespace Splash::gfx

@@ -108,7 +108,7 @@ void Object::activate()
     }
 
     // Set some uniforms
-    _shader->setAttribute("sideness", {_sideness});
+    _shader->setCulling(_culling);
     _shader->setUniform("_normalExp", _normalExponent);
     _shader->setUniform("_color", {_color.r, _color.g, _color.b, _color.a});
 
@@ -441,7 +441,7 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
 
     _feedbackShaderSubdivideCamera->setUniform("_blendWidth", blendWidth);
     _feedbackShaderSubdivideCamera->setUniform("_blendPrecision", blendPrecision);
-    _feedbackShaderSubdivideCamera->setUniform("_sideness", _sideness);
+    _feedbackShaderSubdivideCamera->setCulling(_culling);
     _feedbackShaderSubdivideCamera->setUniform("_fov", {fovX, fovY});
 
     for (auto& geom : _geometries)
@@ -520,7 +520,7 @@ void Object::computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 project
 
     assert(_computeShaderComputeBlending != nullptr);
 
-    _computeShaderComputeBlending->setUniform("_sideness", _sideness);
+    _computeShaderComputeBlending->setCulling(_culling);
     _computeShaderComputeBlending->setUniform("_blendWidth", blendWidth);
 
     _farthestVisibleVertexDistance = 0.f;
@@ -660,14 +660,14 @@ void Object::registerAttributes()
     setAttributeDescription("scale", "Set the object scale");
 
     addAttribute(
-        "sideness",
+        "culling",
         [&](const Values& args) {
-            _sideness = args[0].as<int>();
+            _culling = static_cast<Shader::Culling>(args[0].as<int>());
             return true;
         },
-        [&]() -> Values { return {_sideness}; },
+        [&]() -> Values { return {_culling}; },
         {'i'});
-    setAttributeDescription("sideness", "Set the side culling for the object: 0 for double sided, 1 for front-face visible, 2 for back-face visible");
+    setAttributeDescription("culling", "Set the side culling for the object: 0 for double sided, 1 for front-face visible, 2 for back-face visible");
 
     addAttribute(
         "fill",

@@ -257,7 +257,7 @@ class Object : public GraphObject
 
     std::string _fill{"texture"};
     std::vector<std::string> _fillParameters{};
-    int _sideness{0};
+    Shader::Culling _culling{Shader::Culling::doubleSided};
     glm::dvec4 _color{0.0, 0.0, 0.0, 1.0};
     float _normalExponent{0.0};
 
