@@ -1,6 +1,33 @@
 Splash release notes
 ====================
 
+Splash 0.10.2 (2023-12-05)
+-------------------------
+Improvements:
+* Renamed attribute "sideness" to "culling" (potentially breaking change, configurations are upgraded automatically)
+* Added CI jobs to staging, removed some from develop
+* Updated release process, updated scripts and doc to reflect that change
+* Added support for initializer lists to Value
+* Isolated more OpenGL code into OpenGL and OpenGL ES specific classes
+* Shader does not derive from GraphObject anymore
+* Removed the need for Framebuffer to have a RootObject
+* Removed Image needing a RootObject
+* Simplified Renderer API
+* Optimized RootObject::updateTreeFromObjects
+* Added a sanitization flag to the CMake project
+
+Bugs fixed:
+* Brought back 16bits FBO
+* Brought back named framebuffers in OpenGL fbo implementation
+* Fixed Shader::getShaderInfoLog
+* Fixed splash --info, and added a CI test for it
+* Fixed GPU framerate not being measured anymore
+* Fixed GeometryGfxImpl::buffersTooSmall growing buffers too fast, and added doc
+* Fixed issues detected by static analysis
+
+Documentation:
+* Fixed documentation here and there
+
 Splash 0.10.0 (2023-11-12)
 -------------------------
 Improvements:
