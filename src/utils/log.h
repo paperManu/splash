@@ -33,6 +33,7 @@
 #include <iostream>
 #include <mutex>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -289,6 +290,13 @@ class Log
 
         _lockedThreadId = std::thread::id();
         _mutex.unlock();
+    }
+
+    template <typename... Ts>
+    void addToString(std::string& str, std::string_view t, Ts&... args) const
+    {
+        str += std::string(t);
+        addToString(str, args...);
     }
 
     template <typename T, typename... Ts>

@@ -204,7 +204,6 @@ class Object : public GraphObject
      * \param blendWidth Blending width
      * \param blendPrecision Blending precision
      */
-    // TODO: use the matrices specified with setViewProjectionMatrix
     void tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float fovX, float fovY, float blendWidth, float blendPrecision);
 
     /**

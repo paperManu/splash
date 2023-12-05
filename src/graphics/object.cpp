@@ -61,7 +61,7 @@ void Object::activate()
     auto shaderIt = _graphicsShaders.find(_fill);
     if (shaderIt == _graphicsShaders.end())
     {
-        _shader = std::make_shared<Shader>();
+        _shader = std::make_shared<Shader>(_root);
         _graphicsShaders[_fill] = _shader;
     }
     else
@@ -201,7 +201,6 @@ void Object::draw()
     if (_geometries.size() == 0)
         return;
 
-    _shader->updateUniforms();
     for (const auto& geometry : _geometries)
         geometry->draw();
 }
@@ -377,7 +376,7 @@ void Object::resetVisibility(int primitiveIdShift)
 
     if (!_computeShaderResetVisibility)
     {
-        _computeShaderResetVisibility = std::make_shared<Shader>(Shader::prgCompute);
+        _computeShaderResetVisibility = std::make_shared<Shader>(_root, Shader::prgCompute);
         _computeShaderResetVisibility->setAttribute("computePhase", {"resetVisibility"});
     }
 
@@ -390,7 +389,8 @@ void Object::resetVisibility(int primitiveIdShift)
             auto verticesNbr = geom->getVerticesNumber();
             _computeShaderResetVisibility->setAttribute("uniform", {"_vertexNbr", verticesNbr});
             _computeShaderResetVisibility->setAttribute("uniform", {"_primitiveIdShift", primitiveIdShift});
-            _computeShaderResetVisibility->doCompute(verticesNbr / 3 / 128 + 1);
+            if (!_computeShaderResetVisibility->doCompute(verticesNbr / 3 / 128 + 1))
+                Log::get() << Log::WARNING << "Object::" << __FUNCTION__ << " - Error while computing the visibility" << Log::endl;
             geom->deactivate();
         }
     }
@@ -403,7 +403,7 @@ void Object::resetBlendingAttribute()
 
     if (!_computeShaderResetBlendingAttributes)
     {
-        _computeShaderResetBlendingAttributes = std::make_shared<Shader>(Shader::prgCompute);
+        _computeShaderResetBlendingAttributes = std::make_shared<Shader>(_root, Shader::prgCompute);
         _computeShaderResetBlendingAttributes->setAttribute("computePhase", {"resetBlending"});
     }
 
@@ -439,7 +439,7 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
 
     if (!_feedbackShaderSubdivideCamera)
     {
-        _feedbackShaderSubdivideCamera = std::make_shared<Shader>(Shader::prgFeedback);
+        _feedbackShaderSubdivideCamera = std::make_shared<Shader>(_root, Shader::prgFeedback);
         _feedbackShaderSubdivideCamera->setAttribute("feedbackPhase", {"tessellateFromCamera"});
         _feedbackShaderSubdivideCamera->setAttribute("feedbackVaryings", {"GEOM_OUT.vertex", "GEOM_OUT.texCoord", "GEOM_OUT.normal", "GEOM_OUT.annexe"});
     }
@@ -496,7 +496,7 @@ void Object::transferVisibilityFromTexToAttr(int width, int height, int primitiv
 
     if (!_computeShaderTransferVisibilityToAttr)
     {
-        _computeShaderTransferVisibilityToAttr = std::make_shared<Shader>(Shader::prgCompute);
+        _computeShaderTransferVisibilityToAttr = std::make_shared<Shader>(_root, Shader::prgCompute);
         _computeShaderTransferVisibilityToAttr->setAttribute("computePhase", {"transferVisibilityToAttr"});
     }
 
@@ -521,7 +521,7 @@ void Object::computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 project
 
     if (!_computeShaderComputeBlending)
     {
-        _computeShaderComputeBlending = std::make_shared<Shader>(Shader::prgCompute);
+        _computeShaderComputeBlending = std::make_shared<Shader>(_root, Shader::prgCompute);
         _computeShaderComputeBlending->setAttribute("computePhase", {"computeCameraContribution"});
     }
 

@@ -1,5 +1,6 @@
 #include "./graphics/shader.h"
 
+#include <array>
 #include <fstream>
 #include <regex>
 
@@ -7,6 +8,9 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+#include "./graphics/api/compute_shader.h"
+#include "./graphics/api/feedback_shader.h"
+#include "./graphics/api/graphic_shader.h"
 #include "./graphics/shaderSources.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
@@ -15,42 +19,27 @@ namespace Splash
 {
 
 /*************/
-Shader::Shader(ProgramType type)
-    : GraphObject(nullptr)
+Shader::Shader(RootObject* root, ProgramType type)
+    : GraphObject(root)
 {
     _type = "shader";
 
     if (type == prgGraphic)
     {
-        _programType = prgGraphic;
-        _shaders[vertex] = glCreateShader(GL_VERTEX_SHADER);
-        _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
-        _shaders[fragment] = glCreateShader(GL_FRAGMENT_SHADER);
-
+        _gfxImpl = _renderer->createGraphicShader();
         registerGraphicAttributes();
-
         setAttribute("fill", {"texture"});
     }
     else if (type == prgCompute)
     {
-        _programType = prgCompute;
-        _shaders[compute] = glCreateShader(GL_COMPUTE_SHADER);
-
+        _gfxImpl = _renderer->createComputeShader();
         registerComputeAttributes();
-
         setAttribute("computePhase", {"resetVisibility"});
     }
     else if (type == prgFeedback)
     {
-        _programType = prgFeedback;
-        _shaders[vertex] = glCreateShader(GL_VERTEX_SHADER);
-        _shaders[tess_ctrl] = glCreateShader(GL_TESS_CONTROL_SHADER);
-        _shaders[tess_eval] = glCreateShader(GL_TESS_EVALUATION_SHADER);
-        _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
-        _shaders[fragment] = glCreateShader(GL_FRAGMENT_SHADER);
-
+        _gfxImpl = _renderer->createFeedbackShader();
         registerFeedbackAttributes();
-
         setAttribute("feedbackPhase", {"tessellateFromCamera"});
     }
 
@@ -58,176 +47,66 @@ Shader::Shader(ProgramType type)
 }
 
 /*************/
-Shader::~Shader()
-{
-    if (glIsProgram(_program))
-        glDeleteProgram(_program);
-    for (auto& shader : _shaders)
-        if (glIsShader(shader.second))
-            glDeleteShader(shader.second);
-
-#ifdef DEBUG
-    Log::get() << Log::DEBUGGING << "Shader::~Shader - Destructor" << Log::endl;
-#endif
-}
-
-/*************/
 void Shader::activate()
 {
-    if (_programType == prgGraphic)
-    {
-        if (!_isLinked)
-        {
-            if (!linkProgram())
-                return;
-        }
-
-        _activated = true;
-
-        for (auto& u : _uniforms)
-        {
-            if (u.second.type == "buffer")
-                glUniformBlockBinding(_program, u.second.glIndex, 1);
-        }
-
-        glUseProgram(_program);
-
-        if (_sideness == singleSided)
-        {
-            glEnable(GL_CULL_FACE);
-            glCullFace(GL_BACK);
-        }
-        else if (_sideness == inverted)
-        {
-            glEnable(GL_CULL_FACE);
-            glCullFace(GL_FRONT);
-        }
-    }
-    else if (_programType == prgFeedback)
-    {
-        if (!_isLinked)
-        {
-            if (!linkProgram())
-                return;
-        }
-
-        _activated = true;
-        glUseProgram(_program);
-        updateUniforms();
-        glEnable(GL_RASTERIZER_DISCARD);
-        glBeginTransformFeedback(GL_TRIANGLES);
-    }
+    _gfxImpl->activate();
 }
 
 /*************/
 void Shader::deactivate()
 {
-    if (_programType == prgGraphic)
-    {
-        if (_sideness != doubleSided)
-            glDisable(GL_CULL_FACE);
-
-#ifdef DEBUG
-        glUseProgram(0);
-#endif
-        _activated = false;
-        for (uint32_t i = 0; i < _textures.size(); ++i)
-            _textures[i]->unbind();
-        _textures.clear();
-    }
-    else if (_programType == prgFeedback)
-    {
-        glEndTransformFeedback();
-        glDisable(GL_RASTERIZER_DISCARD);
-
-        _activated = false;
-    }
+    _gfxImpl->deactivate();
 }
 
 /*************/
-void Shader::doCompute(GLuint numGroupsX, GLuint numGroupsY)
+bool Shader::doCompute(GLuint numGroupsX, GLuint numGroupsY)
 {
-    if (_programType != prgCompute)
-        return;
-
-    if (!_isLinked)
-    {
-        if (!linkProgram())
-            return;
-    }
-
-    _activated = true;
-    glUseProgram(_program);
-    updateUniforms();
-    glDispatchCompute(numGroupsX, numGroupsY, 1);
-    _activated = false;
+    auto computeShader = dynamic_cast<gfx::ComputeShaderGfxImpl*>(_gfxImpl.get());
+    assert(computeShader != nullptr);
+    return computeShader->compute(numGroupsX, numGroupsY);
 }
 
 /*************/
 std::map<std::string, Values> Shader::getUniforms() const
 {
+    const auto uniformValues = _gfxImpl->getUniformValues();
     std::map<std::string, Values> uniforms;
-    for (auto& u : _uniforms)
-        uniforms[u.first] = u.second.values;
+    for (const auto& [name, value] : uniformValues)
+        uniforms[std::string(name)] = value;
     return uniforms;
 }
 
 /*************/
-bool Shader::setSource(const std::string& src, const ShaderType type)
+std::map<std::string, std::string> Shader::getUniformsDocumentation() const
 {
-    const GLuint shader = glCreateShader(type);
-
-    if (glIsShader(_shaders[type]))
-        resetShader(type);
-
-    _shaders[type] = shader;
-
-    auto parsedSources = src;
-    parseIncludes(parsedSources);
-    const char* shaderSrc = parsedSources.c_str();
-    glShaderSource(shader, 1, &shaderSrc, nullptr);
-    glCompileShader(shader);
-
-    GLint status;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-    if (status)
-    {
-#ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(type) << " compiled successfully" << Log::endl;
-#endif
-    }
-    else
-    {
-        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling a shader of type " << stringFromShaderType(type) << Log::endl;
-        const auto log = getShaderInfoLog(shader);
-        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << log << Log::endl;
-    }
-
-    _shadersSource[type] = parsedSources;
-    _isLinked = false;
-    return status;
+    return _gfxImpl->getUniformsDocumentation();
 }
 
 /*************/
-bool Shader::setSource(const std::map<ShaderType, std::string>& sources)
+bool Shader::setSource(const gfx::ShaderType type, const std::string& src)
 {
-    resetShader(vertex);
-    resetShader(geometry);
-    resetShader(fragment);
-    _shadersSource.clear();
+    const auto parsedSources = parseIncludes(src);
+    return _gfxImpl->setSource(type, parsedSources);
+}
+
+/*************/
+bool Shader::setSource(const std::map<gfx::ShaderType, std::string>& sources)
+{
+    _gfxImpl->removeShaderType(gfx::ShaderType::vertex);
+    _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
+    _gfxImpl->removeShaderType(gfx::ShaderType::fragment);
 
     bool status = true;
-    if (sources.find(ShaderType::vertex) == sources.end())
-        status = setSource(ShaderSources.VERSION_DIRECTIVE_GL32_ES + ShaderSources.VERTEX_SHADER_DEFAULT, ShaderType::vertex);
-    for (auto& [shaderType, source] : sources)
-        status = status && setSource(source, shaderType);
+    if (sources.find(gfx::ShaderType::vertex) == sources.end())
+        status &= setSource(gfx::ShaderType::vertex, ShaderSources.VERSION_DIRECTIVE_GL32_ES + ShaderSources.VERTEX_SHADER_DEFAULT);
+    for (const auto& [shaderType, source] : sources)
+        status &= setSource(shaderType, source);
 
-    compileProgram();
     return status;
 }
 
 /*************/
-bool Shader::setSourceFromFile(const std::string& filename, const ShaderType type)
+bool Shader::setSourceFromFile(const gfx::ShaderType type, const std::string& filename)
 {
     std::ifstream in(filename, std::ios::in | std::ios::binary);
     if (in)
@@ -238,11 +117,11 @@ bool Shader::setSourceFromFile(const std::string& filename, const ShaderType typ
         in.seekg(0, std::ios::beg);
         in.read(&contents[0], contents.size());
         in.close();
-        return setSource(contents, type);
+        return setSource(type, contents);
     }
     else
     {
-        Log::get() << Log::WARNING << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
+        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
         return false;
     }
 }
@@ -250,120 +129,21 @@ bool Shader::setSourceFromFile(const std::string& filename, const ShaderType typ
 /*************/
 void Shader::setTexture(const std::shared_ptr<Texture>& texture, const GLuint textureUnit, const std::string& name)
 {
-    auto uniformIt = _uniforms.find(name);
-
-    if (uniformIt != _uniforms.end())
-    {
-        auto& uniform = uniformIt->second;
-        if (uniform.glIndex == -1)
-            return;
-
-        glActiveTexture(GL_TEXTURE0 + textureUnit);
-        texture->bind();
-
-        glUniform1i(uniform.glIndex, textureUnit);
-
-        _textures.push_back(texture);
-        if ((uniformIt = _uniforms.find("_textureNbr")) != _uniforms.end())
-            if (uniformIt->second.glIndex != -1)
-            {
-                uniformIt->second.values = {(int)_textures.size()};
-                _uniformsToUpdate.push_back("_textureNbr");
-            }
-    }
+    auto graphicShader = dynamic_cast<gfx::GraphicShaderGfxImpl*>(_gfxImpl.get());
+    assert(graphicShader != nullptr);
+    graphicShader->setTexture(texture.get(), textureUnit, name);
 }
 
 /*************/
 void Shader::setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 {
-    glm::mat4 floatMv = (glm::mat4)mv;
-    glm::mat4 floatMp = (glm::mat4)mp;
-    glm::mat4 floatMvp = (glm::mat4)(mp * mv);
-
-    auto uniformIt = _uniforms.find("_modelViewProjectionMatrix");
-    if (uniformIt != _uniforms.end())
-        if (uniformIt->second.glIndex != -1)
-            glUniformMatrix4fv(uniformIt->second.glIndex, 1, GL_FALSE, glm::value_ptr(floatMvp));
-
-    if ((uniformIt = _uniforms.find("_modelViewMatrix")) != _uniforms.end())
-        if (uniformIt->second.glIndex != -1)
-            glUniformMatrix4fv(uniformIt->second.glIndex, 1, GL_FALSE, glm::value_ptr(floatMv));
-
-    if ((uniformIt = _uniforms.find("_projectionMatrix")) != _uniforms.end())
-        if (uniformIt->second.glIndex != -1)
-            glUniformMatrix4fv(uniformIt->second.glIndex, 1, GL_FALSE, glm::value_ptr(floatMp));
-
-    if ((uniformIt = _uniforms.find("_normalMatrix")) != _uniforms.end())
-        if (uniformIt->second.glIndex != -1)
-            glUniformMatrix4fv(uniformIt->second.glIndex, 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(floatMv))));
+    auto graphicShader = dynamic_cast<gfx::GraphicShaderGfxImpl*>(_gfxImpl.get());
+    assert(graphicShader != nullptr);
+    graphicShader->setModelViewProjectionMatrix(mv, mp);
 }
 
 /*************/
-void Shader::compileProgram()
-{
-    GLint status;
-    if (glIsProgram(_program) == GL_TRUE)
-        glDeleteProgram(_program);
-
-    _program = glCreateProgram();
-    for (auto& [shader, shaderID] : _shaders)
-    {
-        if (glIsShader(shaderID))
-        {
-            glGetShaderiv(shaderID, GL_COMPILE_STATUS, &status);
-            if (status == GL_TRUE)
-            {
-                glAttachShader(_program, shaderID);
-#ifdef DEBUG
-                Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(shader) << " successfully attached to the program"
-                           << Log::endl;
-#endif
-            }
-            else
-            {
-                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling the " << stringFromShaderType(shader) << " shader in program "
-                           << _currentProgramName << Log::endl;
-                auto log = getShaderInfoLog(shaderID);
-                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << log << Log::endl;
-            }
-        }
-        else
-        {
-            Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - ID (" << shaderID << ") does not belong to a shader" << Log::endl;
-        }
-    }
-}
-
-/*************/
-bool Shader::linkProgram()
-{
-    GLint status;
-    glLinkProgram(_program);
-    glGetProgramiv(_program, GL_LINK_STATUS, &status);
-    if (status == GL_TRUE)
-    {
-#ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader program " << _currentProgramName << " linked successfully" << Log::endl;
-#endif
-
-        for (auto src : _shadersSource)
-            parseUniforms(src.second);
-
-        _isLinked = true;
-        return true;
-    }
-    else
-    {
-        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while linking the shader program " << _currentProgramName << Log::endl;
-        auto log = getProgramInfoLog(_program);
-        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << log << Log::endl;
-        _isLinked = false;
-        return false;
-    }
-}
-
-/*************/
-void Shader::parseIncludes(std::string& src)
+std::string Shader::parseIncludes(const std::string& src)
 {
     std::string finalSources = "";
 
@@ -396,363 +176,7 @@ void Shader::parseIncludes(std::string& src)
         }
     }
 
-    src = finalSources;
-}
-
-/*************/
-void Shader::parseUniforms(const std::string& src)
-{
-    std::istringstream input(src);
-    for (std::string line; getline(input, line);)
-    {
-        // Remove white spaces
-        while (line.substr(0, 1) == " ")
-            line = line.substr(1);
-        if (line.substr(0, 2) == "//")
-            continue;
-
-        std::string::size_type position;
-        if ((position = line.find("layout(std140) uniform")) != std::string::npos)
-        {
-            std::string next = line.substr(position + 23, std::string::npos);
-            std::string name = next.substr(0, next.find(" "));
-
-            _uniforms[name].type = "buffer";
-            _uniforms[name].glIndex = glGetUniformBlockIndex(_program, name.c_str());
-            glGenBuffers(1, &_uniforms[name].glBuffer);
-            _uniforms[name].glBufferReady = false;
-        }
-        else
-        {
-            if (line.find("uniform") == std::string::npos)
-                continue;
-
-            std::string type, name;
-            std::string documentation = "";
-            uint32_t elementSize = 1;
-            uint32_t arraySize = 1;
-
-            auto regType = std::regex("[ ]*uniform ([[:alpha:]]*([[:digit:]]?[D]?)) ([_[:alnum:]]*)[\\[]?([^] ;]*)[]]?[^/]*(.*)", std::regex_constants::extended);
-            std::smatch regMatch;
-            if (regex_match(line, regMatch, regType))
-            {
-                type = regMatch[1].str();
-                name = regMatch[3].str();
-                auto elementSizeStr = regMatch[2].str();
-                auto arraySizeStr = regMatch[4].str();
-                documentation = regMatch[5].str();
-
-                if (documentation.find("//") != std::string::npos)
-                    documentation = documentation.substr(documentation.find("//") + 2);
-                else
-                    documentation.clear();
-
-                try
-                {
-                    elementSize = std::stoi(elementSizeStr);
-                }
-                catch (...)
-                {
-                    elementSize = 1;
-                }
-
-                try
-                {
-                    arraySize = std::stoi(arraySizeStr);
-                }
-                catch (...)
-                {
-                    arraySize = 0;
-                }
-            }
-            else
-            {
-                continue;
-            }
-
-            const auto uniformIndex = glGetUniformLocation(_program, name.c_str());
-
-            if (uniformIndex == -1)
-            {
-                // If a uniform is unused (perhaps due to its code path being removed by an ifdef), the compiler removes it from the shader altogether, as if it's never been there.
-                // I think renderdoc can be helpful with debugging this kind of stuff. Anyway, it might not be strictly an error depending on how you structure the code.
-                // In Splash, the ifdef trick is used a lot to enable/disable features, so some uniforms are removed between different shader versions.
-                Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Uniform \"" << name << "\" with type \"" << type << "\" "
-                           << "was not found in the shader. You might have forgotten it or it might have been optimized out" << Log::endl;
-
-                continue;
-            }
-
-            _uniforms[name].type = type;
-            _uniforms[name].glIndex = uniformIndex;
-            _uniforms[name].elementSize = type.find("mat") != std::string::npos ? elementSize * elementSize : elementSize;
-            _uniforms[name].arraySize = arraySize;
-            _uniformsDocumentation[name] = documentation;
-
-            if (type == "int")
-            {
-                int v;
-                glGetUniformiv(_program, _uniforms[name].glIndex, &v);
-                _uniforms[name].values = {v};
-            }
-            else if (type == "float")
-            {
-                float v;
-                glGetUniformfv(_program, _uniforms[name].glIndex, &v);
-                _uniforms[name].values = {v};
-            }
-            else if (type == "vec2")
-            {
-                float v[2];
-                glGetUniformfv(_program, _uniforms[name].glIndex, v);
-                _uniforms[name].values = {v[0], v[1]};
-            }
-            else if (type == "vec3")
-            {
-                float v[3];
-                glGetUniformfv(_program, _uniforms[name].glIndex, v);
-                _uniforms[name].values = {v[0], v[1], v[2]};
-            }
-            else if (type == "vec4")
-            {
-                float v[4];
-                glGetUniformfv(_program, _uniforms[name].glIndex, v);
-                _uniforms[name].values = {v[0], v[1], v[2], v[3]};
-            }
-            else if (type == "ivec2")
-            {
-                int v[2];
-                glGetUniformiv(_program, _uniforms[name].glIndex, v);
-                _uniforms[name].values = {v[0], v[1]};
-            }
-            else if (type == "ivec3")
-            {
-                int v[3];
-                glGetUniformiv(_program, _uniforms[name].glIndex, v);
-                _uniforms[name].values = {v[0], v[1], v[2]};
-            }
-            else if (type == "ivec4")
-            {
-                int v[4];
-                glGetUniformiv(_program, _uniforms[name].glIndex, v);
-                _uniforms[name].values = {v[0], v[1], v[2], v[3]};
-            }
-            else if (type == "mat3")
-            {
-                _uniforms[name].values = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-            }
-            else if (type == "mat4")
-            {
-                _uniforms[name].values = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            }
-            else if (type.find("sampler") != std::string::npos)
-            {
-                _uniforms[name].values = {};
-            }
-            else
-            {
-                _uniforms[name].glIndex = -1;
-                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while parsing uniforms: " << name << " is of unhandled type " << type << Log::endl;
-            }
-        }
-    }
-
-    // We parse all uniforms to deactivate the obsolete ones
-    for (auto& u : _uniforms)
-    {
-        std::string name = u.first;
-        if (u.second.type != "buffer")
-        {
-            if (glGetUniformLocation(_program, name.c_str()) == -1)
-                u.second.glIndex = -1;
-        }
-        else
-        {
-            if (glGetUniformBlockIndex(_program, name.c_str()) == GL_INVALID_INDEX)
-                u.second.glIndex = -1;
-        }
-    }
-}
-
-/*************/
-std::string Shader::stringFromShaderType(int type)
-{
-    switch (type)
-    {
-    default:
-        return std::string();
-    case vertex:
-        return "vertex";
-    case tess_ctrl:
-        return "tess_ctrl";
-    case tess_eval:
-        return "tess_eval";
-    case geometry:
-        return "geometry";
-    case fragment:
-        return "fragment";
-    case compute:
-        return "compute";
-    }
-}
-
-/*************/
-void Shader::updateUniforms()
-{
-    if (_activated)
-    {
-        for (uint32_t i = 0; i < _uniformsToUpdate.size(); ++i)
-        {
-            std::string u = _uniformsToUpdate[i];
-
-            auto uniformIt = _uniforms.find(u);
-            if (uniformIt == _uniforms.end())
-                continue;
-
-            auto& uniform = uniformIt->second;
-            if (uniform.glIndex == -1)
-            {
-                uniform.values.clear(); // To make sure it is sent next time if the index is correctly set
-                continue;
-            }
-
-            auto type = uniform.type;
-            assert(!type.empty());
-
-            if (uniform.arraySize == 0)
-            {
-                if (uniform.elementSize != uniform.values.size())
-                    continue;
-
-                if (type == "int")
-                    glUniform1i(uniform.glIndex, uniform.values[0].as<int>());
-                else if (type == "ivec2")
-                    glUniform2i(uniform.glIndex, uniform.values[0].as<int>(), uniform.values[1].as<int>());
-                else if (type == "ivec3")
-                    glUniform3i(uniform.glIndex, uniform.values[0].as<int>(), uniform.values[1].as<int>(), uniform.values[2].as<int>());
-                else if (type == "ivec4")
-                    glUniform4i(uniform.glIndex, uniform.values[0].as<int>(), uniform.values[1].as<int>(), uniform.values[2].as<int>(), uniform.values[3].as<int>());
-                else if (type == "float")
-                    glUniform1f(uniform.glIndex, uniform.values[0].as<float>());
-                else if (type == "vec2")
-                    glUniform2f(uniform.glIndex, uniform.values[0].as<float>(), uniform.values[1].as<float>());
-                else if (type == "vec3")
-                    glUniform3f(uniform.glIndex, uniform.values[0].as<float>(), uniform.values[1].as<float>(), uniform.values[2].as<float>());
-                else if (type == "vec4")
-                    glUniform4f(uniform.glIndex, uniform.values[0].as<float>(), uniform.values[1].as<float>(), uniform.values[2].as<float>(), uniform.values[3].as<float>());
-                else if (type == "mat3")
-                {
-                    std::vector<float> m(9);
-                    for (unsigned int i = 0; i < 9; ++i)
-                        m[i] = uniform.values[i].as<float>();
-                    glUniformMatrix3fv(uniform.glIndex, 1, GL_FALSE, m.data());
-                }
-                else if (type == "mat4")
-                {
-                    std::vector<float> m(16);
-                    for (unsigned int i = 0; i < 16; ++i)
-                        m[i] = uniform.values[i].as<float>();
-                    glUniformMatrix4fv(uniform.glIndex, 1, GL_FALSE, m.data());
-                }
-            }
-            else
-            {
-                if (type == "int" || type.find("ivec") != std::string::npos)
-                {
-                    std::vector<int> data;
-                    for (auto& v : uniform.values)
-                        data.push_back(v.as<int>());
-
-                    if (uniform.type == "buffer")
-                    {
-                        glBindBuffer(GL_UNIFORM_BUFFER, uniform.glBuffer);
-                        if (!uniform.glBufferReady)
-                        {
-                            glBufferData(GL_UNIFORM_BUFFER, data.size() * sizeof(int), NULL, GL_STATIC_DRAW);
-                            uniform.glBufferReady = true;
-                        }
-                        glBufferSubData(GL_UNIFORM_BUFFER, 0, data.size() * sizeof(int), data.data());
-                        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-                        glBindBufferRange(GL_UNIFORM_BUFFER, 1, uniform.glBuffer, 0, data.size() * sizeof(int));
-                    }
-                    else
-                    {
-                        if (uniform.type == "int")
-                            glUniform1iv(uniform.glIndex, data.size(), data.data());
-                        else if (uniform.type == "ivec2")
-                            glUniform2iv(uniform.glIndex, data.size() / 2, data.data());
-                        else if (uniform.type == "ivec3")
-                            glUniform3iv(uniform.glIndex, data.size() / 3, data.data());
-                        else if (uniform.type == "ivec4")
-                            glUniform4iv(uniform.glIndex, data.size() / 4, data.data());
-                    }
-                }
-                else if (type == "float" || type.find("vec") != std::string::npos)
-                {
-                    std::vector<float> data;
-                    for (auto& v : uniform.values)
-                        data.push_back(v.as<float>());
-
-                    if (uniform.type == "buffer")
-                    {
-                        glBindBuffer(GL_UNIFORM_BUFFER, uniform.glBuffer);
-                        if (!uniform.glBufferReady)
-                        {
-                            glBufferData(GL_UNIFORM_BUFFER, data.size() * sizeof(float), NULL, GL_STATIC_DRAW);
-                            uniform.glBufferReady = true;
-                        }
-                        glBufferSubData(GL_UNIFORM_BUFFER, 0, data.size() * sizeof(float), data.data());
-                        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-                        glBindBufferRange(GL_UNIFORM_BUFFER, 1, uniform.glBuffer, 0, data.size() * sizeof(float));
-                    }
-                    else
-                    {
-                        if (uniform.type == "float")
-                            glUniform1fv(uniform.glIndex, data.size(), data.data());
-                        else if (uniform.type == "vec2")
-                            glUniform2fv(uniform.glIndex, data.size() / 2, data.data());
-                        else if (uniform.type == "vec3")
-                            glUniform3fv(uniform.glIndex, data.size() / 3, data.data());
-                        else if (uniform.type == "vec4")
-                            glUniform4fv(uniform.glIndex, data.size() / 4, data.data());
-                    }
-                }
-            }
-        }
-
-        _uniformsToUpdate.clear();
-    }
-}
-
-/*************/
-std::string Shader::getProgramInfoLog(GLint program)
-{
-    GLint length;
-    glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
-
-    auto str = std::string(static_cast<size_t>(length), '\0'); // To avoid printing a bunch of 0s
-    glGetProgramInfoLog(program, length, &length, str.data());
-
-    return str;
-}
-
-/*************/
-std::string Shader::getShaderInfoLog(GLint shader)
-{
-    GLint length;
-    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
-
-    auto str = std::string(static_cast<size_t>(length), '\0');
-    glGetShaderInfoLog(shader, length, &length, str.data());
-
-    return str;
-}
-
-/*************/
-void Shader::resetShader(ShaderType type)
-{
-    glDeleteShader(_shaders[type]);
-    _shaders.erase(type);
+    return finalSources;
 }
 
 /*************/
@@ -763,7 +187,7 @@ void Shader::registerAttributes()
             if (args.size() < 2)
                 return false;
 
-            std::string uniformName = args[0].as<std::string>();
+            const std::string uniformName = args[0].as<std::string>();
             Values uniformArgs;
             if (args[1].getType() != Value::Type::values)
             {
@@ -775,20 +199,11 @@ void Shader::registerAttributes()
                 uniformArgs = args[1].as<Values>();
             }
 
-            // Check if the values changed from previous use
-            auto uniformIt = _uniforms.find(uniformName);
-            if (uniformIt != _uniforms.end() && Value(uniformArgs) == Value(uniformIt->second.values))
-                return true;
-            else if (uniformIt == _uniforms.end())
-                uniformIt = (_uniforms.emplace(make_pair(uniformName, Uniform()))).first;
-
-            uniformIt->second.values = uniformArgs;
-            _uniformsToUpdate.push_back(uniformName);
-
+            _gfxImpl->setUniform(uniformName, uniformArgs);
             return true;
         },
         {});
-    setAttribute("uniform", {"Set the shader uniform to the given value, if it exists. This has to be called while the shader is active"});
+    setAttributeDescription("uniform", {"Set the shader uniform to the given value, if it exists. This has to be called while the shader is active"});
 }
 
 /*************/
@@ -797,6 +212,7 @@ void Shader::registerGraphicAttributes()
     addAttribute(
         "fill",
         [&](const Values& args) {
+            assert(dynamic_cast<gfx::GraphicShaderGfxImpl*>(_gfxImpl.get()) != nullptr);
             // Get additionnal shading options
             std::string options = ShaderSources.VERSION_DIRECTIVE_GL32_ES;
             for (uint32_t i = 1; i < args.size(); ++i)
@@ -807,142 +223,128 @@ void Shader::registerGraphicAttributes()
                 _currentProgramName = args[0].as<std::string>();
                 _fill = texture;
                 _shaderOptions = options;
-                setSource(options + ShaderSources.VERTEX_SHADER_TEXTURE, vertex);
-                resetShader(geometry);
-                setSource(options + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
-                compileProgram();
+                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_TEXTURE);
+                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
+                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_TEXTURE);
             }
             else if (args[0].as<std::string>() == "object_cubemap" && (_fill != object_cubemap || _shaderOptions != options))
             {
                 _currentProgramName = args[0].as<std::string>();
                 _fill = object_cubemap;
                 _shaderOptions = options;
-                setSource(options + ShaderSources.VERTEX_SHADER_OBJECT_CUBEMAP, vertex);
-                setSource(options + ShaderSources.GEOMETRY_SHADER_OBJECT_CUBEMAP, geometry);
-                setSource(options + ShaderSources.FRAGMENT_SHADER_OBJECT_CUBEMAP, fragment);
-                compileProgram();
+                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_OBJECT_CUBEMAP);
+                setSource(gfx::ShaderType::geometry, options + ShaderSources.GEOMETRY_SHADER_OBJECT_CUBEMAP);
+                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_OBJECT_CUBEMAP);
             }
             else if (args[0].as<std::string>() == "cubemap_projection" && (_fill != cubemap_projection || _shaderOptions != options))
             {
                 _currentProgramName = args[0].as<std::string>();
                 _fill = object_cubemap;
                 _shaderOptions = options;
-                setSource(options + ShaderSources.VERTEX_SHADER_CUBEMAP_PROJECTION, vertex);
-                resetShader(geometry);
-                setSource(options + ShaderSources.FRAGMENT_SHADER_CUBEMAP_PROJECTION, fragment);
-                compileProgram();
+                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_CUBEMAP_PROJECTION);
+                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
+                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_CUBEMAP_PROJECTION);
             }
             else if (args[0].as<std::string>() == "image_filter" && (_fill != image_filter || _shaderOptions != options))
             {
                 _currentProgramName = args[0].as<std::string>();
                 _fill = image_filter;
                 _shaderOptions = options;
-                setSource(options + ShaderSources.VERTEX_SHADER_FILTER, vertex);
-                resetShader(geometry);
-                setSource(options + ShaderSources.FRAGMENT_SHADER_IMAGE_FILTER, fragment);
-                compileProgram();
+                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_FILTER);
+                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
+                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_IMAGE_FILTER);
             }
             else if (args[0].as<std::string>() == "blacklevel_filter" && (_fill != blacklevel_filter || _shaderOptions != options))
             {
                 _currentProgramName = args[0].as<std::string>();
                 _fill = blacklevel_filter;
                 _shaderOptions = options;
-                setSource(options + ShaderSources.VERTEX_SHADER_FILTER, vertex);
-                resetShader(geometry);
-                setSource(options + ShaderSources.FRAGMENT_SHADER_BLACKLEVEL_FILTER, fragment);
-                compileProgram();
+                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_FILTER);
+                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
+                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_BLACKLEVEL_FILTER);
             }
             else if (args[0].as<std::string>() == "color_curves_filter" && (_fill != color_curves_filter || _shaderOptions != options))
             {
                 _currentProgramName = args[0].as<std::string>();
                 _fill = color_curves_filter;
                 _shaderOptions = options;
-                setSource(options + ShaderSources.VERTEX_SHADER_FILTER, vertex);
-                resetShader(geometry);
-                setSource(options + ShaderSources.FRAGMENT_SHADER_COLOR_CURVES_FILTER, fragment);
-                compileProgram();
+                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_FILTER);
+                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
+                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_COLOR_CURVES_FILTER);
             }
             else if (args[0].as<std::string>() == "color" && (_fill != color || _shaderOptions != options))
             {
                 _currentProgramName = args[0].as<std::string>();
                 _fill = color;
                 _shaderOptions = options;
-                setSource(options + ShaderSources.VERTEX_SHADER_MODELVIEW, vertex);
-                resetShader(geometry);
-                setSource(options + ShaderSources.FRAGMENT_SHADER_COLOR, fragment);
-                compileProgram();
+                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_MODELVIEW);
+                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
+                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_COLOR);
             }
             else if (args[0].as<std::string>() == "primitiveId" && (_fill != primitiveId || _shaderOptions != options))
             {
                 _currentProgramName = args[0].as<std::string>();
                 _fill = primitiveId;
                 _shaderOptions = options;
-                setSource(options + ShaderSources.VERTEX_SHADER_MODELVIEW, vertex);
-                resetShader(geometry);
-                setSource(options + ShaderSources.FRAGMENT_SHADER_PRIMITIVEID, fragment);
-                compileProgram();
+                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_MODELVIEW);
+                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
+                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_PRIMITIVEID);
             }
             else if (args[0].as<std::string>() == "userDefined" && (_fill != userDefined || _shaderOptions != options))
             {
                 _currentProgramName = args[0].as<std::string>();
                 _fill = userDefined;
                 _shaderOptions = options;
-                if (_shadersSource.find(ShaderType::vertex) == _shadersSource.end())
-                    setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
-                resetShader(geometry);
-                if (_shadersSource.find(ShaderType::fragment) == _shadersSource.end())
-                    setSource(options + ShaderSources.FRAGMENT_SHADER_DEFAULT_FILTER, fragment);
-                compileProgram();
+                if (_shadersSource.find(static_cast<int>(gfx::ShaderType::vertex)) == _shadersSource.end())
+                    setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_DEFAULT);
+                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
+                if (_shadersSource.find(static_cast<int>(gfx::ShaderType::fragment)) == _shadersSource.end())
+                    setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_DEFAULT_FILTER);
             }
             else if (args[0].as<std::string>() == "uv" && (_fill != uv || _shaderOptions != options))
             {
                 _currentProgramName = args[0].as<std::string>();
                 _fill = uv;
                 _shaderOptions = options;
-                setSource(options + ShaderSources.VERTEX_SHADER_MODELVIEW, vertex);
-                resetShader(geometry);
-                setSource(options + ShaderSources.FRAGMENT_SHADER_UV, fragment);
-                compileProgram();
+                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_MODELVIEW);
+                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
+                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_UV);
             }
             else if (args[0].as<std::string>() == "warp" && (_fill != warp || _shaderOptions != options))
             {
                 _currentProgramName = args[0].as<std::string>();
                 _fill = warp;
                 _shaderOptions = options;
-                setSource(options + ShaderSources.VERTEX_SHADER_WARP, vertex);
-                resetShader(geometry);
-                setSource(options + ShaderSources.FRAGMENT_SHADER_WARP, fragment);
-                compileProgram();
+                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_WARP);
+                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
+                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_WARP);
             }
             else if (args[0].as<std::string>() == "warpControl" && (_fill != warpControl || _shaderOptions != options))
             {
                 _currentProgramName = args[0].as<std::string>();
                 _fill = warpControl;
                 _shaderOptions = options;
-                setSource(options + ShaderSources.VERTEX_SHADER_WARP_WIREFRAME, vertex);
-                setSource(options + ShaderSources.GEOMETRY_SHADER_WARP_WIREFRAME, geometry);
-                setSource(options + ShaderSources.FRAGMENT_SHADER_WARP_WIREFRAME, fragment);
-                compileProgram();
+                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_WARP_WIREFRAME);
+                setSource(gfx::ShaderType::geometry, options + ShaderSources.GEOMETRY_SHADER_WARP_WIREFRAME);
+                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_WARP_WIREFRAME);
             }
             else if (args[0].as<std::string>() == "wireframe" && (_fill != wireframe || _shaderOptions != options))
             {
                 _currentProgramName = args[0].as<std::string>();
                 _fill = wireframe;
                 _shaderOptions = options;
-                setSource(options + ShaderSources.VERTEX_SHADER_WIREFRAME, vertex);
-                setSource(options + ShaderSources.GEOMETRY_SHADER_WIREFRAME, geometry);
-                setSource(options + ShaderSources.FRAGMENT_SHADER_WIREFRAME, fragment);
-                compileProgram();
+                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_WIREFRAME);
+                setSource(gfx::ShaderType::geometry, options + ShaderSources.GEOMETRY_SHADER_WIREFRAME);
+                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_WIREFRAME);
             }
             else if (args[0].as<std::string>() == "window" && (_fill != window || _shaderOptions != options))
             {
                 _currentProgramName = args[0].as<std::string>();
                 _fill = window;
                 _shaderOptions = options;
-                setSource(options + ShaderSources.VERTEX_SHADER_WINDOW, vertex);
-                resetShader(geometry);
-                setSource(options + ShaderSources.FRAGMENT_SHADER_WINDOW, fragment);
-                compileProgram();
+                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_WINDOW);
+                _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
+                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_WINDOW);
             }
             return true;
         },
@@ -981,6 +383,7 @@ void Shader::registerComputeAttributes()
 {
     addAttribute("computePhase",
         [&](const Values& args) {
+            assert(dynamic_cast<gfx::ComputeShaderGfxImpl*>(_gfxImpl.get()) != nullptr);
             if (args.size() < 1)
                 return false;
 
@@ -992,26 +395,22 @@ void Shader::registerComputeAttributes()
             if ("resetVisibility" == args[0].as<std::string>())
             {
                 _currentProgramName = args[0].as<std::string>();
-                setSource(options + ShaderSources.COMPUTE_SHADER_RESET_VISIBILITY, compute);
-                compileProgram();
+                setSource(gfx::ShaderType::compute, options + ShaderSources.COMPUTE_SHADER_RESET_VISIBILITY);
             }
             else if ("resetBlending" == args[0].as<std::string>())
             {
                 _currentProgramName = args[0].as<std::string>();
-                setSource(options + ShaderSources.COMPUTE_SHADER_RESET_BLENDING, compute);
-                compileProgram();
+                setSource(gfx::ShaderType::compute, options + ShaderSources.COMPUTE_SHADER_RESET_BLENDING);
             }
             else if ("computeCameraContribution" == args[0].as<std::string>())
             {
                 _currentProgramName = args[0].as<std::string>();
-                setSource(options + ShaderSources.COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION, compute);
-                compileProgram();
+                setSource(gfx::ShaderType::compute, options + ShaderSources.COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION);
             }
             else if ("transferVisibilityToAttr" == args[0].as<std::string>())
             {
                 _currentProgramName = args[0].as<std::string>();
-                setSource(options + ShaderSources.COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR, compute);
-                compileProgram();
+                setSource(gfx::ShaderType::compute, options + ShaderSources.COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR);
             }
 
             return true;
@@ -1026,6 +425,7 @@ void Shader::registerFeedbackAttributes()
 
     addAttribute("feedbackPhase",
         [&](const Values& args) {
+            assert(dynamic_cast<gfx::FeedbackShaderGfxImpl*>(_gfxImpl.get()) != nullptr);
             if (args.size() < 1)
                 return false;
 
@@ -1037,15 +437,11 @@ void Shader::registerFeedbackAttributes()
             if ("tessellateFromCamera" == args[0].as<std::string>())
             {
                 _currentProgramName = args[0].as<std::string>();
-                setSource(options + ShaderSources.VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, vertex);
-                setSource(options + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_ctrl);
-                setSource(options + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_eval);
-                setSource(options + ShaderSources.GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, geometry);
-
-                // Need a fragment shader (even an empty one) for OpenGL ES 3.2.
-                setSource(options + ShaderSources.FRAGMENT_SHADER_EMPTY, fragment);
-
-                compileProgram();
+                setSource(gfx::ShaderType::vertex, options + ShaderSources.VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
+                setSource(gfx::ShaderType::tess_ctrl, options + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
+                setSource(gfx::ShaderType::tess_eval, options + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
+                setSource(gfx::ShaderType::geometry, options + ShaderSources.GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA);
+                setSource(gfx::ShaderType::fragment, options + ShaderSources.FRAGMENT_SHADER_EMPTY);
             }
 
             return true;
@@ -1057,19 +453,14 @@ void Shader::registerFeedbackAttributes()
             if (args.size() < 1)
                 return false;
 
-            GLchar* feedbackVaryings[args.size()];
+            auto feedbackShader = dynamic_cast<gfx::FeedbackShaderGfxImpl*>(_gfxImpl.get());
+            assert(feedbackShader != nullptr);
+
             std::vector<std::string> varyingNames;
             for (uint32_t i = 0; i < args.size(); ++i)
-            {
                 varyingNames.push_back(args[i].as<std::string>());
-                feedbackVaryings[i] = new GLchar[256];
-                strcpy(feedbackVaryings[i], varyingNames[i].c_str());
-            }
 
-            glTransformFeedbackVaryings(_program, args.size(), const_cast<const GLchar**>(feedbackVaryings), GL_SEPARATE_ATTRIBS);
-
-            for (uint32_t i = 0; i < args.size(); ++i)
-                delete feedbackVaryings[i];
+            feedbackShader->selectVaryings(varyingNames);
 
             return true;
         },

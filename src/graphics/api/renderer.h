@@ -52,6 +52,7 @@ class CameraGfxImpl;
 class FilterGfxImpl;
 class Framebuffer;
 class GpuBuffer;
+class ShaderGfxImpl;
 
 struct ApiVersion
 {
@@ -114,7 +115,7 @@ class Renderer
     /**
      * \return Returns the vendor of the OpenGL renderer
      */
-    std::string getGLVendor() { return _glVendor; }
+    std::string getGLVendor() { return _glVendor; } // TODO: this should not be in the b ase class
 
     /**
      * \return Returns the name of the OpenGL renderer.
@@ -162,6 +163,24 @@ class Renderer
      * \return Return a shared pointer to the newly created Geometry
      */
     virtual std::shared_ptr<Geometry> createGeometry(RootObject* root) const = 0;
+
+    /**
+     * Create a new graphic shader implementation
+     * \return Return a unique pointer to the shader implementation
+     */
+    virtual std::unique_ptr<ShaderGfxImpl> createGraphicShader() const = 0;
+
+    /**
+     * Create a new compute shader implementation
+     * \return Return a unique pointer to the shader implementation
+     */
+    virtual std::unique_ptr<ShaderGfxImpl> createComputeShader() const = 0;
+
+    /**
+     * Create a new feedback shader implementation
+     * \return Return a unique pointer to the shader implementation
+     */
+    virtual std::unique_ptr<ShaderGfxImpl> createFeedbackShader() const = 0;
 
     /**
      * Create a new Texture_Image

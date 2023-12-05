@@ -1,5 +1,7 @@
 #include "./graphics/filter_custom.h"
 
+#include "./graphics/api/shader_gfx_impl.h"
+
 namespace Splash
 {
 
@@ -14,12 +16,12 @@ FilterCustom::FilterCustom(RootObject* root)
 /*************/
 bool FilterCustom::setFilterSource(const std::string& source)
 {
-    auto shader = std::make_shared<Shader>();
+    auto shader = std::make_shared<Shader>(_root);
     // Save the value for all existing uniforms
     auto uniformValues = _filterUniforms;
 
-    std::map<Shader::ShaderType, std::string> shaderSources;
-    shaderSources[Shader::ShaderType::fragment] = source;
+    std::map<gfx::ShaderType, std::string> shaderSources;
+    shaderSources[gfx::ShaderType::fragment] = source;
     if (!shader->setSource(shaderSources))
     {
         Log::get() << Log::WARNING << "Filter::" << __FUNCTION__ << " - Could not apply shader filter" << Log::endl;

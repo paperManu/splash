@@ -26,10 +26,13 @@
 #define SPLASH_OPENGL_RENDERER_H
 
 #include "./graphics/api/opengl/camera_gfx_impl.h"
+#include "./graphics/api/opengl/compute_shader.h"
+#include "./graphics/api/opengl/feedback_shader.h"
 #include "./graphics/api/opengl/filter_gfx_impl.h"
 #include "./graphics/api/opengl/framebuffer.h"
 #include "./graphics/api/opengl/geometry_gfx_impl.h"
 #include "./graphics/api/opengl/gpu_buffer.h"
+#include "./graphics/api/opengl/graphic_shader.h"
 #include "./graphics/api/opengl/texture_image_gfx_impl.h"
 #include "./graphics/api/opengl/window_gfx_impl.h"
 #include "./graphics/api/renderer.h"
@@ -88,6 +91,24 @@ class Renderer : public gfx::Renderer
      * \return Return a shared pointer to the newly created Geometry
      */
     std::shared_ptr<Geometry> createGeometry(RootObject* root) const override final { return std::make_shared<Geometry>(root, std::make_unique<gfx::opengl::GeometryGfxImpl>()); }
+
+    /**
+     * Create a new graphic shader implementation
+     * \return Return a unique pointer to the shader implementation
+     */
+    std::unique_ptr<gfx::ShaderGfxImpl> createGraphicShader() const override final { return std::make_unique<gfx::opengl::GraphicShaderGfxImpl>(); }
+
+    /**
+     * Create a new compute shader implementation
+     * \return Return a unique pointer to the shader implementation
+     */
+    std::unique_ptr<gfx::ShaderGfxImpl> createComputeShader() const override final { return std::make_unique<gfx::opengl::ComputeShaderGfxImpl>(); }
+
+    /**
+     * Create a new feedback shader implementation
+     * \return Return a unique pointer to the shader implementation
+     */
+    std::unique_ptr<gfx::ShaderGfxImpl> createFeedbackShader() const override final { return std::make_unique<gfx::opengl::FeedbackShaderGfxImpl>(); }
 
     /**
      * Create a new Texture_Image

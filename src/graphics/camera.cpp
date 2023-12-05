@@ -718,7 +718,6 @@ void Camera::render()
 
                     if ((point.isSet && _selectedCalibrationPoint == static_cast<int>(i)) || _showAllCalibrationPoints) // Draw the target position on screen as well
                     {
-
                         screenMarker->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
                         screenMarker->setAttribute("scale", {SCREENMARKER_SCALE});
                         if (_selectedCalibrationPoint == static_cast<int>(i))

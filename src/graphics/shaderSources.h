@@ -1568,8 +1568,6 @@ struct ShaderSources
 
         #define PI 3.14159265359
 
-        uniform int _sideness;
-        uniform vec4 _fovAndColorBalance; // fovX and fovY, r/g and b/g
         uniform vec4 _color;
 
         in VertexData
@@ -1601,9 +1599,6 @@ struct ShaderSources
         precision mediump float;
 
         #define PI 3.14159265359
-
-        uniform int _sideness;
-        uniform vec4 _fovAndColorBalance; // fovX and fovY, r/g and b/g
 
         in VertexData
         {
@@ -1739,8 +1734,6 @@ struct ShaderSources
         } vertexIn;
 
         uniform vec4 _wireframeColor;
-        uniform int _sideness;
-        uniform vec4 _fovAndColorBalance; // fovX and fovY, r/g and b/g
         out vec4 fragColor;
 
         float edgeFactor()

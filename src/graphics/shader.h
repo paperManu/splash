@@ -36,6 +36,7 @@
 
 #include "./core/attribute.h"
 #include "./core/graph_object.h"
+#include "./graphics/api/opengl/shader_gfx_impl.h"
 #include "./graphics/texture.h"
 
 namespace Splash
@@ -49,16 +50,6 @@ class Shader final : public GraphObject
         prgGraphic = 0,
         prgCompute,
         prgFeedback
-    };
-
-    enum ShaderType
-    {
-        vertex = GL_VERTEX_SHADER,
-        tess_ctrl = GL_TESS_CONTROL_SHADER,
-        tess_eval = GL_TESS_EVALUATION_SHADER,
-        geometry = GL_GEOMETRY_SHADER,
-        fragment = GL_FRAGMENT_SHADER,
-        compute = GL_COMPUTE_SHADER
     };
 
     enum Sideness
@@ -91,12 +82,12 @@ class Shader final : public GraphObject
      * Constructor
      * \param type Shader type
      */
-    explicit Shader(ProgramType type = prgGraphic);
+    explicit Shader(RootObject* root, ProgramType type = prgGraphic);
 
     /**
      * Destructor
      */
-    ~Shader() final;
+    ~Shader() override final = default;
 
     /**
      * Constructors/operators
@@ -120,8 +111,9 @@ class Shader final : public GraphObject
      * Launch the compute shader, if present
      * \param numGroupsX Compute group count along X
      * \param numGroupsY Compute group count along Y
+     * \return Return true if the computation went well
      */
-    void doCompute(GLuint numGroupsX = 1, GLuint numGroupsY = 1);
+    bool doCompute(GLuint numGroupsX = 1, GLuint numGroupsY = 1);
 
     /**
      * Set the sideness of the object
@@ -145,30 +137,30 @@ class Shader final : public GraphObject
      * Get the documentation for the uniforms based on the comments in GLSL code
      * \return Return a map of uniforms and their documentation
      */
-    std::unordered_map<std::string, std::string> getUniformsDocumentation() const { return _uniformsDocumentation; }
+    std::map<std::string, std::string> getUniformsDocumentation() const;
 
     /**
      * Set a shader source
-     * \param src Shader string
      * \param type Shader type
+     * \param src Shader string
      * \return Return true if the shader was compiled successfully
      */
-    bool setSource(const std::string& src, const ShaderType type);
+    bool setSource(const gfx::ShaderType type, const std::string& src);
 
     /**
      * Set multiple shaders at once
      * \param sources Map of shader sources
      * \return Return true if all shader could be compiled
      */
-    bool setSource(const std::map<ShaderType, std::string>& sources);
+    bool setSource(const std::map<gfx::ShaderType, std::string>& sources);
 
     /**
      * Set a shader source from file
-     * \param filename Shader file
      * \param type Shader type
+     * \param filename Shader file
      * \return Return true if the shader was compiled successfully
      */
-    bool setSourceFromFile(const std::string& filename, const ShaderType type);
+    bool setSourceFromFile(const gfx::ShaderType type, const std::string& filename);
 
     /**
      * Add a new texture to use
@@ -185,39 +177,11 @@ class Shader final : public GraphObject
      */
     void setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp);
 
-    /**
-     * Set the currently queued uniforms updates
-     */
-    void updateUniforms();
-
-    /**
-     * Utility functions to get the program/shader logs. Should only be called on errors.
-     */
-    static std::string getProgramInfoLog(GLint program);
-    static std::string getShaderInfoLog(GLint shader);
-
   private:
-    std::atomic_bool _activated{false};
     ProgramType _programType{prgGraphic};
+    std::unique_ptr<gfx::ShaderGfxImpl> _gfxImpl;
 
-    std::unordered_map<int, GLuint> _shaders;
     std::unordered_map<int, std::string> _shadersSource;
-    GLuint _program{0};
-    bool _isLinked = {false};
-
-    struct Uniform
-    {
-        std::string type{""};
-        uint32_t elementSize{1};
-        uint32_t arraySize{0};
-        Values values{};
-        GLint glIndex{-1};
-        GLuint glBuffer{0};
-        bool glBufferReady{false};
-    };
-    std::map<std::string, Uniform> _uniforms;
-    std::unordered_map<std::string, std::string> _uniformsDocumentation;
-    std::vector<std::string> _uniformsToUpdate;
     std::vector<std::shared_ptr<Texture>> _textures; // Currently used textures
     std::string _currentProgramName{};
 
@@ -227,38 +191,11 @@ class Shader final : public GraphObject
     Sideness _sideness{doubleSided};
 
     /**
-     * Compile the shader program
-     */
-    void compileProgram();
-
-    /**
-     * Link the shader program
-     */
-    bool linkProgram();
-
-    /**
      * Parses the shader to replace includes by the corresponding sources
      * \param src Shader source
+     * \return Return the source with includes parsed
      */
-    void parseIncludes(std::string& src);
-
-    /**
-     * Parses the shader to find uniforms
-     */
-    void parseUniforms(const std::string& src);
-
-    /**
-     * Get a string expression of the shader type, used for logging
-     * \param type Shader type
-     * \return Return the shader type as a string
-     */
-    std::string stringFromShaderType(int type);
-
-    /**
-     * Replace a shader with an empty one
-     * \param type Shader type
-     */
-    void resetShader(ShaderType type);
+    std::string parseIncludes(const std::string& src);
 
     /**
      * Register new functors to modify attributes

@@ -167,17 +167,6 @@ target_sources(splash-${API_VERSION} PRIVATE
     controller/widget/widget_tree.cpp
     controller/widget/widget_warp.cpp
     graphics/api/gpu_buffer.cpp
-    graphics/api/renderer.cpp
-    graphics/api/gles/framebuffer.cpp
-    graphics/api/gles/geometry_gfx_impl.cpp
-    graphics/api/gles/gpu_buffer.cpp
-    graphics/api/gles/texture_image_gfx_impl.cpp
-    graphics/api/gles/window_gfx_impl.cpp
-    graphics/api/opengl/framebuffer.cpp
-    graphics/api/opengl/geometry_gfx_impl.cpp
-    graphics/api/opengl/gpu_buffer.cpp
-    graphics/api/opengl/texture_image_gfx_impl.cpp
-    graphics/api/opengl/window_gfx_impl.cpp
     graphics/camera.cpp
     graphics/filter.cpp
     graphics/filter_black_level.cpp
@@ -209,6 +198,37 @@ target_sources(splash-${API_VERSION} PRIVATE
     utils/cgutils.cpp
     utils/jsonutils.cpp
     utils/subprocess.cpp
+
+    # OpenGL ES API
+    graphics/api/renderer.cpp
+    graphics/api/gles/framebuffer.cpp
+    graphics/api/gles/geometry_gfx_impl.cpp
+    graphics/api/gles/gl_utils.cpp
+    graphics/api/gles/gpu_buffer.cpp
+    graphics/api/gles/compute_shader.cpp
+    graphics/api/gles/feedback_shader.cpp
+    graphics/api/gles/graphic_shader.cpp
+    graphics/api/gles/shader_gfx_impl.cpp
+    graphics/api/gles/shader_stage.cpp
+    graphics/api/gles/shader_program.cpp
+    graphics/api/gles/texture_image_gfx_impl.cpp
+    graphics/api/gles/window_gfx_impl.cpp
+
+    # OpenGL API
+    graphics/api/opengl/framebuffer.cpp
+    graphics/api/opengl/geometry_gfx_impl.cpp
+    graphics/api/opengl/gl_utils.cpp
+    graphics/api/opengl/gpu_buffer.cpp
+    graphics/api/opengl/compute_shader.cpp
+    graphics/api/opengl/feedback_shader.cpp
+    graphics/api/opengl/graphic_shader.cpp
+    graphics/api/opengl/shader_gfx_impl.cpp
+    graphics/api/opengl/shader_stage.cpp
+    graphics/api/opengl/shader_program.cpp
+    graphics/api/opengl/texture_image_gfx_impl.cpp
+    graphics/api/opengl/window_gfx_impl.cpp
+
+    # External sources
     ../external/imgui/imgui_demo.cpp
     ../external/imgui/imgui_draw.cpp
     ../external/imgui/imgui_tables.cpp
