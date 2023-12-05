@@ -30,24 +30,21 @@
 
 #include "./core/constants.h"
 
-namespace Splash
+namespace Splash::ShaderSources
 {
-
-struct ShaderSources
-{
-    const std::map<std::string, std::string> INCLUDES{//
-        // Color encoding IDs, must match the IDs defined in
-        // graphics/texture_image.h
-        {"colorEncoding", R"(
+const std::map<std::string, std::string> INCLUDES{//
+    // Color encoding IDs, must match the IDs defined in
+    // graphics/texture_image.h
+    {"colorEncoding", R"(
             #define COLOR_RGB 0
             #define COLOR_BGR 1
             #define COLOR_UYVY 2
             #define COLOR_YUYV 3
             #define COLOR_YCoCg 4
         )"},
-        // Project a point wrt a mvp matrix, and check if it is in the view frustum.
-        // Returns the distance on X and Y in the distToCenter parameter
-        {"projectAndCheckVisibility", R"(
+    // Project a point wrt a mvp matrix, and check if it is in the view frustum.
+    // Returns the distance on X and Y in the distToCenter parameter
+    {"projectAndCheckVisibility", R"(
             bool projectAndCheckVisibility(inout vec4 p, in mat4 mvp, in float margin, out vec2 distToCenter)
             {
                 vec4 projected = mvp * vec4(p.xyz, 1.0);
@@ -66,26 +63,26 @@ struct ShaderSources
                 return false;
             }
         )"},
-        //
-        // Compute a normal vector from three points
-        {"normalVector", R"(
-            uniform int _sideness;
+    //
+    // Compute a normal vector from three points
+    {"normalVector", R"(
+            uniform int _culling;
 
             vec3 normalVector(vec3 u, vec3 v, vec3 w)
             {
                 vec3 n = normalize(cross(v - u, w - u));
 
-                if (_sideness == 0)
+                if (_culling == 0)
                     n.z = 0.0;
-                else if (_sideness == 2)
+                else if (_culling == 2)
                     n.z = -n.z;
 
                 return n;
             }
         )"},
-        //
-        // Compute a smooth blending from a projected point
-        {"getSmoothBlendFromVertex", R"(
+    //
+    // Compute a smooth blending from a projected point
+    {"getSmoothBlendFromVertex", R"(
             float getSmoothBlendFromVertex(vec4 v, float blendDist)
             {
                 vec2 screenPos = v.xy * 0.5 + vec2(0.5);
@@ -107,9 +104,9 @@ struct ShaderSources
                 return weight;
             }
         )"},
-        //
-        // sRGB to RGB and RGB to sRGB
-        {"srgb", R"(
+    //
+    // sRGB to RGB and RGB to sRGB
+    {"srgb", R"(
             vec3 srgb2rgb(vec3 srgb)
             {
                 vec3 linearPart = srgb / 12.92;
@@ -126,9 +123,9 @@ struct ShaderSources
                 return mix(powPart, linearPart, part);
             }
         )"},
-        //
-        // RGB to HSV and HSV to RGB
-        {"hsv", R"(
+    //
+    // RGB to HSV and HSV to RGB
+    {"hsv", R"(
             vec3 rgb2hsv(vec3 c)
             {
                 vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
@@ -147,12 +144,12 @@ struct ShaderSources
                 return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
             }
         )"},
-        //
-        // YUV to RGB and RGB to YUV
-        // Formulas are taken from https://www.fourcc.org/fccyvrgb.php
-        // The resulting colors do not match exactly VLC or Gstreamer,
-        // Mostly, color and saturation are a bit higher.
-        {"yuv", R"(
+    //
+    // YUV to RGB and RGB to YUV
+    // Formulas are taken from https://www.fourcc.org/fccyvrgb.php
+    // The resulting colors do not match exactly VLC or Gstreamer,
+    // Mostly, color and saturation are a bit higher.
+    {"yuv", R"(
             vec3 yuv2rgb(vec3 c)
             {
                 vec3 yuv = c - vec3(16.0 / 255.0, 0.5, 0.5);
@@ -178,10 +175,10 @@ struct ShaderSources
                 return yuv;
             }
         )"},
-        //
-        // Color correction: brightness, saturation and contrast
-        // hsv also needs to be included
-        {"correctColor", R"( 
+    //
+    // Color correction: brightness, saturation and contrast
+    // hsv also needs to be included
+    {"correctColor", R"( 
             vec4 correctColor(in vec4 color, in float brightness, in float saturation, in float contrast)
             {
                 if (brightness != 1.f || saturation != 1.f || contrast != 1.f)
@@ -200,25 +197,25 @@ struct ShaderSources
             }
         )"}};
 
-    /**
-     * Version directives, included at the start of all shaders
-     */
-    const std::string VERSION_DIRECTIVE_GL4{R"(
+/**
+ * Version directives, included at the start of all shaders
+ */
+const std::string VERSION_DIRECTIVE_GL4{R"(
         #version 450 core
     )"};
 
-    const std::string VERSION_DIRECTIVE_GL32_ES{R"(
+const std::string VERSION_DIRECTIVE_GL32_ES{R"(
         #version 320 es
     )"};
 
-    /**************************/
-    // COMPUTE
-    /**************************/
+/**************************/
+// COMPUTE
+/**************************/
 
-    /**
-     * Default compute shader
-     */
-    const std::string COMPUTE_SHADER_DEFAULT{R"(
+/**
+ * Default compute shader
+ */
+const std::string COMPUTE_SHADER_DEFAULT{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
         precision mediump float;
@@ -261,10 +258,10 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Compute shader to reset all camera visibility attributes
-     */
-    const std::string COMPUTE_SHADER_RESET_VISIBILITY{R"(
+/**
+ * Compute shader to reset all camera visibility attributes
+ */
+const std::string COMPUTE_SHADER_RESET_VISIBILITY{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
         precision mediump float;
@@ -295,10 +292,10 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Compute shader to reset all camera contribution to zero
-     */
-    const std::string COMPUTE_SHADER_RESET_BLENDING{R"(
+/**
+ * Compute shader to reset all camera contribution to zero
+ */
+const std::string COMPUTE_SHADER_RESET_BLENDING{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
         precision mediump float;
@@ -328,10 +325,10 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Compute shader to transfer the visibility from the GL_TEXTURE0 to the vertices attributes
-     */
-    const std::string COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR{R"(
+/**
+ * Compute shader to transfer the visibility from the GL_TEXTURE0 to the vertices attributes
+ */
+const std::string COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
         precision mediump float;
@@ -363,10 +360,10 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Compute shader to compute the contribution of a specific camera
-     */
-    const std::string COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION{R"(
+/**
+ * Compute shader to compute the contribution of a specific camera
+ */
+const std::string COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
         precision mediump float;
@@ -449,14 +446,14 @@ struct ShaderSources
         }
     )"};
 
-    /**************************/
-    // FEEDBACK
-    /**************************/
+/**************************/
+// FEEDBACK
+/**************************/
 
-    /**
-     * Default vertex shader with feedback
-     */
-    const std::string VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
+/**
+ * Default vertex shader with feedback
+ */
+const std::string VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
         precision mediump float;
 
         layout (location = 0) in vec4 _vertex;
@@ -484,10 +481,10 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Default feedback tessellation shader
-     */
-    const std::string TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
+/**
+ * Default feedback tessellation shader
+ */
+const std::string TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
         precision mediump float;
 
         #include normalVector
@@ -606,7 +603,7 @@ struct ShaderSources
         }
     )"};
 
-    const std::string TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
+const std::string TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
         precision mediump float;
 
         //layout (triangles, fractional_odd_spacing) in;
@@ -647,10 +644,10 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Feedback geometry shader for handling camera borders
-     */
-    const std::string GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
+/**
+ * Feedback geometry shader for handling camera borders
+ */
+const std::string GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
         precision mediump float;
 
         #include normalVector
@@ -841,14 +838,14 @@ struct ShaderSources
         }
     )"};
 
-    /**************************/
-    // GRAPHICS
-    /**************************/
+/**************************/
+// GRAPHICS
+/**************************/
 
-    /**
-     * Vertex shader which transmits the vertex attributes as-is
-     */
-    const std::string VERTEX_SHADER_DEFAULT{R"(
+/**
+ * Vertex shader which transmits the vertex attributes as-is
+ */
+const std::string VERTEX_SHADER_DEFAULT{R"(
         precision mediump float;
 
         layout(location = 0) in vec4 _vertex;
@@ -871,10 +868,10 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Vertex shader which projects the vertices using the modelview matrix
-     */
-    const std::string VERTEX_SHADER_MODELVIEW{R"(
+/**
+ * Vertex shader which projects the vertices using the modelview matrix
+ */
+const std::string VERTEX_SHADER_MODELVIEW{R"(
         precision mediump float;
 
         #include getSmoothBlendFromVertex
@@ -908,10 +905,10 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Filter vertex shader
-     */
-    const std::string VERTEX_SHADER_FILTER{R"(
+/**
+ * Filter vertex shader
+ */
+const std::string VERTEX_SHADER_FILTER{R"(
         precision mediump float;
 
         layout(location = 0) in vec4 _vertex;
@@ -925,11 +922,11 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Default fragment shader for filters
-     * Does not do much except for applying the intput texture
-     */
-    const std::string FRAGMENT_SHADER_DEFAULT_FILTER{R"(
+/**
+ * Default fragment shader for filters
+ * Does not do much except for applying the intput texture
+ */
+const std::string FRAGMENT_SHADER_DEFAULT_FILTER{R"(
         precision mediump float;
 
     #ifdef TEXTURE_RECT
@@ -957,12 +954,12 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Image fragment shader for filters
-     * This filter applies various color corrections, and is
-     * also able to convert from YUYV to RGB
-     */
-    const std::string FRAGMENT_SHADER_IMAGE_FILTER{R"(
+/**
+ * Image fragment shader for filters
+ * This filter applies various color corrections, and is
+ * also able to convert from YUYV to RGB
+ */
+const std::string FRAGMENT_SHADER_IMAGE_FILTER{R"(
         precision mediump float;
 
         #include colorEncoding
@@ -1077,10 +1074,10 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Black level fragment shader for filters
-     */
-    const std::string FRAGMENT_SHADER_BLACKLEVEL_FILTER{R"(
+/**
+ * Black level fragment shader for filters
+ */
+const std::string FRAGMENT_SHADER_BLACKLEVEL_FILTER{R"(
         precision mediump float;
 
     #ifdef TEXTURE_RECT
@@ -1108,11 +1105,11 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Color curves fragment shader for filters
-     * This filter applies a transformation curve to RGB colors
-     */
-    const std::string FRAGMENT_SHADER_COLOR_CURVES_FILTER{R"(
+/**
+ * Color curves fragment shader for filters
+ * This filter applies a transformation curve to RGB colors
+ */
+const std::string FRAGMENT_SHADER_COLOR_CURVES_FILTER{R"(
         precision mediump float;
 
     #ifdef TEXTURE_RECT
@@ -1176,10 +1173,10 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Warp vertex shader
-     */
-    const std::string VERTEX_SHADER_WARP{R"(
+/**
+ * Warp vertex shader
+ */
+const std::string VERTEX_SHADER_WARP{R"(
         precision mediump float;
 
         layout(location = 0) in vec4 _vertex;
@@ -1193,10 +1190,10 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Fragment shader for warp
-     */
-    const std::string FRAGMENT_SHADER_WARP{R"(
+/**
+ * Fragment shader for warp
+ */
+const std::string FRAGMENT_SHADER_WARP{R"(
         precision mediump float;
         #define PI 3.14159265359
 
@@ -1237,10 +1234,10 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Cubemap objects rendering (used by the virtual screens)
-     */
-    const std::string VERTEX_SHADER_OBJECT_CUBEMAP{R"(
+/**
+ * Cubemap objects rendering (used by the virtual screens)
+ */
+const std::string VERTEX_SHADER_OBJECT_CUBEMAP{R"(
         precision mediump float;
 
         #include getSmoothBlendFromVertex
@@ -1265,7 +1262,7 @@ struct ShaderSources
         }
     )"};
 
-    const std::string GEOMETRY_SHADER_OBJECT_CUBEMAP{R"(
+const std::string GEOMETRY_SHADER_OBJECT_CUBEMAP{R"(
         precision mediump float;
 
         layout(triangles) in;
@@ -1330,7 +1327,7 @@ struct ShaderSources
         }
     )"};
 
-    const std::string FRAGMENT_SHADER_OBJECT_CUBEMAP{R"(
+const std::string FRAGMENT_SHADER_OBJECT_CUBEMAP{R"(
         precision mediump float;
 
         #ifdef TEXTURE_RECT
@@ -1351,7 +1348,7 @@ struct ShaderSources
 
             void main(void)
             {
-        #if TEXTURE_RECT
+        #ifdef TEXTURE_RECT
                 vec4 color = texture(_tex0, vertexIn.texCoord * _tex0_size);
         #else
                 vec4 color = texture(_tex0, vertexIn.texCoord);
@@ -1361,10 +1358,10 @@ struct ShaderSources
             }
     )"};
 
-    /**
-     * Vertex shader for textured rendering
-     */
-    const std::string VERTEX_SHADER_TEXTURE{R"(
+/**
+ * Vertex shader for textured rendering
+ */
+const std::string VERTEX_SHADER_TEXTURE{R"(
         precision mediump float;
 
         #include getSmoothBlendFromVertex
@@ -1425,10 +1422,10 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Textured fragment shader
-     */
-    const std::string FRAGMENT_SHADER_TEXTURE{R"(
+/**
+ * Textured fragment shader
+ */
+const std::string FRAGMENT_SHADER_TEXTURE{R"(
         precision mediump float;
 
         #include hsv
@@ -1453,7 +1450,7 @@ struct ShaderSources
         uniform vec2 _tex1_size;
 
         uniform int _showCameraCount;
-        uniform int _sideness;
+        uniform int _culling;
         
         // blendWidth, brightness, saturation, contrast
         uniform vec4 _cameraAttributes;
@@ -1560,16 +1557,14 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Single color fragment shader
-     */
-    const std::string FRAGMENT_SHADER_COLOR{R"(
+/**
+ * Single color fragment shader
+ */
+const std::string FRAGMENT_SHADER_COLOR{R"(
         precision mediump float;
 
         #define PI 3.14159265359
 
-        uniform int _sideness;
-        uniform vec4 _fovAndColorBalance; // fovX and fovY, r/g and b/g
         uniform vec4 _color;
 
         in VertexData
@@ -1593,17 +1588,14 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * UV drawing fragment shader
-     * UV coordinates are encoded on 2 channels each, to get 16bits precision
-     */
-    const std::string FRAGMENT_SHADER_UV{R"(
+/**
+ * UV drawing fragment shader
+ * UV coordinates are encoded on 2 channels each, to get 16bits precision
+ */
+const std::string FRAGMENT_SHADER_UV{R"(
         precision mediump float;
 
         #define PI 3.14159265359
-
-        uniform int _sideness;
-        uniform vec4 _fovAndColorBalance; // fovX and fovY, r/g and b/g
 
         in VertexData
         {
@@ -1629,11 +1621,11 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Draws the primitive ID
-     * This shader has to be used after a pass of COMPUTE_SHADER_RESET_VISIBILITY
-     */
-    const std::string FRAGMENT_SHADER_PRIMITIVEID{R"(
+/**
+ * Draws the primitive ID
+ * This shader has to be used after a pass of COMPUTE_SHADER_RESET_VISIBILITY
+ */
+const std::string FRAGMENT_SHADER_PRIMITIVEID{R"(
         precision mediump float;
 
         in VertexData
@@ -1656,10 +1648,10 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Wireframe rendering
-     */
-    const std::string VERTEX_SHADER_WIREFRAME{R"(
+/**
+ * Wireframe rendering
+ */
+const std::string VERTEX_SHADER_WIREFRAME{R"(
         precision mediump float;
 
         layout(location = 0) in vec4 _vertex;
@@ -1679,7 +1671,7 @@ struct ShaderSources
         }
     )"};
 
-    const std::string GEOMETRY_SHADER_WIREFRAME{R"(
+const std::string GEOMETRY_SHADER_WIREFRAME{R"(
         precision mediump float;
 
         layout(triangles) in;
@@ -1726,7 +1718,7 @@ struct ShaderSources
         }
     )"};
 
-    const std::string FRAGMENT_SHADER_WIREFRAME{R"(
+const std::string FRAGMENT_SHADER_WIREFRAME{R"(
         precision mediump float;
 
         #define PI 3.14159265359
@@ -1739,8 +1731,6 @@ struct ShaderSources
         } vertexIn;
 
         uniform vec4 _wireframeColor;
-        uniform int _sideness;
-        uniform vec4 _fovAndColorBalance; // fovX and fovY, r/g and b/g
         out vec4 fragColor;
 
         float edgeFactor()
@@ -1761,10 +1751,10 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Cubemap projection to spherical, equirectangular, or "single layer cubemap"
-     */
-    const std::string VERTEX_SHADER_CUBEMAP_PROJECTION{R"(
+/**
+ * Cubemap projection to spherical, equirectangular, or "single layer cubemap"
+ */
+const std::string VERTEX_SHADER_CUBEMAP_PROJECTION{R"(
         precision mediump float;
 
         layout(location = 0) in vec4 _vertex;
@@ -1778,7 +1768,7 @@ struct ShaderSources
         }
     )"};
 
-    const std::string FRAGMENT_SHADER_CUBEMAP_PROJECTION{R"(
+const std::string FRAGMENT_SHADER_CUBEMAP_PROJECTION{R"(
         precision mediump float;
 
         #define PI 3.141592653589793
@@ -1842,10 +1832,10 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Wireframe rendering for Warps
-     */
-    const std::string VERTEX_SHADER_WARP_WIREFRAME{R"(
+/**
+ * Wireframe rendering for Warps
+ */
+const std::string VERTEX_SHADER_WARP_WIREFRAME{R"(
         precision mediump float;
 
         layout(location = 0) in vec4 _vertex;
@@ -1864,7 +1854,7 @@ struct ShaderSources
         }
     )"};
 
-    const std::string GEOMETRY_SHADER_WARP_WIREFRAME{R"(
+const std::string GEOMETRY_SHADER_WARP_WIREFRAME{R"(
         precision mediump float;
 
         layout(triangles) in;
@@ -1902,7 +1892,7 @@ struct ShaderSources
         }
     )"};
 
-    const std::string FRAGMENT_SHADER_WARP_WIREFRAME{R"(
+const std::string FRAGMENT_SHADER_WARP_WIREFRAME{R"(
         precision mediump float;
 
         #define PI 3.14159265359
@@ -1912,7 +1902,7 @@ struct ShaderSources
             vec3 bcoord;
         } vertexIn;
 
-        uniform int _sideness;
+        uniform int _culling;
         uniform vec4 _fovAndColorBalance; // fovX and fovY, r/g and b/g
         out vec4 fragColor;
 
@@ -1928,10 +1918,10 @@ struct ShaderSources
         }
     )"};
 
-    /**
-     * Rendering of the output windows
-     */
-    const std::string VERTEX_SHADER_WINDOW{R"(
+/**
+ * Rendering of the output windows
+ */
+const std::string VERTEX_SHADER_WINDOW{R"(
         precision mediump float;
 
         layout(location = 0) in vec4 _vertex;
@@ -1947,7 +1937,7 @@ struct ShaderSources
         }
     )"};
 
-    const std::string FRAGMENT_SHADER_WINDOW{R"(
+const std::string FRAGMENT_SHADER_WINDOW{R"(
         precision mediump float;
 
         #define PI 3.14159265359
@@ -2007,9 +1997,7 @@ struct ShaderSources
         }
     )"};
 
-    const std::string FRAGMENT_SHADER_EMPTY = "void main() {}";
-
-} ShaderSources;
+const std::string FRAGMENT_SHADER_EMPTY = "void main() {}";
 
 } // namespace Splash
 

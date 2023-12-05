@@ -33,8 +33,9 @@
 #include "./core/constants.h"
 
 #include "./core/attribute.h"
+#include "./graphics/api/filter_gfx_impl.h"
+#include "./graphics/api/framebuffer.h"
 #include "./graphics/camera.h"
-#include "./graphics/framebuffer.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"
@@ -137,10 +138,11 @@ class Warp final : public Texture
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
   private:
+    std::unique_ptr<gfx::FilterGfxImpl> _gfxImpl;
     std::weak_ptr<Texture> _inTexture;
     std::weak_ptr<Camera> _inCamera;
 
-    std::unique_ptr<Framebuffer> _fbo{nullptr};
+    std::unique_ptr<gfx::Framebuffer> _fbo{nullptr};
     std::shared_ptr<Mesh_BezierPatch> _screenMesh{nullptr};
     std::shared_ptr<Object> _screen{nullptr};
 
@@ -152,11 +154,6 @@ class Warp final : public Texture
     int _grabMipmapLevel{-1};
     Value _mipmapBuffer{};
     Values _mipmapBufferSpec{};
-
-    /**
-     * Init function called in constructors
-     */
-    void init();
 
     /**
      * Load some defaults models

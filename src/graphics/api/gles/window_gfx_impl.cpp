@@ -25,12 +25,15 @@ void WindowGfxImpl::setupFBOs(Scene* scene, uint32_t width, uint32_t height)
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
 
-    _depthTexture = scene->getRenderer()->createTexture_Image(scene, width, height, "D");
+    _depthTexture = scene->getRenderer()->createTexture_Image(scene);
+    assert(_depthTexture != nullptr);
+    _depthTexture->reset(width, height, "D");
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
 
     _colorTexture = scene->getRenderer()->createTexture_Image(scene);
-    _colorTexture->setAttribute("filtering", {false});
+    assert(_colorTexture != nullptr);
     _colorTexture->reset(width, height, "RGBA");
+    _colorTexture->setAttribute("filtering", {false});
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
 
     GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};

@@ -251,7 +251,34 @@ For Python code we follow the [PEP 8 style guide](https://www.python.org/dev/pep
 
 ### Branching strategy with git
 
-The [master](https://gitlab.com/splashmapper/splash/tree/master) branch contains Splash releases. Validated new developments are into the [develop](https://gitlab.com/splashmapper/splash/tree/develop) branch.
+The [master](https://gitlab.com/splashmapper/splash/tree/master) branch contains Splash releases. Validated new developments are into the [develop](https://gitlab.com/splashmapper/splash/tree/develop) branch, and the [staging](https://gitlab.com/splashmapper/splash/tree/staging) branch is used during the release process and holds release candidates.
+
+Overall the branches look like this:
+```
+                        feature develop staging release release/x.y.z
+                            .      *       |       |       .
+                            .      *       *       |       .
+                            . ____/|       |       *       .
+                            ./     |       |       *       .
+                            *      *       *       |       .
+                            *      |       *       |       .
+                             \____ |       *       |       .
+new feature merge     →           \|       |       *       .
+                                   |\_____ |       *       .
+start release process →            *      \|       *       .
+                                   *       *       |       .
+                                   * _____/*       |       .
+merge CI fixes to dev →            |/      *       |       .
+                                   * _____/|\_____ |       .
+                                   |/      |      \|       .          ← merge staging to master
+                                   *       |       |\_____ .
+                                   *       |       |      \.
+                                   *       |       |       |          ← create release/x.y.z branch from master
+
+* is a commit
+| is a link between commits
+. is just to track branch name
+```
 
 Modifications are made into a dedicated branch that needs to be merged into the **develop** branch through a Gitlab merge request. When you modification is ready, you need to prepare your merge request as follow:
 
@@ -269,7 +296,7 @@ git rebase -i develop
 
 When your feature branch is ready, submit a Merge Request to **develop**. When the MR is approved and your changes merged, you can safely delete your feature branch.
 
-Core developers will prepare new releases regularly by creating a *release branch* from **develop** (named *release/<new_version>*). This new branch allows developers to test the release's stability and prepare the relevant metadata. Eventually, when this new release has been tested and deemed stable enough, it will be merged in the **master** branch by the core team. This new commit on **master** will be tagged for future reference and the original release branch will then be deleted
+The release process is handled semi-automatically, see the dedicated [Release process](#release_process) section. Merging to **staging**, **release** and the **release/x.y.z** branches should never be done manually.
 
 ### CI pipeline
 	
@@ -314,15 +341,20 @@ The defects detected by static analysis should be fixed in a new commit, and sub
 
 ### Release process
 
-To release a new version of Splash, use the script provided in `./tools/release_version.py`. This script will take care of testing that the latest commit on **develop** build, update the version number as well as the [News.md](./News.md) file, and update the various branches accordingly.
+The release is done by one of the maintainers of Splash. To release a new version of Splash, use the script provided in `./tools` :
+
+- `stage_version.py`: takes care of testing that the latest commit on **develop** build, updating the version number as well as the [News.md](./News.md) file, and pushing the changes to the **staging** branch where more thorough tests will be carried out.
+- `release_version.py`: finalizes the release process by merging the **staging** branch into **master** and creating a new tag and release branch for this release. This script has to be run _after_ the `stage_version.py` script, and only after the CI for the **staging** branch has been fixed (if needed).
 
 ```bash
+./tools/stage_version.py
+# Wait for CI to pass, fix it if needed
 ./tools/release_version.py
 ```
 
 The resulting branches will also be pushed to the repository. Note that you need to have write access to this repository for this to work.
 
-The website should be updated to match the new release. Also the [Flatpak package](https://github.com/flathub/xyz.splashmapper.Splash) should be updated separately.
+The website should be updated to match the new release. The [Flatpak package](https://github.com/flathub/xyz.splashmapper.Splash) should be updated separately.
 
 ### Addressing Feedback
 

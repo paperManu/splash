@@ -259,9 +259,8 @@ class Window final : public GraphObject
 
     /**
      * Set up the projection surface
-     * \return Return true if all is well
      */
-    bool setProjectionSurface();
+    void setProjectionSurface();
 
     /**
      * Set whether the window has decorations

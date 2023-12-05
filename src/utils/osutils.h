@@ -173,8 +173,8 @@ inline std::string cleanPath(const std::string& filepath)
  */
 inline std::string getHomePath()
 {
-    if (getenv("HOME"))
-        return std::string(getenv("HOME"));
+    if (char* homeEnv = getenv("HOME"); homeEnv != nullptr)
+        return std::string(homeEnv);
 
     struct passwd* pw = getpwuid(getuid());
     return std::string(pw->pw_dir);

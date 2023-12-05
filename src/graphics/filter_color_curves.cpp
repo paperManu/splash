@@ -35,7 +35,7 @@ void FilterColorCurves::updateUniforms()
                 tmpCurves.push_back(_colorCurves[j][i].as<float>());
         Values curves;
         curves.push_back(tmpCurves);
-        shader->setAttribute("uniform", {"_colorCurves", curves});
+        shader->setUniform("_colorCurves", curves);
     }
 }
 

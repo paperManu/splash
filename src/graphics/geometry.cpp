@@ -4,7 +4,6 @@
 
 #include "./core/scene.h"
 #include "./core/serialize/serialize_mesh.h"
-#include "./graphics/api/geometry_gfx_impl.h"
 #include "./mesh/mesh.h"
 #include "./utils/log.h"
 
@@ -18,16 +17,6 @@ Geometry::Geometry(RootObject* root, std::unique_ptr<gfx::GeometryGfxImpl> gfxIm
     : BufferObject(root)
     , _gfxImpl(std::move(gfxImpl))
 {
-    init();
-
-    auto scene = dynamic_cast<Scene*>(_root);
-    if (scene)
-        _onMasterScene = scene->isMaster();
-}
-
-/*************/
-void Geometry::init()
-{
     _type = "geometry";
     registerAttributes();
 
@@ -38,19 +27,11 @@ void Geometry::init()
         return;
 
     _mesh = std::make_shared<Mesh>(_root);
-    update();
+    Geometry::update();
     _timestamp = _mesh->getTimestamp();
-}
 
-/*************/
-Geometry::~Geometry()
-{
-    if (!_root)
-        return;
-
-#ifdef DEBUG
-    Log::get() << Log::DEBUGGING << "Geometry::~Geometry - Destructor" << Log::endl;
-#endif
+    if (_scene)
+        _onMasterScene = _scene->isMaster();
 }
 
 /*************/
@@ -68,7 +49,6 @@ void Geometry::activateAsSharedBuffer()
 /*************/
 void Geometry::activateForFeedback()
 {
-    // TODO: Move this to the impl?
     const bool shouldResize = _buffersDirty || _gfxImpl->buffersTooSmall();
 
     if (shouldResize)
@@ -92,7 +72,13 @@ void Geometry::deactivateFeedback()
 }
 
 /*************/
-uint Geometry::getVerticesNumber() const
+void Geometry::draw() const
+{
+    _gfxImpl->draw();
+}
+
+/*************/
+uint32_t Geometry::getVerticesNumber() const
 {
     return _gfxImpl->getVerticesNumber();
 }
@@ -124,8 +110,8 @@ bool Geometry::deserialize(SerializedObject&& obj)
     auto mesh = Serial::detail::deserializer<Mesh::MeshContainer>(serializedMeshIt);
 
     bool doMatch = (mesh.vertices.size() == mesh.uvs.size());
-    doMatch = (mesh.vertices.size() == mesh.normals.size());
-    doMatch = (mesh.vertices.size() == mesh.annexe.size());
+    doMatch &= (mesh.vertices.size() == mesh.normals.size());
+    doMatch &= (mesh.vertices.size() == mesh.annexe.size());
 
     if (!doMatch)
     {
@@ -192,14 +178,14 @@ void Geometry::updateBuffers()
     _gfxImpl->initVertices(vertices.data(), vertices.size() / 4);
 
     std::vector<float> texcoords = _mesh->getUVCoordsFlat();
-    _gfxImpl->allocateOrInitBuffer(BufferType::TexCoords, 2, texcoords);
+    _gfxImpl->allocateOrInitBuffer(static_cast<uint32_t>(BufferType::TexCoords), 2, texcoords);
 
     std::vector<float> normals = _mesh->getNormalsFlat();
-    _gfxImpl->allocateOrInitBuffer(BufferType::Normal, 4, normals);
+    _gfxImpl->allocateOrInitBuffer(static_cast<uint32_t>(BufferType::Normal), 4, normals);
 
     // An additional annexe buffer, to be filled by compute shaders. Contains a vec4 for each vertex
     std::vector<float> annexe = _mesh->getAnnexeFlat();
-    _gfxImpl->allocateOrInitBuffer(BufferType::Annexe, 4, annexe);
+    _gfxImpl->allocateOrInitBuffer(static_cast<uint32_t>(BufferType::Annexe), 4, annexe);
 
     _gfxImpl->clearFromAllContexts();
 

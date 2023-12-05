@@ -37,28 +37,31 @@
 namespace Splash
 {
 
+class BaseObject;
+class Filter;
 class Geometry;
 class GlWindow;
 class RootObject;
-class BaseObject;
 class Texture_Image;
+class Warp;
 
 namespace gfx
 {
 
+class CameraGfxImpl;
+class FilterGfxImpl;
+class Framebuffer;
 class GpuBuffer;
+class ShaderGfxImpl;
 
-struct ApiVersion
+struct PlatformVersion
 {
-    std::pair<uint, uint> version;
     std::string name;
+    uint32_t major{0};
+    uint32_t minor{0};
+    uint32_t patch{0};
 
-    [[nodiscard]] std::string toString() const
-    {
-        const auto major = std::to_string(std::get<0>(version));
-        const auto minor = std::to_string(std::get<1>(version));
-        return name + " " + major + "." + minor;
-    }
+    [[nodiscard]] const std::string toString() const { return name + " " + std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch); }
 };
 
 class Renderer
@@ -75,83 +78,18 @@ class Renderer
         std::optional<std::string> name, type;
     };
 
-    static std::unique_ptr<Renderer> fromApi(Renderer::Api api);
+  public:
+    /**
+     * Create a renderer given a specific API
+     * \param api API platform to create a renderer for
+     * \return Return a unique pointer to the created renderer
+     */
     static std::unique_ptr<Renderer> create(std::optional<Renderer::Api> api);
-
-    virtual ~Renderer() = default;
 
     /**
      *  Callback for GL errors and warnings
      */
     static void glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* userParam);
-
-    // NOTE: Sometimes you can use `const std::string_view` (pointer + length, trivially and cheaply copied) instead of `const std::string&`, but
-    // it is not guaranteed that the view will be null terminated, which we need when interfacing with glfw's C API.
-    /**
-     *  Initializes glfw, initializes the graphics API, and creates a window.
-     */
-    void init(const std::string& name);
-
-    /**
-     * \return A simple struct containing the major and minor OpenGL versions, along with a string name.
-     */
-    virtual ApiVersion getApiSpecificVersion() const = 0;
-
-    /**
-     * \return Returns the version as a pair of {MAJOR, MINOR}
-     */
-    std::pair<uint, uint> getGLVersion()
-    {
-        // Shouldn't be here if `version` is `nullopt` (i.e. failed to init).
-        return getApiSpecificVersion().version;
-    }
-
-    /**
-     * \return Returns the vendor of the OpenGL renderer
-     */
-    std::string getGLVendor() { return _glVendor; }
-
-    /**
-     * \return Returns the name of the OpenGL renderer.
-     */
-    std::string getGLRenderer() { return _glRenderer; }
-
-    /**
-     * \return Returns a `shared_ptr` to the main window.
-     */
-    std::shared_ptr<GlWindow> getMainWindow() { return _mainWindow; }
-
-    /**
-     * Create a new Geometry
-     * \param root Root object
-     */
-    virtual std::shared_ptr<Geometry> createGeometry(RootObject* root) const = 0;
-
-    /**
-     * Create a new Texture_Image
-     * \param root Root object
-     * \param width Width
-     * \param height Height
-     * \param pixelFormat String describing the pixel format. Accepted values are RGB, RGBA, sRGBA, RGBA16, R16, YUYV, UYVY, D
-     * \param data Pointer to data to use to initialize the texture
-     * \param multisample Sample count for MSAA
-     * \param cubemap True to request a cubemap
-     * \return Return a shared pointer to a Texture_Image
-     */
-    std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, int multisample = 0, bool cubemap = false) const;
-
-    /**
-     * Create a new Texture_Image
-     * \param root Root object
-     * \return Return a shared pointer to a default Texture_Image
-     */
-    virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const = 0;
-
-    /**
-     * Get a pointer to the data to be sent to the GL callback
-     * \return A raw pointer to the GL callback data
-     */
-    const Renderer::GlMsgCallbackData* getGlMsgCallbackDataPtr();
 
     /**
      * Set the user data for the GL callback
@@ -159,34 +97,9 @@ class Renderer
      */
     static void setGlMsgCallbackData(const Renderer::GlMsgCallbackData* data) { glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<const void*>(data)); }
 
-    /**
-     * \return A class containing the graphics API specific details of `Splash::Window`.
-     */
-    virtual std::unique_ptr<gfx::WindowGfxImpl> createWindowGfxImpl() const = 0;
-
-  protected:
-    /**
-     * Sets API specific flags for OpenGL or OpenGL ES. For example, enables sRGB for OpenGL, or explicitly requests an OpenGL ES context.
-     */
-    virtual void setApiSpecificFlags() const = 0;
-
-    /**
-     * \return Calls the appropriate loader for each API. Calls `gladLoadGLES2Loader` for OpenGL ES, and `gladLoadGLLoader`. Note that calling an incorrect loader might lead to
-     * segfaults due to API specific function not getting loaded, leaving the pointers as null.
-     */
-    virtual void loadApiSpecificGlFunctions() const = 0;
-
   private:
-    bool _isInitialized = false;
-    std::shared_ptr<GlWindow> _mainWindow;
-    std::string _glVendor, _glRenderer;
-
-    // Since we don't inherit from BaseObject (because I think it's a bit to heavy for a renderer. (Please ignore my use of virtual functions :P)),
-    // we have to re-declare some variable to hold the data we'll pass to the callback in this class.
-    Renderer::GlMsgCallbackData _glMsgCallbackData;
-
     /**
-     *  Callback for GLFW errors
+     * Callback for GLFW errors
      * \param code Error code
      * \param msg Associated error message
      */
@@ -211,6 +124,125 @@ class Renderer
      * \return true if a context was successfully created, false otherwise.
      */
     static bool tryCreateContext(const Renderer* renderer);
+
+  public:
+    /**
+     * Constructor
+     */
+    Renderer() = default;
+
+    /**
+     * Destructor
+     */
+    virtual ~Renderer() = default;
+
+    /**
+     *  Initializes glfw, initializes the graphics API, and creates a window.
+     */
+    void init(const std::string& name);
+
+    /**
+     * Get the platform version
+     * \return Returns a PlatformVersion struct
+     */
+    const PlatformVersion getPlatformVersion() const { return _platformVersion; }
+
+    /**
+     * Get the platform vendor
+     * \return Returns the vendor of the OpenGL renderer
+     */
+    std::string getPlatformVendor() { return _glVendor; }
+
+    /**
+     * \return Returns a `shared_ptr` to the main window.
+     */
+    std::shared_ptr<GlWindow> getMainWindow() { return _mainWindow; }
+
+    /**
+     * Get a pointer to the data to be sent to the GL callback
+     * \return A raw pointer to the GL callback data
+     */
+    const Renderer::GlMsgCallbackData* getGlMsgCallbackDataPtr();
+
+    /**
+     * Create a new Camera graphics implementation
+     * \return Return a unique pointer to a new Camera
+     */
+    virtual std::unique_ptr<gfx::CameraGfxImpl> createCameraGfxImpl() const = 0;
+
+    /**
+     * Create a new Filter graphics implementation
+     * \return Return a unique pointer to a new Filter
+     */
+    virtual std::unique_ptr<gfx::FilterGfxImpl> createFilterGfxImpl() const = 0;
+
+    /**
+     * Create a new Framebuffer
+     * \return Return a unique pointer to the newly created Framebuffer
+     */
+    virtual std::unique_ptr<gfx::Framebuffer> createFramebuffer() const = 0;
+
+    /**
+     * Create a new Geometry
+     * \param root Root object
+     * \return Return a shared pointer to the newly created Geometry
+     */
+    virtual std::shared_ptr<Geometry> createGeometry(RootObject* root) const = 0;
+
+    /**
+     * Create a new graphic shader implementation
+     * \return Return a unique pointer to the shader implementation
+     */
+    virtual std::unique_ptr<ShaderGfxImpl> createGraphicShader() const = 0;
+
+    /**
+     * Create a new compute shader implementation
+     * \return Return a unique pointer to the shader implementation
+     */
+    virtual std::unique_ptr<ShaderGfxImpl> createComputeShader() const = 0;
+
+    /**
+     * Create a new feedback shader implementation
+     * \return Return a unique pointer to the shader implementation
+     */
+    virtual std::unique_ptr<ShaderGfxImpl> createFeedbackShader() const = 0;
+
+    /**
+     * Create a new Texture_Image
+     * \param root Root object
+     * \return Return a shared pointer to a default Texture_Image
+     */
+    virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const = 0;
+
+    /**
+     * Create a new Window
+     * \return A class containing the graphics API specific details of `Splash::Window`.
+     */
+    virtual std::unique_ptr<gfx::WindowGfxImpl> createWindowGfxImpl() const = 0;
+
+  protected:
+    /**
+     * Sets API specific flags for OpenGL or OpenGL ES. For example, enables sRGB for OpenGL, or explicitly requests an OpenGL ES context.
+     */
+    virtual void setApiSpecificFlags() const = 0;
+
+    /**
+     * \return Calls the appropriate loader for each API. Calls `gladLoadGLES2Loader` for OpenGL ES, and `gladLoadGLLoader`. Note that calling an incorrect loader might lead to
+     * segfaults due to API specific function not getting loaded, leaving the pointers as null.
+     */
+    virtual void loadApiSpecificGlFunctions() const = 0;
+
+  protected:
+    PlatformVersion _platformVersion;
+
+  private:
+    bool _isInitialized = false;
+    std::shared_ptr<GlWindow> _mainWindow;
+    std::string _glVendor, _glRenderer;
+
+    // Since we don't inherit from BaseObject (because I think it's a bit to heavy for a renderer. (Please ignore my use of virtual functions :P)),
+    // we have to re-declare some variable to hold the data we'll pass to the callback in this class.
+    Renderer::GlMsgCallbackData _glMsgCallbackData;
 };
 
 } // namespace gfx

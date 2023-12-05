@@ -108,7 +108,7 @@
                "priorityShift" : [ 0 ],
                "rotation" : [ 0, 0, 0 ],
                "scale" : [ 1, 1, 1 ],
-               "sideness" : [ 0 ],
+               "culling" : [ 0 ],
                "type" : "object"
             },
             "win2" : {

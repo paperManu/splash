@@ -229,8 +229,8 @@ void Factory::registerObjects()
         [&](RootObject* root) {
             if (_scene)
                 return std::dynamic_pointer_cast<GraphObject>(_scene->getRenderer()->createGeometry(root));
-
-            return std::shared_ptr<GraphObject>(nullptr);
+            else
+                return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Geometry>(root));
         },
         GraphObject::Category::MISC,
         "Geometry",
@@ -424,8 +424,8 @@ void Factory::registerObjects()
             // Root must exist for the renderer to work (indicates normal operation, root is null for tests)
             if (_scene)
                 return std::dynamic_pointer_cast<GraphObject>(_scene->getRenderer()->createTexture_Image(root));
-
-            return std::shared_ptr<GraphObject>(nullptr);
+            else
+                return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Texture_Image>(root));
         },
         GraphObject::Category::TEXTURE,
         "texture image",

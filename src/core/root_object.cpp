@@ -258,21 +258,25 @@ bool RootObject::handleSerializedObject(const std::string& name, SerializedObjec
 void RootObject::updateTreeFromObjects()
 {
     // Update logs
-    auto logs = Log::get().getNewLogs();
+    const auto logs = Log::get().getNewLogs();
     for (auto& log : logs)
     {
         auto timestampAsStr = std::to_string(std::get<0>(log));
         auto path = "/" + _name + "/logs/" + std::to_string(std::get<0>(log)) + "_";
-        uint32_t logIndex = 0;
-        while (_tree.hasLeafAt(path + "_" + std::to_string(logIndex)))
+
+        // We store the logs by their index, and we know any new log
+        // will have a higher index. Which is why logIndex is static.
+        static uint32_t logIndex = 0;
+        while (_tree.hasLeafAt(path + std::to_string(logIndex)))
             logIndex++;
-        path = path + "_" + std::to_string(logIndex);
+
+        path.append(std::to_string(logIndex));
         _tree.createLeafAt(path);
         _tree.setValueForLeafAt(path, Values({std::get<1>(log), static_cast<int>(std::get<2>(log))}));
     }
 
     // Update durations
-    auto& durationMap = Timer::get().getDurationMap();
+    const auto& durationMap = Timer::get().getDurationMap();
     for (auto& d : durationMap)
     {
         std::string path = "/" + _name + "/durations/" + d.first;
@@ -283,47 +287,49 @@ void RootObject::updateTreeFromObjects()
     }
 
     // Update the Root object attributes
-    auto attributePath = std::string("/" + _name + "/attributes");
-    assert(_tree.hasBranchAt(attributePath));
-
-    std::unique_lock<std::recursive_mutex> lock(_attribMutex);
-    for (const auto& leafName : _tree.getLeafListAt(attributePath))
     {
-        auto attribIt = _attribFunctions.find(leafName);
-        if (attribIt == _attribFunctions.end())
-            continue;
-        Values attribValue = attribIt->second();
-        _tree.setValueForLeafAt(attributePath + "/" + leafName, attribValue);
+        const auto attributePath = std::string("/" + _name + "/attributes/");
+        assert(_tree.hasBranchAt(attributePath));
+
+        std::unique_lock<std::recursive_mutex> lock(_attribMutex);
+        for (const auto& leafName : _tree.getLeafListAt(attributePath))
+        {
+            const auto attribIt = _attribFunctions.find(leafName);
+            if (attribIt == _attribFunctions.end())
+                continue;
+            Values attribValue = attribIt->second();
+            _tree.setValueForLeafAt(attributePath + leafName, attribValue);
+        }
     }
 
     // Update the GraphObjects attributes
-    auto objectsPath = std::string("/" + _name + "/objects");
+    const auto objectsPath = std::string("/" + _name + "/objects");
     assert(_tree.hasBranchAt(objectsPath));
 
     for (const auto& objectName : _tree.getBranchListAt(objectsPath))
     {
-        auto objectIt = _objects.find(objectName);
+        const auto objectIt = _objects.find(objectName);
         if (objectIt == _objects.end())
             continue;
-        auto object = objectIt->second;
+        const auto object = objectIt->second;
 
-        attributePath = std::string("/" + _name + "/objects/" + objectName + "/attributes");
+        const auto attributePath = std::string("/" + _name + "/objects/" + objectName + "/attributes/");
+        const auto docPath = std::string("/" + _name + "/objects/" + objectName + "/documentation/");
+
         assert(_tree.hasBranchAt(attributePath));
         for (const auto& leafName : _tree.getLeafListAt(attributePath))
         {
-            auto attribValue = object->getAttribute(leafName);
+            const auto attribValue = object->getAttribute(leafName);
             if (attribValue)
-                _tree.setValueForLeafAt(attributePath + "/" + leafName, attribValue.value());
+            {
+                _tree.setValueForLeafAt(attributePath + leafName, attribValue.value());
+            }
             else
-                _tree.removeLeafAt(attributePath + "/" + leafName);
-        }
-
-        auto docPath = std::string("/" + _name + "/objects/" + objectName + "/documentation");
-        assert(_tree.hasBranchAt(docPath));
-        for (const auto& docBranchName : _tree.getBranchListAt(docPath))
-        {
-            if (!object->hasAttribute(docBranchName))
-                _tree.removeBranchAt(docPath + "/" + docBranchName);
+            {
+                _tree.removeLeafAt(attributePath + leafName);
+                if (const auto docBranchPath = docPath + leafName; _tree.hasBranchAt(docBranchPath))
+                    _tree.removeBranchAt(docBranchPath);
+            }
         }
     }
 }

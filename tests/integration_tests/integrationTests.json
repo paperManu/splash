@@ -56,7 +56,7 @@
          "normalExponent" : [ 0.0 ],
          "position" : [ 0.0, 0.0, 0.0 ],
          "scale" : [ 1.0, 1.0, 1.0 ],
-         "sideness" : [ 0 ],
+         "culling" : [ 0 ],
          "type" : "object"
       },
       "win1" : {

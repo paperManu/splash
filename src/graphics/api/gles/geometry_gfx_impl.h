@@ -89,6 +89,11 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
     virtual void deactivateFeedback() override final;
 
     /**
+     * Draw the geometry
+     */
+    void draw() const final;
+
+    /**
      * Get the number of vertices for this geometry
      * \return Return the vertice count
      */
@@ -102,7 +107,8 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
 
     /**
      * Get a copy of the given GPU buffer
-     * \param type GPU buffer type
+     * \param typeId GPU buffer type
+     * \param forceAlternativeBuffers Force getting alternative buffers, even if not in use
      * \return Return a vector containing a copy of the buffer
      */
     virtual std::vector<char> getGpuBufferAsVector(int typeId, bool forceAlternativeBuffers) override final;
@@ -127,10 +133,11 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
 
     /**
      * Allocate or init the chosen buffer
-     * \param bufferType Buffer type, one of Geometry::BufferType
+     * \param bufferIndex Index of the buffer to allocate
      * \param componentsPerElement Component (float, int, ...) counts per element (vec2, ivec3, ...)
+     * \param dataVec Vector holding the data to initialize the buffer with
      */
-    virtual void allocateOrInitBuffer(Geometry::BufferType bufferType, uint componentsPerElement, std::vector<float>& dataVec) override final;
+    virtual void allocateOrInitBuffer(uint32_t bufferIndex, uint componentsPerElement, std::vector<float>& dataVec) override final;
 
     /**
      * Delete all vertex arrays
@@ -173,6 +180,8 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
     GLuint _alternativeBufferSize{0};
 
     bool _useAlternativeBuffers{false};
+    bool _activatedAsSharedBuffers{false};
+    bool _activatedForFeedback{false};
 
     /**
      * Set the number of vertices
@@ -182,10 +191,12 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
 
     /**
      * Allocate or init the chosen temporary buffer
-     * \param bufferType Buffer type, one of Geometry::BufferType
+     * \param bufferIndex Index of the buffer to allocate
      * \param componentsPerElement Component (float, int, ...) counts per element (vec2, ivec3, ...)
+     * \param tempVerticesNumber Number of vertices in the temporary buffer
+     * \param data Data to full the temporary buffer with
      */
-    void allocateOrInitTemporaryBuffer(Geometry::BufferType bufferType, uint componentsPerElement, uint tempVerticesNumber, char* data);
+    void allocateOrInitTemporaryBuffer(uint32_t bufferIndex, uint componentsPerElement, uint tempVerticesNumber, char* data);
 
     /**
      * Get whether any alternative buffer is missing

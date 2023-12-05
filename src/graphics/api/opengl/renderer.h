@@ -25,11 +25,19 @@
 #ifndef SPLASH_OPENGL_RENDERER_H
 #define SPLASH_OPENGL_RENDERER_H
 
+#include "./graphics/api/opengl/camera_gfx_impl.h"
+#include "./graphics/api/opengl/compute_shader.h"
+#include "./graphics/api/opengl/feedback_shader.h"
+#include "./graphics/api/opengl/filter_gfx_impl.h"
+#include "./graphics/api/opengl/framebuffer.h"
 #include "./graphics/api/opengl/geometry_gfx_impl.h"
 #include "./graphics/api/opengl/gpu_buffer.h"
+#include "./graphics/api/opengl/graphic_shader.h"
 #include "./graphics/api/opengl/texture_image_gfx_impl.h"
 #include "./graphics/api/opengl/window_gfx_impl.h"
 #include "./graphics/api/renderer.h"
+#include "./graphics/texture_image.h"
+#include "./graphics/warp.h"
 
 namespace Splash::gfx::opengl
 {
@@ -37,31 +45,89 @@ namespace Splash::gfx::opengl
 class Renderer : public gfx::Renderer
 {
   public:
-    virtual gfx::ApiVersion getApiSpecificVersion() const override final { return {{4, 5}, "OpenGL"}; }
+    /**
+     * Constructor
+     * Sets the platform version attribute
+     */
+    Renderer() { _platformVersion = gfx::PlatformVersion({"OpenGL", 4, 5, 0}); }
 
   private:
-    virtual void setApiSpecificFlags() const override final
+    /**
+     * Sets API specific flags for OpenGL or OpenGL ES. For example, enables sRGB for OpenGL, or explicitly requests an OpenGL ES context.
+     */
+    void setApiSpecificFlags() const override final
     {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
         glfwWindowHint(GLFW_DEPTH_BITS, 24);
     }
 
-    virtual void loadApiSpecificGlFunctions() const override final { gladLoadGLLoader((GLADloadproc)glfwGetProcAddress); };
+    /**
+     * Calls the appropriate loader for each API. Calls `gladLoadGLES2Loader` for OpenGL ES, and `gladLoadGLLoader`. Note that calling an incorrect loader might lead to
+     * segfaults due to API specific function not getting loaded, leaving the pointers as null.
+     */
+    void loadApiSpecificGlFunctions() const override final { gladLoadGLLoader((GLADloadproc)glfwGetProcAddress); };
 
-    virtual std::shared_ptr<Geometry> createGeometry(RootObject* root) const override final
-    {
-        return std::make_shared<Geometry>(root, std::make_unique<gfx::opengl::GeometryGfxImpl>());
-    }
+    /**
+     * Create a new Camera graphics implementation
+     * \return Return a unique pointer to a new Camera
+     */
+    std::unique_ptr<gfx::CameraGfxImpl> createCameraGfxImpl() const override final { return std::make_unique<gfx::opengl::CameraGfxImpl>(); }
 
-    virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const override final
+    /**
+     * Create a new Filter graphics implementation
+     * \return Return a unique pointer to a new Filter
+     */
+    std::unique_ptr<gfx::FilterGfxImpl> createFilterGfxImpl() const final { return std::make_unique<gfx::opengl::FilterGfxImpl>(); }
+
+    /**
+     * Create a new Framebuffer
+     * \return Return a unique pointer to the newly created Framebuffer
+     */
+    std::unique_ptr<gfx::Framebuffer> createFramebuffer() const override final { return std::make_unique<opengl::Framebuffer>(); }
+
+    /**
+     * Create a new Geometry
+     * \param root Root object
+     * \return Return a shared pointer to the newly created Geometry
+     */
+    std::shared_ptr<Geometry> createGeometry(RootObject* root) const override final { return std::make_shared<Geometry>(root, std::make_unique<gfx::opengl::GeometryGfxImpl>()); }
+
+    /**
+     * Create a new graphic shader implementation
+     * \return Return a unique pointer to the shader implementation
+     */
+    std::unique_ptr<gfx::ShaderGfxImpl> createGraphicShader() const override final { return std::make_unique<gfx::opengl::GraphicShaderGfxImpl>(); }
+
+    /**
+     * Create a new compute shader implementation
+     * \return Return a unique pointer to the shader implementation
+     */
+    std::unique_ptr<gfx::ShaderGfxImpl> createComputeShader() const override final { return std::make_unique<gfx::opengl::ComputeShaderGfxImpl>(); }
+
+    /**
+     * Create a new feedback shader implementation
+     * \return Return a unique pointer to the shader implementation
+     */
+    std::unique_ptr<gfx::ShaderGfxImpl> createFeedbackShader() const override final { return std::make_unique<gfx::opengl::FeedbackShaderGfxImpl>(); }
+
+    /**
+     * Create a new Texture_Image
+     * \param root Root object
+     * \return Return a shared pointer to a default Texture_Image
+     */
+    std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const override final
     {
         return std::make_shared<Texture_Image>(root, std::make_unique<gfx::opengl::Texture_ImageGfxImpl>());
     };
 
-    virtual std::unique_ptr<gfx::WindowGfxImpl> createWindowGfxImpl() const override final { return std::make_unique<gfx::opengl::WindowGfxImpl>(); }
+    /**
+     * Create a new Window
+     * \return A class containing the graphics API specific details of `Splash::Window`.
+     */
+    std::unique_ptr<gfx::WindowGfxImpl> createWindowGfxImpl() const override final { return std::make_unique<gfx::opengl::WindowGfxImpl>(); }
 };
 
-} // namespace Splash
+} // namespace Splash::gfx::opengl
 
 #endif

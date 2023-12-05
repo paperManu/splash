@@ -108,6 +108,15 @@ struct Value
     {
     }
 
+    Value(const std::initializer_list<Value>& list)
+    {
+        _type = Type::values;
+        Values values;
+        for (auto& value : list)
+            values.emplace_back(value);
+        _data = values;
+    }
+
     bool operator==(const Value& v) const
     {
         if (_type != v._type)

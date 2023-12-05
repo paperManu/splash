@@ -50,22 +50,22 @@ class Texture_Image : public Texture
      * \param root Root object
      * \param gfxImpl Specialization of a gfx::Texture_ImageGfxImpl for handling rendering
      */
-    explicit Texture_Image(RootObject* root, std::unique_ptr<gfx::Texture_ImageGfxImpl> gfxImpl);
+    explicit Texture_Image(RootObject* root, std::unique_ptr<gfx::Texture_ImageGfxImpl> gfxImpl = nullptr);
 
     /**
      * Destructor
      */
-    virtual ~Texture_Image();
+    ~Texture_Image() override = default;
 
     /**
      * Bind this texture
      */
-    virtual void bind() override { _gfxImpl->bind(); }
+    void bind() override { _gfxImpl->bind(); }
 
     /**
      * Unbind this texture
      */
-    virtual void unbind() override
+    void unbind() override
     {
         _gfxImpl->unbind();
         _lastDrawnTimestamp = Timer::getTime();
@@ -74,7 +74,7 @@ class Texture_Image : public Texture
     /**
      * Generate the mipmaps for the texture
      */
-    virtual void generateMipmap() const { _gfxImpl->generateMipmap(); };
+    void generateMipmap() const { _gfxImpl->generateMipmap(); };
 
     /**
      * Get the id of the texture (API dependant)
@@ -189,11 +189,6 @@ class Texture_Image : public Texture
 
     // Parameters to send to the shader
     std::unordered_map<std::string, Values> _shaderUniforms;
-
-    /**
-     * Initialization
-     */
-    void init();
 
     /**
      * Register new functors to modify attributes
