@@ -164,7 +164,7 @@ void Sink::update()
     // For reference, the behavior with Nvidia hardware is that the grabbed
     // image is always completely black. It works correctly with AMD and Intel
     // hardware using Mesa driver.
-    if (scene != nullptr && scene->getGLVendor() == Constants::GL_VENDOR_NVIDIA)
+    if (scene != nullptr && _renderer->getPlatformVendor() == Constants::GL_VENDOR_NVIDIA)
     {
         _inputFilter->bind();
         if (_spec.bpp == 64)

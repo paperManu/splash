@@ -12,22 +12,6 @@ namespace Splash::gfx
 {
 
 /*************/
-std::unique_ptr<Renderer> Renderer::fromApi(Renderer::Api api)
-{
-    switch (api)
-    {
-    case Renderer::Api::GLES:
-        return std::make_unique<gles::Renderer>();
-        break;
-    case Renderer::Api::OpenGL:
-        return std::make_unique<opengl::Renderer>();
-        break;
-    default:
-        return {nullptr};
-    }
-}
-
-/*************/
 std::unique_ptr<Renderer> Renderer::create(std::optional<Renderer::Api> api)
 {
     glfwSetErrorCallback(glfwErrorCallback);
@@ -46,8 +30,8 @@ std::unique_ptr<Renderer> Renderer::create(std::optional<Renderer::Api> api)
         return nullptr;
     }
 
-    const auto apiVersion = renderer->getApiSpecificVersion().toString();
-    Log::get() << Log::MESSAGE << "Renderer::" << __FUNCTION__ << " - GL version: " << apiVersion << Log::endl;
+    const auto platformVersion = renderer->getPlatformVersion().toString();
+    Log::get() << Log::MESSAGE << "Renderer::" << __FUNCTION__ << " - GL version: " << platformVersion << Log::endl;
 
 #ifdef DEBUGGL
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
@@ -56,6 +40,79 @@ std::unique_ptr<Renderer> Renderer::create(std::optional<Renderer::Api> api)
 #endif
 
     return renderer;
+}
+
+/*************/
+std::unique_ptr<Renderer> Renderer::findGLVersion(std::optional<Renderer::Api> api)
+{
+    if (api)
+    {
+        std::unique_ptr<Renderer> renderer{nullptr};
+
+        switch (api.value())
+        {
+        default:
+            assert(false);
+            break;
+        case Renderer::Api::GLES:
+            renderer = std::make_unique<gles::Renderer>();
+            break;
+        case Renderer::Api::OpenGL:
+            renderer = std::make_unique<opengl::Renderer>();
+            break;
+        }
+
+        if (tryCreateContext(renderer.get()))
+            return renderer;
+        else
+            return {nullptr};
+    }
+    else
+    {
+        return findCompatibleApi();
+    }
+}
+
+/*************/
+std::unique_ptr<Renderer> Renderer::findCompatibleApi()
+{
+    Log::get() << Log::MESSAGE << "No rendering API specified, will try finding a compatible one" << Log::endl;
+
+    if (auto renderer = std::make_unique<opengl::Renderer>(); tryCreateContext(renderer.get()))
+    {
+        Log::get() << Log::MESSAGE << "Context " << renderer->getPlatformVersion().toString() << " created successfully!" << Log::endl;
+        return renderer;
+    }
+    else if (auto renderer = std::make_unique<gles::Renderer>(); tryCreateContext(renderer.get()))
+    {
+        Log::get() << Log::MESSAGE << "Context " << renderer->getPlatformVersion().toString() << " created successfully!" << Log::endl;
+        return renderer;
+    }
+
+    Log::get() << Log::MESSAGE << "Failed to create a context with any rendering API!" << Log::endl;
+    return {nullptr};
+}
+
+/*************/
+bool Renderer::tryCreateContext(const Renderer* renderer)
+{
+    renderer->setApiSpecificFlags();
+
+    const auto platformVersion = renderer->getPlatformVersion();
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, platformVersion.major);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, platformVersion.minor);
+    glfwWindowHint(GLFW_VISIBLE, false);
+
+    GLFWwindow* window = glfwCreateWindow(512, 512, "test_window", NULL, NULL);
+
+    if (window)
+    {
+        glfwDestroyWindow(window);
+        return true;
+    }
+
+    return false;
 }
 
 /*************/
@@ -173,69 +230,9 @@ void Renderer::init(const std::string& name)
 }
 
 /*************/
-bool Renderer::tryCreateContext(const Renderer* renderer)
-{
-    renderer->setApiSpecificFlags();
-
-    auto apiVersion = renderer->getApiSpecificVersion();
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, std::get<0>(apiVersion.version));
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, std::get<1>(apiVersion.version));
-    glfwWindowHint(GLFW_VISIBLE, false);
-
-    GLFWwindow* window = glfwCreateWindow(512, 512, "test_window", NULL, NULL);
-
-    if (window)
-    {
-        glfwDestroyWindow(window);
-        return true;
-    }
-
-    return false;
-}
-
-/*************/
-std::unique_ptr<Renderer> Renderer::findCompatibleApi()
-{
-    Log::get() << Log::MESSAGE << "No rendering API specified, will try finding a compatible one" << Log::endl;
-
-    if (auto renderer = std::make_unique<opengl::Renderer>(); tryCreateContext(renderer.get()))
-    {
-        Log::get() << Log::MESSAGE << "Context " << renderer->getApiSpecificVersion().toString() << " created successfully!" << Log::endl;
-        return renderer;
-    }
-    else if (auto renderer = std::make_unique<gles::Renderer>(); tryCreateContext(renderer.get()))
-    {
-        Log::get() << Log::MESSAGE << "Context " << renderer->getApiSpecificVersion().toString() << " created successfully!" << Log::endl;
-        return renderer;
-    }
-
-    Log::get() << Log::MESSAGE << "Failed to create a context with any rendering API!" << Log::endl;
-    return {nullptr};
-}
-
-/*************/
-std::unique_ptr<Renderer> Renderer::findGLVersion(std::optional<Renderer::Api> api)
-{
-    if (api)
-    {
-        auto renderer = Renderer::fromApi(api.value());
-
-        if (tryCreateContext(renderer.get()))
-            return renderer;
-        else
-            return {nullptr};
-    }
-    else
-    {
-        return findCompatibleApi();
-    }
-}
-
-/*************/
 const Renderer::GlMsgCallbackData* Renderer::getGlMsgCallbackDataPtr()
 {
-    _glMsgCallbackData.name = getApiSpecificVersion().toString();
+    _glMsgCallbackData.name = getPlatformVersion().toString();
     _glMsgCallbackData.type = "Renderer";
     return &_glMsgCallbackData;
 }

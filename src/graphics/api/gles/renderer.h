@@ -46,9 +46,10 @@ class Renderer : public gfx::Renderer
 {
   public:
     /**
-     * \return A simple struct containing the major and minor OpenGL versions, along with a string name.
+     * Constructor
+     * Sets the platform version attribute
      */
-    gfx::ApiVersion getApiSpecificVersion() const override final { return {{3, 2}, "OpenGL ES"}; }
+    Renderer() { _platformVersion = gfx::PlatformVersion({"OpenGL ES", 3, 2, 0}); }
 
   private:
     /**
@@ -122,6 +123,6 @@ class Renderer : public gfx::Renderer
     std::unique_ptr<gfx::WindowGfxImpl> createWindowGfxImpl() const override final { return std::make_unique<gfx::gles::WindowGfxImpl>(); }
 };
 
-} // namespace Splash
+} // namespace Splash::gfx::gles
 
 #endif

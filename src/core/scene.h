@@ -98,24 +98,6 @@ class Scene : public RootObject
     std::shared_ptr<GlWindow> getNewSharedWindow(const std::string& name = "");
 
     /**
-     * Get the found OpenGL version
-     * \return Return the version as a vector of {MAJOR, MINOR}
-     */
-    static std::pair<uint, uint> getGLVersion() { return _renderer->getGLVersion(); }
-
-    /**
-     * Get the vendor of the OpenGL renderer
-     * \return Return the vendor of the OpenGL renderer
-     */
-    static std::string getGLVendor() { return _renderer->getGLVendor(); }
-
-    /**
-     * Get the name of the OpenGL renderer
-     * \return Return the name of the OpenGL renderer
-     */
-    static std::string getGLRenderer() { return _renderer->getGLRenderer(); }
-
-    /**
      * Get whether NV swap groups are available
      * \return Return true if they are
      */

@@ -54,17 +54,14 @@ class Framebuffer;
 class GpuBuffer;
 class ShaderGfxImpl;
 
-struct ApiVersion
+struct PlatformVersion
 {
-    std::pair<uint, uint> version;
     std::string name;
+    uint32_t major{0};
+    uint32_t minor{0};
+    uint32_t patch{0};
 
-    [[nodiscard]] std::string toString() const
-    {
-        const auto major = std::to_string(std::get<0>(version));
-        const auto minor = std::to_string(std::get<1>(version));
-        return name + " " + major + "." + minor;
-    }
+    [[nodiscard]] const std::string toString() const { return name + " " + std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch); }
 };
 
 class Renderer
@@ -81,46 +78,80 @@ class Renderer
         std::optional<std::string> name, type;
     };
 
-    static std::unique_ptr<Renderer> fromApi(Renderer::Api api);
+  public:
+    /**
+     * Create a renderer given a specific API
+     * \param api API platform to create a renderer for
+     * \return Return a unique pointer to the created renderer
+     */
     static std::unique_ptr<Renderer> create(std::optional<Renderer::Api> api);
-
-    virtual ~Renderer() = default;
 
     /**
      *  Callback for GL errors and warnings
      */
     static void glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* userParam);
 
-    // NOTE: Sometimes you can use `const std::string_view` (pointer + length, trivially and cheaply copied) instead of `const std::string&`, but
-    // it is not guaranteed that the view will be null terminated, which we need when interfacing with glfw's C API.
+    /**
+     * Set the user data for the GL callback
+     * \param data User data for the callback
+     */
+    static void setGlMsgCallbackData(const Renderer::GlMsgCallbackData* data) { glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<const void*>(data)); }
+
+  private:
+    /**
+     * Callback for GLFW errors
+     * \param code Error code
+     * \param msg Associated error message
+     */
+    static void glfwErrorCallback(int /*code*/, const char* msg) { Log::get() << Log::ERROR << "glfwErrorCallback - " << msg << Log::endl; }
+
+    /**
+     * If `api` contains a value, tries creating a window with only the given API, which can fail.
+     * If `api` is none, tries OpenGL 4.5, followed by GLES 3.2. This can also fail if the device does not support either.
+     * \return a specific renderer implementation if creating a context succeeds, nullptr if it fails.
+     */
+    static std::unique_ptr<Renderer> findGLVersion(std::optional<Renderer::Api> api);
+
+    /*
+     * Loops through a list of predetermined renderers with different APIs.
+     * \return The first  renderer that works.
+     */
+    static std::unique_ptr<Renderer> findCompatibleApi();
+
+    /**
+     * Creates a hidden test GLFW window with the given renderer, the renderer sets window flags and hints specific to the API it implements.
+     * Can fail if the given renderer's API is not supported. For example: creating an OpenGL 4.5 context on the raspberry pi which doesn't support it.
+     * \return true if a context was successfully created, false otherwise.
+     */
+    static bool tryCreateContext(const Renderer* renderer);
+
+  public:
+    /**
+     * Constructor
+     */
+    Renderer() = default;
+
+    /**
+     * Destructor
+     */
+    virtual ~Renderer() = default;
+
     /**
      *  Initializes glfw, initializes the graphics API, and creates a window.
      */
     void init(const std::string& name);
 
     /**
-     * \return A simple struct containing the major and minor OpenGL versions, along with a string name.
+     * Get the platform version
+     * \return Returns a PlatformVersion struct
      */
-    virtual ApiVersion getApiSpecificVersion() const = 0;
+    const PlatformVersion getPlatformVersion() const { return _platformVersion; }
 
     /**
-     * \return Returns the version as a pair of {MAJOR, MINOR}
-     */
-    std::pair<uint, uint> getGLVersion()
-    {
-        // Shouldn't be here if `version` is `nullopt` (i.e. failed to init).
-        return getApiSpecificVersion().version;
-    }
-
-    /**
+     * Get the platform vendor
      * \return Returns the vendor of the OpenGL renderer
      */
-    std::string getGLVendor() { return _glVendor; } // TODO: this should not be in the b ase class
-
-    /**
-     * \return Returns the name of the OpenGL renderer.
-     */
-    std::string getGLRenderer() { return _glRenderer; }
+    std::string getPlatformVendor() { return _glVendor; }
 
     /**
      * \return Returns a `shared_ptr` to the main window.
@@ -132,12 +163,6 @@ class Renderer
      * \return A raw pointer to the GL callback data
      */
     const Renderer::GlMsgCallbackData* getGlMsgCallbackDataPtr();
-
-    /**
-     * Set the user data for the GL callback
-     * \param data User data for the callback
-     */
-    static void setGlMsgCallbackData(const Renderer::GlMsgCallbackData* data) { glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<const void*>(data)); }
 
     /**
      * Create a new Camera graphics implementation
@@ -207,6 +232,9 @@ class Renderer
      */
     virtual void loadApiSpecificGlFunctions() const = 0;
 
+  protected:
+    PlatformVersion _platformVersion;
+
   private:
     bool _isInitialized = false;
     std::shared_ptr<GlWindow> _mainWindow;
@@ -215,33 +243,6 @@ class Renderer
     // Since we don't inherit from BaseObject (because I think it's a bit to heavy for a renderer. (Please ignore my use of virtual functions :P)),
     // we have to re-declare some variable to hold the data we'll pass to the callback in this class.
     Renderer::GlMsgCallbackData _glMsgCallbackData;
-
-    /**
-     *  Callback for GLFW errors
-     * \param code Error code
-     * \param msg Associated error message
-     */
-    static void glfwErrorCallback(int /*code*/, const char* msg) { Log::get() << Log::ERROR << "glfwErrorCallback - " << msg << Log::endl; }
-
-    /**
-     * If `api` contains a value, tries creating a window with only the given API, which can fail.
-     * If `api` is none, tries OpenGL 4.5, followed by GLES 3.2. This can also fail if the device does not support either.
-     * \return a specific renderer implementation if creating a context succeeds, nullptr if it fails.
-     */
-    static std::unique_ptr<Renderer> findGLVersion(std::optional<Renderer::Api> api);
-
-    /*
-     * Loops through a list of predetermined renderers with different APIs.
-     * \return The first  renderer that works.
-     */
-    static std::unique_ptr<Renderer> findCompatibleApi();
-
-    /**
-     * Creates a hidden test GLFW window with the given renderer, the renderer sets window flags and hints specific to the API it implements.
-     * Can fail if the given renderer's API is not supported. For example: creating an OpenGL 4.5 context on the raspberry pi which doesn't support it.
-     * \return true if a context was successfully created, false otherwise.
-     */
-    static bool tryCreateContext(const Renderer* renderer);
 };
 
 } // namespace gfx
