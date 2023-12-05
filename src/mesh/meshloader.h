@@ -127,7 +127,7 @@ class Obj final : public Base
             line = removeTrailingSlashes(line);
 
             std::string::size_type pos;
-            if ((pos = line.find("o ")) == 0)
+            if (line.find("o ") == 0)
             {
                 continue;
             }
@@ -142,7 +142,7 @@ class Obj final : public Base
                     line = line.substr(pos);
                     vertex[index] = std::stof(line);
                     index++;
-                    pos = line.find(" ");
+                    pos = line.find(' ');
                 } while (pos != std::string::npos && index < 4);
 
                 if (index < 3)
@@ -161,7 +161,7 @@ class Obj final : public Base
                     line = line.substr(pos);
                     uv[index] = std::stof(line);
                     index++;
-                    pos = line.find(" ");
+                    pos = line.find(' ');
                 } while (pos != std::string::npos && index < 2);
 
                 _uvs.push_back(uv);
@@ -177,7 +177,7 @@ class Obj final : public Base
                     line = line.substr(pos);
                     normal[index] = std::stof(line);
                     index++;
-                    pos = line.find(" ");
+                    pos = line.find(' ');
                 } while (pos != std::string::npos && index < 3);
 
                 normal[3] = 0.f;
@@ -193,31 +193,31 @@ class Obj final : public Base
                 {
                     pos++;
                     line = line.substr(pos);
-                    nextSpace = line.find(" ");
+                    nextSpace = line.find(' ');
 
                     FaceVertex faceVertex;
                     faceVertex.vertexId = std::stoi(line) - 1;
 
-                    nextSlash = line.find("/");
+                    nextSlash = line.find('/');
                     if (nextSlash != std::string::npos && (nextSpace == std::string::npos || nextSlash < nextSpace))
                     {
                         line = line.substr(nextSlash + 1);
-                        nextSlash = line.find("/");
+                        nextSlash = line.find('/');
                         if (nextSlash != 0)
                         {
-                            nextSpace = line.find(" ");
+                            nextSpace = line.find(' ');
                             faceVertex.uvId = std::stoi(line) - 1;
                         }
                     }
                     else
                     {
-                        nextSlash = line.find("/");
+                        nextSlash = line.find('/');
                     }
 
                     if (nextSlash != std::string::npos && (nextSpace == std::string::npos || nextSlash < nextSpace))
                     {
                         line = line.substr(nextSlash + 1);
-                        nextSpace = line.find(" ");
+                        nextSpace = line.find(' ');
                         faceVertex.normalId = std::stoi(line) - 1;
                     }
 

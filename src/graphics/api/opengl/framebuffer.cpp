@@ -1,35 +1,39 @@
-#include "./graphics/framebuffer.h"
+#include "./graphics/api/opengl/framebuffer.h"
 
+#include "./graphics/api/opengl/texture_image_gfx_impl.h"
+#include "./graphics/texture_image.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
-namespace Splash
+namespace Splash::gfx::opengl
 {
+
 /*************/
-Framebuffer::Framebuffer(RootObject* root)
-    : GraphObject(root)
+Framebuffer::Framebuffer()
 {
-    glGenFramebuffers(1, &_fbo);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+    glCreateFramebuffers(1, &_fbo);
 
     if (!_depthTexture)
     {
-        _depthTexture = _renderer->createTexture_Image(_root, _width, _height, "D", _multisample);
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
+        _depthTexture = std::make_shared<Texture_Image>(nullptr, std::make_unique<gfx::opengl::Texture_ImageGfxImpl>());
+        assert(_depthTexture != nullptr);
+        _depthTexture->reset(_width, _height, "D", _multisample);
+        glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
     }
 
     if (!_colorTexture)
     {
-        _colorTexture = _renderer->createTexture_Image(_root);
+        _colorTexture = std::make_shared<Texture_Image>(nullptr, std::make_unique<gfx::opengl::Texture_ImageGfxImpl>());
+        assert(_colorTexture != nullptr);
+        _colorTexture->reset(_width, _height, "RGBA", _multisample);
         _colorTexture->setAttribute("clampToEdge", {true});
         _colorTexture->setAttribute("filtering", {false});
-        _colorTexture->reset(_width, _height, "RGBA", _multisample);
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
+        glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
     }
 
     GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    glDrawBuffers(1, fboBuffers);
-    const auto status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+    glNamedFramebufferDrawBuffers(_fbo, 1, fboBuffers);
+    const auto status = glCheckNamedFramebufferStatus(_fbo, GL_DRAW_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
         Log::get() << Log::ERROR << "Framebuffer::" << __FUNCTION__ << " - Error while initializing render framebuffer object: " << status << Log::endl;
@@ -73,10 +77,12 @@ void Framebuffer::bindRead()
 }
 
 /*************/
-void Framebuffer::blit(const Framebuffer& src, const Framebuffer& dst)
+void Framebuffer::blit(const Splash::gfx::Framebuffer* dst)
 {
+    const auto destFbo = dynamic_cast<const Splash::gfx::opengl::Framebuffer*>(dst);
+    assert(destFbo != nullptr);
     glBlitNamedFramebuffer(
-        src.getFboId(), dst.getFboId(), 0, 0, src.getWidth(), src.getHeight(), 0, 0, dst.getWidth(), dst.getHeight(), GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+        getFboId(), destFbo->getFboId(), 0, 0, getWidth(), getHeight(), 0, 0, destFbo->getWidth(), destFbo->getHeight(), GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 }
 
 /*************/
@@ -92,46 +98,6 @@ float Framebuffer::getDepthAt(float x, float y)
 }
 
 /*************/
-void Framebuffer::setCubemap(bool cubemap)
-{
-    if (cubemap != _cubemap)
-    {
-        _cubemap = cubemap;
-        setRenderingParameters();
-    }
-}
-
-/*************/
-void Framebuffer::setsRGB(bool srgb)
-{
-    if (srgb != _srgb)
-    {
-        _srgb = srgb;
-        setRenderingParameters();
-    }
-}
-
-/*************/
-void Framebuffer::setMultisampling(int samples)
-{
-    if (_multisample != samples)
-    {
-        _multisample = samples;
-        setRenderingParameters();
-    }
-}
-
-/*************/
-void Framebuffer::setSixteenBpc(bool sixteenbpc)
-{
-    if (_16bits != sixteenbpc)
-    {
-        _16bits = sixteenbpc;
-        setRenderingParameters();
-    }
-}
-
-/*************/
 void Framebuffer::setRenderingParameters()
 {
     auto spec = _colorTexture->getSpec();
@@ -140,11 +106,13 @@ void Framebuffer::setRenderingParameters()
 
     if (_srgb)
         _colorTexture->reset(spec.width, spec.height, "sRGBA", _multisample, _cubemap);
+    else if (_16bits)
+        _colorTexture->reset(spec.width, spec.height, "RGBA16", _multisample, _cubemap);
     else
         _colorTexture->reset(spec.width, spec.height, "RGBA", _multisample, _cubemap);
 
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
+    glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
+    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
 }
 
 /*************/
@@ -156,25 +124,15 @@ void Framebuffer::setSize(int width, int height)
     _depthTexture->setResizable(true);
     _depthTexture->setAttribute("size", {width, height});
     _depthTexture->setResizable(_automaticResize);
+    glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
 
     _colorTexture->setResizable(true);
     _colorTexture->setAttribute("size", {width, height});
     _colorTexture->setResizable(_automaticResize);
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
+    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
 
     _width = width;
     _height = height;
-}
-
-/*************/
-void Framebuffer::setResizable(bool resizable)
-{
-    _automaticResize = resizable;
-    _depthTexture->setResizable(_automaticResize);
-    _colorTexture->setResizable(_automaticResize);
 }
 
 /*************/
@@ -213,4 +171,4 @@ void Framebuffer::unbindRead()
     }
 }
 
-} // namespace Splash
+} // namespace Splash::gfx::opengl

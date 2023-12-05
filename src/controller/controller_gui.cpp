@@ -54,7 +54,7 @@ Gui::Gui(std::shared_ptr<GlWindow> w, RootObject* s)
     _glWindow->setAsCurrentContext();
     glGetError();
 
-    _fbo = std::make_unique<Framebuffer>(_root);
+    _fbo = _renderer->createFramebuffer();
     _fbo->setResizable(true);
 
     _glWindow->releaseContext();
@@ -1095,9 +1095,6 @@ void Gui::initImGui(int width, int height)
     if (status == GL_FALSE)
     {
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
-        const auto log = Shader::getProgramInfoLog(_imGuiShaderHandle);
-        Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error log: \n" << log << Log::endl;
-
         return;
     }
 

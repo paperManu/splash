@@ -204,7 +204,6 @@ class Object : public GraphObject
      * \param blendWidth Blending width
      * \param blendPrecision Blending precision
      */
-    // TODO: use the matrices specified with setViewProjectionMatrix
     void tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float fovX, float fovY, float blendWidth, float blendPrecision);
 
     /**
@@ -258,7 +257,7 @@ class Object : public GraphObject
 
     std::string _fill{"texture"};
     std::vector<std::string> _fillParameters{};
-    int _sideness{0};
+    Shader::Culling _culling{Shader::Culling::doubleSided};
     glm::dvec4 _color{0.0, 0.0, 0.0, 1.0};
     float _normalExponent{0.0};
 

@@ -58,12 +58,12 @@ Window::Window(RootObject* root)
         updateSwapInterval(scene->getSwapInterval());
     }
 
-    _isInitialized = setProjectionSurface();
-    if (!_isInitialized)
+    if (!_gfxImpl->windowExists())
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while creating the Window" << Log::endl;
     else
         Log::get() << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Window created successfully" << Log::endl;
 
+    setProjectionSurface();
     _viewProjectionMatrix = glm::ortho(-1.f, 1.f, -1.f, 1.f);
 
     setEventsCallbacks();
@@ -333,11 +333,9 @@ void Window::render()
     {
         _gfxImpl->clearScreen(glm::vec4(0.0, 0.0, 0.0, 1.0), false);
 
-        auto layout = _layout;
-        layout.push_front("_layout");
         _screen->activate();
-        _screen->getShader()->setAttribute("uniform", layout);
-        _screen->getShader()->setAttribute("uniform", {"_gamma", static_cast<float>(_srgb), _gammaCorrection});
+        _screen->getShader()->setUniform("layout", _layout);
+        _screen->getShader()->setUniform("_gamma", {static_cast<float>(_srgb), _gammaCorrection});
         _screen->draw();
         _screen->deactivate();
     }
@@ -519,16 +517,11 @@ void Window::setEventsCallbacks()
 }
 
 /*************/
-bool Window::setProjectionSurface()
+void Window::setProjectionSurface()
 {
     _gfxImpl->setAsCurrentContext();
     glfwShowWindow(_gfxImpl->getGlfwWindow());
     glfwSwapInterval(_swapInterval);
-
-// Setup the projection surface
-#ifdef DEBUG
-    glGetError();
-#endif
 
     _screen = std::make_shared<Object>(_root);
     _screen->setAttribute("fill", {"window"});
@@ -540,19 +533,7 @@ bool Window::setProjectionSurface()
     virtualScreen = _renderer->createGeometry(_root);
     _screenGui->addGeometry(virtualScreen);
 
-#ifdef DEBUG
-    GLenum error = glGetError();
-    if (error)
-        Log::get() << Log::WARNING << __FUNCTION__ << " - Error while creating the projection surface: " << error << Log::endl;
-#endif
-
     _gfxImpl->releaseContext();
-
-#ifdef DEBUG
-    return error == 0 ? true : false;
-#else
-    return true;
-#endif
 }
 
 /*************/

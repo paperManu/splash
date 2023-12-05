@@ -23,12 +23,6 @@ namespace Splash
 Warp::Warp(RootObject* root)
     : Texture(root)
 {
-    init();
-}
-
-/*************/
-void Warp::init()
-{
     _type = "warp";
     _renderingPriority = Priority::POST_CAMERA;
     registerAttributes();
@@ -38,6 +32,7 @@ void Warp::init()
         return;
 
     // Intialize FBO, textures and everything OpenGL
+    _gfxImpl = _renderer->createFilterGfxImpl();
     setupFBO();
 
     loadDefaultModels();
@@ -157,10 +152,8 @@ void Warp::render()
     }
 
     _fbo->bindDraw();
-    glViewport(0, 0, _spec.width, _spec.height);
 
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    _gfxImpl->setupViewport(_spec.width, _spec.height);
 
     _screen->activate();
     _screen->draw();
@@ -262,7 +255,7 @@ void Warp::loadDefaultModels()
 /*************/
 void Warp::setupFBO()
 {
-    _fbo = std::make_unique<Framebuffer>(_root);
+    _fbo = _renderer->createFramebuffer();
     _fbo->setSixteenBpc(true);
 
     // Setup the virtual screen

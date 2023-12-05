@@ -17,6 +17,16 @@
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+if (WITH_SANITIZE)
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        add_compile_options(-fsanitize=address -fsanitize=undefined)
+        add_link_options(-fsanitize=address -fsanitize=undefined)
+    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        add_compile_options(-fsanitize=address -fsanitize=undefined -fsanitize=integer)
+        add_link_options(-fsanitize=address -fsanitize=undefined -fsanitize=integer)
+    endif()
+endif()
+
 include_directories(../src/)
 
 include_directories(../external/doctest/doctest/)
@@ -65,8 +75,8 @@ link_directories(${Python3_LIBRARY_DIRS})
 # Custom target to download the splash-assets repository
 #
 add_custom_command(OUTPUT clone_splash_assets
-    COMMAND if [ ! -d ${CMAKE_CURRENT_SOURCE_DIR}/integration_tests/assets ]; then $(git clone https://gitlab.com/splashmapper/assets ${CMAKE_CURRENT_SOURCE_DIR}/integration_tests/assets); fi
-    COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/integration_tests/assets && git pull origin master
+    COMMAND "if [ ! -d ${CMAKE_CURRENT_SOURCE_DIR}/integration_tests/assets ]; then $(git clone https://gitlab.com/splashmapper/assets ${CMAKE_CURRENT_SOURCE_DIR}/integration_tests/assets); fi"
+    COMMAND "cd ${CMAKE_CURRENT_SOURCE_DIR}/integration_tests/assets && git pull origin master"
 )
 add_custom_target(download_splash_assets DEPENDS clone_splash_assets)
 

@@ -15,18 +15,8 @@ Texture_Image::Texture_Image(RootObject* root, std::unique_ptr<gfx::Texture_Imag
     : Texture(root)
     , _gfxImpl(std::move(gfxImpl))
 {
-    init();
-}
-
-/*************/
-Texture_Image::~Texture_Image()
-{
-    if (!_root)
-        return;
-
-#ifdef DEBUG
-    Log::get() << Log::DEBUGGING << "Texture_Image::~Texture_Image - Destructor" << Log::endl;
-#endif
+    _type = "texture_image";
+    registerAttributes();
 }
 
 /*************/
@@ -106,7 +96,7 @@ void Texture_Image::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 /*************/
 std::shared_ptr<Image> Texture_Image::read(int mipmapLevel) const
 {
-    return _gfxImpl->read(_root, mipmapLevel, _spec);
+    return _gfxImpl->read(mipmapLevel, _spec);
 }
 
 /*************/
@@ -207,17 +197,6 @@ void Texture_Image::update()
 
     if (_filtering && !_gfxImpl->isCompressed(imgSpec))
         generateMipmap();
-}
-
-/*************/
-void Texture_Image::init()
-{
-    _type = "texture_image";
-    registerAttributes();
-
-    // This is used for getting documentation "offline"
-    if (!_root)
-        return;
 }
 
 /*************/

@@ -31,7 +31,13 @@ TEST_CASE("Testing World::checkAndUpgradeConfiguration for a single Scene")
     Utils::loadJsonFile(filePath, configuration_0_8_17);
     Utils::checkAndUpgradeConfiguration(configuration_0_8_17);
 
+    filePath = Utils::getCurrentWorkingDirectory() + "/data/sample_scene_0.10.0.json";
+    Json::Value configuration_0_10_0;
+    Utils::loadJsonFile(filePath, configuration_0_10_0);
+    Utils::checkAndUpgradeConfiguration(configuration_0_10_0);
+
     CHECK(configuration_0_0_0 == configuration_0_7_15);
     CHECK(configuration_0_0_0 == configuration_0_7_21);
     CHECK(configuration_0_0_0 == configuration_0_8_17);
+    CHECK(configuration_0_0_0 == configuration_0_10_0);
 }

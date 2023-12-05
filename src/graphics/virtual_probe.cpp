@@ -2,6 +2,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "./graphics/api/filter_gfx_impl.h"
 #include "./utils/scope_guard.h"
 
 using namespace glm;
@@ -21,6 +22,7 @@ VirtualProbe::VirtualProbe(RootObject* root)
     if (!_root)
         return;
 
+    _gfxImpl = _renderer->createFilterGfxImpl();
     setupFBO();
 
     // One projection matrix to render them all
@@ -104,19 +106,15 @@ void VirtualProbe::render()
         _newHeight = 0;
     }
 
+    _gfxImpl->setupViewport(_cubemapSize, _cubemapSize);
+    _gfxImpl->enableMultisampling();
+    _gfxImpl->enableCubemapRendering();
+
     if (!_fbo || !_outFbo)
         return;
 
-    glViewport(0, 0, _cubemapSize, _cubemapSize);
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_MULTISAMPLE);
-    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-
     // First pass: render to the cubemap
     _fbo->bindDraw();
-
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     for (auto& o : _objects)
     {
@@ -146,21 +144,18 @@ void VirtualProbe::render()
     _outFbo->bindDraw();
     _fbo->getColorTexture()->generateMipmap();
 
-    glViewport(0, 0, _width, _height);
-    glClearColor(1.0, 0.0, 0.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    _gfxImpl->setupViewport(_width, _height);
 
     _screen->activate();
     auto screenShader = _screen->getShader();
-    screenShader->setAttribute("uniform", {"_projectionType", static_cast<int>(_projectionType)});
-    screenShader->setAttribute("uniform", {"_sphericalFov", _sphericalFov});
+    screenShader->setUniform("_projectionType", static_cast<int>(_projectionType));
+    screenShader->setUniform("_sphericalFov", _sphericalFov);
     _screen->draw();
     _screen->deactivate();
 
     _outFbo->unbindDraw();
-    glDisable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_MULTISAMPLE);
+    _gfxImpl->disableMultisampling();
+    _gfxImpl->disableCubemapRendering();
 }
 
 /*************/
@@ -174,13 +169,13 @@ glm::dmat4 VirtualProbe::computeViewMatrix() const
 /*************/
 void VirtualProbe::setupFBO()
 {
-    _fbo = std::make_unique<Framebuffer>(_root);
+    _fbo = _renderer->createFramebuffer();
     _fbo->setSize(_width, _height);
     _fbo->setCubemap(true);
     _fbo->getColorTexture()->setAttribute("clampToEdge", {true});
     _fbo->getColorTexture()->setAttribute("filtering", {false});
 
-    _outFbo = std::make_unique<Framebuffer>(_root);
+    _outFbo = _renderer->createFramebuffer();
     _outFbo->setSize(_width, _height);
 
     _screen = std::make_unique<Object>(_root);

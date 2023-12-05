@@ -19,13 +19,14 @@ Filter::Filter(RootObject* root)
 {
     _type = "filter";
     _renderingPriority = Priority::FILTER;
-    registerAttributes();
+    Filter::registerAttributes();
 
     // This is used for getting documentation "offline"
     if (!_root)
         return;
 
-    _fbo = std::make_unique<Framebuffer>(_root);
+    _gfxImpl = _renderer->createFilterGfxImpl();
+    _fbo = _renderer->createFramebuffer();
     _fbo->getColorTexture()->setAttribute("filtering", {true});
     _fbo->setSixteenBpc(_sixteenBpc);
 
@@ -241,9 +242,7 @@ void Filter::render()
     _spec.timestamp = timestamp;
 
     _fbo->bindDraw();
-    glViewport(0, 0, _spec.width, _spec.height);
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    _gfxImpl->setupViewport(_spec.width, _spec.height);
 
     _screen->activate();
     updateUniforms();
@@ -289,20 +288,16 @@ void Filter::updateUniforms()
             obj->getAttribute("duration", duration);
             obj->getAttribute("remaining", remainingTime);
             if (remainingTime.size() == 1)
-                shader->setAttribute("uniform", {"_filmRemaining", remainingTime[0].as<float>()});
+                shader->setUniform("_filmRemaining", remainingTime[0].as<float>());
             if (duration.size() == 1)
-                shader->setAttribute("uniform", {"_filmDuration", duration[0].as<float>()});
+                shader->setUniform("_filmDuration", duration[0].as<float>());
         }
     }
 
     // Update uniforms specific to the current filtering shader
-    for (auto& uniform : _filterUniforms)
+    for (const auto& [name, value] : _filterUniforms)
     {
-        Values param;
-        param.push_back(uniform.first);
-        for (auto& v : uniform.second)
-            param.push_back(v);
-        shader->setAttribute("uniform", param);
+        shader->setUniform(name, value);
     }
 }
 

@@ -27,10 +27,6 @@ Image::Image(RootObject* root, const std::optional<ImageBufferSpec> spec)
     _type = "image";
     registerAttributes();
 
-    // This is used for getting documentation "offline"
-    if (!_root)
-        return;
-
     if (spec)
     {
         initFromSpec(*spec);
@@ -168,10 +164,8 @@ bool Image::deserialize(SerializedObject&& obj)
 /*************/
 bool Image::read(const std::string& filename)
 {
-    if (!_root)
-        return false;
-
-    const auto filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
+    const auto configurationPath = _root ? _root->getConfigurationPath() : "/";
+    const auto filepath = Utils::getFullPathFromFilePath(filename, configurationPath);
     if (!_isConnectedToRemote)
         return readFile(filepath);
     else

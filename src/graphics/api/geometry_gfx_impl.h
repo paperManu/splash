@@ -28,12 +28,15 @@
 #include <chrono>
 #include <map>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "./core/constants.h"
-#include "./graphics/geometry.h"
+#include "./mesh/mesh.h"
 
 namespace Splash::gfx
 {
+
 class GeometryGfxImpl
 {
   public:
@@ -86,6 +89,11 @@ class GeometryGfxImpl
     virtual void deactivateFeedback() = 0;
 
     /**
+     * Draw the geometry
+     */
+    virtual void draw() const = 0;
+
+    /**
      * Get the number of vertices for this geometry
      * \return Return the vertice count
      */
@@ -124,10 +132,11 @@ class GeometryGfxImpl
 
     /**
      * Allocate or init the chosen buffer
-     * \param bufferType Buffer type, one of Geometry::BufferType
+     * \param bufferIndex Index of the buffer to allocate
      * \param componentsPerElement Component (float, int, ...) counts per element (vec2, ivec3, ...)
+     * \param dataVec Vector holding the data to initialize the buffer with
      */
-    virtual void allocateOrInitBuffer(Geometry::BufferType bufferType, uint componentsPerElement, std::vector<float>& dataVec) = 0;
+    virtual void allocateOrInitBuffer(uint32_t bufferIndex, uint componentsPerElement, std::vector<float>& dataVec) = 0;
 
     /**
      * Delete all vertex arrays

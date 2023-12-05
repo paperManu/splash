@@ -19,7 +19,7 @@
 
 /*
  * @window_gfx_impl.h
- * Implementation ofr WindowGfx for OpenGL
+ * Implementation of WindowGfx for OpenGL
  */
 
 #ifndef SPLASH_GFX_GL_WINDOW_IMPL_H
