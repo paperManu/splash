@@ -107,15 +107,15 @@ void VirtualProbe::render()
         _newHeight = 0;
     }
 
-    _gfxImpl->setupViewport(_cubemapSize, _cubemapSize, true);
-    _gfxImpl->enableMultisampling();
-    _gfxImpl->enableCubemapRendering();
-
     if (!_fbo || !_outFbo)
         return;
 
     // First pass: render to the cubemap
     _fbo->bindDraw();
+
+    _gfxImpl->setupViewport(_cubemapSize, _cubemapSize, true);
+    _gfxImpl->enableMultisampling();
+    _gfxImpl->enableCubemapRendering();
 
     for (auto& o : _objects)
     {
