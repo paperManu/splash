@@ -11,6 +11,16 @@ namespace Splash
 {
 
 /*************/
+Texture_Image::Texture_Image(RootObject* root)
+    : Texture_Image(root, nullptr)
+{
+    if (!_scene)
+        return;
+
+    _gfxImpl = _renderer->createTexture_ImageGfxImpl();
+}
+
+/*************/
 Texture_Image::Texture_Image(RootObject* root, std::unique_ptr<gfx::Texture_ImageGfxImpl> gfxImpl)
     : Texture(root)
     , _gfxImpl(std::move(gfxImpl))

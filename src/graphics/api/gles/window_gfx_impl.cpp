@@ -26,12 +26,12 @@ void WindowGfxImpl::setupFBOs(Scene* scene, uint32_t width, uint32_t height)
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
 
-    _depthTexture = scene->getRenderer()->createTexture_Image(scene);
+    _depthTexture = std::make_shared<Texture_Image>(scene);
     assert(_depthTexture != nullptr);
     _depthTexture->reset(width, height, "D");
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
 
-    _colorTexture = scene->getRenderer()->createTexture_Image(scene);
+    _colorTexture = std::make_shared<Texture_Image>(scene);
     assert(_colorTexture != nullptr);
     _colorTexture->reset(width, height, "RGBA");
     _colorTexture->setAttribute("filtering", {false});

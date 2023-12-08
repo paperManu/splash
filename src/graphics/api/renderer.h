@@ -54,6 +54,7 @@ class Framebuffer;
 class GpuBuffer;
 class PboGfxImpl;
 class ShaderGfxImpl;
+class Texture_ImageGfxImpl;
 
 class Renderer
 {
@@ -208,11 +209,11 @@ class Renderer
     virtual std::unique_ptr<PboGfxImpl> createPboGfxImpl(std::size_t size) const = 0;
 
     /**
-     * Create a new Texture_Image
+     * Create a new Texture_ImageGfxImpl
      * \param root Root object
      * \return Return a shared pointer to a default Texture_Image
      */
-    virtual std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const = 0;
+    virtual std::unique_ptr<gfx::Texture_ImageGfxImpl> createTexture_ImageGfxImpl() const = 0;
 
     /**
      * Create a new Window
@@ -225,7 +226,7 @@ class Renderer
      * \return Calls the appropriate loader for each API. Calls `gladLoadGLES2Loader` for OpenGL ES, and `gladLoadGLLoader`. Note that calling an incorrect loader might lead to
      * segfaults due to API specific function not getting loaded, leaving the pointers as null.
      */
-    virtual void loadApiSpecificGlFunctions() const = 0;
+    virtual void loadApiSpecificFunctions() const = 0;
 
     /**
      * Set shared window flags, this is called by createSharedContext before returning the RenderingContext

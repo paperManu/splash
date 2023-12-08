@@ -65,12 +65,6 @@ class Renderer : public gfx::Renderer
     void init(std::string_view name) override final;
 
     /**
-     * Calls the appropriate loader for each API. Calls `gladLoadGLES2Loader` for OpenGL ES, and `gladLoadGLLoader`. Note that calling an incorrect loader might lead to
-     * segfaults due to API specific function not getting loaded, leaving the pointers as null.
-     */
-    void loadApiSpecificGlFunctions() const override final { gladLoadGLLoader((GLADloadproc)glfwGetProcAddress); };
-
-    /**
      * Set the user data for the GL callback
      * \param data User data for the callback
      */
@@ -134,10 +128,7 @@ class Renderer : public gfx::Renderer
      * \param root Root object
      * \return Return a shared pointer to a default Texture_Image
      */
-    std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const override final
-    {
-        return std::make_shared<Texture_Image>(root, std::make_unique<gfx::opengl::Texture_ImageGfxImpl>());
-    };
+    std::unique_ptr<gfx::Texture_ImageGfxImpl> createTexture_ImageGfxImpl() const override final { return std::make_unique<gfx::opengl::Texture_ImageGfxImpl>(); }
 
     /**
      * Create a new Window
@@ -146,6 +137,12 @@ class Renderer : public gfx::Renderer
     std::unique_ptr<gfx::WindowGfxImpl> createWindowGfxImpl() const override final { return std::make_unique<gfx::opengl::WindowGfxImpl>(); }
 
   private:
+    /**
+     * Calls the appropriate loader for each API. Calls `gladLoadGLES2Loader` for OpenGL ES, and `gladLoadGLLoader`. Note that calling an incorrect loader might lead to
+     * segfaults due to API specific function not getting loaded, leaving the pointers as null.
+     */
+    void loadApiSpecificFunctions() const override final { gladLoadGLLoader((GLADloadproc)glfwGetProcAddress); };
+
     /**
      * Set shared window flags, this is called by createSharedContext before returning the RenderingContext
      */

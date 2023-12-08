@@ -100,7 +100,7 @@ void Renderer::init(std::string_view name)
         return;
 
     _mainRenderingContext->setAsCurrentContext();
-    loadApiSpecificGlFunctions();
+    loadApiSpecificFunctions();
     _mainRenderingContext->releaseContext();
 }
 
