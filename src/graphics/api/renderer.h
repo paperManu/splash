@@ -231,7 +231,7 @@ class Renderer
     /**
      * Set shared window flags, this is called by createSharedContext before returning the RenderingContext
      */
-    virtual void setSharedWindowFlags() const = 0;
+    virtual void setSharedWindowFlags() = 0;
 
   protected:
     static const int _defaultWindowSize{512};

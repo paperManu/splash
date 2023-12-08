@@ -146,7 +146,7 @@ class Renderer : public gfx::Renderer
     /**
      * Set shared window flags, this is called by createSharedContext before returning the RenderingContext
      */
-    void setSharedWindowFlags() const final override;
+    void setSharedWindowFlags() final override;
 };
 
 } // namespace Splash::gfx::gles

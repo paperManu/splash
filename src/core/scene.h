@@ -199,6 +199,12 @@ class Scene : public RootObject
      */
     Values sendMessageToWorldWithAnswer(const std::string& message, const Values& value = {}, const unsigned long long timeout = 0);
 
+    /**
+     * Get a pointer to the rendering callback data, to be used by the rendering API error callback
+     * \return Return a pointer to the rendering callback data
+     */
+    const gfx::Renderer::RendererMsgCallbackData* getRendererMsgCallbackDataPtr();
+
   protected:
     std::atomic_bool _isRunning{false};
 
@@ -225,6 +231,7 @@ class Scene : public RootObject
   private:
     std::unique_ptr<ObjectLibrary> _objectLibrary{nullptr};     //!< Library of 3D objects used by multiple GraphObjects
     static inline std::unique_ptr<gfx::Renderer> _renderer{nullptr}; // Must be static due to usage inside static functions in Scene.
+    gfx::Renderer::RendererMsgCallbackData _rendererMsgCallbackData;
 
     bool _runInBackground{false}; //!< If true, no window will be created
     std::atomic_bool _started{false};

@@ -561,6 +561,14 @@ void Scene::sendMessageToWorld(const std::string& message, const Values& value)
 }
 
 /*************/
+const gfx::Renderer::RendererMsgCallbackData* Scene::getRendererMsgCallbackDataPtr()
+{
+    _rendererMsgCallbackData.name = _name;
+    _rendererMsgCallbackData.type = "Scene";
+    return &_rendererMsgCallbackData;
+}
+
+/*************/
 Values Scene::sendMessageToWorldWithAnswer(const std::string& message, const Values& value, const unsigned long long timeout)
 {
     return sendMessageWithAnswer("world", message, value, timeout);

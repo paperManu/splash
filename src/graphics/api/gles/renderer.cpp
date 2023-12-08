@@ -82,7 +82,7 @@ void Renderer::init(std::string_view name)
 
 // Activate GL debug messages
 #ifdef DEBUGGL
-    Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
+    Renderer::setRendererMsgCallbackData(getRendererMsgCallbackDataPtr());
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
 #endif
@@ -106,7 +106,7 @@ void Renderer::init(std::string_view name)
 }
 
 /*************/
-void Renderer::setSharedWindowFlags() const
+void Renderer::setSharedWindowFlags()
 {
 #ifdef DEBUGGL
     setRendererMsgCallbackData(getRendererMsgCallbackDataPtr());

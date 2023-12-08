@@ -124,7 +124,7 @@ void Warp::render()
     _renderer->setRendererMsgCallbackData(getRendererMsgCallbackDataPtr());
     OnScopeExit
     {
-        _renderer->setRendererMsgCallbackData(_root->getRendererMsgCallbackDataPtr());
+        _renderer->setRendererMsgCallbackData(_scene->getRendererMsgCallbackDataPtr());
     };
 #endif
 

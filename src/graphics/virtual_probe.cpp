@@ -2,6 +2,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "./core/scene.h"
 #include "./graphics/api/filter_gfx_impl.h"
 #include "./utils/scope_guard.h"
 
@@ -95,7 +96,7 @@ void VirtualProbe::render()
     _renderer->setRendererMsgCallbackData(getRendererMsgCallbackDataPtr());
     OnScopeExit
     {
-        _renderer->setRendererMsgCallbackData(_root->getRendererMsgCallbackDataPtr());
+        _renderer->setRendererMsgCallbackData(_scene->getRendererMsgCallbackDataPtr());
     };
 #endif
 
