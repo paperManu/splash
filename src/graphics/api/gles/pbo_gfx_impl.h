@@ -29,6 +29,7 @@
 
 #include "./core/constants.h"
 #include "./graphics/api/pbo_gfx_impl.h"
+#include "./image/image.h"
 
 namespace Splash::gfx::gles
 {
@@ -76,21 +77,18 @@ class PboGfxImpl : public gfx::PboGfxImpl
     /**
      * Unmap any PBO from being read by the CPU
      */
-    void unmapRead() override final;
+    void unmapRead() override final {}
 
     /**
      * Update the underlying PBOs to match the given size
      * If the size is not changed, the PBOs are not recreated
      * \param size New size for the PBOs
      */
-    void updatePBOs(std::size_t size) override final;
+    void updatePBOs(std::size_t /*size*/) override final {}
 
   private:
-    std::vector<GLuint> _pbos{};
-    std::size_t _bufferSize{0};
-
-    GLint _pboMapReadIndex{0};
-    uint8_t* _mappedPixels{nullptr};
+    GLuint _fbo{0};
+    std::unique_ptr<Image> _image;
 };
 
 } // namespace Splash::gfx::gles
