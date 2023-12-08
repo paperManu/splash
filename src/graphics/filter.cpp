@@ -242,7 +242,7 @@ void Filter::render()
     _spec.timestamp = timestamp;
 
     _fbo->bindDraw();
-    _gfxImpl->setupViewport(_spec.width, _spec.height);
+    _gfxImpl->setupViewport(_spec.width, _spec.height, true);
 
     _screen->activate();
     updateUniforms();

@@ -153,7 +153,7 @@ void Warp::render()
 
     _fbo->bindDraw();
 
-    _gfxImpl->setupViewport(_spec.width, _spec.height);
+    _gfxImpl->setupViewport(_spec.width, _spec.height, false);
 
     _screen->activate();
     _screen->draw();
@@ -161,7 +161,7 @@ void Warp::render()
 
     if (_showControlPoints)
     {
-        _screen->setAttribute("fill", {"warpControl"});
+        _screen->setAttribute("fill", {"warp_control"});
         _screenMesh->switchMeshes(true);
 
         _screen->activate();
@@ -184,6 +184,7 @@ void Warp::render()
             pointModel->setAttribute("position", {point.x, point.y, 0.f});
             pointModel->setAttribute("rotation", {0.f, 90.f, 0.f});
             pointModel->setAttribute("scale", {CONTROL_POINT_SCALE});
+            pointModel->setAttribute("color", MARKER_SET);
             pointModel->activate();
             pointModel->setViewProjectionMatrix(glm::dmat4(1.f), glm::dmat4(1.f));
             pointModel->draw();

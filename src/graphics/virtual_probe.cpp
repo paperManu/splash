@@ -107,7 +107,7 @@ void VirtualProbe::render()
         _newHeight = 0;
     }
 
-    _gfxImpl->setupViewport(_cubemapSize, _cubemapSize);
+    _gfxImpl->setupViewport(_cubemapSize, _cubemapSize, true);
     _gfxImpl->enableMultisampling();
     _gfxImpl->enableCubemapRendering();
 
@@ -145,7 +145,7 @@ void VirtualProbe::render()
     _outFbo->bindDraw();
     _fbo->getColorTexture()->generateMipmap();
 
-    _gfxImpl->setupViewport(_width, _height);
+    _gfxImpl->setupViewport(_width, _height, true);
 
     _screen->activate();
     auto screenShader = _screen->getShader();
