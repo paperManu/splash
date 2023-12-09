@@ -209,6 +209,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/api/gles/compute_shader.cpp
     graphics/api/gles/feedback_shader.cpp
     graphics/api/gles/graphic_shader.cpp
+    graphics/api/gles/gui_gfx_impl.cpp
     graphics/api/gles/pbo_gfx_impl.cpp
     graphics/api/gles/renderer.cpp
     graphics/api/gles/shader_gfx_impl.cpp
@@ -225,6 +226,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/api/opengl/compute_shader.cpp
     graphics/api/opengl/feedback_shader.cpp
     graphics/api/opengl/graphic_shader.cpp
+    graphics/api/opengl/gui_gfx_impl.cpp
     graphics/api/opengl/pbo_gfx_impl.cpp
     graphics/api/opengl/renderer.cpp
     graphics/api/opengl/shader_gfx_impl.cpp

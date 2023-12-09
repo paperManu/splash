@@ -33,6 +33,7 @@
 #include "./graphics/api/opengl/geometry_gfx_impl.h"
 #include "./graphics/api/opengl/gpu_buffer.h"
 #include "./graphics/api/opengl/graphic_shader.h"
+#include "./graphics/api/opengl/gui_gfx_impl.h"
 #include "./graphics/api/opengl/pbo_gfx_impl.h"
 #include "./graphics/api/opengl/texture_image_gfx_impl.h"
 #include "./graphics/api/opengl/window_gfx_impl.h"
@@ -115,6 +116,12 @@ class Renderer : public gfx::Renderer
      * \return Return a unique pointer to the shader implementation
      */
     std::unique_ptr<gfx::ShaderGfxImpl> createFeedbackShader() const override final { return std::make_unique<gfx::opengl::FeedbackShaderGfxImpl>(); }
+
+    /**
+     * Create a new Gui graphics implementation
+     * \return Return a unique pointer to the Gui graphics implementation
+     */
+    std::unique_ptr<gfx::GuiGfxImpl> createGuiGfxImpl() const override final { return std::make_unique<gfx::opengl::GuiGfxImpl>(); }
 
     /**
      * Create a need PBO implementation

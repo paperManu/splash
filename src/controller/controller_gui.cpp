@@ -30,17 +30,6 @@ namespace Splash
 {
 
 /*************/
-GLuint Gui::_imFontTextureId;
-GLuint Gui::_imGuiShaderHandle, Gui::_imGuiVertHandle, Gui::_imGuiFragHandle;
-GLint Gui::_imGuiTextureLocation;
-GLint Gui::_imGuiProjMatrixLocation;
-GLint Gui::_imGuiPositionLocation;
-GLint Gui::_imGuiUVLocation;
-GLint Gui::_imGuiColorLocation;
-GLuint Gui::_imGuiVboHandle, Gui::_imGuiElementsHandle, Gui::_imGuiVaoHandle;
-size_t Gui::_imGuiVboMaxSize = 20000;
-
-/*************/
 Gui::Gui(RenderingContext* renderingContext, RootObject* scene)
     : ControllerObject(scene)
 {
@@ -52,6 +41,7 @@ Gui::Gui(RenderingContext* renderingContext, RootObject* scene)
 
     _renderingContext = renderingContext;
 
+    _guiGfxImpl = _renderer->createGuiGfxImpl();
     _fbo = _renderer->createFramebuffer();
     _fbo->setResizable(true);
 
@@ -79,12 +69,6 @@ Gui::~Gui()
 
     // Clean ImGui
     ImGui::DestroyContext();
-
-    glDeleteTextures(1, &_imFontTextureId);
-    glDeleteProgram(_imGuiShaderHandle);
-    glDeleteBuffers(1, &_imGuiVboHandle);
-    glDeleteBuffers(1, &_imGuiElementsHandle);
-    glDeleteVertexArrays(1, &_imGuiVaoHandle);
 }
 
 /*************/
@@ -822,9 +806,6 @@ void Gui::render()
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
 
-#ifdef DEBUG
-    GLenum error = glGetError();
-#endif
     using namespace ImGui;
 
     // Callback for dragndrop: load the dropped file
@@ -978,26 +959,19 @@ void Gui::render()
         _wasVisible = _isVisible;
 
         _fbo->bindDraw();
-        glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-        glClearColor(0.0, 0.0, 0.0, 0.0);
-        glClear(GL_COLOR_BUFFER_BIT);
+        _guiGfxImpl->setupViewport(static_cast<uint32_t>(io.DisplaySize.x), static_cast<uint32_t>(io.DisplaySize.y));
         if (_isVisible)
         {
             ImGui::Render();
-            imGuiRenderDrawLists(ImGui::GetDrawData());
+            const float width = ImGui::GetIO().DisplaySize.x;
+            const float height = ImGui::GetIO().DisplaySize.y;
+            _guiGfxImpl->drawGui(width, height, ImGui::GetDrawData());
         }
         _fbo->unbindDraw();
     }
 
     ImGui::EndFrame();
     _fbo->getColorTexture()->generateMipmap();
-
-#ifdef DEBUG
-    error = glGetError();
-    if (error)
-        Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the gui: " << error << Log::endl;
-#endif
-
     _resized = false;
 
     return;
@@ -1032,87 +1006,7 @@ void Gui::initImGui(int width, int height)
 {
     using namespace ImGui;
 
-    // Initialize GL stuff for ImGui
-    const std::string vertexShader{R"(
-        #version 320 es
-        precision mediump float;
-
-        uniform mat4 ProjMtx;
-        in vec2 Position;
-        in vec2 UV;
-        in vec4 Color;
-        out vec2 Frag_UV;
-        out vec4 Frag_Color;
-
-        void main()
-        {
-            Frag_UV = UV;
-            Frag_Color = Color;
-            gl_Position = ProjMtx * vec4(Position.xy, 0.f, 1.f);
-        }
-    )"};
-
-    const std::string fragmentShader{R"(
-        #version 320 es
-        precision mediump float;
-
-        uniform sampler2D Texture;
-        in vec2 Frag_UV;
-        in vec4 Frag_Color;
-        out vec4 Out_Color;
-
-        void main()
-        {
-            Out_Color = Frag_Color * texture(Texture, Frag_UV.st);
-        }
-    )"};
-
-    _imGuiShaderHandle = glCreateProgram();
-    _imGuiVertHandle = glCreateShader(GL_VERTEX_SHADER);
-    _imGuiFragHandle = glCreateShader(GL_FRAGMENT_SHADER);
-    {
-        const char* shaderSrc = vertexShader.c_str();
-        glShaderSource(_imGuiVertHandle, 1, (const GLchar**)&shaderSrc, 0);
-    }
-    {
-        const char* shaderSrc = fragmentShader.c_str();
-        glShaderSource(_imGuiFragHandle, 1, (const GLchar**)&shaderSrc, 0);
-    }
-    glCompileShader(_imGuiVertHandle);
-    glCompileShader(_imGuiFragHandle);
-    glAttachShader(_imGuiShaderHandle, _imGuiVertHandle);
-    glAttachShader(_imGuiShaderHandle, _imGuiFragHandle);
-    glLinkProgram(_imGuiShaderHandle);
-
-    GLint status;
-    glGetProgramiv(_imGuiShaderHandle, GL_LINK_STATUS, &status);
-    if (status == GL_FALSE)
-    {
-        Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
-        return;
-    }
-
-    _imGuiTextureLocation = glGetUniformLocation(_imGuiShaderHandle, "Texture");
-    _imGuiProjMatrixLocation = glGetUniformLocation(_imGuiShaderHandle, "ProjMtx");
-    _imGuiPositionLocation = glGetAttribLocation(_imGuiShaderHandle, "Position");
-    _imGuiUVLocation = glGetAttribLocation(_imGuiShaderHandle, "UV");
-    _imGuiColorLocation = glGetAttribLocation(_imGuiShaderHandle, "Color");
-
-    glGenBuffers(1, &_imGuiVboHandle);
-    glGenBuffers(1, &_imGuiElementsHandle);
-
-    glGenVertexArrays(1, &_imGuiVaoHandle);
-    glBindVertexArray(_imGuiVaoHandle);
-    glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
-    glEnableVertexAttribArray(_imGuiPositionLocation);
-    glEnableVertexAttribArray(_imGuiUVLocation);
-    glEnableVertexAttribArray(_imGuiColorLocation);
-
-    glVertexAttribPointer(_imGuiPositionLocation, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)(size_t) & (((ImDrawVert*)0)->pos));
-    glVertexAttribPointer(_imGuiUVLocation, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)(size_t) & (((ImDrawVert*)0)->uv));
-    glVertexAttribPointer(_imGuiColorLocation, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid*)(size_t) & (((ImDrawVert*)0)->col));
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    _guiGfxImpl->initRendering();
 
     // Initialize ImGui
     ImGuiIO& io = GetIO();
@@ -1217,17 +1111,10 @@ void Gui::initImGui(int width, int height)
     style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.61f, 0.61f, 0.61f, 0.35f);
 
     unsigned char* pixels;
-    int w, h;
-    io.Fonts->GetTexDataAsRGBA32(&pixels, &w, &h);
+    int fontWidth, fontHeight;
+    io.Fonts->GetTexDataAsRGBA32(&pixels, &fontWidth, &fontHeight);
 
-    // Set GL texture for font
-    glDeleteTextures(1, &_imFontTextureId);
-    glGenTextures(1, &_imFontTextureId);
-    glBindTexture(GL_TEXTURE_2D, _imFontTextureId);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    io.Fonts->TexID = (void*)(intptr_t)_imFontTextureId;
+    io.Fonts->TexID = _guiGfxImpl->initFontTexture(fontWidth, fontHeight, pixels);
 
     // Init clipboard callbacks
     io.GetClipboardTextFn = Gui::getClipboardText;
@@ -1394,71 +1281,6 @@ void Gui::initImWidgets()
 const char* Gui::getLocalKeyName(char key)
 {
     return glfwGetKeyName(key, 0);
-}
-
-/*************/
-void Gui::imGuiRenderDrawLists(ImDrawData* draw_data)
-{
-    if (!draw_data->CmdListsCount)
-        return;
-
-    glEnable(GL_BLEND);
-    glBlendEquation(GL_FUNC_ADD);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
-    glEnable(GL_SCISSOR_TEST);
-    glActiveTexture(GL_TEXTURE0);
-
-    const float width = ImGui::GetIO().DisplaySize.x;
-    const float height = ImGui::GetIO().DisplaySize.y;
-    const float orthoProjection[4][4] = {
-        {2.0f / width, 0.0f, 0.0f, 0.0f},
-        {0.0f, 2.0f / -height, 0.0f, 0.0f},
-        {0.0f, 0.0f, -1.0f, 0.0f},
-        {-1.0f, 1.0f, 0.0f, 1.0f},
-    };
-
-    glUseProgram(_imGuiShaderHandle);
-    glUniform1i(_imGuiTextureLocation, 0);
-    glUniformMatrix4fv(_imGuiProjMatrixLocation, 1, GL_FALSE, (float*)orthoProjection);
-    glBindVertexArray(_imGuiVaoHandle);
-
-    for (int n = 0; n < draw_data->CmdListsCount; ++n)
-    {
-        const ImDrawList* cmd_list = draw_data->CmdLists[n];
-        const ImDrawIdx* idx_buffer_offset = 0;
-
-        glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
-        glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)cmd_list->VtxBuffer.size() * sizeof(ImDrawVert), (GLvoid*)&cmd_list->VtxBuffer.front(), GL_STREAM_DRAW);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _imGuiElementsHandle);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)cmd_list->IdxBuffer.size() * sizeof(ImDrawIdx), (GLvoid*)&cmd_list->IdxBuffer.front(), GL_STREAM_DRAW);
-
-        for (const ImDrawCmd* pcmd = cmd_list->CmdBuffer.begin(); pcmd != cmd_list->CmdBuffer.end(); ++pcmd)
-        {
-            if (pcmd->UserCallback)
-            {
-                pcmd->UserCallback(cmd_list, pcmd);
-            }
-            else
-            {
-                glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
-                glScissor((int)pcmd->ClipRect.x, (int)(height - pcmd->ClipRect.w), (int)(pcmd->ClipRect.z - pcmd->ClipRect.x), (int)(pcmd->ClipRect.w - pcmd->ClipRect.y));
-                glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
-            }
-            idx_buffer_offset += pcmd->ElemCount;
-        }
-    }
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    glUseProgram(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    glDisable(GL_SCISSOR_TEST);
-    glDisable(GL_BLEND);
 }
 
 /*************/

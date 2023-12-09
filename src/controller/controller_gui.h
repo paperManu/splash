@@ -31,17 +31,18 @@
 #include <atomic>
 #include <deque>
 #include <functional>
-#include <imgui.h>
 #include <memory>
 
-#include "./core/constants.h"
+#include <imgui.h>
 
+#include "./core/constants.h"
 #if HAVE_GPHOTO and HAVE_OPENCV
 #include "./controller/colorcalibrator.h"
 #endif
 #include "./controller/widget/widget.h"
 #include "./core/attribute.h"
 #include "./graphics/api/framebuffer.h"
+#include "./graphics/api/gui_gfx_impl.h"
 #include "./graphics/camera.h"
 #include "./userinput/userinput.h"
 
@@ -221,6 +222,7 @@ class Gui final : public ControllerObject
     RenderingContext* _renderingContext{nullptr};
     Window* _window{nullptr};
 
+    std::unique_ptr<gfx::GuiGfxImpl> _guiGfxImpl{nullptr};
     std::unique_ptr<gfx::Framebuffer> _fbo{nullptr};
     float _width{512}, _height{512};
     bool _resized{false};
@@ -229,17 +231,6 @@ class Gui final : public ControllerObject
     // GUI specific camera
     std::shared_ptr<Camera> _guiCamera{nullptr};
     std::shared_ptr<Texture_Image> _splashLogo{nullptr};
-
-    // ImGUI related attributes
-    static GLuint _imFontTextureId;
-    static GLuint _imGuiShaderHandle, _imGuiVertHandle, _imGuiFragHandle;
-    static GLint _imGuiTextureLocation;
-    static GLint _imGuiProjMatrixLocation;
-    static GLint _imGuiPositionLocation;
-    static GLint _imGuiUVLocation;
-    static GLint _imGuiColorLocation;
-    static GLuint _imGuiVboHandle, _imGuiElementsHandle, _imGuiVaoHandle;
-    static size_t _imGuiVboMaxSize;
 
     // ImGUI objects
     bool _showFileSelector{false};

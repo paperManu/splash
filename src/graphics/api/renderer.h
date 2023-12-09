@@ -52,6 +52,7 @@ class CameraGfxImpl;
 class FilterGfxImpl;
 class Framebuffer;
 class GpuBuffer;
+class GuiGfxImpl;
 class PboGfxImpl;
 class ShaderGfxImpl;
 class Texture_ImageGfxImpl;
@@ -200,6 +201,12 @@ class Renderer
      * \return Return a unique pointer to the shader implementation
      */
     virtual std::unique_ptr<ShaderGfxImpl> createFeedbackShader() const = 0;
+
+    /**
+     * Create a new Gui graphics implementation
+     * \return Return a unique pointer to the Gui graphics implementation
+     */
+    virtual std::unique_ptr<GuiGfxImpl> createGuiGfxImpl() const = 0;
 
     /**
      * Create a new PBO implementation
