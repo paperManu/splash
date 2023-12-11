@@ -94,17 +94,10 @@ class World : public RootObject
     bool _quit{false};                //!< True if the World should quit
     static World* _that;              //!< Pointer to the World
     struct sigaction _signals;        //!< System signals
-    bool _enforceCoreAffinity{false}; //!< If true, World and Scenes have their affinity fixed in specific, separate cores
     bool _enforceRealtime{false};     //!< If true, realtime scheduling is asked to the system, if possible
 
     // World parameters
     unsigned int _worldFramerate{15}; //!< World framerate, default 60, because synchronous tasks need the loop to run
-    std::string _blendingMode{};      //!< Blending mode: can be none, once or continuous
-    bool _runInBackground{false};     //!< If true, no window will be created
-
-    bool _runAsChild{false};       //!< If true, runs as a child process
-    bool _spawnSubprocesses{true}; //!< If true, spawns subprocesses if needed
-    std::string _childSceneName{"scene"};
 
     std::map<std::string, int> _scenes; //!< Map holding the PID of the Scene processes
     std::string _masterSceneName{""};   //!< Name of the master Scene
@@ -221,11 +214,6 @@ class World : public RootObject
      * \return Return true if everything went well
      */
     bool loadProject(const std::string& filename);
-
-    /**
-     * Callback for GLFW errors
-     */
-    static void glfwErrorCallback(int code, const char* msg);
 
     /**
      * Register new functors to modify attributes

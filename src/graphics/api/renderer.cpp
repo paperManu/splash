@@ -5,7 +5,7 @@
 #include "./graphics/api/gles/renderer.h"
 #include "./graphics/api/gpu_buffer.h"
 #include "./graphics/api/opengl/renderer.h"
-#include "./graphics/gl_window.h"
+#include "./graphics/rendering_context.h"
 #include "./graphics/texture_image.h"
 
 namespace Splash::gfx
@@ -16,15 +16,6 @@ bool Renderer::_hasNVSwapGroup{false};
 /*************/
 std::unique_ptr<Renderer> Renderer::create(std::optional<Renderer::Api> api)
 {
-    glfwSetErrorCallback(glfwErrorCallback);
-
-    // GLFW stuff
-    if (!glfwInit())
-    {
-        Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
-        return nullptr;
-    }
-
     auto renderer = findPlatform(api);
     if (!renderer)
     {
@@ -34,12 +25,6 @@ std::unique_ptr<Renderer> Renderer::create(std::optional<Renderer::Api> api)
 
     const auto platformVersion = renderer->getPlatformVersion().toString();
     Log::get() << Log::MESSAGE << "Renderer::" << __FUNCTION__ << " - GL version: " << platformVersion << Log::endl;
-
-#ifdef DEBUGGL
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
-#else
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
-#endif
 
     return renderer;
 }
@@ -98,73 +83,43 @@ std::unique_ptr<Renderer> Renderer::findCompatibleApi()
 /*************/
 bool Renderer::tryCreateContext(const Renderer* renderer)
 {
-    renderer->setApiSpecificFlags();
-
     const auto platformVersion = renderer->getPlatformVersion();
+    auto renderingContext = RenderingContext("test_window", platformVersion);
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, platformVersion.major);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, platformVersion.minor);
-    glfwWindowHint(GLFW_VISIBLE, false);
-
-    GLFWwindow* window = glfwCreateWindow(_defaultWindowSize, _defaultWindowSize, "test_window", NULL, NULL);
-
-    if (window)
-    {
-        glfwDestroyWindow(window);
-        return true;
-    }
-
-    return false;
+    return renderingContext.isInitialized();
 }
 
 /*************/
-void Renderer::init(const std::string& name)
+void Renderer::init(std::string_view name)
 {
     // Should already have most flags set by `findPlatform`.
-    GLFWwindow* window = glfwCreateWindow(_defaultWindowSize, _defaultWindowSize, name.c_str(), NULL, NULL);
-
-    if (!window)
-    {
-        Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - Unable to create a GLFW window" << Log::endl;
-        _isInitialized = false;
+    _mainRenderingContext = std::make_unique<RenderingContext>(name, _platformVersion);
+    if (!_mainRenderingContext->isInitialized())
         return;
-    }
 
-    _mainWindow = std::make_shared<GlWindow>(window, window);
-    _isInitialized = true;
-
-    _mainWindow->setAsCurrentContext();
+    _mainRenderingContext->setAsCurrentContext();
     loadApiSpecificGlFunctions();
-    _mainWindow->releaseContext();
+    _mainRenderingContext->releaseContext();
 }
 
 /*************/
-std::shared_ptr<GlWindow> Renderer::createSharedWindow(const std::string& name)
+std::unique_ptr<RenderingContext> Renderer::createSharedContext(std::string_view name)
 {
-    const std::string windowName = name.empty() ? "Splash::Window" : "Splash::" + name;
+    assert(_mainRenderingContext != nullptr);
+    const std::string windowName = name.empty() ? "Splash::Window" : "Splash::" + std::string(name);
 
-    if (!_mainWindow)
+    auto sharedRenderingContext = _mainRenderingContext->createSharedContext(windowName);
+    if (sharedRenderingContext == nullptr)
     {
-        Log::get() << Log::WARNING << __FUNCTION__ << " - Main window does not exist, unable to create new shared window" << Log::endl;
-        return {nullptr};
+        Log::get() << Log::WARNING << "Renderer::" << __FUNCTION__ << " - Unable to create new shared context" << Log::endl;
+        return {};
     }
 
-    // The GL version is the same as in the initialization, so we don't have to reset it here
-    glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
-    glfwWindowHint(GLFW_VISIBLE, false);
-    GLFWwindow* window = glfwCreateWindow(_defaultWindowSize, _defaultWindowSize, windowName.c_str(), NULL, _mainWindow->get());
-    if (!window)
-    {
-        Log::get() << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;
-        return {nullptr};
-    }
-    auto glWindow = std::make_shared<GlWindow>(window, _mainWindow->get());
-
-    glWindow->setAsCurrentContext();
+    sharedRenderingContext->setAsCurrentContext();
     setSharedWindowFlags();
-    glWindow->releaseContext();
+    sharedRenderingContext->releaseContext();
 
-    return glWindow;
+    return sharedRenderingContext;
 }
 
 /*************/

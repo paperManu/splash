@@ -71,10 +71,10 @@ class Gui final : public ControllerObject
   public:
     /**
      * Constructor
-     * \param w Window to display the gui
-     * \param s Root scene
+     * \param renderingContext Window to display the gui
+     * \param scene Root scene
      */
-    Gui(std::shared_ptr<GlWindow> w, RootObject* s);
+    Gui(RenderingContext* renderingContext, RootObject* scene);
 
     /**
      * Destructor
@@ -218,7 +218,7 @@ class Gui final : public ControllerObject
     const float _backgroundAlpha{0.97f};
 
     bool _isInitialized{false};
-    std::shared_ptr<GlWindow> _glWindow;
+    RenderingContext* _renderingContext{nullptr};
     Window* _window{nullptr};
 
     std::unique_ptr<gfx::Framebuffer> _fbo{nullptr};

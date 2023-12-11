@@ -108,7 +108,7 @@ void WindowGfxImpl::endRender()
 void WindowGfxImpl::init(gfx::Renderer* renderer)
 {
     assert(renderer != nullptr);
-    _window = renderer->createSharedWindow();
+    _renderingContext = renderer->createSharedContext();
 }
 
 /*************/
@@ -145,7 +145,7 @@ void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureU
      * synchronization happens as usual in this case.
      */
 
-    _window->setAsCurrentContext();
+    _renderingContext->setAsCurrentContext();
     glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
 
     // If this is the first window to be swapped, or NVSwapGroups are active,
@@ -187,13 +187,13 @@ void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureU
     if (isWindowSynchronized)
         // If this window is synchronized, so we wait for the vsync and swap
         // front and back buffers
-        glfwSwapBuffers(_window->get());
+        _renderingContext->swapBuffers();
     else
         // If this window is not synchronized, we revert the draw buffer back
         // to drawing to the back buffer
         glDrawBuffer(GL_BACK);
 
-    _window->releaseContext();
+    _renderingContext->releaseContext();
 }
 
 } // namespace Splash::gfx::opengl

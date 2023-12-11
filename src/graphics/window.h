@@ -25,6 +25,7 @@
 #ifndef SPLASH_WINDOW_H
 #define SPLASH_WINDOW_H
 
+#include <array>
 #include <atomic>
 #include <deque>
 #include <memory>
@@ -39,7 +40,6 @@
 #include "./core/attribute.h"
 #include "./core/graph_object.h"
 #include "./graphics/api/window_gfx_impl.h"
-#include "./graphics/gl_window.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"
@@ -48,11 +48,14 @@ namespace Splash
 {
 
 class Gui;
+class RenderingContext;
 
 /*************/
 //! Window class, holding the GL context
 class Window final : public GraphObject
 {
+    friend RenderingContext;
+
   public:
     /**
      * Constructor
@@ -143,10 +146,10 @@ class Window final : public GraphObject
     bool isInitialized() const { return _isInitialized; }
 
     /**
-     * Check whether the given GLFW window is related to this object
-     * \return Return true if the GLFW window is held by this object
+     * Check whether the given rendering context is related to this object
+     * \return Return true if the rendering context is held by this object
      */
-    bool isWindow(GLFWwindow* w) const { return (_gfxImpl->getGlfwWindow() == w ? true : false); }
+    bool isWindow(const GLFWwindow* glfwWindow) const { return (_gfxImpl->getRenderingContext()->getGLFWwindow() == glfwWindow ? true : false); }
 
     /**
      * Render this window to screen
@@ -189,6 +192,17 @@ class Window final : public GraphObject
      */
     void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
+    /**
+     * Input callbacks
+     */
+    static void keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods);
+    static void charCallback(GLFWwindow* win, unsigned int codepoint);
+    static void mouseBtnCallback(GLFWwindow* win, int button, int action, int mods);
+    static void mousePosCallback(GLFWwindow* win, double xpos, double ypos);
+    static void scrollCallback(GLFWwindow* win, double xoffset, double yoffset);
+    static void pathdropCallback(GLFWwindow* win, int count, const char** paths);
+    static void closeCallback(GLFWwindow* win);
+
   private:
     std::unique_ptr<gfx::WindowGfxImpl> _gfxImpl;
     bool _isInitialized{false};
@@ -198,7 +212,7 @@ class Window final : public GraphObject
     int64_t _presentationDelay{0};
 
     bool _withDecoration{true};
-    int _windowRect[4];
+    std::array<int32_t, 4> _windowRect{};
     bool _resized{true};
     bool _srgb{true};
     float _gammaCorrection{2.2f};
@@ -232,17 +246,6 @@ class Window final : public GraphObject
     static std::atomic_bool _quitFlag;                                      // Grabs close window events
 
     /**
-     * Input callbacks
-     */
-    static void keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods);
-    static void charCallback(GLFWwindow* win, unsigned int codepoint);
-    static void mouseBtnCallback(GLFWwindow* win, int button, int action, int mods);
-    static void mousePosCallback(GLFWwindow* win, double xpos, double ypos);
-    static void scrollCallback(GLFWwindow* win, double xoffset, double yoffset);
-    static void pathdropCallback(GLFWwindow* win, int count, const char** paths);
-    static void closeCallback(GLFWwindow* win);
-
-    /**
      * Update size and position parameters based on the real window parameters
      */
     void updateSizeAndPos();
@@ -256,11 +259,6 @@ class Window final : public GraphObject
      * Set up the user events callbacks
      */
     void setEventsCallbacks();
-
-    /**
-     * Set up the projection surface
-     */
-    void setProjectionSurface();
 
     /**
      * Set whether the window has decorations

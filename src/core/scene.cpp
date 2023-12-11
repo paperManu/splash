@@ -95,9 +95,9 @@ Scene::~Scene()
     // No renderer, probably means we failed to init anyway so no clean up is needed.
     if (_renderer)
     {
-        if (const auto mainWindow = _renderer->getMainWindow(); mainWindow)
+        if (const auto mainRenderingContext = _renderer->getMainContext(); mainRenderingContext)
         {
-            mainWindow->setAsCurrentContext();
+            mainRenderingContext->setAsCurrentContext();
             std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex); // We don't want any friend to try accessing the objects
 
             // Free objects manually
@@ -105,7 +105,7 @@ Scene::~Scene()
                 obj.second.reset();
             _objects.clear();
 
-            mainWindow->releaseContext();
+            mainRenderingContext->releaseContext();
         }
     }
 
@@ -395,8 +395,8 @@ void Scene::run()
         return;
     }
 
-    auto mainWindow = _renderer->getMainWindow();
-    mainWindow->setAsCurrentContext();
+    auto mainRenderingContext = _renderer->getMainContext();
+    mainRenderingContext->setAsCurrentContext();
     TracyGpuContext;
 
     while (_isRunning)
@@ -469,7 +469,7 @@ void Scene::run()
 
         FrameMarkEnd("Scene");
     }
-    mainWindow->releaseContext();
+    mainRenderingContext->releaseContext();
 
     signalBufferObjectUpdated();
 
@@ -508,7 +508,7 @@ void Scene::setAsMaster(const std::string& configFilePath)
 
     _isMaster = true;
 
-    _gui = std::make_shared<Gui>(_renderer->getMainWindow(), this);
+    _gui = std::make_shared<Gui>(_renderer->getMainContext(), this);
     if (_gui)
     {
         _gui->setName("gui");

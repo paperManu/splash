@@ -29,7 +29,7 @@
 
 #include "./core/constants.h"
 #include "./graphics/api/window_gfx_impl.h"
-#include "./graphics/gl_window.h"
+#include "./graphics/rendering_context.h"
 
 namespace Splash
 {
@@ -85,18 +85,6 @@ class WindowGfxImpl : public Splash::gfx::WindowGfxImpl
     void endRender() final;
 
     /**
-     * Get the GLFW window
-     * \return Return a pointer to the GLFW window
-     */
-    inline GLFWwindow* getGlfwWindow() final { return _window->get(); }
-
-    /**
-     * Get the main window, corresponding to the main rendering context
-     * \return Return a pointer to the  main GLFW window
-     */
-    inline GLFWwindow* getMainWindow() final { return _window->getMainWindow(); }
-
-    /**
      * Initialize the window
      * \param renderer Pointer to the renderer
      */
@@ -105,30 +93,24 @@ class WindowGfxImpl : public Splash::gfx::WindowGfxImpl
     /**
      * Set as current rendering context
      */
-    inline void setAsCurrentContext() final { _window->setAsCurrentContext(); }
+    inline void setAsCurrentContext() final { _renderingContext->setAsCurrentContext(); }
 
     /**
      * Release from begin the current rendering context
      */
-    inline void releaseContext() final { _window->releaseContext(); }
+    inline void releaseContext() final { _renderingContext->releaseContext(); }
 
     /**
      * Check whether this window is the current rendering context
      * \return Return true if this window is the current rendering context
      */
-    inline bool isCurrentContext() const final { return _window->isCurrentContext(); }
-
-    /**
-     * Update the GLFW window from another one, both having shared resources
-     * \param window The window to share resources with
-     */
-    void updateGlfwWindow(GLFWwindow* window) final { _window = std::make_shared<GlWindow>(window, _window->getMainWindow()); }
+    inline bool isCurrentContext() const final { return _renderingContext->isCurrentContext(); }
 
     /**
      * Check whether the GLFW window exists
      * \return Return true if the contained GLFW window exists
      */
-    bool windowExists() const final { return _window != nullptr; }
+    bool windowExists() const final { return _renderingContext != nullptr; }
 
     /**
      * Swap back and front buffers
@@ -143,8 +125,6 @@ class WindowGfxImpl : public Splash::gfx::WindowGfxImpl
   private:
     GLuint _readFbo{0};
     GLuint _renderFbo{0};
-
-    std::shared_ptr<GlWindow> _window{nullptr};
 
     GLsync _renderFence{nullptr};
 

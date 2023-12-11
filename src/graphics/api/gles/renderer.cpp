@@ -68,11 +68,11 @@ void Renderer::glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLen
 }
 
 /*************/
-void Renderer::init(const std::string& name)
+void Renderer::init(std::string_view name)
 {
     gfx::Renderer::init(name);
 
-    _mainWindow->setAsCurrentContext();
+    _mainRenderingContext->setAsCurrentContext();
 
     // Get hardware information
     _platformVendor = std::string(reinterpret_cast<const char*>(glGetString(GL_VENDOR)));
@@ -102,7 +102,7 @@ void Renderer::init(const std::string& name)
     }
 #endif
 
-    _mainWindow->releaseContext();
+    _mainRenderingContext->releaseContext();
 }
 
 /*************/

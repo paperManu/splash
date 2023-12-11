@@ -2,8 +2,6 @@
 
 #include <functional>
 
-#include "GLFW/glfw3.h"
-
 #include "./controller/controller_gui.h"
 #include "./core/root_object.h"
 #include "./core/scene.h"
@@ -12,6 +10,7 @@
 #include "./graphics/camera.h"
 #include "./graphics/geometry.h"
 #include "./graphics/object.h"
+#include "./graphics/rendering_context.h"
 #include "./graphics/shader.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"
@@ -63,15 +62,31 @@ Window::Window(RootObject* root)
     else
         Log::get() << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Window created successfully" << Log::endl;
 
-    setProjectionSurface();
+    // Set the projection surface
+    _gfxImpl->setAsCurrentContext();
+    _gfxImpl->getRenderingContext()->show();
+    _gfxImpl->getRenderingContext()->setSwapInterval(_swapInterval);
+
+    _screen = std::make_shared<Object>(_root);
+    _screen->setAttribute("fill", {"window"});
+    auto virtualScreen = _renderer->createGeometry(_root);
+    _screen->addGeometry(virtualScreen);
+
+    _screenGui = std::make_shared<Object>(_root);
+    _screenGui->setAttribute("fill", {"window"});
+    virtualScreen = _renderer->createGeometry(_root);
+    _screenGui->addGeometry(virtualScreen);
+
+    _gfxImpl->releaseContext();
+
+    // Set the view so that the surface fills it
     _viewProjectionMatrix = glm::ortho(-1.f, 1.f, -1.f, 1.f);
 
     setEventsCallbacks();
     showCursor(false);
 
     // Get the default window size and position
-    glfwGetWindowPos(_gfxImpl->getGlfwWindow(), &_windowRect[0], &_windowRect[1]);
-    glfwGetFramebufferSize(_gfxImpl->getGlfwWindow(), &_windowRect[2], &_windowRect[3]);
+    _windowRect = _gfxImpl->getRenderingContext()->getPositionAndSize();
 }
 
 /*************/
@@ -283,16 +298,14 @@ void Window::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 /*************/
 void Window::updateSizeAndPos()
 {
-    int sizeAndPos[4];
-    glfwGetWindowPos(_gfxImpl->getGlfwWindow(), &sizeAndPos[0], &sizeAndPos[1]);
-    glfwGetFramebufferSize(_gfxImpl->getGlfwWindow(), &sizeAndPos[2], &sizeAndPos[3]);
+    const auto sizeAndPos = _gfxImpl->getRenderingContext()->getPositionAndSize();
 
     for (size_t i = 0; i < 4; ++i)
         if (sizeAndPos[i] != _windowRect[i])
             _resized = true;
 
     if (_resized)
-        memcpy(_windowRect, sizeAndPos, 4 * sizeof(int));
+        _windowRect = sizeAndPos;
 }
 
 /*************/
@@ -406,8 +419,7 @@ void Window::swapBuffers()
 /*************/
 void Window::showCursor(bool visibility)
 {
-    const auto cursor = visibility ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN;
-    glfwSetInputMode(_gfxImpl->getGlfwWindow(), GLFW_CURSOR, cursor);
+    _gfxImpl->getRenderingContext()->setCursorVisible(visibility);
 }
 
 /*************/
@@ -506,58 +518,19 @@ void Window::closeCallback(GLFWwindow* /*win*/)
 /*************/
 void Window::setEventsCallbacks()
 {
-    glfwSetKeyCallback(_gfxImpl->getGlfwWindow(), Window::keyCallback);
-    glfwSetCharCallback(_gfxImpl->getGlfwWindow(), Window::charCallback);
-    glfwSetMouseButtonCallback(_gfxImpl->getGlfwWindow(), Window::mouseBtnCallback);
-    glfwSetCursorPosCallback(_gfxImpl->getGlfwWindow(), Window::mousePosCallback);
-    glfwSetScrollCallback(_gfxImpl->getGlfwWindow(), Window::scrollCallback);
-    glfwSetDropCallback(_gfxImpl->getGlfwWindow(), Window::pathdropCallback);
-    glfwSetWindowCloseCallback(_gfxImpl->getGlfwWindow(), Window::closeCallback);
-}
-
-/*************/
-void Window::setProjectionSurface()
-{
-    _gfxImpl->setAsCurrentContext();
-    glfwShowWindow(_gfxImpl->getGlfwWindow());
-    glfwSwapInterval(_swapInterval);
-
-    _screen = std::make_shared<Object>(_root);
-    _screen->setAttribute("fill", {"window"});
-    auto virtualScreen = _renderer->createGeometry(_root);
-    _screen->addGeometry(virtualScreen);
-
-    _screenGui = std::make_shared<Object>(_root);
-    _screenGui->setAttribute("fill", {"window"});
-    virtualScreen = _renderer->createGeometry(_root);
-    _screenGui->addGeometry(virtualScreen);
-
-    _gfxImpl->releaseContext();
+    _gfxImpl->getRenderingContext()->setEventsCallbacks();
 }
 
 /*************/
 void Window::setWindowDecoration(bool hasDecoration)
 {
-    if (glfwGetCurrentContext() == nullptr)
+    auto renderingContext = _gfxImpl->getRenderingContext();
+    renderingContext->setAsCurrentContext();
+    renderingContext->setDecorations(hasDecoration);
+    if (!renderingContext->isInitialized())
         return;
+    renderingContext->releaseContext();
 
-    glfwWindowHint(GLFW_VISIBLE, true);
-    glfwWindowHint(GLFW_RESIZABLE, hasDecoration);
-    glfwWindowHint(GLFW_DECORATED, hasDecoration);
-    GLFWwindow* window;
-    window = glfwCreateWindow(_windowRect[2], _windowRect[3], ("Splash::" + _name).c_str(), 0, _gfxImpl->getMainWindow());
-
-    // Reset hints to default ones
-    glfwWindowHint(GLFW_RESIZABLE, true);
-    glfwWindowHint(GLFW_DECORATED, true);
-
-    if (!window)
-    {
-        Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Unable to update window " << _name << Log::endl;
-        return;
-    }
-
-    _gfxImpl->updateGlfwWindow(window);
     updateSwapInterval(_swapInterval);
     _resized = true;
 
@@ -573,12 +546,10 @@ void Window::updateSwapInterval(int swapInterval)
     if (!_gfxImpl->windowExists())
         return;
 
-    _gfxImpl->setAsCurrentContext();
-
-    _swapInterval = std::max<int>(-1, swapInterval);
-    glfwSwapInterval(_swapInterval);
-
-    _gfxImpl->releaseContext();
+    auto renderingContext = _gfxImpl->getRenderingContext();
+    renderingContext->setAsCurrentContext();
+    renderingContext->setSwapInterval(std::max<int>(-1, swapInterval));
+    renderingContext->releaseContext();
 }
 
 /*************/
@@ -587,18 +558,7 @@ void Window::updateWindowShape()
     if (!_gfxImpl || !_gfxImpl->windowExists())
         return;
 
-    bool wasGlfwContextEnabled = true;
-    if (!_gfxImpl->isCurrentContext())
-    {
-        wasGlfwContextEnabled = false;
-        _gfxImpl->setAsCurrentContext();
-    }
-
-    glfwSetWindowPos(_gfxImpl->getGlfwWindow(), _windowRect[0], _windowRect[1]);
-    glfwSetWindowSize(_gfxImpl->getGlfwWindow(), _windowRect[2], _windowRect[3]);
-
-    if (!wasGlfwContextEnabled)
-        _gfxImpl->releaseContext();
+    _gfxImpl->getRenderingContext()->setPositionAndSize(_windowRect);
 }
 
 /*************/
@@ -610,8 +570,10 @@ void Window::registerAttributes()
         "decorated",
         [&](const Values& args) {
             _withDecoration = args[0].as<bool>();
-            setWindowDecoration(_withDecoration);
-            updateWindowShape();
+            addTask([=]() {
+                setWindowDecoration(_withDecoration);
+                updateWindowShape();
+            });
             return true;
         },
         [&]() -> Values { return {_withDecoration}; },
@@ -673,7 +635,7 @@ void Window::registerAttributes()
         [&](const Values& args) {
             _windowRect[0] = args[0].as<int>();
             _windowRect[1] = args[1].as<int>();
-            updateWindowShape();
+            addTask([=]() { updateWindowShape(); });
             return true;
         },
         [&]() -> Values {
@@ -684,7 +646,8 @@ void Window::registerAttributes()
 
     addAttribute("showCursor",
         [&](const Values& args) {
-            showCursor(args[0].as<bool>());
+            const auto shown = args[0].as<bool>();
+            addTask([=]() { showCursor(shown); });
             return true;
         },
         {'b'});
@@ -695,7 +658,7 @@ void Window::registerAttributes()
             _windowRect[2] = args[0].as<int>();
             _windowRect[3] = args[1].as<int>();
             _resized = true;
-            updateWindowShape();
+            addTask([=]() { updateWindowShape(); });
             return true;
         },
         [&]() -> Values {
@@ -706,7 +669,8 @@ void Window::registerAttributes()
 
     addAttribute("swapInterval",
         [&](const Values& args) {
-            updateSwapInterval(args[0].as<int>());
+            const auto interval = args[0].as<int>();
+            addTask([=]() { updateSwapInterval(interval); });
             return true;
         },
         {'i'});

@@ -41,37 +41,31 @@ GLuint Gui::_imGuiVboHandle, Gui::_imGuiElementsHandle, Gui::_imGuiVaoHandle;
 size_t Gui::_imGuiVboMaxSize = 20000;
 
 /*************/
-Gui::Gui(std::shared_ptr<GlWindow> w, RootObject* s)
-    : ControllerObject(s)
+Gui::Gui(RenderingContext* renderingContext, RootObject* scene)
+    : ControllerObject(scene)
 {
     _type = "gui";
     _renderingPriority = Priority::GUI;
 
-    if (w.get() == nullptr || _scene == nullptr)
+    if (renderingContext == nullptr || _scene == nullptr)
         return;
 
-    _glWindow = w;
-    _glWindow->setAsCurrentContext();
-    glGetError();
+    _renderingContext = renderingContext;
 
     _fbo = _renderer->createFramebuffer();
     _fbo->setResizable(true);
 
-    _glWindow->releaseContext();
-
     // Create the default GUI camera
-    _guiCamera = std::make_shared<Camera>(s);
+    _guiCamera = std::make_shared<Camera>(scene);
     _guiCamera->setAttribute("eye", {2.0, 2.0, 0.0});
     _guiCamera->setAttribute("target", {0.0, 0.0, 0.5});
     _guiCamera->setAttribute("size", {640, 480});
 
     // Intialize the GUI widgets
-    _glWindow->setAsCurrentContext();
     ImGui::CreateContext();
     initImGui(_width, _height);
     initImWidgets();
     loadIcon();
-    _glWindow->releaseContext();
 
     registerAttributes();
 }
@@ -83,11 +77,8 @@ Gui::~Gui()
     Log::get() << Log::DEBUGGING << "Gui::~Gui - Destructor" << Log::endl;
 #endif
 
-    _glWindow->setAsCurrentContext();
-
     // Clean ImGui
     ImGui::DestroyContext();
-    _glWindow->releaseContext();
 
     glDeleteTextures(1, &_imFontTextureId);
     glDeleteProgram(_imGuiShaderHandle);
@@ -224,7 +215,7 @@ void Gui::setKeyboardState(const std::vector<UserInput::State>& state)
 /*************/
 void Gui::setMouseState(const std::vector<UserInput::State>& state)
 {
-    if (!_glWindow)
+    if (!_renderingContext)
         return;
 
     for (const auto& s : state)
@@ -1018,7 +1009,9 @@ void Gui::setOutputSize(int width, int height)
     if (width == 0 || height == 0)
         return;
 
-    _glWindow->setAsCurrentContext();
+    const auto isContextActive = _renderingContext->isCurrentContext();
+    if (!isContextActive)
+        _renderingContext->setAsCurrentContext();
 
     _fbo->setSize(width, height);
 
@@ -1030,7 +1023,8 @@ void Gui::setOutputSize(int width, int height)
     io.DisplaySize.x = width;
     io.DisplaySize.y = height;
 
-    _glWindow->releaseContext();
+    if (!isContextActive)
+        _renderingContext->releaseContext();
 }
 
 /*************/
@@ -1238,7 +1232,7 @@ void Gui::initImGui(int width, int height)
     // Init clipboard callbacks
     io.GetClipboardTextFn = Gui::getClipboardText;
     io.SetClipboardTextFn = Gui::setClipboardText;
-    io.ClipboardUserData = static_cast<void*>(_glWindow->get());
+    io.ClipboardUserData = static_cast<void*>(_renderingContext->getGLFWwindow());
 
     _isInitialized = true;
 }
@@ -1350,7 +1344,7 @@ void Gui::initImWidgets()
             stats[branchName + "_filter"] = runningAverage(stats[branchName + "_filter"], getLeafValue(durationPath + "/filter"));
             stats[branchName + "_camera"] = runningAverage(stats[branchName + "_camera"], getLeafValue(durationPath + "/camera"));
             stats[branchName + "_warp"] = runningAverage(stats[branchName + "_warp"], getLeafValue(durationPath + "/warp"));
-            stats[branchName + "_glWindow"] = runningAverage(stats[branchName + "_glWindow"], getLeafValue(durationPath + "/window"));
+            stats[branchName + "_renderingContext"] = runningAverage(stats[branchName + "_renderingContext"], getLeafValue(durationPath + "/window"));
             stats[branchName + "_swap"] = runningAverage(stats[branchName + "_swap"], getLeafValue(durationPath + "/swap"));
             stats[branchName + "_gl_time_per_frame"] =
                 runningAverage(stats[branchName + "_gl_time_per_frame"], getLeafValue(durationPath + "/" + Constants::GL_TIMING_PREFIX + Constants::GL_TIMING_TIME_PER_FRAME));
@@ -1372,7 +1366,7 @@ void Gui::initImWidgets()
             stream << "        Filters: " << std::setprecision(4) << stats[branchName + "_filter"] << " ms\n";
             stream << "        Cameras: " << std::setprecision(4) << stats[branchName + "_camera"] << " ms\n";
             stream << "        Warps: " << std::setprecision(4) << stats[branchName + "_warp"] << " ms\n";
-            stream << "        Windows: " << std::setprecision(4) << stats[branchName + "_glWindow"] << " ms\n";
+            stream << "        Windows: " << std::setprecision(4) << stats[branchName + "_renderingContext"] << " ms\n";
             stream << "        Swapping: " << std::setprecision(4) << stats[branchName + "_swap"] << " ms\n";
         }
 

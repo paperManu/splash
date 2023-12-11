@@ -61,12 +61,7 @@ class Renderer : public gfx::Renderer
      *  Initializes the renderer
      *  \param name Renderer main window name
      */
-    void init(const std::string& name) override final;
-
-    /**
-     * Sets API specific flags for OpenGL or OpenGL ES. For example, enables sRGB for OpenGL, or explicitly requests an OpenGL ES context.
-     */
-    void setApiSpecificFlags() const override final { glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API); }
+    void init(std::string_view name) override final;
 
     /**
      * Calls the appropriate loader for each API. Calls `gladLoadGLES2Loader` for OpenGL ES, and `gladLoadGLLoader`. Note that calling an incorrect loader might lead to
@@ -144,7 +139,7 @@ class Renderer : public gfx::Renderer
 
   private:
     /**
-     * Set shared window flags, this is called by createSharedWindow before returning the GlWindow
+     * Set shared window flags, this is called by createSharedContext before returning the RenderingContext
      */
     void setSharedWindowFlags() const final override;
 };

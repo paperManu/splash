@@ -31,7 +31,7 @@
 #include <string_view>
 
 #include "./graphics/api/window_gfx_impl.h"
-#include "./graphics/gl_window.h"
+#include "./graphics/rendering_context.h"
 #include "./utils/log.h"
 
 namespace Splash
@@ -40,7 +40,7 @@ namespace Splash
 class BaseObject;
 class Filter;
 class Geometry;
-class GlWindow;
+class RenderingContext;
 class RootObject;
 class Texture_Image;
 class Warp;
@@ -53,16 +53,6 @@ class FilterGfxImpl;
 class Framebuffer;
 class GpuBuffer;
 class ShaderGfxImpl;
-
-struct PlatformVersion
-{
-    std::string name;
-    uint32_t major{0};
-    uint32_t minor{0};
-    uint32_t patch{0};
-
-    [[nodiscard]] const std::string toString() const { return name + " " + std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch); }
-};
 
 class Renderer
 {
@@ -87,13 +77,6 @@ class Renderer
     static std::unique_ptr<Renderer> create(std::optional<Renderer::Api> api);
 
   private:
-    /**
-     * Callback for GLFW errors
-     * \param code Error code
-     * \param msg Associated error message
-     */
-    static void glfwErrorCallback(int /*code*/, const char* msg) { Log::get() << Log::ERROR << "glfwErrorCallback - " << msg << Log::endl; }
-
     /**
      * If `api` contains a value, tries creating a window with only the given API, which can fail.
      * If `api` is none, tries OpenGL 4.5, followed by GLES 3.2. This can also fail if the device does not support either.
@@ -129,14 +112,14 @@ class Renderer
      *  Initialize the renderer
      *  \param name Renderer main window name
      */
-    virtual void init(const std::string& name);
+    virtual void init(std::string_view name);
 
     /**
-     *  Get a glfw window sharing the same context as _mainWindow
-     * \param name Window name
-     * \return Return a shared pointer to the new window
+     *  Get a new rendering context sharing the same data as _mainRenderingContext
+     * \param name Context name
+     * \return Return a shared pointer to the new context
      */
-    std::shared_ptr<GlWindow> createSharedWindow(const std::string& name = "");
+    std::unique_ptr<RenderingContext> createSharedContext(std::string_view name = "");
 
     /**
      * Get whether NV swap groups are available
@@ -157,9 +140,9 @@ class Renderer
     std::string getPlatformVendor() { return _platformVendor; }
 
     /**
-     * \return Returns a `shared_ptr` to the main window.
+     * \return Returns a raw pointer to the main window.
      */
-    std::shared_ptr<GlWindow> getMainWindow() { return _mainWindow; }
+    RenderingContext* getMainContext() { return _mainRenderingContext.get(); }
 
     /**
      * Set the user data for the GL callback
@@ -225,18 +208,13 @@ class Renderer
 
   protected:
     /**
-     * Sets API specific flags for OpenGL or OpenGL ES. For example, enables sRGB for OpenGL, or explicitly requests an OpenGL ES context.
-     */
-    virtual void setApiSpecificFlags() const = 0;
-
-    /**
      * \return Calls the appropriate loader for each API. Calls `gladLoadGLES2Loader` for OpenGL ES, and `gladLoadGLLoader`. Note that calling an incorrect loader might lead to
      * segfaults due to API specific function not getting loaded, leaving the pointers as null.
      */
     virtual void loadApiSpecificGlFunctions() const = 0;
 
     /**
-     * Set shared window flags, this is called by createSharedWindow before returning the GlWindow
+     * Set shared window flags, this is called by createSharedContext before returning the RenderingContext
      */
     virtual void setSharedWindowFlags() const = 0;
 
@@ -244,7 +222,7 @@ class Renderer
     static const int _defaultWindowSize{512};
     PlatformVersion _platformVersion;
 
-    std::shared_ptr<GlWindow> _mainWindow;
+    std::unique_ptr<RenderingContext> _mainRenderingContext;
     std::string _platformVendor;
     std::string _platformRenderer;
 
@@ -260,7 +238,6 @@ class Renderer
 
   private:
     Renderer::RendererMsgCallbackData _rendererMsgCallbackData;
-    bool _isInitialized = false;
 };
 
 } // namespace gfx

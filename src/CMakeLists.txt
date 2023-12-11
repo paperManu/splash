@@ -175,6 +175,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/geometry.cpp
     graphics/object.cpp
     graphics/object_library.cpp
+    graphics/rendering_context.cpp
     graphics/shader.cpp
     graphics/texture.cpp
     graphics/texture_image.cpp

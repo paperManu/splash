@@ -108,7 +108,7 @@ void WindowGfxImpl::endRender()
 void WindowGfxImpl::init(gfx::Renderer* renderer)
 {
     assert(renderer != nullptr);
-    _window = renderer->createSharedWindow();
+    _renderingContext = renderer->createSharedContext();
 }
 
 /*************/
@@ -120,7 +120,7 @@ void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureU
     // the projector view(like the default config), the FPS will be half of the refresh rate (if you can hit it). Each window will decrease FPS further. This is due to either a bug
     // caused by OpenGL ES's limitations or a bug in the driver.
 
-    _window->setAsCurrentContext();
+    _renderingContext->setAsCurrentContext();
     glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
 
     // If this is the first window to be swapped, or NVSwapGroups are active,
@@ -134,7 +134,7 @@ void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureU
         // we draw to the back buffer, then immediately present it
         GLenum buffers[] = {GL_BACK};
         glDrawBuffers(1, buffers);
-        glfwSwapBuffers(_window->get());
+        _renderingContext->swapBuffers();
     }
 
     if (srgb)
@@ -173,7 +173,7 @@ void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureU
     {
         // If this window is synchronized, so we wait for the vsync and swap
         // front and back buffers
-        glfwSwapBuffers(_window->get());
+        _renderingContext->swapBuffers();
     }
     else
     {
@@ -183,7 +183,7 @@ void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureU
         glDrawBuffers(1, buffers);
     }
 
-    _window->releaseContext();
+    _renderingContext->releaseContext();
 }
 
 } // namespace Splash::gfx::gles

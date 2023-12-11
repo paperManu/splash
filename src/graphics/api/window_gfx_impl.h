@@ -25,7 +25,9 @@
 #ifndef SPLASH_GFX_WINDOW_GFX_IMPL
 #define SPLASH_GFX_WINDOW_GFX_IMPL
 
-#include "glm/vec4.hpp"
+#include <glm/vec4.hpp>
+
+#include "./graphics/rendering_context.h"
 
 struct GLFWwindow;
 
@@ -89,13 +91,13 @@ class WindowGfxImpl
      * Get the GLFW window
      * \return Return a pointer to the GLFW window
      */
-    virtual inline GLFWwindow* getGlfwWindow() = 0;
+    inline RenderingContext* getRenderingContext() { return _renderingContext.get(); }
 
     /**
-     * Get the main window, corresponding to the main rendering context
-     * \return Return a pointer to the  main GLFW window
+     * Get the main rendering context
+     * \return Return a pointer to the  main rendering context
      */
-    virtual inline GLFWwindow* getMainWindow() = 0;
+    inline RenderingContext* getMainContext() { return _renderingContext->getMainContext(); }
 
     /**
      * Initialize the window
@@ -120,12 +122,6 @@ class WindowGfxImpl
     virtual inline bool isCurrentContext() const = 0;
 
     /**
-     * Update the GLFW window from another one, both having shared resources
-     * \param window The window to share resources with
-     */
-    virtual void updateGlfwWindow(GLFWwindow* window) = 0;
-
-    /**
      * Check whether the GLFW window exists
      * \return Return true if the contained GLFW window exists
      */
@@ -140,6 +136,9 @@ class WindowGfxImpl
      * \param height Height of the rendering viewport
      */
     virtual void swapBuffers(int windowIndex, bool _srgb, bool& _renderTextureUpdated, uint32_t width, uint32_t height) = 0;
+
+  protected:
+    std::unique_ptr<RenderingContext> _renderingContext{nullptr};
 };
 
 } // namespace gfx
