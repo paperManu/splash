@@ -183,7 +183,8 @@ class Texture_Image : public Texture
 
     std::string _pixelFormat{"RGBA"};
     int _multisample{0};
-    bool _cubemap{false}, _filtering;
+    bool _cubemap{false};
+    bool _filtering{false};
 
     std::weak_ptr<Image> _img;
 

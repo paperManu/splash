@@ -11,6 +11,8 @@
 namespace Splash::gfx
 {
 
+std::string Renderer::_platformVendor{};
+std::string Renderer::_platformRenderer{};
 bool Renderer::_hasNVSwapGroup{false};
 
 /*************/

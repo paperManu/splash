@@ -52,6 +52,7 @@ class CameraGfxImpl;
 class FilterGfxImpl;
 class Framebuffer;
 class GpuBuffer;
+class PboGfxImpl;
 class ShaderGfxImpl;
 
 class Renderer
@@ -137,7 +138,13 @@ class Renderer
      * Get the platform vendor
      * \return Returns the vendor of the OpenGL renderer
      */
-    std::string getPlatformVendor() { return _platformVendor; }
+    static std::string getPlatformVendor() { return _platformVendor; }
+
+    /**
+     * Get the platform renderer
+     * \return Returns the renderer of the OpenGL renderer
+     */
+    static std::string getPlatformRenderer() { return _platformRenderer; }
 
     /**
      * \return Returns a raw pointer to the main window.
@@ -194,6 +201,13 @@ class Renderer
     virtual std::unique_ptr<ShaderGfxImpl> createFeedbackShader() const = 0;
 
     /**
+     * Create a new PBO implementation
+     * \param size Underlying PBO count
+     * \return Return a unique pointer to the PBO implementation
+     */
+    virtual std::unique_ptr<PboGfxImpl> createPboGfxImpl(std::size_t size) const = 0;
+
+    /**
      * Create a new Texture_Image
      * \param root Root object
      * \return Return a shared pointer to a default Texture_Image
@@ -223,8 +237,8 @@ class Renderer
     PlatformVersion _platformVersion;
 
     std::unique_ptr<RenderingContext> _mainRenderingContext;
-    std::string _platformVendor;
-    std::string _platformRenderer;
+    static std::string _platformVendor;
+    static std::string _platformRenderer;
 
     static bool _hasNVSwapGroup; //!< If true, NV swap groups have been detected and are used
     GLuint _maxSwapGroups{0};

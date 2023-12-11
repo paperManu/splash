@@ -20,21 +20,8 @@ Sink::Sink(RootObject* root)
 
     if (!_root)
         return;
-}
 
-/*************/
-Sink::~Sink()
-{
-    if (!_root)
-        return;
-
-    if (_mappedPixels)
-    {
-        glUnmapNamedBuffer(_pbos[_pboWriteIndex]);
-        _mappedPixels = nullptr;
-    }
-
-    glDeleteBuffers(_pbos.size(), _pbos.data());
+    _pboGfxImpl = _renderer->createPboGfxImpl(_pboCount);
 }
 
 /*************/
@@ -107,11 +94,8 @@ void Sink::update()
     if (textureSpec.rawSize() == 0)
         return;
 
-    if (!_pbos.empty() && _mappedPixels)
-    {
-        glUnmapNamedBuffer(_pbos[_pboWriteIndex]);
-        _mappedPixels = nullptr;
-    }
+    _pboGfxImpl->unmapRead();
+    _mappedPixels = nullptr;
 
     if (_spec.type != ImageBufferSpec::Type::UINT16 && _sixteenBpc)
         _inputFilter->setSixteenBpc(true);
@@ -148,61 +132,24 @@ void Sink::update()
         return;
     _lastFrameTiming = currentTime;
 
-    if (_spec != textureSpec || _pbos.size() != _pboCount)
+    if (_pboGfxImpl->getPBOCount() != _pboCount)
     {
-        updatePbos(textureSpec.width, textureSpec.height, textureSpec.pixelBytes());
+        _pboGfxImpl = _renderer->createPboGfxImpl(_pboCount);
+        _pboGfxImpl->updatePBOs(_spec.rawSize());
+    }
+
+    if (_spec != textureSpec)
+    {
+        _pboGfxImpl->updatePBOs(textureSpec.rawSize());
         _spec = textureSpec;
         _image = ImageBuffer(_spec);
     }
 
-    glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboWriteIndex]);
-
-    auto scene = dynamic_cast<Scene*>(_root);
-    // Nvidia hardware and/or drivers do not like much copying to a PBO
-    // from a named texture, it prefers the old way for some unknown reason.
-    // Hence the special treatment, even though it's not modern-ish.
-    // For reference, the behavior with Nvidia hardware is that the grabbed
-    // image is always completely black. It works correctly with AMD and Intel
-    // hardware using Mesa driver.
-    if (scene != nullptr && _renderer->getPlatformVendor() == Constants::GL_VENDOR_NVIDIA)
-    {
-        _inputFilter->bind();
-        if (_spec.bpp == 64)
-            glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_SHORT, 0);
-        else if (_spec.bpp == 32)
-            glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, 0);
-        else if (_spec.bpp == 24)
-            glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-        else if (_spec.bpp == 16 && _spec.channels != 1)
-            glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_UNSIGNED_SHORT, 0);
-        else if (_spec.bpp == 16 && _spec.channels == 1)
-            glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_SHORT, 0);
-        else if (_spec.bpp == 8)
-            glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
-        _inputFilter->unbind();
-    }
-    else
-    {
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboWriteIndex]);
-        if (_spec.bpp == 64)
-            glGetTextureImage(_inputFilter->getTexId(), 0, GL_RGBA, GL_UNSIGNED_SHORT, 0, 0);
-        else if (_spec.bpp == 32)
-            glGetTextureImage(_inputFilter->getTexId(), 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, 0, 0);
-        else if (_spec.bpp == 24)
-            glGetTextureImage(_inputFilter->getTexId(), 0, GL_RGB, GL_UNSIGNED_BYTE, 0, 0);
-        else if (_spec.bpp == 16 && _spec.channels != 1)
-            glGetTextureImage(_inputFilter->getTexId(), 0, GL_RG, GL_UNSIGNED_SHORT, 0, 0);
-        else if (_spec.bpp == 16 && _spec.channels == 1)
-            glGetTextureImage(_inputFilter->getTexId(), 0, GL_RED, GL_UNSIGNED_SHORT, 0, 0);
-        else if (_spec.bpp == 8)
-            glGetTextureImage(_inputFilter->getTexId(), 0, GL_RED, GL_UNSIGNED_BYTE, 0, 0);
-    }
-
-    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-
-    _pboWriteIndex = (_pboWriteIndex + 1) % _pbos.size();
-
-    _mappedPixels = (GLubyte*)glMapNamedBufferRange(_pbos[_pboWriteIndex], 0, _spec.rawSize(), GL_MAP_READ_BIT);
+    _pboGfxImpl->activatePixelPack(_pboWriteIndex);
+    _pboGfxImpl->packTexture(_inputFilter.get());
+    _pboGfxImpl->deactivatePixelPack();
+    _pboWriteIndex = (_pboWriteIndex + 1) % _pboCount;
+    _mappedPixels = _pboGfxImpl->mapRead(_pboWriteIndex);
 }
 
 /*************/
@@ -213,21 +160,6 @@ void Sink::handlePixels(const char* pixels, const ImageBufferSpec& spec)
         _buffer.resize(size);
 
     memcpy(_buffer.data(), pixels, size);
-}
-
-/*************/
-void Sink::updatePbos(int width, int height, int bytes)
-{
-    if (!_pbos.empty())
-        glDeleteBuffers(_pbos.size(), _pbos.data());
-
-    _pbos.resize(_pboCount);
-    glCreateBuffers(_pbos.size(), _pbos.data());
-
-    for (uint32_t i = 0; i < _pbos.size(); ++i)
-        glNamedBufferData(_pbos[i], width * height * bytes, 0, GL_STREAM_READ);
-
-    _pboWriteIndex = 0;
 }
 
 /*************/
