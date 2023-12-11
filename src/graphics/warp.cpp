@@ -1,5 +1,6 @@
 #include "./graphics/warp.h"
 
+#include <cassert>
 #include <fstream>
 
 #include "./core/scene.h"
@@ -52,6 +53,24 @@ Warp::~Warp()
 /*************/
 void Warp::bind()
 {
+    // If the control patch is not modified, we bind the input
+    // Otherwise, or if there is no input, we bind the output FBO texture
+    if (!_screenMesh->isPatchModified())
+    {
+        if (!_inCamera.expired())
+        {
+            auto inCameraPtr = _inCamera.lock();
+            inCameraPtr->getTexture()->bind();
+            return;
+        }
+        else if (!_inTexture.expired())
+        {
+            auto inTexturePtr = _inTexture.lock();
+            inTexturePtr->bind();
+            return;
+        }
+    }
+
     _fbo->getColorTexture()->bind();
 }
 
@@ -62,6 +81,47 @@ std::unordered_map<std::string, Values> Warp::getShaderUniforms() const
     std::unordered_map<std::string, Values> uniforms;
     uniforms["size"] = {static_cast<float>(_spec.width), static_cast<float>(spec.height)};
     return uniforms;
+}
+
+/*************/
+std::shared_ptr<Texture> Warp::getTexture() const
+{
+    if (!_screenMesh->isPatchModified())
+    {
+        if (!_inCamera.expired())
+        {
+            auto inCameraPtr = _inCamera.lock();
+            inCameraPtr->getTexture();
+        }
+        else if (!_inTexture.expired())
+        {
+            auto inTexturePtr = std::dynamic_pointer_cast<Texture>(_inTexture.lock());
+            return inTexturePtr;
+        }
+    }
+
+    return _fbo->getColorTexture();
+}
+
+/*************/
+GLuint Warp::getTexId() const
+{
+    if (!_screenMesh->isPatchModified())
+    {
+        if (!_inCamera.expired())
+        {
+            auto inCameraPtr = _inCamera.lock();
+            inCameraPtr->getTexture()->getTexId();
+            ;
+        }
+        else if (!_inTexture.expired())
+        {
+            const auto inTexturePtr = _inTexture.lock();
+            return inTexturePtr->getTexId();
+        }
+    }
+
+    return _fbo->getColorTexture()->getTexId();
 }
 
 /*************/
@@ -91,6 +151,22 @@ bool Warp::linkIt(const std::shared_ptr<GraphObject>& obj)
 /*************/
 void Warp::unbind()
 {
+    if (!_screenMesh->isPatchModified())
+    {
+        if (!_inCamera.expired())
+        {
+            auto inCameraPtr = _inCamera.lock();
+            inCameraPtr->getTexture()->unbind();
+            return;
+        }
+        else if (!_inTexture.expired())
+        {
+            auto inTexturePtr = _inTexture.lock();
+            inTexturePtr->unbind();
+            return;
+        }
+    }
+
     _fbo->getColorTexture()->unbind();
 }
 
@@ -127,6 +203,12 @@ void Warp::render()
         _renderer->setRendererMsgCallbackData(_scene->getRendererMsgCallbackDataPtr());
     };
 #endif
+
+    // If the Bezier patch is still the default one, no rendering is needed. We just
+    // need to pass the input texture to the output
+    // Also, we render everything anyway if the control points are displayed
+    if (!_screenMesh->isPatchModified() && !_showControlPoints)
+        return;
 
     std::shared_ptr<Texture> input(nullptr);
 
@@ -327,6 +409,9 @@ void Warp::registerAttributes()
         },
         {'i', 'i'});
     setAttributeDescription("patchSize", "Set the Bezier patch control resolution");
+
+    addAttribute("resetPatch", [&](const Values&) { return _screenMesh->setAttribute("resetPatch") != BaseObject::SetAttrStatus::failure; }, {});
+    setAttributeDescription("resetPatch", "Reset the control patch to the default one, considering its current size");
 
     addAttribute(
         "size",

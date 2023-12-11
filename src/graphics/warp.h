@@ -68,38 +68,38 @@ class Warp final : public Texture
     Warp& operator=(Warp&&) = delete;
 
     /**
-     * \brier Bind this warp
+     * Bind this warp
      */
-    void bind() final;
+    void bind() override final;
 
     /**
      * Unbind this warp
      */
-    void unbind() final;
+    void unbind() override final;
 
     /**
      * Get the shader parameters related to this warp. Texture should be locked first.
      * \return Return the shader uniforms
      */
-    std::unordered_map<std::string, Values> getShaderUniforms() const;
+    std::unordered_map<std::string, Values> getShaderUniforms() const override final;
 
     /**
      * Get the texture the warp is rendered to
      * \return Return the rendered texture
      */
-    std::shared_ptr<Texture_Image> getTexture() const { return _fbo->getColorTexture(); }
+    std::shared_ptr<Texture> getTexture() const;
 
     /**
      * Get the output texture GL id
      * \return Return the id
      */
-    GLuint getTexId() const { return _fbo->getColorTexture()->getTexId(); }
+    GLuint getTexId() const override final;
 
     /**
      * Get the timestamp
      * \return Return the timestamp in us
      */
-    virtual int64_t getTimestamp() const final { return _spec.timestamp; }
+    virtual int64_t getTimestamp() const override final { return _spec.timestamp; }
 
     /**
      * Get the coordinates of the closest vertex to the given point
@@ -112,7 +112,7 @@ class Warp final : public Texture
     /**
      * Warps should always be saved as it hold user-modifiable parameters. This method has no effect.
      */
-    void setSavable(bool /*savable*/) { _savable = true; }
+    void setSavable(bool /*savable*/) override final { _savable = true; }
 
     /**
      * Update the warp

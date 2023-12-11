@@ -9,7 +9,15 @@ namespace Splash
 Mesh_BezierPatch::Mesh_BezierPatch(RootObject* root)
     : Mesh(root)
 {
-    init();
+    _type = "mesh_bezierPatch";
+    registerAttributes();
+
+    // This is used for getting documentation "offline"
+    if (!_root)
+        return;
+
+    auto patch = createPatch();
+    updateBezierFromPatch(patch);
 }
 
 /*************/
@@ -23,8 +31,6 @@ Mesh_BezierPatch::~Mesh_BezierPatch()
 /*************/
 void Mesh_BezierPatch::switchMeshes(bool control)
 {
-    std::lock_guard<std::mutex> lockPatch(_patchMutex);
-
     if (control)
         _bufferMesh = _bezierControl;
     else
@@ -43,34 +49,14 @@ void Mesh_BezierPatch::update()
         _patchUpdated = false;
     }
 
-    std::lock_guard<std::mutex> lockPatch(_patchMutex);
     Mesh::update();
 }
 
 /*************/
-void Mesh_BezierPatch::init()
+Mesh_BezierPatch::Patch Mesh_BezierPatch::createPatch(int width, int height)
 {
-    _type = "mesh_bezierPatch";
-    registerAttributes();
-
-    // This is used for getting documentation "offline"
-    if (!_root)
-        return;
-
-    createPatch();
-}
-
-/*************/
-void Mesh_BezierPatch::createPatch(int width, int height)
-{
-    std::unique_lock<std::mutex> lock(_patchMutex);
-
     width = std::max(2, width);
     height = std::max(2, height);
-
-    // Check whether the current patch has the same size
-    if (_bezierControl.vertices.size() != 0 && _patch.size.x == width && _patch.size.y == height)
-        return;
 
     Patch patch;
     patch.size = glm::ivec2(width, height);
@@ -91,34 +77,31 @@ void Mesh_BezierPatch::createPatch(int width, int height)
         }
     }
 
-    lock.unlock();
-    createPatch(patch);
+    return patch;
 }
 
 /*************/
-void Mesh_BezierPatch::createPatch(Patch& patch)
+void Mesh_BezierPatch::updateBezierFromPatch(Patch& patch)
 {
     if (patch.size.x * patch.size.y != static_cast<int>(patch.vertices.size()))
         return;
 
-    std::lock_guard<std::mutex> lock(_patchMutex);
-
-    const int width = patch.size.x;
-    const int height = patch.size.y;
+    const uint32_t width = patch.size.x;
+    const uint32_t height = patch.size.y;
 
     // Set uv coordinates to the patch
     patch.uvs.resize(patch.vertices.size());
-    for (int v = 0; v < height; ++v)
-        for (int u = 0; u < width; ++u)
+    for (uint32_t v = 0; v < height; ++v)
+        for (uint32_t u = 0; u < width; ++u)
             patch.uvs[u + v * width] = glm::vec2(static_cast<float>(u) / static_cast<float>(width - 1), static_cast<float>(v) / static_cast<float>(height - 1));
 
     _patch = patch;
     _patchUpdated = true;
 
     MeshContainer mesh;
-    for (int v = 0; v < height - 1; ++v)
+    for (uint32_t v = 0; v < height - 1; ++v)
     {
-        for (int u = 0; u < width - 1; ++u)
+        for (uint32_t u = 0; u < width - 1; ++u)
         {
             mesh.vertices.push_back(glm::vec4(patch.vertices[u + v * width], 0.0, 1.0));
             mesh.vertices.push_back(glm::vec4(patch.vertices[u + 1 + v * width], 0.0, 1.0));
@@ -140,16 +123,14 @@ void Mesh_BezierPatch::createPatch(Patch& patch)
                 mesh.normals.push_back(glm::vec4(0.0, 0.0, 1.0, 0.0));
         }
     }
-    _bezierControl = mesh;
 
+    _bezierControl = mesh;
     updateTimestamp();
 }
 
 /*************/
 void Mesh_BezierPatch::updatePatch()
 {
-    std::lock_guard<std::mutex> lock(_patchMutex);
-
     std::vector<glm::vec2> vertices;
     std::vector<glm::vec2> uvs;
 
@@ -180,14 +161,14 @@ void Mesh_BezierPatch::updatePatch()
             uv.x = static_cast<float>(u) / static_cast<float>(_patchResolution - 1);
 
             glm::vec2 vertex{0.f, 0.f};
-            for (float j = 0; j < _patch.size.y; ++j)
+            for (int32_t j = 0; j < _patch.size.y; ++j)
             {
-                for (float i = 0; i < _patch.size.x; ++i)
+                for (int32_t i = 0; i < _patch.size.x; ++i)
                 {
                     const auto iAsFloat = static_cast<float>(i);
                     const auto jAsFloat = static_cast<float>(j);
-                    float factor = _binomialCoeffsY[j] * pow(uv.y, jAsFloat) * pow(1.f - uv.y, static_cast<float>(_patch.size.y) - 1.f - jAsFloat) * _binomialCoeffsX[i] *
-                                   pow(uv.x, iAsFloat) * pow(1.f - uv.x, static_cast<float>(_patch.size.x) - 1.f - iAsFloat);
+                    float factor = _binomialCoeffsY[j] * powf(uv.y, jAsFloat) * powf(1.f - uv.y, static_cast<float>(_patch.size.y) - 1.f - jAsFloat) * _binomialCoeffsX[i] *
+                                   powf(uv.x, iAsFloat) * powf(1.f - uv.x, static_cast<float>(_patch.size.x) - 1.f - iAsFloat);
                     vertex += factor * _patch.vertices[i + j * _patch.size.x];
                 }
             }
@@ -248,9 +229,28 @@ void Mesh_BezierPatch::registerAttributes()
             Patch patch;
             patch.size = glm::ivec2(width, height);
             for (size_t p = 2; p < args.size(); ++p)
-                patch.vertices.push_back(glm::vec2(args[p].as<Values>()[0].as<float>(), args[p].as<Values>()[1].as<float>()));
+                patch.vertices.emplace_back(glm::vec2(args[p].as<Values>()[0].as<float>(), args[p].as<Values>()[1].as<float>()));
 
-            createPatch(patch);
+            // Check whether the patch is different from the current one
+            // This implies recomputing the default patch with the same size
+            auto defaultPatch = createPatch(height, width);
+            bool isDefaultPatch = true;
+            for (uint32_t y = 0; y < height; ++y)
+                for (uint32_t x = 0; x < width; ++x)
+                {
+                    const auto index = y * width + x;
+                    if (patch.vertices[index] != defaultPatch.vertices[index])
+                        isDefaultPatch = false;
+                }
+
+            if (isDefaultPatch)
+            {
+                _patchModified = false;
+                return true;
+            }
+
+            updateBezierFromPatch(patch);
+            _patchModified = true;
 
             return true;
         },
@@ -273,7 +273,15 @@ void Mesh_BezierPatch::registerAttributes()
     addAttribute(
         "patchSize",
         [&](const Values& args) {
-            createPatch(std::max(args[0].as<int>(), 2), std::max(args[1].as<int>(), 2));
+            const auto width = args[0].as<int>();
+            const auto height = args[1].as<int>();
+
+            if (width == _patch.size.x && height == _patch.size.y)
+                return true;
+
+            auto patch = createPatch(std::max(width, 2), std::max(height, 2));
+            updateBezierFromPatch(patch);
+            _patchModified = false;
             return true;
         },
         [&]() -> Values {
@@ -293,6 +301,17 @@ void Mesh_BezierPatch::registerAttributes()
         [&]() -> Values { return {_patchResolution}; },
         {'i'});
     setAttributeDescription("patchResolution", "Set the Bezier patch final resolution");
+
+    addAttribute("resetPatch",
+        [&](const Values&) {
+            auto patch = createPatch(_patch.size.x, _patch.size.y);
+            _patch = Patch();
+            updateBezierFromPatch(patch);
+            _patchModified = false;
+            return true;
+        },
+        {});
+    setAttributeDescription("resetPatch", "Reset the control patch to the default one, considering its current size");
 }
 
 } // namespace Splash
