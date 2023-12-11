@@ -73,7 +73,7 @@ class Renderer
         GLES
     };
 
-    struct GlMsgCallbackData
+    struct RendererMsgCallbackData
     {
         std::optional<std::string> name, type;
     };
@@ -85,17 +85,6 @@ class Renderer
      * \return Return a unique pointer to the created renderer
      */
     static std::unique_ptr<Renderer> create(std::optional<Renderer::Api> api);
-
-    /**
-     *  Callback for GL errors and warnings
-     */
-    static void glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* userParam);
-
-    /**
-     * Set the user data for the GL callback
-     * \param data User data for the callback
-     */
-    static void setGlMsgCallbackData(const Renderer::GlMsgCallbackData* data) { glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<const void*>(data)); }
 
   private:
     /**
@@ -110,7 +99,7 @@ class Renderer
      * If `api` is none, tries OpenGL 4.5, followed by GLES 3.2. This can also fail if the device does not support either.
      * \return a specific renderer implementation if creating a context succeeds, nullptr if it fails.
      */
-    static std::unique_ptr<Renderer> findGLVersion(std::optional<Renderer::Api> api);
+    static std::unique_ptr<Renderer> findPlatform(std::optional<Renderer::Api> api);
 
     /*
      * Loops through a list of predetermined renderers with different APIs.
@@ -137,9 +126,23 @@ class Renderer
     virtual ~Renderer() = default;
 
     /**
-     *  Initializes glfw, initializes the graphics API, and creates a window.
+     *  Initialize the renderer
+     *  \param name Renderer main window name
      */
-    void init(const std::string& name);
+    virtual void init(const std::string& name);
+
+    /**
+     *  Get a glfw window sharing the same context as _mainWindow
+     * \param name Window name
+     * \return Return a shared pointer to the new window
+     */
+    std::shared_ptr<GlWindow> createSharedWindow(const std::string& name = "");
+
+    /**
+     * Get whether NV swap groups are available
+     * \return Return true if they are
+     */
+    static bool getHasNVSwapGroup() { return _hasNVSwapGroup; }
 
     /**
      * Get the platform version
@@ -151,7 +154,7 @@ class Renderer
      * Get the platform vendor
      * \return Returns the vendor of the OpenGL renderer
      */
-    std::string getPlatformVendor() { return _glVendor; }
+    std::string getPlatformVendor() { return _platformVendor; }
 
     /**
      * \return Returns a `shared_ptr` to the main window.
@@ -159,10 +162,10 @@ class Renderer
     std::shared_ptr<GlWindow> getMainWindow() { return _mainWindow; }
 
     /**
-     * Get a pointer to the data to be sent to the GL callback
-     * \return A raw pointer to the GL callback data
+     * Set the user data for the GL callback
+     * \param data User data for the callback
      */
-    const Renderer::GlMsgCallbackData* getGlMsgCallbackDataPtr();
+    virtual void setRendererMsgCallbackData(const Renderer::RendererMsgCallbackData* data) = 0;
 
     /**
      * Create a new Camera graphics implementation
@@ -232,17 +235,32 @@ class Renderer
      */
     virtual void loadApiSpecificGlFunctions() const = 0;
 
+    /**
+     * Set shared window flags, this is called by createSharedWindow before returning the GlWindow
+     */
+    virtual void setSharedWindowFlags() const = 0;
+
   protected:
+    static const int _defaultWindowSize{512};
     PlatformVersion _platformVersion;
 
-  private:
-    bool _isInitialized = false;
     std::shared_ptr<GlWindow> _mainWindow;
-    std::string _glVendor, _glRenderer;
+    std::string _platformVendor;
+    std::string _platformRenderer;
 
-    // Since we don't inherit from BaseObject (because I think it's a bit to heavy for a renderer. (Please ignore my use of virtual functions :P)),
-    // we have to re-declare some variable to hold the data we'll pass to the callback in this class.
-    Renderer::GlMsgCallbackData _glMsgCallbackData;
+    static bool _hasNVSwapGroup; //!< If true, NV swap groups have been detected and are used
+    GLuint _maxSwapGroups{0};
+    GLuint _maxSwapBarriers{0};
+
+    /**
+     * Get a pointer to the data to be sent to the GL callback
+     * \return A raw pointer to the GL callback data
+     */
+    const Renderer::RendererMsgCallbackData* getRendererMsgCallbackDataPtr();
+
+  private:
+    Renderer::RendererMsgCallbackData _rendererMsgCallbackData;
+    bool _isInitialized = false;
 };
 
 } // namespace gfx

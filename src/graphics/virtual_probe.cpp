@@ -92,10 +92,10 @@ void VirtualProbe::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 void VirtualProbe::render()
 {
 #ifdef DEBUGGL
-    gfx::Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
+    _renderer->setRendererMsgCallbackData(getRendererMsgCallbackDataPtr());
     OnScopeExit
     {
-        gfx::Renderer::setGlMsgCallbackData(_root->getGlMsgCallbackDataPtr());
+        _renderer->setRendererMsgCallbackData(_root->getRendererMsgCallbackDataPtr());
     };
 #endif
 

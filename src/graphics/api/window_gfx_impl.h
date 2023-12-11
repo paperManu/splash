@@ -38,6 +38,8 @@ class RootObject;
 namespace gfx
 {
 
+class Renderer;
+
 class WindowGfxImpl
 {
   public:
@@ -84,12 +86,6 @@ class WindowGfxImpl
     virtual void endRender() = 0;
 
     /**
-     * Setup user data for debug messages
-     * \param userData Pointer to the user data
-     */
-    virtual void setDebugData(const void* userData) = 0;
-
-    /**
      * Get the GLFW window
      * \return Return a pointer to the GLFW window
      */
@@ -103,9 +99,9 @@ class WindowGfxImpl
 
     /**
      * Initialize the window
-     * \param scene Root Scene
+     * \param renderer Pointer to the renderer
      */
-    virtual void init(Scene* scene) = 0;
+    virtual void init(Renderer* renderer) = 0;
 
     /**
      * Set as current rendering context

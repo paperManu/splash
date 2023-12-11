@@ -46,12 +46,23 @@ class Renderer : public gfx::Renderer
 {
   public:
     /**
+     *  Callback for GL errors and warnings
+     */
+    static void glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* userParam);
+
+  public:
+    /**
      * Constructor
      * Sets the platform version attribute
      */
     Renderer() { _platformVersion = gfx::PlatformVersion({"OpenGL ES", 3, 2, 0}); }
 
-  private:
+    /**
+     *  Initializes the renderer
+     *  \param name Renderer main window name
+     */
+    void init(const std::string& name) override final;
+
     /**
      * Sets API specific flags for OpenGL or OpenGL ES. For example, enables sRGB for OpenGL, or explicitly requests an OpenGL ES context.
      */
@@ -62,6 +73,15 @@ class Renderer : public gfx::Renderer
      * segfaults due to API specific function not getting loaded, leaving the pointers as null.
      */
     void loadApiSpecificGlFunctions() const override final { gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress); }
+
+    /**
+     * Set the user data for the GL callback
+     * \param data User data for the callback
+     */
+    void setRendererMsgCallbackData(const Renderer::RendererMsgCallbackData* data) override final
+    {
+        glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<const void*>(data));
+    }
 
     /**
      * Create a new Camera graphics implementation
@@ -121,6 +141,12 @@ class Renderer : public gfx::Renderer
      * \return A class containing the graphics API specific details of `Splash::Window`.
      */
     std::unique_ptr<gfx::WindowGfxImpl> createWindowGfxImpl() const override final { return std::make_unique<gfx::gles::WindowGfxImpl>(); }
+
+  private:
+    /**
+     * Set shared window flags, this is called by createSharedWindow before returning the GlWindow
+     */
+    void setSharedWindowFlags() const final override;
 };
 
 } // namespace Splash::gfx::gles

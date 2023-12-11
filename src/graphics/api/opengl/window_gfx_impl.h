@@ -85,12 +85,6 @@ class WindowGfxImpl : public Splash::gfx::WindowGfxImpl
     void endRender() final;
 
     /**
-     * Setup user data for debug messages
-     * \param userData Pointer to the user data
-     */
-    void setDebugData(const void* userData) final;
-
-    /**
      * Get the GLFW window
      * \return Return a pointer to the GLFW window
      */
@@ -104,9 +98,9 @@ class WindowGfxImpl : public Splash::gfx::WindowGfxImpl
 
     /**
      * Initialize the window
-     * \param scene Root Scene
+     * \param renderer Pointer to the renderer
      */
-    void init(Scene* scene) final;
+    void init(Renderer* renderer) final;
 
     /**
      * Set as current rendering context

@@ -121,10 +121,10 @@ void Warp::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 void Warp::render()
 {
 #ifdef DEBUGGL
-    gfx::Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
+    _renderer->setRendererMsgCallbackData(getRendererMsgCallbackDataPtr());
     OnScopeExit
     {
-        gfx::Renderer::setGlMsgCallbackData(_root->getGlMsgCallbackDataPtr());
+        _renderer->setRendererMsgCallbackData(_root->getRendererMsgCallbackDataPtr());
     };
 #endif
 

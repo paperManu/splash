@@ -52,8 +52,8 @@ Window::Window(RootObject* root)
 
     if (auto scene = dynamic_cast<Scene*>(root))
     {
-        _gfxImpl = scene->getRenderer()->createWindowGfxImpl();
-        _gfxImpl->init(scene);
+        _gfxImpl = _renderer->createWindowGfxImpl();
+        _gfxImpl->init(_renderer);
 
         updateSwapInterval(scene->getSwapInterval());
     }
@@ -299,11 +299,10 @@ void Window::updateSizeAndPos()
 void Window::render()
 {
 #ifdef DEBUGGL
-    _gfxImpl->setDebugData(reinterpret_cast<void*>(this));
-
+    _renderer->setRendererMsgCallbackData(getRendererMsgCallbackDataPtr());
     OnScopeExit
     {
-        _gfxImpl->setDebugData(reinterpret_cast<void*>(_root));
+        _renderer->setRendererMsgCallbackData(_root->getRendererMsgCallbackDataPtr());
     };
 #endif
 

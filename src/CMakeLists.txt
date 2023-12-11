@@ -208,6 +208,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/api/gles/compute_shader.cpp
     graphics/api/gles/feedback_shader.cpp
     graphics/api/gles/graphic_shader.cpp
+    graphics/api/gles/renderer.cpp
     graphics/api/gles/shader_gfx_impl.cpp
     graphics/api/gles/shader_stage.cpp
     graphics/api/gles/shader_program.cpp
@@ -222,6 +223,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/api/opengl/compute_shader.cpp
     graphics/api/opengl/feedback_shader.cpp
     graphics/api/opengl/graphic_shader.cpp
+    graphics/api/opengl/renderer.cpp
     graphics/api/opengl/shader_gfx_impl.cpp
     graphics/api/opengl/shader_stage.cpp
     graphics/api/opengl/shader_program.cpp

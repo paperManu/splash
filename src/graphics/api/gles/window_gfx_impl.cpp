@@ -2,6 +2,7 @@
 
 #include "./core/root_object.h"
 #include "./core/scene.h"
+#include "./graphics/api/gles/renderer.h"
 #include "./graphics/texture_image.h"
 
 namespace Splash::gfx::gles
@@ -104,18 +105,10 @@ void WindowGfxImpl::endRender()
 }
 
 /*************/
-void WindowGfxImpl::setDebugData(const void* userData)
+void WindowGfxImpl::init(gfx::Renderer* renderer)
 {
-    glDebugMessageCallback(gfx::Renderer::glMsgCallback, userData);
-}
-
-/*************/
-void WindowGfxImpl::init(Scene* scene)
-{
-    auto w = scene->getNewSharedWindow();
-    if (w.get() == nullptr)
-        return;
-    _window = w;
+    assert(renderer != nullptr);
+    _window = renderer->createSharedWindow();
 }
 
 /*************/
@@ -132,7 +125,7 @@ void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureU
 
     // If this is the first window to be swapped, or NVSwapGroups are active,
     // this window should be synchronized to the vertical sync. So we will draw to back buffer
-    const bool isWindowSynchronized = Scene::getHasNVSwapGroup() or windowIndex == 0;
+    const bool isWindowSynchronized = gfx::Renderer::getHasNVSwapGroup() or windowIndex == 0;
 
     // If the window is not synchronized, draw directly to front buffer
     if (!isWindowSynchronized)

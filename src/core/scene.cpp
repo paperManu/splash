@@ -52,7 +52,6 @@ namespace chrono = std::chrono;
 namespace Splash
 {
 
-bool Scene::_hasNVSwapGroup{false};
 std::vector<std::string> Scene::_ghostableTypes{"camera", "warp"};
 
 /*************/
@@ -568,63 +567,6 @@ Values Scene::sendMessageToWorldWithAnswer(const std::string& message, const Val
 }
 
 /*************/
-std::shared_ptr<GlWindow> Scene::getNewSharedWindow(const std::string& name)
-{
-    std::string windowName;
-    name.size() == 0 ? windowName = "Splash::Window" : windowName = "Splash::" + name;
-
-    auto mainWindow = _renderer->getMainWindow();
-    if (!mainWindow)
-    {
-        Log::get() << Log::WARNING << __FUNCTION__ << " - Main window does not exist, unable to create new shared window" << Log::endl;
-        return {nullptr};
-    }
-
-    // The GL version is the same as in the initialization, so we don't have to reset it here
-    glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
-    glfwWindowHint(GLFW_VISIBLE, false);
-    GLFWwindow* window = glfwCreateWindow(512, 512, windowName.c_str(), NULL, mainWindow->get());
-    if (!window)
-    {
-        Log::get() << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;
-        return {nullptr};
-    }
-    auto glWindow = std::make_shared<GlWindow>(window, mainWindow->get());
-
-    glWindow->setAsCurrentContext();
-#ifdef DEBUGGL
-    gfx::Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
-    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
-    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
-#endif
-
-#ifdef GLX_NV_swap_group
-    if (_maxSwapGroups)
-    {
-        PFNGLXJOINSWAPGROUPNVPROC nvGLJoinSwapGroup = (PFNGLXJOINSWAPGROUPNVPROC)glfwGetProcAddress("glXJoinSwapGroupNV");
-        auto nvResult = nvGLJoinSwapGroup(glfwGetX11Display(), glfwGetGLXWindow(window), 1);
-        if (nvResult)
-            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " successfully joined the NV swap group" << Log::endl;
-        else
-            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " couldn't join the NV swap group" << Log::endl;
-    }
-
-    if (_maxSwapBarriers)
-    {
-        PFNGLXBINDSWAPBARRIERNVPROC nvGLBindSwapBarrier = (PFNGLXBINDSWAPBARRIERNVPROC)glfwGetProcAddress("glXBindSwapBarrierNV");
-        auto nvResult = nvGLBindSwapBarrier(glfwGetX11Display(), 1, 1);
-        if (nvResult)
-            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " successfully bind the NV swap barrier" << Log::endl;
-        else
-            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " couldn't bind the NV swap barrier" << Log::endl;
-    }
-#endif
-    glWindow->releaseContext();
-
-    return glWindow;
-}
-
-/*************/
 void Scene::init(const std::string& name)
 {
     _renderer = gfx::Renderer::create(_context.renderingApi);
@@ -654,76 +596,6 @@ unsigned long long Scene::updateTargetFrameDuration()
         return 0ull;
 
     return static_cast<unsigned long long>(1e6 / refreshRate);
-}
-
-/*************/
-void glfwErrorCallback(int /*code*/, const char* msg)
-{
-    Log::get() << Log::WARNING << "glfwErrorCallback - " << msg << Log::endl;
-}
-
-/*************/
-void glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* userParam)
-{
-    const auto userParamsAsObj = reinterpret_cast<const BaseObject*>(userParam);
-    std::string typeString{"GL::other"};
-    std::string messageString;
-    Log::Priority logType{Log::MESSAGE};
-
-    switch (type)
-    {
-    case GL_DEBUG_TYPE_ERROR:
-        typeString = "GL::Error";
-        logType = Log::ERROR;
-        break;
-    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-        typeString = "GL::Deprecated behavior";
-        logType = Log::WARNING;
-        break;
-    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-        typeString = "GL::Undefined behavior";
-        logType = Log::ERROR;
-        break;
-    case GL_DEBUG_TYPE_PORTABILITY:
-        typeString = "GL::Portability";
-        logType = Log::WARNING;
-        break;
-    case GL_DEBUG_TYPE_PERFORMANCE:
-        typeString = "GL::Performance";
-        logType = Log::WARNING;
-        break;
-    case GL_DEBUG_TYPE_OTHER:
-        typeString = "GL::Other";
-        logType = Log::MESSAGE;
-        break;
-    }
-
-    switch (severity)
-    {
-    case GL_DEBUG_SEVERITY_LOW:
-        messageString = typeString + "::low";
-        break;
-    case GL_DEBUG_SEVERITY_MEDIUM:
-        messageString = typeString + "::medium";
-        break;
-    case GL_DEBUG_SEVERITY_HIGH:
-        messageString = typeString + "::high";
-        break;
-    case GL_DEBUG_SEVERITY_NOTIFICATION:
-        // Disable notifications, they are far too verbose
-        return;
-        // messageString = "\033[32;1m[" + typeString + "::notification]\033[0m";
-        // break;
-    }
-
-    if (userParam == nullptr)
-        Log::get() << logType << messageString << " - Object: unknown"
-                   << " - " << message << Log::endl;
-    else if (const auto userParamsAsGraphObject = dynamic_cast<const GraphObject*>(userParamsAsObj); userParamsAsGraphObject != nullptr)
-        Log::get() << logType << messageString << " - Object " << userParamsAsGraphObject->getName() << " of type " << userParamsAsGraphObject->getType() << " - " << message
-                   << Log::endl;
-    else
-        Log::get() << logType << messageString << " - Object " << userParamsAsObj->getName() << " - " << message << Log::endl;
 }
 
 /*************/

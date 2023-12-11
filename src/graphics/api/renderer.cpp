@@ -11,6 +11,8 @@
 namespace Splash::gfx
 {
 
+bool Renderer::_hasNVSwapGroup{false};
+
 /*************/
 std::unique_ptr<Renderer> Renderer::create(std::optional<Renderer::Api> api)
 {
@@ -23,7 +25,7 @@ std::unique_ptr<Renderer> Renderer::create(std::optional<Renderer::Api> api)
         return nullptr;
     }
 
-    auto renderer = findGLVersion(api);
+    auto renderer = findPlatform(api);
     if (!renderer)
     {
         Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to find a suitable GL version (OpenGL 4.5 or OpenGL ES 3.2)" << Log::endl;
@@ -43,7 +45,7 @@ std::unique_ptr<Renderer> Renderer::create(std::optional<Renderer::Api> api)
 }
 
 /*************/
-std::unique_ptr<Renderer> Renderer::findGLVersion(std::optional<Renderer::Api> api)
+std::unique_ptr<Renderer> Renderer::findPlatform(std::optional<Renderer::Api> api)
 {
     if (api)
     {
@@ -104,7 +106,7 @@ bool Renderer::tryCreateContext(const Renderer* renderer)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, platformVersion.minor);
     glfwWindowHint(GLFW_VISIBLE, false);
 
-    GLFWwindow* window = glfwCreateWindow(512, 512, "test_window", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(_defaultWindowSize, _defaultWindowSize, "test_window", NULL, NULL);
 
     if (window)
     {
@@ -116,74 +118,10 @@ bool Renderer::tryCreateContext(const Renderer* renderer)
 }
 
 /*************/
-void Renderer::glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* userParam)
-{
-    const auto callbackData = reinterpret_cast<const Renderer::GlMsgCallbackData*>(userParam);
-
-    std::string typeString{"GL::other"};
-    std::string messageString;
-    Log::Priority logType{Log::MESSAGE};
-
-    switch (type)
-    {
-    case GL_DEBUG_TYPE_ERROR:
-        typeString = "GL::Error";
-        logType = Log::ERROR;
-        break;
-    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-        typeString = "GL::Deprecated behavior";
-        logType = Log::WARNING;
-        break;
-    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-        typeString = "GL::Undefined behavior";
-        logType = Log::ERROR;
-        break;
-    case GL_DEBUG_TYPE_PORTABILITY:
-        typeString = "GL::Portability";
-        logType = Log::WARNING;
-        break;
-    case GL_DEBUG_TYPE_PERFORMANCE:
-        typeString = "GL::Performance";
-        logType = Log::WARNING;
-        break;
-    case GL_DEBUG_TYPE_OTHER:
-        typeString = "GL::Other";
-        logType = Log::MESSAGE;
-        break;
-    }
-
-    switch (severity)
-    {
-    case GL_DEBUG_SEVERITY_LOW:
-        messageString = typeString + "::low";
-        break;
-    case GL_DEBUG_SEVERITY_MEDIUM:
-        messageString = typeString + "::medium";
-        break;
-    case GL_DEBUG_SEVERITY_HIGH:
-        messageString = typeString + "::high";
-        break;
-    case GL_DEBUG_SEVERITY_NOTIFICATION:
-        // Disable notifications, they are far too verbose
-        return;
-        // messageString = "\033[32;1m[" + typeString + "::notification]\033[0m";
-        // break;
-    }
-
-    if (callbackData == nullptr)
-        Log::get() << logType << messageString << " - Object: unknown"
-                   << " - " << message << Log::endl;
-    else if (callbackData->name && callbackData->type)
-        Log::get() << logType << messageString << " - Object " << callbackData->name.value() << " of type " << callbackData->type.value() << " - " << message << Log::endl;
-    else if (callbackData->name)
-        Log::get() << logType << messageString << " - Object " << callbackData->name.value() << " - " << message << Log::endl;
-}
-
-/*************/
 void Renderer::init(const std::string& name)
 {
-    // Should already have most flags set by `findGLVersion`.
-    GLFWwindow* window = glfwCreateWindow(512, 512, name.c_str(), NULL, NULL);
+    // Should already have most flags set by `findPlatform`.
+    GLFWwindow* window = glfwCreateWindow(_defaultWindowSize, _defaultWindowSize, name.c_str(), NULL, NULL);
 
     if (!window)
     {
@@ -196,45 +134,45 @@ void Renderer::init(const std::string& name)
     _isInitialized = true;
 
     _mainWindow->setAsCurrentContext();
-
     loadApiSpecificGlFunctions();
-
-    // Get hardware information
-    _glVendor = std::string(reinterpret_cast<const char*>(glGetString(GL_VENDOR)));
-    _glRenderer = std::string(reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
-    Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - GL vendor: " << _glVendor << Log::endl;
-    Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - GL renderer: " << _glRenderer << Log::endl;
-
-// Activate GL debug messages
-#ifdef DEBUGGL
-    Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
-    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
-    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
-#endif
-
-// Check for swap groups
-#ifdef GLX_NV_swap_group
-    if (glfwExtensionSupported("GLX_NV_swap_group"))
-    {
-        PFNGLXQUERYMAXSWAPGROUPSNVPROC nvGLQueryMaxSwapGroups = (PFNGLXQUERYMAXSWAPGROUPSNVPROC)glfwGetProcAddress("glXQueryMaxSwapGroupsNV");
-        if (!nvGLQueryMaxSwapGroups(glfwGetX11Display(), 0, &_maxSwapGroups, &_maxSwapBarriers))
-            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Unable to get NV max swap groups / barriers" << Log::endl;
-        else
-            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - NV max swap groups: " << _maxSwapGroups << " / barriers: " << _maxSwapBarriers << Log::endl;
-
-        if (_maxSwapGroups != 0)
-            _hasNVSwapGroup = true;
-    }
-#endif
     _mainWindow->releaseContext();
 }
 
 /*************/
-const Renderer::GlMsgCallbackData* Renderer::getGlMsgCallbackDataPtr()
+std::shared_ptr<GlWindow> Renderer::createSharedWindow(const std::string& name)
 {
-    _glMsgCallbackData.name = getPlatformVersion().toString();
-    _glMsgCallbackData.type = "Renderer";
-    return &_glMsgCallbackData;
+    const std::string windowName = name.empty() ? "Splash::Window" : "Splash::" + name;
+
+    if (!_mainWindow)
+    {
+        Log::get() << Log::WARNING << __FUNCTION__ << " - Main window does not exist, unable to create new shared window" << Log::endl;
+        return {nullptr};
+    }
+
+    // The GL version is the same as in the initialization, so we don't have to reset it here
+    glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
+    glfwWindowHint(GLFW_VISIBLE, false);
+    GLFWwindow* window = glfwCreateWindow(_defaultWindowSize, _defaultWindowSize, windowName.c_str(), NULL, _mainWindow->get());
+    if (!window)
+    {
+        Log::get() << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;
+        return {nullptr};
+    }
+    auto glWindow = std::make_shared<GlWindow>(window, _mainWindow->get());
+
+    glWindow->setAsCurrentContext();
+    setSharedWindowFlags();
+    glWindow->releaseContext();
+
+    return glWindow;
+}
+
+/*************/
+const Renderer::RendererMsgCallbackData* Renderer::getRendererMsgCallbackDataPtr()
+{
+    _rendererMsgCallbackData.name = getPlatformVersion().toString();
+    _rendererMsgCallbackData.type = "Renderer";
+    return &_rendererMsgCallbackData;
 }
 
 }; // namespace Splash::gfx
