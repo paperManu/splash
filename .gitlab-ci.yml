@@ -112,6 +112,7 @@ analysis:coverage:
     name: "splash_coverage_${CI_BUILD_REF_NAME}"
     paths:
     - "coverage.zip"
+    expire_in: 2 week
   rules:
     - if: $CI_COMMIT_BRANCH == 'develop'
 
@@ -131,6 +132,7 @@ analysis:static-analysis:
     name: "splash_${CI_BUILD_REF_NAME}_analysis"
     paths:
       - "analysis"
+    expire_in: 2 week
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging'
 
@@ -358,3 +360,4 @@ pages:
   artifacts:
     paths:
       - public
+    expire_in: 2 week
