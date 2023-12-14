@@ -63,7 +63,7 @@ test:22.04:gcc-amd64-bundled-libs:
     - make -sC build -j$(nproc)
     - make check -sC build
     - ./build/src/splash --info
-    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --child --prefix unittest local &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH != '/^debian.*$/'
@@ -83,7 +83,7 @@ test:22.04:clang-amd64-system-libs:
     - make -sC build -j$(nproc)
     - make check -sC build
     - ./build/src/splash --info
-    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --child --prefix unittest local &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH != '/^debian.*$/'
@@ -136,6 +136,27 @@ analysis:static-analysis:
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging'
 
+
+analysis:thread-sanitizer:
+  stage: analysis
+  extends:
+    - .amd64
+    - .ubuntu
+  image: ubuntu:22.04
+  allow_failure: true
+  script:
+    - DEBIAN_FRONTEND=noninteractive apt install -y clang
+    - ./make_deps.sh
+    - rm -rf build && mkdir build
+    - CC=clang CXX=clang++ cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=thread" -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - make -sC build -j$(nproc)
+    - make check -sC build
+    - ./build/src/splash --info
+    - ./build/src/splash --child --prefix unittest local &
+    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'staging'
+
 analysis:address-sanitizer:
   stage: analysis
   extends:
@@ -150,8 +171,11 @@ analysis:address-sanitizer:
     - CC=clang CXX=clang++ cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address" -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
     - make check -sC build
+    - ./build/src/splash --info
+    - ./build/src/splash --child --prefix unittest local &
+    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
-    - if: $CI_COMMIT_BRANCH == 'feature/asan'
+    - if: $CI_COMMIT_BRANCH == 'staging'
 
 #
 # ┏━┓╺┳╸┏━┓┏━╸╻┏┓╻┏━╸
@@ -172,7 +196,8 @@ staging:22.04:gcc-arm64-bundled-libs:
     - make -sC build -j$(nproc)
     - make check -sC build
     - make package -sC build
-    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --info
+    - ./build/src/splash --child --prefix unittest local &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging'
@@ -191,7 +216,8 @@ staging:23.10:gcc-amd64-system-libs:
     - make -sC build -j$(nproc)
     - make check -sC build
     - make package -sC build
-    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --info
+    - ./build/src/splash --child --prefix unittest local &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging'
@@ -210,7 +236,8 @@ staging:23.10:clang-amd64-system-libs:
     - make -sC build -j$(nproc)
     - make check -sC build
     - make package -sC build
-    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --info
+    - ./build/src/splash --child --prefix unittest local &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging'
