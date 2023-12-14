@@ -25,6 +25,7 @@
 #ifndef SPLASH_CHANNEL_ZMQ_H
 #define SPLASH_CHANNEL_ZMQ_H
 
+#include <atomic>
 #include <condition_variable>
 #include <deque>
 #include <memory>
@@ -169,7 +170,7 @@ class ChannelInput_ZMQ final : public ChannelInput
     [[nodiscard]] bool disconnectFrom(const std::string&) final { return true; }
 
   private:
-    bool _continueListening;
+    std::atomic_bool _continueListening;
     std::string _pathPrefix;
 
     zmq::context_t _context{1};

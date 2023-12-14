@@ -17,6 +17,7 @@
 
 #include "./network/channel_zmq.h"
 
+#include <atomic>
 #include <chrono>
 #include <iostream>
 #include <thread>
@@ -34,8 +35,9 @@ TEST_CASE("Test sending a message and a buffer through a zmq channel")
 {
     auto root = RootObject();
 
-    bool isMsgReceived = false;
-    bool isBufferReceived = false;
+    std::atomic_bool isMsgReceived = false;
+    std::atomic_bool isBufferReceived = false;
+    std::mutex receivedMutex;
 
     std::vector<uint8_t> receivedMsg;
     SerializedObject receivedObj;
@@ -46,10 +48,12 @@ TEST_CASE("Test sending a message and a buffer through a zmq channel")
         "input",
         [&](const std::vector<uint8_t> msg) {
             isMsgReceived = true;
+            std::unique_lock<std::mutex> lock(receivedMutex);
             receivedMsg = msg;
         },
         [&](SerializedObject&& obj) {
             isBufferReceived = true;
+            std::unique_lock<std::mutex> lock(receivedMutex);
             receivedObj = std::move(obj);
         });
 
@@ -71,14 +75,22 @@ TEST_CASE("Test sending a message and a buffer through a zmq channel")
     CHECK(channelOutput.sendMessage(msg));
     while (!isMsgReceived)
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    CHECK_EQ(msg, receivedMsg);
+
+    {
+        std::unique_lock<std::mutex> lock(receivedMutex);
+        CHECK_EQ(msg, receivedMsg);
+    }
 
     auto array = ResizableArray<uint8_t>({1, 2, 3});
     auto object = SerializedObject(std::move(array));
     CHECK(channelOutput.sendBuffer(std::move(object)));
     while (!isBufferReceived)
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    CHECK_EQ(receivedObj.data()[0], 1);
-    CHECK_EQ(receivedObj.data()[1], 2);
-    CHECK_EQ(receivedObj.data()[2], 3);
+
+    {
+        std::unique_lock<std::mutex> lock(receivedMutex);
+        CHECK_EQ(receivedObj.data()[0], 1);
+        CHECK_EQ(receivedObj.data()[1], 2);
+        CHECK_EQ(receivedObj.data()[2], 3);
+    }
 }

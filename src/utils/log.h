@@ -158,7 +158,7 @@ class Log
     template <typename... T>
     std::vector<std::string> getLogs(T... args)
     {
-        std::lock_guard<Spinlock> lock(_mutex);
+        std::lock_guard<std::mutex> lock(_mutex);
         std::vector<Log::Priority> priorities{args...};
         std::vector<std::string> logs;
         for (auto log : _logs)
@@ -175,7 +175,7 @@ class Log
      */
     std::vector<std::tuple<uint64_t, std::string, Priority>> getNewLogs()
     {
-        std::lock_guard<Spinlock> lock(_mutex);
+        std::lock_guard<std::mutex> lock(_mutex);
         std::vector<std::tuple<uint64_t, std::string, Priority>> logs;
         for (uint32_t i = _logPointer; i < _logs.size(); ++i)
             logs.push_back(_logs[i]);
@@ -208,7 +208,7 @@ class Log
      */
     void setLog(uint64_t timestamp, const std::string& log, Priority priority)
     {
-        std::lock_guard<Spinlock> lock(_mutex);
+        std::lock_guard<std::mutex> lock(_mutex);
         _logs.push_back(std::make_tuple(timestamp, log, priority));
 
         if (_logs.size() > _logLength)
@@ -238,8 +238,9 @@ class Log
   private:
     static constexpr char _logFilePath[]{"/var/log/splash.log"};
 
-    mutable Spinlock _mutex;
-    mutable std::thread::id _lockedThreadId{0};
+    mutable std::mutex _mutex;
+    mutable Spinlock _threadIdMutex;
+    mutable std::thread::id _lockedThreadId{};
     std::deque<std::tuple<uint64_t, std::string, Priority>> _logs;
     bool _logToFile{false};
     uint32_t _logLength{500};
@@ -261,14 +262,22 @@ class Log
 
         if (!_mutex.try_lock())
         {
-            if (currentThreadId != _lockedThreadId)
+            bool isThreadDifferent = false;
+            {
+                std::unique_lock<Spinlock> lock(_threadIdMutex);
+                isThreadDifferent = currentThreadId != _lockedThreadId;
+            }
+
+            if (isThreadDifferent)
             {
                 _mutex.lock();
+                std::unique_lock<Spinlock> lock(_threadIdMutex);
                 _lockedThreadId = std::this_thread::get_id();
             }
         }
         else
         {
+            std::unique_lock<Spinlock> lock(_threadIdMutex);
             _lockedThreadId = currentThreadId;
         }
     }
@@ -288,7 +297,10 @@ class Log
         if (std::this_thread::get_id() != _lockedThreadId)
             return;
 
-        _lockedThreadId = std::thread::id();
+        {
+            std::unique_lock<Spinlock> lock(_threadIdMutex);
+            _lockedThreadId = std::thread::id();
+        }
         _mutex.unlock();
     }
 

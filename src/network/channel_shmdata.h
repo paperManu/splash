@@ -124,7 +124,7 @@ class ChannelOutput_Shmdata final : public ChannelOutput
   private:
     static const size_t _shmDefaultSize;
     static const std::string _defaultPathPrefix;
-    bool _joinAllThreads{false};
+    std::atomic_bool _joinAllThreads{false};
 
     bool _isWorldConnected{false};
     std::mutex _worldConnectedMutex;
@@ -211,7 +211,7 @@ class ChannelInput_Shmdata final : public ChannelInput
     std::string _msgCaps{};
     std::string _bufCaps{};
 
-    bool _joinAllThreads{false};
+    std::atomic_bool _joinAllThreads{false};
 
     std::vector<std::vector<uint8_t>> _msgQueue;
     std::mutex _msgConsumeMutex;
