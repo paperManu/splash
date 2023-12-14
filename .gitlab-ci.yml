@@ -136,6 +136,23 @@ analysis:static-analysis:
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging'
 
+analysis:address-sanitizer:
+  stage: analysis
+  extends:
+    - .amd64
+    - .ubuntu
+  image: ubuntu:22.04
+  allow_failure: true
+  script:
+    - DEBIAN_FRONTEND=noninteractive apt install -y clang
+    - ./make_deps.sh
+    - rm -rf build && mkdir build
+    - CC=clang CXX=clang++ cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address" -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - make -sC build -j$(nproc)
+    - make check -sC build
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'feature/asan'
+
 #
 # ┏━┓╺┳╸┏━┓┏━╸╻┏┓╻┏━╸
 # ┗━┓ ┃ ┣━┫┃╺┓┃┃┗┫┃╺┓
