@@ -26,13 +26,13 @@
 #define SPLASH_OPENGL_RENDERER_H
 
 #include "./graphics/api/opengl/camera_gfx_impl.h"
-#include "./graphics/api/opengl/compute_shader.h"
-#include "./graphics/api/opengl/feedback_shader.h"
+#include "./graphics/api/opengl/compute_shader_gfx_impl.h"
+#include "./graphics/api/opengl/feedback_shader_gfx_impl.h"
 #include "./graphics/api/opengl/filter_gfx_impl.h"
-#include "./graphics/api/opengl/framebuffer.h"
+#include "./graphics/api/opengl/framebuffer_gfx_impl.h"
 #include "./graphics/api/opengl/geometry_gfx_impl.h"
 #include "./graphics/api/opengl/gpu_buffer.h"
-#include "./graphics/api/opengl/graphic_shader.h"
+#include "./graphics/api/opengl/graphic_shader_gfx_impl.h"
 #include "./graphics/api/opengl/gui_gfx_impl.h"
 #include "./graphics/api/opengl/pbo_gfx_impl.h"
 #include "./graphics/api/opengl/texture_image_gfx_impl.h"
@@ -90,7 +90,7 @@ class Renderer : public gfx::Renderer
      * Create a new Framebuffer
      * \return Return a unique pointer to the newly created Framebuffer
      */
-    std::unique_ptr<gfx::Framebuffer> createFramebuffer() const override final { return std::make_unique<opengl::Framebuffer>(); }
+    std::unique_ptr<gfx::FramebufferGfxImpl> createFramebuffer() const override final { return std::make_unique<opengl::FramebufferGfxImpl>(); }
 
     /**
      * Create a new Geometry

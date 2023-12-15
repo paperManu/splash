@@ -8,9 +8,9 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include "./graphics/api/compute_shader.h"
-#include "./graphics/api/feedback_shader.h"
-#include "./graphics/api/graphic_shader.h"
+#include "./graphics/api/compute_shader_gfx_impl.h"
+#include "./graphics/api/feedback_shader_gfx_impl.h"
+#include "./graphics/api/graphic_shader_gfx_impl.h"
 #include "./graphics/programSources.h"
 #include "./graphics/shaderSources.h"
 #include "./utils/log.h"

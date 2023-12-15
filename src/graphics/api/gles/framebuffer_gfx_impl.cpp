@@ -1,4 +1,4 @@
-#include "./graphics/api/gles/framebuffer.h"
+#include "./graphics/api/gles/framebuffer_gfx_impl.h"
 
 #include "./graphics/api/gles/texture_image_gfx_impl.h"
 #include "./graphics/texture_image.h"
@@ -8,7 +8,7 @@
 namespace Splash::gfx::gles
 {
 /*************/
-Framebuffer::Framebuffer()
+FramebufferGfxImpl::FramebufferGfxImpl()
 {
     glGenFramebuffers(1, &_fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
@@ -36,26 +36,26 @@ Framebuffer::Framebuffer()
     const auto status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
-        Log::get() << Log::ERROR << "Framebuffer::" << __FUNCTION__ << " - Error while initializing render framebuffer object: " << status << Log::endl;
+        Log::get() << Log::ERROR << "FramebufferGfxImpl::" << __FUNCTION__ << " - Error while initializing render framebuffer object: " << status << Log::endl;
         glDeleteFramebuffers(1, &_fbo);
         _fbo = 0;
     }
     else
     {
 #ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Framebuffer::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
+        Log::get() << Log::DEBUGGING << "FramebufferGfxImpl::" << __FUNCTION__ << " - FramebufferGfxImpl object successfully initialized" << Log::endl;
 #endif
     }
 }
 
 /*************/
-Framebuffer::~Framebuffer()
+FramebufferGfxImpl::~FramebufferGfxImpl()
 {
     glDeleteFramebuffers(1, &_fbo);
 }
 
 /*************/
-void Framebuffer::bindDraw()
+void FramebufferGfxImpl::bindDraw()
 {
     if (_fbo)
     {
@@ -67,7 +67,7 @@ void Framebuffer::bindDraw()
 }
 
 /*************/
-void Framebuffer::bindRead()
+void FramebufferGfxImpl::bindRead()
 {
     if (_fbo)
     {
@@ -77,16 +77,16 @@ void Framebuffer::bindRead()
 }
 
 /*************/
-void Framebuffer::blit(const Splash::gfx::Framebuffer* dst)
+void FramebufferGfxImpl::blit(const Splash::gfx::FramebufferGfxImpl* dst)
 {
-    const auto destFbo = dynamic_cast<const Splash::gfx::gles::Framebuffer*>(dst);
+    const auto destFbo = dynamic_cast<const Splash::gfx::gles::FramebufferGfxImpl*>(dst);
     assert(destFbo != nullptr);
     glBlitNamedFramebuffer(
         getFboId(), destFbo->getFboId(), 0, 0, getWidth(), getHeight(), 0, 0, destFbo->getWidth(), destFbo->getHeight(), GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 }
 
 /*************/
-float Framebuffer::getDepthAt(float x, float y)
+float FramebufferGfxImpl::getDepthAt(float x, float y)
 {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
 
@@ -98,7 +98,7 @@ float Framebuffer::getDepthAt(float x, float y)
 }
 
 /*************/
-void Framebuffer::setRenderingParameters()
+void FramebufferGfxImpl::setRenderingParameters()
 {
     auto spec = _colorTexture->getSpec();
 
@@ -114,7 +114,7 @@ void Framebuffer::setRenderingParameters()
 }
 
 /*************/
-void Framebuffer::setSize(int width, int height)
+void FramebufferGfxImpl::setSize(int width, int height)
 {
     if (width == 0 || height == 0)
         return;
@@ -136,7 +136,7 @@ void Framebuffer::setSize(int width, int height)
 }
 
 /*************/
-void Framebuffer::unbindDraw()
+void FramebufferGfxImpl::unbindDraw()
 {
     if (_fbo)
     {
@@ -144,7 +144,7 @@ void Framebuffer::unbindDraw()
         glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &currentFbo);
         if (static_cast<GLuint>(currentFbo) != _fbo)
         {
-            Log::get() << Log::WARNING << "Framebuffer::" << __FUNCTION__ << " - Cannot unbind a FBO which is not bound" << Log::endl;
+            Log::get() << Log::WARNING << "FramebufferGfxImpl::" << __FUNCTION__ << " - Cannot unbind a FBO which is not bound" << Log::endl;
             return;
         }
 
@@ -155,7 +155,7 @@ void Framebuffer::unbindDraw()
 }
 
 /*************/
-void Framebuffer::unbindRead()
+void FramebufferGfxImpl::unbindRead()
 {
     if (_fbo)
     {
@@ -163,7 +163,7 @@ void Framebuffer::unbindRead()
         glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &currentFbo);
         if (static_cast<GLuint>(currentFbo) != _fbo)
         {
-            Log::get() << Log::WARNING << "Framebuffer::" << __FUNCTION__ << " - Cannot unbind a FBO which is not bound" << Log::endl;
+            Log::get() << Log::WARNING << "FramebufferGfxImpl::" << __FUNCTION__ << " - Cannot unbind a FBO which is not bound" << Log::endl;
             return;
         }
 

@@ -26,13 +26,13 @@
 #define SPLASH_GLES_RENDERER_H
 
 #include "./graphics/api/gles/camera_gfx_impl.h"
-#include "./graphics/api/gles/compute_shader.h"
-#include "./graphics/api/gles/feedback_shader.h"
+#include "./graphics/api/gles/compute_shader_gfx_impl.h"
+#include "./graphics/api/gles/feedback_shader_gfx_impl.h"
 #include "./graphics/api/gles/filter_gfx_impl.h"
-#include "./graphics/api/gles/framebuffer.h"
+#include "./graphics/api/gles/framebuffer_gfx_impl.h"
 #include "./graphics/api/gles/geometry_gfx_impl.h"
 #include "./graphics/api/gles/gpu_buffer.h"
-#include "./graphics/api/gles/graphic_shader.h"
+#include "./graphics/api/gles/graphic_shader_gfx_impl.h"
 #include "./graphics/api/gles/gui_gfx_impl.h"
 #include "./graphics/api/gles/pbo_gfx_impl.h"
 #include "./graphics/api/gles/texture_image_gfx_impl.h"
@@ -90,7 +90,7 @@ class Renderer : public gfx::Renderer
      * Create a new Framebuffer
      * \return Return a unique pointer to the newly created Framebuffer
      */
-    std::unique_ptr<gfx::Framebuffer> createFramebuffer() const override final { return std::make_unique<gles::Framebuffer>(); }
+    std::unique_ptr<gfx::FramebufferGfxImpl> createFramebuffer() const override final { return std::make_unique<gles::FramebufferGfxImpl>(); }
 
     /**
      * Create a new Geometry

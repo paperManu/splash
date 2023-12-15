@@ -41,7 +41,7 @@
 #endif
 #include "./controller/widget/widget.h"
 #include "./core/attribute.h"
-#include "./graphics/api/framebuffer.h"
+#include "./graphics/api/framebuffer_gfx_impl.h"
 #include "./graphics/api/gui_gfx_impl.h"
 #include "./graphics/camera.h"
 #include "./userinput/userinput.h"
@@ -223,7 +223,7 @@ class Gui final : public ControllerObject
     Window* _window{nullptr};
 
     std::unique_ptr<gfx::GuiGfxImpl> _guiGfxImpl{nullptr};
-    std::unique_ptr<gfx::Framebuffer> _fbo{nullptr};
+    std::unique_ptr<gfx::FramebufferGfxImpl> _fbo{nullptr};
     float _width{512}, _height{512};
     bool _resized{false};
     int _initialGuiPos[2]{16, 16}; //!< Gui position at startup

@@ -202,13 +202,13 @@ target_sources(splash-${API_VERSION} PRIVATE
 
     # OpenGL ES API
     graphics/api/renderer.cpp
-    graphics/api/gles/framebuffer.cpp
+    graphics/api/gles/framebuffer_gfx_impl.cpp
     graphics/api/gles/geometry_gfx_impl.cpp
     graphics/api/gles/gl_utils.cpp
     graphics/api/gles/gpu_buffer.cpp
-    graphics/api/gles/compute_shader.cpp
-    graphics/api/gles/feedback_shader.cpp
-    graphics/api/gles/graphic_shader.cpp
+    graphics/api/gles/compute_shader_gfx_impl.cpp
+    graphics/api/gles/feedback_shader_gfx_impl.cpp
+    graphics/api/gles/graphic_shader_gfx_impl.cpp
     graphics/api/gles/gui_gfx_impl.cpp
     graphics/api/gles/pbo_gfx_impl.cpp
     graphics/api/gles/renderer.cpp
@@ -219,13 +219,13 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/api/gles/window_gfx_impl.cpp
 
     # OpenGL API
-    graphics/api/opengl/framebuffer.cpp
+    graphics/api/opengl/framebuffer_gfx_impl.cpp
     graphics/api/opengl/geometry_gfx_impl.cpp
     graphics/api/opengl/gl_utils.cpp
     graphics/api/opengl/gpu_buffer.cpp
-    graphics/api/opengl/compute_shader.cpp
-    graphics/api/opengl/feedback_shader.cpp
-    graphics/api/opengl/graphic_shader.cpp
+    graphics/api/opengl/compute_shader_gfx_impl.cpp
+    graphics/api/opengl/feedback_shader_gfx_impl.cpp
+    graphics/api/opengl/graphic_shader_gfx_impl.cpp
     graphics/api/opengl/gui_gfx_impl.cpp
     graphics/api/opengl/pbo_gfx_impl.cpp
     graphics/api/opengl/renderer.cpp

@@ -18,12 +18,12 @@
  */
 
 /*
- * @graphic_shader.h
- * Class for graphic shader, implementated for OpenGL ES
+ * @graphic_shader_gfx_impl.h
+ * Base class for graphic shader, implementation specific rendering API
  */
 
-#ifndef SPLASH_GLES_GRAPHIC_SHADER_GFX_IMPL_H
-#define SPLASH_GLES_GRAPHIC_SHADER_GFX_IMPL_H
+#ifndef SPLASH_GRAPHIC_SHADER_GFX_IMPL_H
+#define SPLASH_GRAPHIC_SHADER_GFX_IMPL_H
 
 #include <string_view>
 #include <vector>
@@ -31,22 +31,19 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "./core/constants.h"
-#include "./graphics/api/gles/shader_gfx_impl.h"
-#include "./graphics/api/gles/shader_program.h"
-#include "./graphics/api/gles/shader_stage.h"
-#include "./graphics/api/graphic_shader.h"
+#include "./graphics/api/shader_gfx_impl.h"
 #include "./graphics/texture.h"
 
-namespace Splash::gfx::gles
+namespace Splash::gfx
 {
 
-class GraphicShaderGfxImpl : public gfx::GraphicShaderGfxImpl, public ShaderGfxImpl
+class GraphicShaderGfxImpl : virtual public ShaderGfxImpl
 {
   public:
     /**
      * Constructor
      */
-    GraphicShaderGfxImpl();
+    GraphicShaderGfxImpl() = default;
 
     /**
      * Destructor
@@ -57,19 +54,19 @@ class GraphicShaderGfxImpl : public gfx::GraphicShaderGfxImpl, public ShaderGfxI
      * Activate the shader
      * \return Return true if the activation succeeded
      */
-    bool activate() override final;
+    virtual bool activate() override = 0;
 
     /**
      * Deactivate the program
      */
-    void deactivate() override final;
+    virtual void deactivate() override = 0;
 
     /**
      * Set the model view and projection matrices
      * \param mv View matrix
      * \param mp Projection matrix
      */
-    void setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp) override final;
+    virtual void setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp) = 0;
 
     /**
      * Specify a texture to use with the shader.
@@ -79,15 +76,18 @@ class GraphicShaderGfxImpl : public gfx::GraphicShaderGfxImpl, public ShaderGfxI
      * \param name Uniform name, in the shader source, for this texture
      * \return Return true if it succeeded
      */
-    bool setTexture(Texture* texture, const GLuint textureUnit, std::string_view name) override final;
+    virtual bool setTexture(Texture* texture, const GLuint textureUnit, std::string_view name) = 0;
 
     /**
      * Unset all the textures.
      * Must be called before deactivating the shader
      */
-    void unsetTextures() override final;
+    virtual void unsetTextures() = 0;
+
+  protected:
+    std::vector<Texture*> _textures;
 };
 
-} // namespace Splash::gfx::gles
+} // namespace Splash::gfx
 
 #endif

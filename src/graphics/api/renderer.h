@@ -50,7 +50,7 @@ namespace gfx
 
 class CameraGfxImpl;
 class FilterGfxImpl;
-class Framebuffer;
+class FramebufferGfxImpl;
 class GpuBuffer;
 class GuiGfxImpl;
 class PboGfxImpl;
@@ -175,7 +175,7 @@ class Renderer
      * Create a new Framebuffer
      * \return Return a unique pointer to the newly created Framebuffer
      */
-    virtual std::unique_ptr<gfx::Framebuffer> createFramebuffer() const = 0;
+    virtual std::unique_ptr<gfx::FramebufferGfxImpl> createFramebuffer() const = 0;
 
     /**
      * Create a new Geometry

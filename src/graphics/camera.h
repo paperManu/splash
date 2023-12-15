@@ -45,7 +45,7 @@
 #include "./core/attribute.h"
 #include "./core/graph_object.h"
 #include "./graphics/api/camera_gfx_impl.h"
-#include "./graphics/api/framebuffer.h"
+#include "./graphics/api/framebuffer_gfx_impl.h"
 #include "./graphics/geometry.h"
 #include "./graphics/object.h"
 #include "./graphics/texture_image.h"
@@ -251,7 +251,7 @@ class Camera : public GraphObject
 
   private:
     std::unique_ptr<gfx::CameraGfxImpl> _gfxImpl{nullptr};
-    std::unique_ptr<gfx::Framebuffer> _msFbo{nullptr}, _outFbo{nullptr};
+    std::unique_ptr<gfx::FramebufferGfxImpl> _msFbo{nullptr}, _outFbo{nullptr};
     std::vector<std::weak_ptr<Object>> _objects;
 
     // Rendering parameters

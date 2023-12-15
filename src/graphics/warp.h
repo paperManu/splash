@@ -34,7 +34,7 @@
 
 #include "./core/attribute.h"
 #include "./graphics/api/filter_gfx_impl.h"
-#include "./graphics/api/framebuffer.h"
+#include "./graphics/api/framebuffer_gfx_impl.h"
 #include "./graphics/camera.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
@@ -142,7 +142,7 @@ class Warp final : public Texture
     std::weak_ptr<Texture> _inTexture;
     std::weak_ptr<Camera> _inCamera;
 
-    std::unique_ptr<gfx::Framebuffer> _fbo{nullptr};
+    std::unique_ptr<gfx::FramebufferGfxImpl> _fbo{nullptr};
     std::shared_ptr<Mesh_BezierPatch> _screenMesh{nullptr};
     std::shared_ptr<Object> _screen{nullptr};
 
