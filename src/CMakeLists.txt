@@ -48,7 +48,7 @@ set_source_files_properties(
 
 set_source_files_properties(
     ../external/tracy/public/TracyClient.cpp
-    PROPERTIES COMPILE_FLAGS "-Wno-error -Wno-all -Wno-extra -Wno-unused-parameter"
+    PROPERTIES COMPILE_FLAGS "-Wno-error -Wno-all -Wno-extra -Wno-unused-parameter -Wno-unused-result"
 )
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
