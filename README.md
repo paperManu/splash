@@ -48,30 +48,31 @@ This project is made possible thanks to the [Society for Arts and Technologies](
 Splash relies on a few libraries to get the job done. The mandatory libraries are:
 
 - External dependencies:
-  - [FFmpeg](http://ffmpeg.org/) to read and write video files,
-  - [OpenGL](http://opengl.org), which should be installed by the graphic driver,
-  - [GSL](http://gnu.org/software/gsl) (GNU Scientific Library) to compute calibration,
+  - [FFmpeg](http://ffmpeg.org/) to read and write video files
+  - [OpenGL](http://opengl.org), which should be installed by the graphic driver
+  - [GSL](http://gnu.org/software/gsl) (GNU Scientific Library) to compute calibration
 - External dependencies bundled as submodules:
-  - [GLFW](http://glfw.org) to handle the GL context creation,
-  - [GLM](http://glm.g-truc.net) to ease matrix manipulation,
-  - [Snappy](https://code.google.com/p/snappy/) to handle Hap codec decompression,
-  - [ZMQ](http://zeromq.org) to communicate between the various process involved in a Splash session,
+  - [GLFW](http://glfw.org) to handle the GL context creation
+  - [GLM](http://glm.g-truc.net) to ease matrix manipulation
+  - [Snappy](https://code.google.com/p/snappy/) to handle Hap codec decompression
+  - [ZMQ](http://zeromq.org) to communicate between the various process involved in a Splash session
   - [cppzmq](https://github.com/zeromq/cppzmq.git) for its C++ bindings of ZMQ
-  - [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,
+  - [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration
+  - [stduuid](https://github.com/mariusbancila/stduuid) to help with UUIDs
 - Dependencies built at compile-time from submodules:
-  - [doctest](https://github.com/onqtam/doctest/) to do some unit testing,
-  - [ImGui](https://github.com/ocornut/imgui) to draw the GUI,
-  - [stb_image](https://github.com/nothings/stb) to read images.
+  - [doctest](https://github.com/onqtam/doctest/) to do some unit testing
+  - [ImGui](https://github.com/ocornut/imgui) to draw the GUI
+  - [stb_image](https://github.com/nothings/stb) to read images
 
 Some other libraries are optional:
 
 - External dependencies:
-  - [libshmdata](http://gitlab.com/sat-mtl/tools/shmdata) to read video flows from a shared memory,
-  - [portaudio](http://portaudio.com/) to read and output audio,
-  - [Python](https://python.org) for scripting capabilities,
-  - [GPhoto](http://gphoto.sourceforge.net/) to use a camera for color calibration.
+  - [libshmdata](http://gitlab.com/sat-mtl/tools/shmdata) to read video flows from a shared memory
+  - [portaudio](http://portaudio.com/) to read and output audio
+  - [Python](https://python.org) for scripting capabilities
+  - [GPhoto](http://gphoto.sourceforge.net/) to use a camera for color calibration
 - Dependencies built at compile-time from submodules:
-  - [libltc](http://x42.github.io/libltc/) to read timecodes from an audio input,
+  - [libltc](http://x42.github.io/libltc/) to read timecodes from an audio input
 
 Also, the [Roboto](https://www.fontsquirrel.com/fonts/roboto) font and the [DSEG font family](https://github.com/keshikan/DSEG) are used and distributed under their respective open source licenses.
 

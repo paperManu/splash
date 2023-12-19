@@ -25,10 +25,9 @@
 #ifndef SPLASH_UUID_H
 #define SPLASH_UUID_H
 
-#include <cstring>
 #include <string>
 
-#include <uuid/uuid.h>
+#include <uuid.h> // stduuid
 
 #include "./core/serializer.h"
 
@@ -42,29 +41,33 @@ class UUID
      * Constructor
      */
     UUID() { init(false); }
+
+    /**
+     * Constructor
+     * \param generate Generate a UUID if true, otherwise the UUID will be empty
+     */
     explicit UUID(bool generate) { init(generate); }
 
-    bool operator==(const UUID& rhs) const { return uuid_compare(_uuid, rhs._uuid) == 0; }
+    /**
+     * Comparison operators
+     */
+    bool operator==(const UUID& rhs) const { return _uuid == rhs._uuid; }
     bool operator!=(const UUID& rhs) const { return operator==(rhs); }
 
-    void init(bool generate)
-    {
-        if (generate)
-            uuid_generate(_uuid);
-        else
-            memset(_uuid, 0, 16);
-    }
+    /**
+     * Initialize a new UUID
+     * \param generate Generate a UUID if true, otherwise the UUID will be empty
+     */
+    void init(bool generate);
 
-    std::string to_string() const
-    {
-        const size_t uuidstr_size = 36;
-        std::string uuidstr(uuidstr_size, ' ');
-        uuid_unparse(_uuid, uuidstr.data());
-        return uuidstr;
-    }
+    /**
+     * Return the UUID as a string
+     * \return Returns a string representing the UUID
+     */
+    std::string to_string() const { return uuids::to_string(_uuid); }
 
   private:
-    uuid_t _uuid;
+    uuids::uuid _uuid;
 };
 } // namespace Splash
 

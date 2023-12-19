@@ -90,6 +90,8 @@ include_directories(../external/imgui)
 include_directories(../external/libltc/src)
 include_directories(../external/stb)
 include_directories(../external/tracy/public)
+include_directories(../external/stduuid/include)
+include_directories(../external/stduuid)
 
 include_directories(${GLFW_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIRS})
@@ -199,6 +201,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     utils/cgutils.cpp
     utils/jsonutils.cpp
     utils/subprocess.cpp
+    utils/uuid.cpp
 
     # OpenGL ES API
     graphics/api/renderer.cpp
