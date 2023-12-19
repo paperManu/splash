@@ -46,7 +46,7 @@ bool FileSelectorParseDir(const std::string& sourcePath, std::vector<std::string
     if (isDirectoryPath)
     {
         list.clear();
-        std::vector<std::string> files = Utils::listDirContent(path);
+        std::vector<std::string> files = Utils::listDirContent(path.string());
 
         // Alphabetical order
         std::sort(files.begin(), files.end(), [](std::string a, std::string b) { return a < b; });
@@ -82,7 +82,7 @@ bool FileSelectorParseDir(const std::string& sourcePath, std::vector<std::string
                            {
                                for (const auto& ext : extensions)
                                {
-                                   if (std::string(filesystem::path(p).extension()) == ext)
+                                   if (filesystem::path(p).extension().string() == ext)
                                        return false;
                                }
 
@@ -163,7 +163,7 @@ bool FileSelector(const std::string& label, std::string& path, bool& cancelled, 
 
         if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
         {
-            path = std::filesystem::path(Utils::getPathFromFilePath(path)) / filename;
+            path = (std::filesystem::path(Utils::getPathFromFilePath(path)) / filename).string();
             if (!FileSelectorParseDir(path, fileList, extensions, showNormalFiles))
                 selectionDone = true;
         }
@@ -187,7 +187,7 @@ bool FileSelector(const std::string& label, std::string& path, bool& cancelled, 
             {
                 if (selectedIdIt->second >= fileList.size())
                     selectedIdIt->second = 0;
-                path = std::filesystem::path(path) / fileList[selectedIdIt->second];
+                path = (std::filesystem::path(path) / fileList[selectedIdIt->second]).string();
             }
         }
         selectionDone = true;

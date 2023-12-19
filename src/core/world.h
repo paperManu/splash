@@ -26,16 +26,21 @@
 #define SPLASH_WORLD_H
 
 #include <condition_variable>
-#include <glm/glm.hpp>
 #include <mutex>
-#include <signal.h>
 #include <string>
 #include <thread>
 #include <vector>
 
-#include "./core/constants.h"
+// Must be put first as some flags are needed
+#include "./config.h"
+
+#include <glm/glm.hpp>
+#if HAVE_LINUX
+#include <signal.h>
+#endif
 
 #include "./core/attribute.h"
+#include "./core/constants.h"
 #include "./core/factory.h"
 #if HAVE_PORTAUDIO
 #include "./sound/ltcclock.h"
@@ -93,7 +98,9 @@ class World : public RootObject
     bool _status{true};               //!< Exit status
     bool _quit{false};                //!< True if the World should quit
     static World* _that;              //!< Pointer to the World
+#if HAVE_LINUX
     struct sigaction _signals;        //!< System signals
+#endif
     bool _enforceRealtime{false};     //!< If true, realtime scheduling is asked to the system, if possible
 
     // World parameters

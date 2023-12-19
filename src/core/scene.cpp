@@ -6,6 +6,7 @@
 #include <tracy/Tracy.hpp>
 #include <tracy/TracyOpenGL.hpp>
 
+#include "./config.h"
 #include "./controller/controller_blender.h"
 #include "./controller/controller_gui.h"
 #include "./core/constants.h"
@@ -35,12 +36,14 @@
 #include "./controller/colorcalibrator.h"
 #endif
 
+#if HAVE_LINUX
 // clang-format off
 #define GLFW_EXPOSE_NATIVE_X11
 #define GLFW_EXPOSE_NATIVE_GLX
 #include <GLFW/glfw3native.h>
 #include <GL/glxext.h>
 // clang-format on
+#endif
 
 #if HAVE_CALIMIRO
 #include "./controller/geometriccalibrator.h"

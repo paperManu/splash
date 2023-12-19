@@ -27,15 +27,21 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <string>
+#include <vector>
+
+// This needs to be before any #if directives
+#include "./config.h"
+
+#if HAVE_LINUX
 #include <pwd.h>
 #include <sched.h>
-#include <string>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <vector>
+#endif
 
 #include "./core/constants.h"
 #include "./utils/log.h"
@@ -70,7 +76,13 @@ inline int getThreadId()
  */
 inline int getCoreCount()
 {
+#if HAVE_LINUX
     return sysconf(_SC_NPROCESSORS_CONF);
+#else
+    // 4 cores is a sensible value for most computers capable
+    // of running Splash nowadays
+    return 4;
+#endif
 }
 
 /**
@@ -78,9 +90,9 @@ inline int getCoreCount()
  * \param cores Vector of the target cores
  * \return Return true if all went well
  */
+#if HAVE_LINUX
 inline bool setAffinity(const std::vector<int>& cores)
 {
-#if HAVE_LINUX
     auto ncores = getCoreCount();
     for (auto& core : cores)
         if (core >= ncores)
@@ -95,10 +107,13 @@ inline bool setAffinity(const std::vector<int>& cores)
         return false;
 
     return true;
-#else
-    return false;
-#endif
 }
+#else
+inline bool setAffinity(const std::vector<int>& /*cores*/)
+{
+    return false;
+}
+#endif
 
 /**
  * Set the current thread as realtime (nice = 99, SCHED_RR)
@@ -126,6 +141,7 @@ inline bool setRealTime()
  * \param arg Arguments
  * \return Return 0 if all went well, see manpage for ioctl otherwise
  */
+#if HAVE_LINUX
 inline int xioctl(int fd, int request, void* arg)
 {
     int res;
@@ -136,6 +152,7 @@ inline int xioctl(int fd, int request, void* arg)
 
     return res;
 }
+#endif
 
 /**
  * Converts a string to lower case
@@ -164,7 +181,7 @@ inline bool isDir(const std::string& filepath)
  */
 inline std::string cleanPath(const std::string& filepath)
 {
-    return std::filesystem::path(filepath).lexically_normal();
+    return std::filesystem::path(filepath).lexically_normal().string();
 }
 
 /**
@@ -173,11 +190,15 @@ inline std::string cleanPath(const std::string& filepath)
  */
 inline std::string getHomePath()
 {
+#if HAVE_LINUX
     if (char* homeEnv = getenv("HOME"); homeEnv != nullptr)
         return std::string(homeEnv);
 
     struct passwd* pw = getpwuid(getuid());
     return std::string(pw->pw_dir);
+#elif HAVE_WINDOWS
+    return "";
+#endif
 }
 
 /**
@@ -193,9 +214,9 @@ inline std::string getPathFromFilePath(const std::string& filepath, const std::s
 
     if (path.is_absolute())
     {
-        if (isDir(path))
-            return path;
-        return path.remove_filename().lexically_normal();
+        if (isDir(path.string()))
+            return path.string();
+        return path.remove_filename().lexically_normal().string();
     }
 
     // The path is relative
@@ -204,9 +225,9 @@ inline std::string getPathFromFilePath(const std::string& filepath, const std::s
     else
         path = std::filesystem::path(configPath).lexically_normal() / path;
 
-    if (isDir(path))
-        return path;
-    return path.remove_filename().lexically_normal();
+    if (isDir(path.string()))
+        return path.string();
+    return path.remove_filename().lexically_normal().string();
 }
 
 /**
@@ -215,7 +236,7 @@ inline std::string getPathFromFilePath(const std::string& filepath, const std::s
  */
 inline std::string getCurrentWorkingDirectory()
 {
-    return std::filesystem::current_path();
+    return std::filesystem::current_path().string();
 }
 
 /**
@@ -225,7 +246,7 @@ inline std::string getCurrentWorkingDirectory()
  */
 inline std::string getFilenameFromFilePath(const std::string& filepath)
 {
-    return std::filesystem::path(filepath).filename();
+    return std::filesystem::path(filepath).filename().string();
 }
 
 /**
@@ -237,7 +258,7 @@ inline std::string getFilenameFromFilePath(const std::string& filepath)
 inline std::string getFullPathFromFilePath(const std::string& filepath, const std::string& configurationPath)
 {
     auto path = Utils::getPathFromFilePath(filepath, configurationPath);
-    return path / std::filesystem::path(filepath).filename();
+    return (std::filesystem::path(path) / std::filesystem::path(filepath).filename()).string();
 }
 
 /**
@@ -257,7 +278,7 @@ inline std::vector<std::string> listDirContent(const std::string& path)
     std::vector<std::string> files{};
     auto dir_iterator = std::filesystem::directory_iterator(clean_path);
     std::transform(std::filesystem::begin(dir_iterator), std::filesystem::end(dir_iterator), std::back_inserter(files), [&clean_path](auto dir_entry) {
-        return dir_entry.path().lexically_relative(clean_path);
+        return dir_entry.path().lexically_relative(clean_path).string();
     });
 
     return files;
@@ -268,9 +289,9 @@ inline std::vector<std::string> listDirContent(const std::string& path)
  * \param filepath File path to look for
  * \return Return the file descriptor, or 0 if it was not able to find the file in the list of opened file.
  */
+#if HAVE_LINUX
 inline int getFileDescriptorForOpenedFile(const std::string& filepath)
 {
-#if HAVE_LINUX
     auto pid = getpid();
     auto procDir = "/proc/" + std::to_string(pid) + "/fd/";
     auto files = listDirContent(procDir);
@@ -287,9 +308,14 @@ inline int getFileDescriptorForOpenedFile(const std::string& filepath)
                 return std::stoi(file);
         }
     }
-#endif
     return 0;
 }
+#else
+inline int getFileDescriptorForOpenedFile(const std::string& /*filepath*/)
+{
+    return 0;
+}
+#endif
 
 /**
  * Get the path of the currently executed file

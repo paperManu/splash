@@ -373,7 +373,7 @@ class Log
     {
         std::time_t now_c = std::chrono::system_clock::to_time_t(timestamp);
         char time_c[64];
-        strftime(time_c, 64, "%FT%T", std::localtime(&now_c));
+        strftime(time_c, 64, "%Y-%m-%dT%H:%M:%S", std::localtime(&now_c));
 
         std::string type;
         if (priority == Priority::MESSAGE)

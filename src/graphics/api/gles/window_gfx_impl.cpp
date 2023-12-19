@@ -58,7 +58,7 @@ void WindowGfxImpl::clearScreen(glm::vec4 color, bool clearDepth)
 {
     glClearColor(color[0], color[1], color[2], color[3]);
 
-    uint flags = GL_COLOR_BUFFER_BIT;
+    uint32_t flags = GL_COLOR_BUFFER_BIT;
 
     if (clearDepth)
         flags |= GL_DEPTH_BUFFER_BIT;

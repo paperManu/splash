@@ -128,7 +128,7 @@ class GeometryGfxImpl
      * \param data Coordinates of the vertices, in uniform coordinates (4 floats per vertex)
      * \param numVerts Number of vertices to initialize
      */
-    virtual void initVertices(float* data, uint numVerts) = 0;
+    virtual void initVertices(float* data, uint32_t numVerts) = 0;
 
     /**
      * Allocate or init the chosen buffer
@@ -136,7 +136,7 @@ class GeometryGfxImpl
      * \param componentsPerElement Component (float, int, ...) counts per element (vec2, ivec3, ...)
      * \param dataVec Vector holding the data to initialize the buffer with
      */
-    virtual void allocateOrInitBuffer(uint32_t bufferIndex, uint componentsPerElement, std::vector<float>& dataVec) = 0;
+    virtual void allocateOrInitBuffer(uint32_t bufferIndex, uint32_t componentsPerElement, std::vector<float>& dataVec) = 0;
 
     /**
      * Delete all vertex arrays

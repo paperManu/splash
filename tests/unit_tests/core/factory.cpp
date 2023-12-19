@@ -3,6 +3,7 @@
 
 #include <doctest.h>
 
+#include "./config.h"
 #include "./core/constants.h"
 #include "./core/factory.h"
 #include "./image/image.h"
@@ -18,6 +19,7 @@ TEST_CASE("Testing Factory subtype evaluation")
 }
 
 /*************/
+#if HAVE_LINUX
 TEST_CASE("Testing Factory default values")
 {
     const std::string defaultFile = "./data/splashrc.json";
@@ -38,6 +40,7 @@ TEST_CASE("Testing Factory default values")
     if (!previousDefaultFile.empty())
         setenv(Constants::DEFAULT_FILE_ENV, previousDefaultFile.c_str(), 1);
 }
+#endif
 
 /*************/
 TEST_CASE("Testing Factory getters")

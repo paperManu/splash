@@ -19,9 +19,15 @@
 
 #
 # Enable all warnings as errors
+# This is disable for anything but Linux, as it messes up some targets
+# for other platforms. More particularly the icon setting on Windows.
+# To solve this, the generation of the splash binary should be done in
+# another directory...
 #
-add_definitions(-Wall -Wextra -Werror)
-add_definitions(-Wno-unknown-pragmas)
+if(UNIX)
+    add_definitions(-Wall -Wextra -Werror)
+    add_definitions(-Wno-unknown-pragmas)
+endif()
 
 if (WITH_SANITIZE)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -200,7 +206,6 @@ target_sources(splash-${API_VERSION} PRIVATE
     userinput/userinput_mouse.cpp
     utils/cgutils.cpp
     utils/jsonutils.cpp
-    utils/subprocess.cpp
     utils/uuid.cpp
 
     # OpenGL ES API
@@ -239,6 +244,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/api/opengl/window_gfx_impl.cpp
 
     # External sources
+    ../external/glad/core/src/glad_core.c
     ../external/imgui/imgui_demo.cpp
     ../external/imgui/imgui_draw.cpp
     ../external/imgui/imgui_tables.cpp
@@ -248,10 +254,13 @@ target_sources(splash-${API_VERSION} PRIVATE
     ../external/tracy/public/TracyClient.cpp
 )
 
+if (UNIX)
     target_sources(splash-${API_VERSION} PRIVATE
-        ../external/glad/core/src/glad_core.c
+    	utils/subprocess.cpp
         image/image_v4l2.cpp
     )
+
+endif()
 
 if (GPHOTO_FOUND AND OPENCV_FOUND)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -337,12 +346,17 @@ endif()
 # Distributed third parties
 target_link_libraries(splash-${API_VERSION} snappy)
 target_link_libraries(splash-${API_VERSION} glfw)
-target_link_libraries(splash-${API_VERSION} dl) # Needed for Tracy
+
+if (UNIX)
+    target_link_libraries(splash-${API_VERSION} dl) # Needed for Tracy
+endif()
+
 if (USE_SYSTEM_LIBS)
     target_link_libraries(splash-${API_VERSION} zmq)
 else()
     target_link_libraries(splash-${API_VERSION} zmq.a)
 endif()
+
 # System libs
 target_link_libraries(splash-${API_VERSION} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(splash-${API_VERSION} ${JSONCPP_LIBRARIES})

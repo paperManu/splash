@@ -276,7 +276,7 @@ class Camera : public GraphObject
     glm::mat3 _colorMixMatrix;
     Values _colorCurves{0};
     Values _whitePoint{0};
-    uint _colorSamples{0};
+    uint32_t _colorSamples{0};
     uint64_t _colorLUTSize{0};
 
     // Camera parameters
