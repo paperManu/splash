@@ -120,7 +120,7 @@ class ChannelOutput_ZMQ final : public ChannelOutput
 
     std::string _pathPrefix;
 
-    zmq::context_t _context{1};
+    zmq::context_t _context;
     std::unique_ptr<zmq::socket_t> _socketMessageOut{nullptr};
     std::unique_ptr<zmq::socket_t> _socketBufferOut{nullptr};
 
@@ -171,7 +171,7 @@ class ChannelInput_ZMQ final : public ChannelInput
     std::atomic_bool _continueListening;
     std::string _pathPrefix;
 
-    zmq::context_t _context{1};
+    zmq::context_t _context;
     std::unique_ptr<zmq::socket_t> _socketMessageIn{nullptr};
     std::unique_ptr<zmq::socket_t> _socketBufferIn{nullptr};
 

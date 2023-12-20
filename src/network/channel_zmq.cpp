@@ -10,20 +10,34 @@
 namespace Splash
 {
 
+#if HAVE_WINDOWS
+zmq::context_t zmqCommonContext{0};
+#endif
+
 /*************/
 ChannelOutput_ZMQ::ChannelOutput_ZMQ(const RootObject* root, const std::string& name)
     : ChannelOutput(root, name)
 {
     assert(_root != nullptr);
     const auto socketPrefix = _root->getSocketPrefix();
+#if HAVE_LINUX
     _pathPrefix = "ipc:///tmp/splash_";
     if (!socketPrefix.empty())
         _pathPrefix += socketPrefix + std::string("_");
+#elif HAVE_WINDOWS
+    _pathPrefix = "inproc://splash_";
+#endif
 
     try
     {
+#if HAVE_LINUX
+        _context = zmq::context_t(1);
         _socketMessageOut = std::make_unique<zmq::socket_t>(_context, ZMQ_PUB);
         _socketBufferOut = std::make_unique<zmq::socket_t>(_context, ZMQ_PUB);
+#elif HAVE_WINDOWS
+        _socketMessageOut = std::make_unique<zmq::socket_t>(zmqCommonContext, ZMQ_PUB);
+        _socketBufferOut = std::make_unique<zmq::socket_t>(zmqCommonContext, ZMQ_PUB);
+#endif
 
         const int highWaterMark = 0;
         _socketMessageOut->set(zmq::sockopt::sndhwm, highWaterMark);
@@ -171,17 +185,26 @@ ChannelInput_ZMQ::ChannelInput_ZMQ(const RootObject* root, const std::string& na
 {
     assert(_root != nullptr);
     const auto socketPrefix = _root->getSocketPrefix();
+#if HAVE_LINUX
     _pathPrefix = "ipc:///tmp/splash_";
     if (!socketPrefix.empty())
         _pathPrefix += socketPrefix + std::string("_");
+#elif HAVE_WINDOWS
+    _pathPrefix = "inproc://splash_";
+#endif
 
     try
     {
+#if HAVE_LINUX
+        _context = zmq::context_t(1);
         _socketMessageIn = std::make_unique<zmq::socket_t>(_context, ZMQ_SUB);
+        _socketBufferIn = std::make_unique<zmq::socket_t>(_context, ZMQ_SUB);
+#elif HAVE_WINDOWS
+        _socketMessageIn = std::make_unique<zmq::socket_t>(zmqCommonContext, ZMQ_SUB);
+        _socketBufferIn = std::make_unique<zmq::socket_t>(zmqCommonContext, ZMQ_SUB);
+#endif
         // We don't want to miss a message: set the high water mark to a high value
         _socketMessageIn->set(zmq::sockopt::rcvhwm, 1000);
-
-        _socketBufferIn = std::make_unique<zmq::socket_t>(_context, ZMQ_SUB);
         // We only keep one buffer in memory while processing
         _socketBufferIn->set(zmq::sockopt::rcvhwm, 1);
     }
