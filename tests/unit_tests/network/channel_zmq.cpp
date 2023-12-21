@@ -57,7 +57,7 @@ TEST_CASE("Test sending a message and a buffer through a zmq channel")
             receivedObj = std::move(obj);
         });
 
-    CHECK(channelOutput.connectTo("input"));
+    CHECK(channelInput.connectTo("output"));
 
     // Connection through ZMQ takes some time to establish, and there is no
     // way to know for sure that it is active without sending a message
