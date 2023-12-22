@@ -375,10 +375,29 @@ target_link_libraries(splash-${API_VERSION} ${CALIMIRO_LIBRARIES})
 #
 target_link_libraries(splash splash-${API_VERSION})
 
+if(WIN32)
+  set_icon(splash "data/share/icons/hicolor/128x128/apps/splash.ico")
+endif()
+
 #
 # Installation
 #
 install(TARGETS splash DESTINATION "bin/")
+
+if (WIN32)
+  get_filename_component(MINGW_PATH ${CMAKE_CXX_COMPILER} PATH)
+  install(TARGETS splash
+    RUNTIME_DEPENDENCIES
+    PRE_EXCLUDE_REGEXES
+      "api-ms-"
+    POST_EXCLUDE_REGEXES
+      ".*system32/.*\\.dll"
+      ".*/msys64/mingw64/bin.*"
+    DIRECTORIES
+      ${MINGW_PATH}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  )
+endif()
 
 install(FILES
     shaders/geometric_calibration_filter.frag
