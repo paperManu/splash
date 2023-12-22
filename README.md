@@ -90,7 +90,10 @@ To install from the binary packages, please refer to [Splash documentation](http
 
 You can also compile Splash by hand, especially if you are curious about its internals or want to tinker with the code (or even, who knows, contribute!). Note that although what follows compiles the develop branch, it is more likely to contain bugs alongside new features / optimizations so if you experience crash you can try with the master branch.
 
+##### Installing the dependencies
+
 The packages necessary to compile Splash are the following:
+
 - Ubuntu 20.04 and newer:
 
 ```bash
@@ -98,7 +101,7 @@ sudo apt install build-essential git-core cmake libxrandr-dev libxi-dev \
     mesa-common-dev libgsl0-dev libatlas3-base libgphoto2-dev libz-dev \
     libxinerama-dev libxcursor-dev python3-dev yasm portaudio19-dev \
     python3-numpy libopencv-dev libjsoncpp-dev libavcodec-dev libavformat-dev \
-    libavutil-dev libswscale-dev
+    libavutil-dev libswscale-dev ninja
 
 # Non mandatory libraries needed to link against system libraries only
 sudo apt install libglfw3-dev libglm-dev libsnappy-dev libzmq3-dev
@@ -119,42 +122,90 @@ sudo dnf install gcc g++ cmake gsl-devel atlas-devel libgphoto2-devel python3-de
     yasm portaudio-devel python3-numpy opencv-devel jsoncpp-devel libuuid-devel \
     libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel \
     mesa-libGL-devel libavcodec-free-devel libavformat-free-devel libavutil-free-devel \
-    libswscale-free-devel
+    libswscale-free-devel ninja
 ```
 
 - Archlinux (not well maintained, please signal any issue):
 
 ```bash
-pacman -Sy git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcursor jsoncpp \
+pacman -Sy git cmake ninja gcc yasm pkgconfig libxi libxinerama libxrandr libxcursor jsoncpp \
     mesa glm gsl libgphoto2 python3 portaudio zip zlib ffmpeg opencv qt5-base vtk hdf5 glew
 ```
 
-Once everything is installed, you can go on with building Splash. To build and link it against the bundled libraries:
+- Windows:
+
+On Windows, you need to install a development environment to be able to run Splash. Fortunately there are some very nice ones, and for Splash we use [MSYS2](https://www.msys2.org/). Install it as explained on their website, then run `MSYS2 UCRT64` from the Start menu. This will give you a terminal with the correct environment to build Splash.
+
+To finalize with the dependencies, you need to install a few ones:
+
+```bash
+pacman -Sy --needed zip git
+pacman -Sy --needed mingw-w64-ucrt-x86_64-{glfw,cmake,make,gcc,yasm,pkg-config,jsoncpp,glm,gsl,python3,portaudio,zlib,ffmpeg,zeromq,cppzmq,snappy,opencv,gphoto2}
+```
+
+##### Building Splash
+
+Once everything is installed, you can go on with building Splash. To build and link it against the bundled libraries (note that this will not work on Windows):
 
 ```bash
 git clone https://gitlab.com/splashmapper/splash
 cd splash
 ./make_deps.sh
 mkdir -p build && cd build
-cmake ..
-make -j$(nproc) && sudo make install
+cmake -GNinja ..
+ninja
 ```
 
-Otherwise, to build Splash and link it against the system libraries:
+Otherwise, to build Splash and link it against the system libraries (this is the path to take on Windows):
 
 ```bash
 git clone https://gitlab.com/splashmapper/splash
 cd splash
 mkdir -p build && cd build
 cmake -DUSE_SYSTEM_LIBS=ON ..
-make -j$(nproc) && sudo make install
+ninja
 ```
 
 You can now try launching Splash:
 
 ```bash
+./src/splash --help
+```
+
+##### Installing and/or packaging
+
+- Linux: installing from the sources
+
+Once Splash is compiled (see previous subsection), you can install it from the build directory:
+
+```bash
+sudo ninja install
+# And then it can be run from anywhere 
 splash --help
 ```
+
+- Windows: generating a package ready to be installed and distributed
+
+On Windows, you can install it like on Linux using the `install` build target. But to do things more like they are done on Windows, it is suggested to generate an installation package and then install Splash like any other software. This way it will be available from the Start menu, among other advantages.
+
+First, you need to install the Nullsoft Scriptable Install System (or NSIS), after downloading it from [their webpage](https://nsis.sourceforge.io/Main_Page). This is used by CPack to generate the package. Once installed, run from the build directory:
+
+```bash
+ninja package
+```
+
+An installation file named `splash-$VERSION-win64.exe` will be generated. Double-click on it from the explorer to run it and install Splash. Once done it can be found in the Start menu, or in `C:\Program Files\splash\bin`.
+
+#### Uninstall Splash (when built from sources)
+
+To uninstall Splash when built from sources, you need to do from the very same directory where Splash has been built:
+
+```bash
+cd ${PATH_TO_SPLASH}/build
+sudo ninja uninstall
+```
+
+##### Advanced configuration
 
 If you want to have access to realtime scheduling within Splash, you need to create a group "realtime", add yourself to it and set some limits:
 
@@ -175,15 +226,6 @@ Then log out and log back in.
 If you want to specify some defaults values for the objects, you can set the environment variable SPLASH_DEFAULTS with the path to a file defining default values for given types. An example of such a file can be found in [data/config/splashrc](data/config/splashrc)
 
 And that's it, you can move on to the [First steps](https://splashmapper.xyz/en/tutorials/first_steps.html) page.
-
-#### Uninstall Splash (when built from sources)
-
-To uninstall Splash when built from sources, you need to do from the very same directory where Splash has been built:
-
-```bash
-cd ${PATH_TO_SPLASH}/build
-sudo make uninstall
-```
 
 
 ## Code contribution
