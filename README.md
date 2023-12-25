@@ -148,21 +148,27 @@ pacman -Sy --needed mingw-w64-ucrt-x86_64-{glfw,cmake,make,gcc,yasm,pkg-config,j
 Once everything is installed, you can go on with building Splash. To build and link it against the bundled libraries (note that this will not work on Windows):
 
 ```bash
-git clone https://gitlab.com/splashmapper/splash
+git clone --recurse-submodules https://gitlab.com/splashmapper/splash
 cd splash
 ./make_deps.sh
 mkdir -p build && cd build
-cmake -GNinja ..
+# The BUILD_GENERIC_ARCH flag allows for building an executable which can run on any
+# sufficiently modern (less than 15 years) CPU. It is usually safe to remove it but
+# people had issues in the past with some arch-specific flags
+cmake -GNinja -GBUILD_GENERIC_ARCH=ON ..
 ninja
 ```
 
 Otherwise, to build Splash and link it against the system libraries (this is the path to take on Windows):
 
 ```bash
-git clone https://gitlab.com/splashmapper/splash
+git clone --recurse-submodules https://gitlab.com/splashmapper/splash
 cd splash
 mkdir -p build && cd build
-cmake -DUSE_SYSTEM_LIBS=ON ..
+# The BUILD_GENERIC_ARCH flag allows for building an executable which can run on any
+# sufficiently modern (less than 15 years) CPU. It is usually safe to remove it but
+# people had issues in the past with some arch-specific flags
+cmake -DUSE_SYSTEM_LIBS=ON -GBUILD_GENERIC_ARCH=ON ..
 ninja
 ```
 
