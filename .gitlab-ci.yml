@@ -296,6 +296,29 @@ staging:archlinux:gcc-amd64-bundled-libs:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH == 'archlinux'
     - if: $CI_COMMIT_BRANCH == 'staging'
 
+staging:windows:
+  # Note: this job works on Windows with MSYS2 / MINGW64 already installed
+  # See the README.md file or the manual compilation guide on the website
+  # for more information
+  stage: staging
+  tags:
+    - windows
+  variables:
+    MSYSTEM: 'UCRT64'
+    CHERE_INVOKING: 'yes'
+  script:
+    - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm'
+    - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm --needed zip git'
+    - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm --needed mingw-w64-ucrt-x86_64-{glfw,cmake,make,gcc,yasm,pkgconf,jsoncpp,glm,gsl,python3,portaudio,zlib,ffmpeg,zeromq,cppzmq,snappy,opencv,gphoto2}'
+    - C:\msys64\usr\bin\bash -lc 'bash -x ./tools/build_windows'
+  artifacts:
+    name: "splash_windows_installer"
+    paths:
+      - "splash-*-win64.exe"
+    expire_in: 2 weeks
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'staging'
+
 #
 # ┏━┓┏━┓┏━╸╻┏ ┏━┓┏━╸┏━╸
 # ┣━┛┣━┫┃  ┣┻┓┣━┫┃╺┓┣╸ 
@@ -380,6 +403,30 @@ package:fullsources:
       - splash.tar.gz
   rules:
     - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == 'master'
+
+package:windows:
+  # Note: this job works on Windows with MSYS2 / MINGW64 already installed
+  # See the README.md file or the manual compilation guide on the website
+  # for more information
+  stage: package
+  tags:
+    - windows
+  variables:
+    MSYSTEM: 'UCRT64'
+    CHERE_INVOKING: 'yes'
+  script:
+    - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm'
+    - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm --needed zip git'
+    - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm --needed mingw-w64-ucrt-x86_64-{glfw,cmake,make,gcc,yasm,pkgconf,jsoncpp,glm,gsl,python3,portaudio,zlib,ffmpeg,zeromq,cppzmq,snappy,opencv,gphoto2}'
+    - C:\msys64\usr\bin\bash -lc 'bash -x ./tools/build_windows'
+  artifacts:
+    name: "splash_windows_installer"
+    paths:
+      - "splash-*-win64.exe"
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == 'master'
 
 #
 # ╺┳┓┏━╸┏━┓╻  ┏━┓╻ ╻
