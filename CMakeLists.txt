@@ -18,6 +18,16 @@
 #
 
 cmake_minimum_required(VERSION 3.12)
+
+# Force the installation prefix, as under certain circumstances on Windows it defaults
+# to "C:\Program Files (x86)", which is not correct and conflicts the installation path
+# of NSIS.
+# Note that this has to be set BEFORE the call to project(...), otherwise it will have
+# no effect
+if (WIN32)
+    set(CMAKE_INSTALL_PREFIX "C:\\Program Files\\splash" CACHE PATH "Default directory for Splash installation on Windows")
+endif()
+
 project(
     splash
     VERSION 0.10.3
@@ -201,7 +211,7 @@ set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/License.md")
   
-#if (UNIX)
+if (UNIX)
   set(CPACK_GENERATOR "DEB")
   set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
   set(CPACK_DEBIAN_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-mapper")
@@ -213,7 +223,7 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/License.md")
   set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers is planned.")
   set(CPACK_DEBIAN_PACKAGE_SECTION "video")
   set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
-#elseif (WIN32)
+elseif (WIN32)
   set(CPACK_GENERATOR "NSIS")
   set(CPACK_PACKAGE_EXECUTABLES "splash" "Splash")
   set(CPACK_PACKAGE_INSTALL_DIRECTORY "${CMAKE_PROJECT_NAME}")
@@ -226,7 +236,7 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/License.md")
   set(CPACK_NSIS_MODIFY_PATH OFF)
   set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
   set(CPACK_PACKAGING_INSTALL_PREFIX "/")
-#endif
+endif()
 
 include(CPack)
 
