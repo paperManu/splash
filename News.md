@@ -1,6 +1,38 @@
 Splash release notes
 ====================
 
+Splash 0.10.4 (2024-01-08)
+-------------------------
+Improvements:
+* Added support for Windows
+* Added generation of a Windows installer
+* Fixed compilation on Windows
+* Rendering of Warp is now active only if control points were modified. Also, added a reset button
+* Cleaned up GlWindow and renamed it to RenderingContext
+* Added thread sanitation analysis
+* Added address sanitation analysis
+* Added expiry for temporary CI artifacts
+* Added separate graphics implementations for Gui
+* Extracted OpenGL implementation from Sink
+* Renamed graphics API classes and files to be more consistent
+* Harmonized Renderer::create methods, cleaned up Renderer a bit along theh way
+* Updated Doctest submodule
+* Updated Tracy profiler to v0.10
+* Replaced libuuid with stduuid
+
+Bugs fixed:
+* Fixed typo in release script
+* Fixed ZMQ to use inproc on Windows
+* Fix ZMQ channel to better match Pub-Sub pattern
+* Fixed VirtualProbe
+* Fixed Warp wireframe display
+* Fixed compilation with DEBUG_OPENGL flag
+* Fixed PboGfxImpl for GLES
+
+Documentation:
+* Updated Windows installation information to get around user-specific issues
+* Added documentation to build on Windows, reorganized a bit all the systems
+
 Splash 0.10.2 (2023-12-05)
 -------------------------
 Improvements:
