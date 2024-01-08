@@ -98,7 +98,11 @@ class BufferObject : public GraphObject
      * Check whether the object has been updated
      * \return Return true if the object has been updated
      */
-    bool wasUpdated() const override { return _updatedBuffer | GraphObject::wasUpdated(); }
+    bool wasUpdated() const override
+    {
+        const bool updatedBuffer = _updatedBuffer;
+        return updatedBuffer | GraphObject::wasUpdated();
+    }
 
     /**
      * Set the updated buffer flag to false.
@@ -181,14 +185,14 @@ class BufferObject : public GraphObject
      */
     mutable std::shared_mutex _readMutex;
 
-    std::mutex _serializedObjectWaitingMutex{}; //!< Mutex is locked if a serialized object has been set and waits for processing
-    std::future<void> _deserializeFuture{};     //!< Holds the deserialization thread
+    std::atomic_bool _serializedObjectWaiting{false}; //!< True if a serialized object has been set and waits for processing
+    std::future<void> _deserializeFuture{};           //!< Holds the deserialization thread
     mutable Spinlock _timestampMutex;
-    int64_t _timestamp{0};      //!< Timestamp
-    bool _updatedBuffer{false}; //!< True if the BufferObject has been updated
+    int64_t _timestamp{0};                  //!< Timestamp
+    std::atomic_bool _updatedBuffer{false}; //!< True if the BufferObject has been updated
 
-    SerializedObject _serializedObject; //!< Internal buffer object
-    bool _newSerializedObject{false};   //!< Set to true during serialized object processing
+    SerializedObject _serializedObject;           //!< Internal buffer object
+    std::atomic_bool _newSerializedObject{false}; //!< Set to true during serialized object processing
 
     /**
      * Updates the timestamp of the object. Also, set the update flag to true.

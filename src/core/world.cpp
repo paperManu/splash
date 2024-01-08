@@ -7,8 +7,10 @@
 #include <utility>
 
 #include <getopt.h>
+#if HAVE_LINUX
 #include <spawn.h>
 #include <sys/wait.h>
+#endif
 #include <unistd.h>
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -44,10 +46,12 @@ World::World(Context context)
     _name = "world";
 
     _that = this;
+#if HAVE_LINUX
     _signals.sa_handler = leave;
     _signals.sa_flags = 0;
     sigaction(SIGINT, &_signals, nullptr);
     sigaction(SIGTERM, &_signals, nullptr);
+#endif
 
     registerAttributes();
     initializeTree();
@@ -422,13 +426,19 @@ bool World::applyConfig()
 }
 
 /*************/
+#if HAVE_LINUX
 bool World::addScene(const std::string& sceneName, const std::string& sceneDisplay, const std::string& sceneAddress, bool spawn, bool allowEmbedded)
+#else
+bool World::addScene(const std::string& sceneName, const std::string& /*sceneDisplay*/, const std::string& sceneAddress, bool /*spawn*/, bool /*allowEmbedded*/)
+#endif
 {
     if (sceneAddress == "localhost")
     {
+        int pid = -1;
+
+#if HAVE_LINUX
         std::string display{""};
         std::string worldDisplay{""};
-#if HAVE_LINUX
         auto regDisplayFull = std::regex("(:[0-9]\\.[0-9])", std::regex_constants::extended);
         auto regDisplayInt = std::regex("[0-9]", std::regex_constants::extended);
         std::smatch match;
@@ -456,9 +466,7 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
             else if (std::regex_match(*_context.forcedDisplay, match, regDisplayInt))
                 display = "DISPLAY=:" + _context.displayServer + "." + *_context.forcedDisplay;
         }
-#endif
 
-        int pid = -1;
         if (spawn)
         {
             _sceneLaunched = false;
@@ -567,6 +575,22 @@ bool World::addScene(const std::string& sceneName, const std::string& sceneDispl
                 return false;
             }
         }
+
+#elif HAVE_WINDOWS // HAVE_LINUX
+        Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an embedded Scene" << Log::endl;
+        auto sceneContext = _context;
+        sceneContext.childSceneName = sceneName;
+        _embeddedScene = std::make_shared<Scene>(sceneContext);
+        _embeddedSceneThread = std::thread([&]() { _embeddedScene->run(); });
+
+        // Initialize the communication
+        if (!_link->connectTo(sceneName))
+        {
+            Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Could not connect to scene " << sceneName << ", which should be handled outside of this Splash instance"
+                       << Log::endl;
+            return false;
+        }
+#endif             // HAVE_WINDOWS
 
         _scenes[sceneName] = pid;
         if (_masterSceneName.empty())
@@ -1076,7 +1100,9 @@ void World::registerAttributes()
 
                         if (scenePid != -1)
                         {
+#if HAVE_LINUX
                             waitpid(scenePid, nullptr, 0);
+#endif
                         }
                         else
                         {

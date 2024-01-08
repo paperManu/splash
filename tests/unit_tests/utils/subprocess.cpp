@@ -23,6 +23,9 @@
 #include <iostream>
 #include <thread>
 
+#include "./config.h"
+
+#if HAVE_LINUX
 #include "./utils/subprocess.h"
 
 using namespace Splash::Utils;
@@ -42,3 +45,4 @@ TEST_CASE("Testing Subprocess")
         CHECK_EQ(process.isRunning(), true);
     }
 }
+#endif // HAVE_LINUX

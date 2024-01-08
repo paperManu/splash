@@ -45,14 +45,14 @@ void GuiWarp::render()
 
         warp->render();
 
-        auto warpSpec = warp->getSpec();
+        const auto warpSpec = warp->getSpec();
         if (warpSpec.width == 0 || warpSpec.height == 0)
             continue;
 
         int w = ImGui::GetWindowWidth() - 4 * leftMargin;
         int h = w * warpSpec.height / warpSpec.width;
 
-        if (ImGui::ImageButton((void*)(intptr_t)warp->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
+        if (ImGui::ImageButton((void*)(intptr_t)warp->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
             _currentWarp = i;
 
         if (ImGui::IsItemHovered())
@@ -69,6 +69,10 @@ void GuiWarp::render()
         Values values;
         ImGui::PushID(warp->getName().c_str());
 
+        auto availableSize = ImGui::GetContentRegionAvail();
+        if (ImGui::Button("Reset warp", ImVec2(availableSize[0], 24.f)))
+            setObjectAttribute(warp->getName(), "resetPatch");
+
         warp->getAttribute("patchResolution", values);
         if (ImGui::InputInt("patchResolution", static_cast<int*>(values[0].data()), 1, 32, ImGuiInputTextFlags_EnterReturnsTrue))
             setObjectAttribute(warp->getName(), "patchResolution", {values[0].as<int>()});
@@ -83,28 +87,31 @@ void GuiWarp::render()
 
         if (const auto texture = warp->getTexture())
         {
-            auto warpSpec = warp->getSpec();
-            int w = ImGui::GetWindowWidth() - 2 * leftMargin;
-            int h = w * warpSpec.height / warpSpec.width;
-
-            availableSize = ImGui::GetContentRegionAvail();
-            if (h > availableSize.y)
+            const auto warpSpec = warp->getSpec();
+            if (warpSpec.width != 0 && warpSpec.height != 0)
             {
-                h = availableSize.y;
-                w = h * warpSpec.width / warpSpec.height;
-            }
+                int w = ImGui::GetWindowWidth() - 2 * leftMargin;
+                int h = w * warpSpec.height / warpSpec.width;
 
-            ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(texture->getTexId())), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+                availableSize = ImGui::GetContentRegionAvail();
+                if (h > availableSize.y)
+                {
+                    h = availableSize.y;
+                    w = h * warpSpec.width / warpSpec.height;
+                }
 
-            if (ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly))
-            {
-                _noMove = true;
-                processKeyEvents(warp);
-                processMouseEvents(warp, w, h);
-            }
-            else
-            {
-                _noMove = false;
+                ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(texture->getTexId())), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly))
+                {
+                    _noMove = true;
+                    processKeyEvents(warp);
+                    processMouseEvents(warp, w, h);
+                }
+                else
+                {
+                    _noMove = false;
+                }
             }
         }
         ImGui::PopID();

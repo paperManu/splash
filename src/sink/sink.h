@@ -33,6 +33,7 @@
 
 #include "./core/attribute.h"
 #include "./core/graph_object.h"
+#include "./graphics/api/pbo_gfx_impl.h"
 #include "./graphics/filter.h"
 #include "./utils/resizable_array.h"
 
@@ -50,7 +51,7 @@ class Sink : public GraphObject
     /**
      * Destructor
      */
-    virtual ~Sink() override;
+    virtual ~Sink() override = default;
 
     /**
      * Constructors/operators
@@ -112,6 +113,7 @@ class Sink : public GraphObject
     void registerAttributes();
 
   private:
+    std::unique_ptr<gfx::PboGfxImpl> _pboGfxImpl{nullptr};
     std::shared_ptr<Filter> _inputFilter{nullptr};
     ImageBufferSpec _spec{};
     ImageBuffer _image{};
@@ -130,14 +132,6 @@ class Sink : public GraphObject
      * Class to be implemented to copy the _mappedPixels somewhere
      */
     virtual void handlePixels(const char* pixels, const ImageBufferSpec& spec);
-
-    /**
-     * Update the pbos according to the parameters
-     * \param width Width
-     * \param height Height
-     * \param bytes Bytes per pixel
-     */
-    void updatePbos(int width, int height, int bytes);
 };
 
 } // namespace Splash

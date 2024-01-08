@@ -47,13 +47,23 @@ class FilterGfxImpl : public gfx::FilterGfxImpl
      * Setup the viewport for the filter
      * \param width Viewport width
      * \param height Viewport height
+     * \param depthTest Depth test activation
      */
-    void setupViewport(uint32_t width, uint32_t height) const override final
+    void setupViewport(uint32_t width, uint32_t height, bool depthTest) const override final
     {
         glViewport(0, 0, width, height);
         glClearColor(0.0, 0.0, 0.0, 0.0);
-        glEnable(GL_DEPTH_TEST);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        if (depthTest)
+        {
+            glEnable(GL_DEPTH_TEST);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        }
+        else
+        {
+            glDisable(GL_DEPTH_TEST);
+            glClear(GL_COLOR_BUFFER_BIT);
+        }
     }
 
     /**

@@ -91,7 +91,7 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
     /**
      * Draw the geometry
      */
-    void draw() const final;
+    void draw() const override final;
 
     /**
      * Get the number of vertices for this geometry
@@ -129,7 +129,7 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
      * \param data Coordinates of the vertices, in uniform coordinates (4 floats per vertex)
      * \param numVerts Number of vertices to initialize
      */
-    virtual void initVertices(float* data, uint numVerts) override final;
+    virtual void initVertices(float* data, uint32_t numVerts) override final;
 
     /**
      * Allocate or init the chosen buffer
@@ -137,7 +137,7 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
      * \param componentsPerElement Component (float, int, ...) counts per element (vec2, ivec3, ...)
      * \param dataVec Vector holding the data to initialize the buffer with
      */
-    virtual void allocateOrInitBuffer(uint32_t bufferIndex, uint componentsPerElement, std::vector<float>& dataVec) override final;
+    virtual void allocateOrInitBuffer(uint32_t bufferIndex, uint32_t componentsPerElement, std::vector<float>& dataVec) override final;
 
     /**
      * Delete all vertex arrays
@@ -196,7 +196,7 @@ class GeometryGfxImpl : public Splash::gfx::GeometryGfxImpl
      * \param tempVerticesNumber Number of vertices in the temporary buffer
      * \param data Data to full the temporary buffer with
      */
-    void allocateOrInitTemporaryBuffer(uint32_t bufferIndex, uint componentsPerElement, uint tempVerticesNumber, char* data);
+    void allocateOrInitTemporaryBuffer(uint32_t bufferIndex, uint32_t componentsPerElement, uint32_t tempVerticesNumber, char* data);
 
     /**
      * Get whether any alternative buffer is missing

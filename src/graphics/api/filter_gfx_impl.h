@@ -47,8 +47,9 @@ class FilterGfxImpl
      * Setup the viewport for the filter
      * \param width Viewport width
      * \param height Viewport height
+     * \param depthTest Depth test activation
      */
-    virtual void setupViewport(uint32_t width, uint32_t height) const = 0;
+    virtual void setupViewport(uint32_t width, uint32_t height, bool depthTest) const = 0;
 
     /**
      * Enable multisampling

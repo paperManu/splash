@@ -142,7 +142,7 @@ std::string UserInput::getWindowName(const GLFWwindow* glfwWindow) const
     for (auto& w : windows)
     {
         auto window = std::dynamic_pointer_cast<Window>(w);
-        if (window->isWindow(const_cast<GLFWwindow*>(glfwWindow)))
+        if (window->isWindow(glfwWindow))
             return window->getName();
     }
 

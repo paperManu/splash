@@ -2,6 +2,7 @@
 
 #include "./core/root_object.h"
 #include "./core/scene.h"
+#include "./graphics/api/opengl/renderer.h"
 #include "./graphics/texture_image.h"
 
 namespace Splash::gfx::opengl
@@ -25,12 +26,12 @@ void WindowGfxImpl::setupFBOs(Scene* scene, uint32_t width, uint32_t height)
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
 
-    _depthTexture = scene->getRenderer()->createTexture_Image(scene);
+    _depthTexture = std::make_shared<Texture_Image>(scene);
     assert(_depthTexture != nullptr);
     _depthTexture->reset(width, height, "D");
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
 
-    _colorTexture = scene->getRenderer()->createTexture_Image(scene);
+    _colorTexture = std::make_shared<Texture_Image>(scene);
     assert(_colorTexture != nullptr);
     _colorTexture->reset(width, height, "RGBA");
     _colorTexture->setAttribute("filtering", {false});
@@ -57,7 +58,7 @@ void WindowGfxImpl::clearScreen(glm::vec4 color, bool clearDepth)
 {
     glClearColor(color[0], color[1], color[2], color[3]);
 
-    uint flags = GL_COLOR_BUFFER_BIT;
+    uint32_t flags = GL_COLOR_BUFFER_BIT;
 
     if (clearDepth)
         flags |= GL_DEPTH_BUFFER_BIT;
@@ -104,18 +105,10 @@ void WindowGfxImpl::endRender()
 }
 
 /*************/
-void WindowGfxImpl::setDebugData(const void* userData)
+void WindowGfxImpl::init(gfx::Renderer* renderer)
 {
-    glDebugMessageCallback(gfx::Renderer::glMsgCallback, userData);
-}
-
-/*************/
-void WindowGfxImpl::init(Scene* scene)
-{
-    auto w = scene->getNewSharedWindow();
-    if (w.get() == nullptr)
-        return;
-    _window = w;
+    assert(renderer != nullptr);
+    _renderingContext = renderer->createSharedContext();
 }
 
 /*************/
@@ -152,12 +145,12 @@ void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureU
      * synchronization happens as usual in this case.
      */
 
-    _window->setAsCurrentContext();
+    _renderingContext->setAsCurrentContext();
     glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
 
     // If this is the first window to be swapped, or NVSwapGroups are active,
     // this window should be synchronized to the vertical sync. So we will draw to back buffer
-    const bool isWindowSynchronized = Scene::getHasNVSwapGroup() or windowIndex == 0;
+    const bool isWindowSynchronized = gfx::Renderer::getHasNVSwapGroup() or windowIndex == 0;
 
     // If the window is not synchronized, draw directly to front buffer
     if (!isWindowSynchronized)
@@ -194,13 +187,13 @@ void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureU
     if (isWindowSynchronized)
         // If this window is synchronized, so we wait for the vsync and swap
         // front and back buffers
-        glfwSwapBuffers(_window->get());
+        _renderingContext->swapBuffers();
     else
         // If this window is not synchronized, we revert the draw buffer back
         // to drawing to the back buffer
         glDrawBuffer(GL_BACK);
 
-    _window->releaseContext();
+    _renderingContext->releaseContext();
 }
 
 } // namespace Splash::gfx::opengl

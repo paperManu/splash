@@ -26,13 +26,15 @@
 #define SPLASH_GLES_RENDERER_H
 
 #include "./graphics/api/gles/camera_gfx_impl.h"
-#include "./graphics/api/gles/compute_shader.h"
-#include "./graphics/api/gles/feedback_shader.h"
+#include "./graphics/api/gles/compute_shader_gfx_impl.h"
+#include "./graphics/api/gles/feedback_shader_gfx_impl.h"
 #include "./graphics/api/gles/filter_gfx_impl.h"
-#include "./graphics/api/gles/framebuffer.h"
+#include "./graphics/api/gles/framebuffer_gfx_impl.h"
 #include "./graphics/api/gles/geometry_gfx_impl.h"
 #include "./graphics/api/gles/gpu_buffer.h"
-#include "./graphics/api/gles/graphic_shader.h"
+#include "./graphics/api/gles/graphic_shader_gfx_impl.h"
+#include "./graphics/api/gles/gui_gfx_impl.h"
+#include "./graphics/api/gles/pbo_gfx_impl.h"
 #include "./graphics/api/gles/texture_image_gfx_impl.h"
 #include "./graphics/api/gles/window_gfx_impl.h"
 #include "./graphics/api/renderer.h"
@@ -46,22 +48,31 @@ class Renderer : public gfx::Renderer
 {
   public:
     /**
+     *  Callback for GL errors and warnings
+     */
+    static void glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* userParam);
+
+  public:
+    /**
      * Constructor
      * Sets the platform version attribute
      */
     Renderer() { _platformVersion = gfx::PlatformVersion({"OpenGL ES", 3, 2, 0}); }
 
-  private:
     /**
-     * Sets API specific flags for OpenGL or OpenGL ES. For example, enables sRGB for OpenGL, or explicitly requests an OpenGL ES context.
+     *  Initializes the renderer
+     *  \param name Renderer main window name
      */
-    void setApiSpecificFlags() const override final { glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API); }
+    void init(std::string_view name) override final;
 
     /**
-     * Calls the appropriate loader for each API. Calls `gladLoadGLES2Loader` for OpenGL ES, and `gladLoadGLLoader`. Note that calling an incorrect loader might lead to
-     * segfaults due to API specific function not getting loaded, leaving the pointers as null.
+     * Set the user data for the GL callback
+     * \param data User data for the callback
      */
-    void loadApiSpecificGlFunctions() const override final { gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress); }
+    void setRendererMsgCallbackData(const Renderer::RendererMsgCallbackData* data) override final
+    {
+        glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<const void*>(data));
+    }
 
     /**
      * Create a new Camera graphics implementation
@@ -79,7 +90,7 @@ class Renderer : public gfx::Renderer
      * Create a new Framebuffer
      * \return Return a unique pointer to the newly created Framebuffer
      */
-    std::unique_ptr<gfx::Framebuffer> createFramebuffer() const override final { return std::make_unique<gles::Framebuffer>(); }
+    std::unique_ptr<gfx::FramebufferGfxImpl> createFramebuffer() const override final { return std::make_unique<gles::FramebufferGfxImpl>(); }
 
     /**
      * Create a new Geometry
@@ -107,20 +118,42 @@ class Renderer : public gfx::Renderer
     std::unique_ptr<gfx::ShaderGfxImpl> createFeedbackShader() const override final { return std::make_unique<gfx::gles::FeedbackShaderGfxImpl>(); }
 
     /**
+     * Create a new Gui graphics implementation
+     * \return Return a unique pointer to the Gui graphics implementation
+     */
+    std::unique_ptr<gfx::GuiGfxImpl> createGuiGfxImpl() const override final { return std::make_unique<gfx::gles::GuiGfxImpl>(); }
+
+    /**
+     * Create a need PBO implementation
+     * \param size Underlying PBO count
+     * \return Return a unique pointer to the PBO implementation
+     */
+    std::unique_ptr<gfx::PboGfxImpl> createPboGfxImpl(std::size_t size) const override final { return std::make_unique<gfx::gles::PboGfxImpl>(size); }
+
+    /**
      * Create a new Texture_Image
      * \param root Root object
      * \return Return a shared pointer to a default Texture_Image
      */
-    std::shared_ptr<Texture_Image> createTexture_Image(RootObject* root) const override final
-    {
-        return std::make_shared<Texture_Image>(root, std::make_unique<gfx::gles::Texture_ImageGfxImpl>());
-    };
+    std::unique_ptr<gfx::Texture_ImageGfxImpl> createTexture_ImageGfxImpl() const override final { return std::make_unique<gfx::gles::Texture_ImageGfxImpl>(); }
 
     /**
      * Create a new Window
      * \return A class containing the graphics API specific details of `Splash::Window`.
      */
     std::unique_ptr<gfx::WindowGfxImpl> createWindowGfxImpl() const override final { return std::make_unique<gfx::gles::WindowGfxImpl>(); }
+
+  private:
+    /**
+     * Calls the appropriate loader for each API. Calls `gladLoadGLES2Loader` for OpenGL ES, and `gladLoadGLLoader`. Note that calling an incorrect loader might lead to
+     * segfaults due to API specific function not getting loaded, leaving the pointers as null.
+     */
+    void loadApiSpecificFunctions() const override final { gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress); }
+
+    /**
+     * Set shared window flags, this is called by createSharedContext before returning the RenderingContext
+     */
+    void setSharedWindowFlags() final override;
 };
 
 } // namespace Splash::gfx::gles

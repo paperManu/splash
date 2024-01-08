@@ -18,7 +18,7 @@
  */
 
 /*
- * @compute_shader.h
+ * @compute_shader_gfx_impl.h
  * Base class for compute shader, implementation specific rendering API
  */
 

@@ -1,4 +1,4 @@
-#include "./graphics/api/opengl/graphic_shader.h"
+#include "./graphics/api/opengl/graphic_shader_gfx_impl.h"
 
 namespace Splash::gfx::opengl
 {

@@ -28,6 +28,7 @@
 #include <regex>
 #include <string>
 
+#include "./config.h"
 #include "./core/constants.h"
 #include "./core/scene.h"
 #include "./core/world.h"
@@ -112,6 +113,7 @@ RootObject::Context parseArguments(int argc, char** argv)
             Log::get().setVerbosity(Log::DEBUGGING);
             break;
         }
+#if HAVE_LINUX
         case 'D':
         {
             auto regDisplayFull = std::regex("(:[0-9]\\.[0-9])", std::regex_constants::extended);
@@ -152,6 +154,7 @@ RootObject::Context parseArguments(int argc, char** argv)
             }
             break;
         }
+#endif // HAVE_LINUX
         case 'H':
         {
             context.hide = true;

@@ -2,6 +2,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "./core/scene.h"
 #include "./graphics/api/filter_gfx_impl.h"
 #include "./utils/scope_guard.h"
 
@@ -92,10 +93,10 @@ void VirtualProbe::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 void VirtualProbe::render()
 {
 #ifdef DEBUGGL
-    gfx::Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
+    _renderer->setRendererMsgCallbackData(getRendererMsgCallbackDataPtr());
     OnScopeExit
     {
-        gfx::Renderer::setGlMsgCallbackData(_root->getGlMsgCallbackDataPtr());
+        _renderer->setRendererMsgCallbackData(_scene->getRendererMsgCallbackDataPtr());
     };
 #endif
 
@@ -106,15 +107,15 @@ void VirtualProbe::render()
         _newHeight = 0;
     }
 
-    _gfxImpl->setupViewport(_cubemapSize, _cubemapSize);
-    _gfxImpl->enableMultisampling();
-    _gfxImpl->enableCubemapRendering();
-
     if (!_fbo || !_outFbo)
         return;
 
     // First pass: render to the cubemap
     _fbo->bindDraw();
+
+    _gfxImpl->setupViewport(_cubemapSize, _cubemapSize, true);
+    _gfxImpl->enableMultisampling();
+    _gfxImpl->enableCubemapRendering();
 
     for (auto& o : _objects)
     {
@@ -144,7 +145,7 @@ void VirtualProbe::render()
     _outFbo->bindDraw();
     _fbo->getColorTexture()->generateMipmap();
 
-    _gfxImpl->setupViewport(_width, _height);
+    _gfxImpl->setupViewport(_width, _height, true);
 
     _screen->activate();
     auto screenShader = _screen->getShader();

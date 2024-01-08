@@ -10,18 +10,41 @@
 namespace Splash
 {
 
+#if HAVE_WINDOWS
+zmq::context_t zmqCommonContext{0};
+#endif
+
 /*************/
 ChannelOutput_ZMQ::ChannelOutput_ZMQ(const RootObject* root, const std::string& name)
     : ChannelOutput(root, name)
 {
+    assert(_root != nullptr);
+    const auto socketPrefix = _root->getSocketPrefix();
+#if HAVE_LINUX
+    _pathPrefix = "ipc:///tmp/splash_";
+    if (!socketPrefix.empty())
+        _pathPrefix += socketPrefix + std::string("_");
+#elif HAVE_WINDOWS
+    _pathPrefix = "inproc://splash_";
+#endif
+
     try
     {
+#if HAVE_LINUX
+        _context = zmq::context_t(1);
         _socketMessageOut = std::make_unique<zmq::socket_t>(_context, ZMQ_PUB);
         _socketBufferOut = std::make_unique<zmq::socket_t>(_context, ZMQ_PUB);
+#elif HAVE_WINDOWS
+        _socketMessageOut = std::make_unique<zmq::socket_t>(zmqCommonContext, ZMQ_PUB);
+        _socketBufferOut = std::make_unique<zmq::socket_t>(zmqCommonContext, ZMQ_PUB);
+#endif
 
         const int highWaterMark = 0;
         _socketMessageOut->set(zmq::sockopt::sndhwm, highWaterMark);
         _socketBufferOut->set(zmq::sockopt::sndhwm, highWaterMark);
+
+        _socketMessageOut->bind(_pathPrefix + "msg_" + _name);
+        _socketBufferOut->bind(_pathPrefix + "buf_" + _name);
     }
     catch (const zmq::error_t& error)
     {
@@ -33,12 +56,6 @@ ChannelOutput_ZMQ::ChannelOutput_ZMQ(const RootObject* root, const std::string& 
     }
 
     _ready = true;
-
-    assert(_root != nullptr);
-    const auto socketPrefix = _root->getSocketPrefix();
-    _pathPrefix = "ipc:///tmp/splash_";
-    if (!socketPrefix.empty())
-        _pathPrefix += socketPrefix + std::string("_");
 }
 
 /*************/
@@ -57,60 +74,6 @@ ChannelOutput_ZMQ::~ChannelOutput_ZMQ()
     {
         Log::get() << Log::ERROR << "ChannelOutput_ZMQ::" << __FUNCTION__ << " - Error while closing socket: " << error.what() << Log::endl;
     }
-}
-
-/*************/
-[[nodiscard]] bool ChannelOutput_ZMQ::connectTo(const std::string& target)
-{
-    if (!_ready)
-        return false;
-
-    if (_targets.find(target) != _targets.end())
-        return false;
-
-    _targets.insert(target);
-
-    try
-    {
-        _socketMessageOut->connect((_pathPrefix + "msg_" + target));
-        _socketBufferOut->connect((_pathPrefix + "buf_" + target));
-    }
-    catch (const zmq::error_t& error)
-    {
-        if (errno != ETERM)
-        {
-            Log::get() << Log::WARNING << "ChannelOutput_ZMQ::" << __FUNCTION__ << " - Exception: " << error.what() << Log::endl;
-            return false;
-        }
-    }
-
-    return true;
-}
-
-/*************/
-[[nodiscard]] bool ChannelOutput_ZMQ::disconnectFrom(const std::string& target)
-{
-    if (!_ready)
-        return false;
-
-    if (_targets.erase(target) == 0)
-        return false;
-
-    try
-    {
-        _socketMessageOut->disconnect((_pathPrefix + "msg_" + target));
-        _socketBufferOut->disconnect((_pathPrefix + "buf_" + target));
-    }
-    catch (const zmq::error_t& error)
-    {
-        if (errno != ETERM)
-        {
-            Log::get() << Log::WARNING << "ChannelOutput_ZMQ::" << __FUNCTION__ << " - Exception while disconnecting from " << target << ": " << error.what() << Log::endl;
-            return false;
-        }
-    }
-
-    return true;
 }
 
 /*************/
@@ -222,25 +185,28 @@ ChannelInput_ZMQ::ChannelInput_ZMQ(const RootObject* root, const std::string& na
 {
     assert(_root != nullptr);
     const auto socketPrefix = _root->getSocketPrefix();
+#if HAVE_LINUX
     _pathPrefix = "ipc:///tmp/splash_";
     if (!socketPrefix.empty())
         _pathPrefix += socketPrefix + std::string("_");
+#elif HAVE_WINDOWS
+    _pathPrefix = "inproc://splash_";
+#endif
 
     try
     {
+#if HAVE_LINUX
+        _context = zmq::context_t(1);
         _socketMessageIn = std::make_unique<zmq::socket_t>(_context, ZMQ_SUB);
+        _socketBufferIn = std::make_unique<zmq::socket_t>(_context, ZMQ_SUB);
+#elif HAVE_WINDOWS
+        _socketMessageIn = std::make_unique<zmq::socket_t>(zmqCommonContext, ZMQ_SUB);
+        _socketBufferIn = std::make_unique<zmq::socket_t>(zmqCommonContext, ZMQ_SUB);
+#endif
         // We don't want to miss a message: set the high water mark to a high value
         _socketMessageIn->set(zmq::sockopt::rcvhwm, 1000);
-        // We subscribe to all incoming messages
-        _socketMessageIn->set(zmq::sockopt::subscribe, "");
-        _socketMessageIn->bind((_pathPrefix + "msg_" + _name).c_str());
-
-        _socketBufferIn = std::make_unique<zmq::socket_t>(_context, ZMQ_SUB);
         // We only keep one buffer in memory while processing
         _socketBufferIn->set(zmq::sockopt::rcvhwm, 1);
-        // We subscribe to all incoming messages
-        _socketBufferIn->set(zmq::sockopt::subscribe, "");
-        _socketBufferIn->bind(_pathPrefix + "buf_" + _name);
     }
     catch (const zmq::error_t& error)
     {
@@ -252,8 +218,8 @@ ChannelInput_ZMQ::ChannelInput_ZMQ(const RootObject* root, const std::string& na
     }
 
     _continueListening = true;
-    _bufferInThread = std::thread([&]() { handleInputBuffers(); });
     _messageInThread = std::thread([&]() { handleInputMessages(); });
+    _bufferInThread = std::thread([&]() { handleInputBuffers(); });
 
     _ready = true;
 }
@@ -268,6 +234,64 @@ ChannelInput_ZMQ::~ChannelInput_ZMQ()
 
     if (_bufferInThread.joinable())
         _bufferInThread.join();
+}
+
+/*************/
+[[nodiscard]] bool ChannelInput_ZMQ::connectTo(const std::string& target)
+{
+    if (!_ready)
+        return false;
+
+    if (_targets.find(target) != _targets.end())
+        return false;
+
+    _targets.insert(target);
+
+    try
+    {
+        _socketMessageIn->connect(_pathPrefix + "msg_" + target);
+        _socketBufferIn->connect(_pathPrefix + "buf_" + target);
+
+        // We subscribe to all incoming messages
+        _socketMessageIn->set(zmq::sockopt::subscribe, "");
+        _socketBufferIn->set(zmq::sockopt::subscribe, "");
+    }
+    catch (const zmq::error_t& error)
+    {
+        if (errno != ETERM)
+        {
+            Log::get() << Log::WARNING << "ChannelOutput_ZMQ::" << __FUNCTION__ << " - Exception: " << error.what() << Log::endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/*************/
+[[nodiscard]] bool ChannelInput_ZMQ::disconnectFrom(const std::string& target)
+{
+    if (!_ready)
+        return false;
+
+    if (_targets.erase(target) == 0)
+        return false;
+
+    try
+    {
+        _socketMessageIn->disconnect((_pathPrefix + "msg_" + target));
+        _socketBufferIn->disconnect((_pathPrefix + "buf_" + target));
+    }
+    catch (const zmq::error_t& error)
+    {
+        if (errno != ETERM)
+        {
+            Log::get() << Log::WARNING << "ChannelOutput_ZMQ::" << __FUNCTION__ << " - Exception while disconnecting from " << target << ": " << error.what() << Log::endl;
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /*************/

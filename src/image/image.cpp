@@ -294,7 +294,7 @@ bool Image::write(const std::string& filename)
 }
 
 /*************/
-RgbValue Image::readPixel(uint x, uint y) const
+RgbValue Image::readPixel(uint32_t x, uint32_t y) const
 {
     const auto* imageBytes = static_cast<const uint8_t*>(data());
     const auto spec = getSpec();

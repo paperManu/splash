@@ -148,8 +148,6 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      */
     virtual void runTasks();
 
-    virtual const gfx::Renderer::GlMsgCallbackData* getGlMsgCallbackDataPtr();
-
   protected:
     std::string _name{""};                               //!< Object name
     DenseMap<std::string, Attribute> _attribFunctions{}; //!< Map of all attributes
@@ -162,8 +160,6 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
 
     std::list<std::function<void()>> _taskQueue{};
     std::recursive_mutex _taskMutex;
-
-    gfx::Renderer::GlMsgCallbackData _glMsgCallbackData;
 
     struct PeriodicTask
     {

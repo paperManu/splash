@@ -17,8 +17,10 @@
 
 #include "./network/channel_shmdata.h"
 
+#include <atomic>
 #include <chrono>
 #include <iostream>
+#include <mutex>
 #include <thread>
 #include <vector>
 
@@ -36,6 +38,7 @@ TEST_CASE("Test sending a message and a buffer through a shmdata channel")
 
     bool isMsgReceived = false;
     bool isBufferReceived = false;
+    std::mutex receivedMutex;
 
     std::vector<uint8_t> receivedMsg;
     SerializedObject receivedObj;
@@ -45,10 +48,12 @@ TEST_CASE("Test sending a message and a buffer through a shmdata channel")
         &root,
         "input",
         [&](const std::vector<uint8_t> msg) {
+            std::unique_lock<std::mutex> lock(receivedMutex);
             isMsgReceived = true;
             receivedMsg = msg;
         },
         [&](SerializedObject&& obj) {
+            std::unique_lock<std::mutex> lock(receivedMutex);
             isBufferReceived = true;
             receivedObj = std::move(obj);
         });
@@ -58,15 +63,21 @@ TEST_CASE("Test sending a message and a buffer through a shmdata channel")
     std::vector<uint8_t> msg = {1, 2, 3, 4};
     CHECK(channelOutput.sendMessage(msg));
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    CHECK(isMsgReceived);
-    CHECK_EQ(msg, receivedMsg);
+    {
+        std::unique_lock<std::mutex> lock(receivedMutex);
+        CHECK(isMsgReceived);
+        CHECK_EQ(msg, receivedMsg);
+    }
 
     auto array = ResizableArray<uint8_t>({1, 2, 3});
     auto object = SerializedObject(std::move(array));
     CHECK(channelOutput.sendBuffer(std::move(object)));
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    CHECK(isBufferReceived);
-    CHECK_EQ(receivedObj.data()[0], 1);
-    CHECK_EQ(receivedObj.data()[1], 2);
-    CHECK_EQ(receivedObj.data()[2], 3);
+    {
+        std::unique_lock<std::mutex> lock(receivedMutex);
+        CHECK(isBufferReceived);
+        CHECK_EQ(receivedObj.data()[0], 1);
+        CHECK_EQ(receivedObj.data()[1], 2);
+        CHECK_EQ(receivedObj.data()[2], 3);
+    }
 }

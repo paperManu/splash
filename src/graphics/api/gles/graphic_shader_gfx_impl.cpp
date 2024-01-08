@@ -1,4 +1,4 @@
-#include "./graphics/api/gles/graphic_shader.h"
+#include "./graphics/api/gles/graphic_shader_gfx_impl.h"
 
 #include "./graphics/api/gles/gl_utils.h"
 

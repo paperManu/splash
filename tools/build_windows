@@ -1,0 +1,9 @@
+#!/bin/bash
+
+export PATH="/c/msys64/$MSYSTEM/bin:$PATH"
+
+cmake -DUSE_SYSTEM_LIBS=ON -B build
+cmake --build build
+cmake --build build --target check
+cmake --build build --target package
+mv build/splash-*-win64.exe ./

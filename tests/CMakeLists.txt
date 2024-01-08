@@ -36,7 +36,8 @@ include_directories(../external/hap/source)
 include_directories(../external/imgui)
 include_directories(../external/libltc/src)
 include_directories(../external/stb)
-include_directories(../external/syphon/build/Release/Syphon.framework/Headers)
+include_directories(../external/stduuid/include)
+include_directories(../external/stduuid)
 
 if (APPLE)
     include_directories(../external/glad/compatibility/include)
@@ -140,13 +141,11 @@ endif()
 
 if (NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
     add_custom_command(OUTPUT update_assets
-        COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/data
-        COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/data/*.json ${CMAKE_CURRENT_BINARY_DIR}/data/
-        COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/data/*.obj ${CMAKE_CURRENT_BINARY_DIR}/data/
-        COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/../data/share/splash/color_map.png ${CMAKE_CURRENT_BINARY_DIR}/data/
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/data ${CMAKE_CURRENT_BINARY_DIR}/data
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../data/share/splash/color_map.png ${CMAKE_CURRENT_BINARY_DIR}/data/
 
-        COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/unit_tests
-        COMMAND cp -R ${CMAKE_CURRENT_SOURCE_DIR}/unit_tests/assets ${CMAKE_CURRENT_BINARY_DIR}/unit_tests/
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/unit_tests
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/unit_tests/assets ${CMAKE_CURRENT_BINARY_DIR}/unit_tests/assets
         )
     add_custom_target(assets DEPENDS update_assets)
     add_dependencies(unitTests assets)

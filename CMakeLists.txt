@@ -18,9 +18,19 @@
 #
 
 cmake_minimum_required(VERSION 3.12)
+
+# Force the installation prefix, as under certain circumstances on Windows it defaults
+# to "C:\Program Files (x86)", which is not correct and conflicts the installation path
+# of NSIS.
+# Note that this has to be set BEFORE the call to project(...), otherwise it will have
+# no effect
+if (WIN32)
+    set(CMAKE_INSTALL_PREFIX "C:\\Program Files\\splash" CACHE PATH "Default directory for Splash installation on Windows")
+endif()
+
 project(
     splash
-    VERSION 0.10.2
+    VERSION 0.10.4
     LANGUAGES C CXX
 )
 
@@ -53,6 +63,8 @@ set(WITH_LTO OFF CACHE BOOL "Activate link time optimization (LTO)")
 set(WITH_SANITIZE OFF CACHE BOOL "Enable sanitize compile options")
 
 include(CheckIPOSupported)
+include(set_icon)
+
 check_ipo_supported(RESULT IPO_SUPPORTED)
 if (NOT IPO_SUPPORTED)
     set(WITH_LTO FALSE)
@@ -85,7 +97,6 @@ if (BUILD_CODE)
     pkg_search_module(GSL REQUIRED gsl)
     pkg_search_module(ZMQ REQUIRED libzmq)
     pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswscale)
-    pkg_check_modules(UUID REQUIRED uuid)
 
     # Optional dependencies
     find_package (Python3 COMPONENTS Interpreter Development)
@@ -107,8 +118,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLM_FORCE_RADIANS")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDATADIR=\\\"${CMAKE_INSTALL_PREFIX}/share/splash/\\\"")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSPLASHPREFIX=\\\"${CMAKE_INSTALL_PREFIX}\\\"")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDATADIR=\"\\\"${CMAKE_INSTALL_PREFIX}/share/splash/\\\"\"")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSPLASHPREFIX=\"\\\"${CMAKE_INSTALL_PREFIX}\\\"\"")
 
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
@@ -129,7 +140,11 @@ if (FFMPEG_libavformat_VERSION LESS 57)
     set(FFMPEG_FOUND 0)
 endif()
 
-set(HAVE_LINUX 1)
+if (UNIX)
+    set(HAVE_LINUX 1)
+elseif (WIN32)
+    set(HAVE_WINDOWS 1)
+endif()
 
 if (DEBUG_OPENGL)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUGGL")
@@ -194,18 +209,34 @@ set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
 set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
-
-set(CPACK_GENERATOR "DEB")
-set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
-set(CPACK_DEBIAN_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-mapper")
-set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}")
-set(CPACK_DEBIAN_PROJECT_HOMEPAGE "https://splashmapper.xyz")
-set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
-set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_VENDOR} <emmanueldurand@protonmail.com>")
-set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers is planned.")
-set(CPACK_DEBIAN_PACKAGE_SECTION "video")
-set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/License.md")
+  
+if (UNIX)
+  set(CPACK_GENERATOR "DEB")
+  set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+  set(CPACK_DEBIAN_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-mapper")
+  set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}")
+  set(CPACK_DEBIAN_PROJECT_HOMEPAGE "https://splashmapper.xyz")
+  set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+  set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+  set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_VENDOR} <emmanueldurand@protonmail.com>")
+  set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers is planned.")
+  set(CPACK_DEBIAN_PACKAGE_SECTION "video")
+  set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+elseif (WIN32)
+  set(CPACK_GENERATOR "NSIS")
+  set(CPACK_PACKAGE_EXECUTABLES "splash" "Splash")
+  set(CPACK_PACKAGE_INSTALL_DIRECTORY "${CMAKE_PROJECT_NAME}")
+  set(CPACK_NSIS_DISPLAY_NAME "splash")
+  set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/data/share/icons/hicolor/128x128/apps/splash.ico")
+  set(CPACK_NSIS_MUI_UNIICON "${CMAKE_SOURCE_DIR}/data/share/icons/hicolor/128x128/apps/splash.ico")
+  set(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\${CMAKE_PROJECT_NAME}.exe")
+  set(CPACK_NSIS_HELP_LINK "https://splashmapper.xyz/en/contents.html")
+  set(CPACK_NSIS_URL_INFO_ABOUT "https://splashmapper.xyz")
+  set(CPACK_NSIS_MODIFY_PATH OFF)
+  set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
+  set(CPACK_PACKAGING_INSTALL_PREFIX "/")
+endif()
 
 include(CPack)
 

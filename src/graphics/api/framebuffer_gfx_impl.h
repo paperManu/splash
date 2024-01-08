@@ -18,7 +18,7 @@
  */
 
 /*
- * @framebuffer.h
+ * @framebuffer_gfx_impl.h
  * The framebuffer object base class
  */
 
@@ -37,24 +37,24 @@ namespace gfx
 {
 
 /*************/
-class Framebuffer
+class FramebufferGfxImpl
 {
   public:
     /**
      * Constructor
      */
-    Framebuffer() = default;
+    FramebufferGfxImpl() = default;
 
     /**
      * Destructor
      */
-    virtual ~Framebuffer() = default;
+    virtual ~FramebufferGfxImpl() = default;
 
     /**
      * No copy constructor
      */
-    Framebuffer(const Framebuffer&) = delete;
-    Framebuffer& operator=(const Framebuffer&) = delete;
+    FramebufferGfxImpl(const FramebufferGfxImpl&) = delete;
+    FramebufferGfxImpl& operator=(const FramebufferGfxImpl&) = delete;
 
     /**
      * Bind the FBO to draw into it
@@ -66,7 +66,7 @@ class Framebuffer
      * Blit the current FBO into the other one
      * \param dst Destination FBO
      */
-    virtual void blit(const Framebuffer* dst) = 0;
+    virtual void blit(const FramebufferGfxImpl* dst) = 0;
 
     /**
      * Get bit depth

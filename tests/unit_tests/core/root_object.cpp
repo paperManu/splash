@@ -61,14 +61,17 @@ TEST_CASE("Testing RootObject construction")
 {
     auto root = RootObjectTests::RootObjectMock();
     root.step();
-    auto tree = root.getTree();
 
-    CHECK(tree->hasBranchAt("/world"));
-    CHECK(tree->hasBranchAt("/world/attributes"));
-    CHECK(tree->hasBranchAt("/world/commands"));
-    CHECK(tree->hasBranchAt("/world/durations"));
-    CHECK(tree->hasBranchAt("/world/logs"));
-    CHECK(tree->hasBranchAt("/world/objects"));
+    {
+        auto tree = root.getTree();
+
+        CHECK(tree->hasBranchAt("/world"));
+        CHECK(tree->hasBranchAt("/world/attributes"));
+        CHECK(tree->hasBranchAt("/world/commands"));
+        CHECK(tree->hasBranchAt("/world/durations"));
+        CHECK(tree->hasBranchAt("/world/logs"));
+        CHECK(tree->hasBranchAt("/world/objects"));
+    }
 
     auto attributeList = root.getAttributesList();
     CHECK(std::find(attributeList.cbegin(), attributeList.cend(), "answerMessage") != attributeList.end());

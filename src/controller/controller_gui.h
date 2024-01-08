@@ -31,17 +31,18 @@
 #include <atomic>
 #include <deque>
 #include <functional>
-#include <imgui.h>
 #include <memory>
 
-#include "./core/constants.h"
+#include <imgui.h>
 
+#include "./core/constants.h"
 #if HAVE_GPHOTO and HAVE_OPENCV
 #include "./controller/colorcalibrator.h"
 #endif
 #include "./controller/widget/widget.h"
 #include "./core/attribute.h"
-#include "./graphics/api/framebuffer.h"
+#include "./graphics/api/framebuffer_gfx_impl.h"
+#include "./graphics/api/gui_gfx_impl.h"
 #include "./graphics/camera.h"
 #include "./userinput/userinput.h"
 
@@ -71,10 +72,10 @@ class Gui final : public ControllerObject
   public:
     /**
      * Constructor
-     * \param w Window to display the gui
-     * \param s Root scene
+     * \param renderingContext Window to display the gui
+     * \param scene Root scene
      */
-    Gui(std::shared_ptr<GlWindow> w, RootObject* s);
+    Gui(RenderingContext* renderingContext, RootObject* scene);
 
     /**
      * Destructor
@@ -218,10 +219,11 @@ class Gui final : public ControllerObject
     const float _backgroundAlpha{0.97f};
 
     bool _isInitialized{false};
-    std::shared_ptr<GlWindow> _glWindow;
+    RenderingContext* _renderingContext{nullptr};
     Window* _window{nullptr};
 
-    std::unique_ptr<gfx::Framebuffer> _fbo{nullptr};
+    std::unique_ptr<gfx::GuiGfxImpl> _guiGfxImpl{nullptr};
+    std::unique_ptr<gfx::FramebufferGfxImpl> _fbo{nullptr};
     float _width{512}, _height{512};
     bool _resized{false};
     int _initialGuiPos[2]{16, 16}; //!< Gui position at startup
@@ -229,17 +231,6 @@ class Gui final : public ControllerObject
     // GUI specific camera
     std::shared_ptr<Camera> _guiCamera{nullptr};
     std::shared_ptr<Texture_Image> _splashLogo{nullptr};
-
-    // ImGUI related attributes
-    static GLuint _imFontTextureId;
-    static GLuint _imGuiShaderHandle, _imGuiVertHandle, _imGuiFragHandle;
-    static GLint _imGuiTextureLocation;
-    static GLint _imGuiProjMatrixLocation;
-    static GLint _imGuiPositionLocation;
-    static GLint _imGuiUVLocation;
-    static GLint _imGuiColorLocation;
-    static GLuint _imGuiVboHandle, _imGuiElementsHandle, _imGuiVaoHandle;
-    static size_t _imGuiVboMaxSize;
 
     // ImGUI objects
     bool _showFileSelector{false};

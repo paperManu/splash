@@ -4,6 +4,9 @@
 /* Considering a Linux system */
 #cmakedefine01 HAVE_LINUX
 
+/* Considering a Windows system */
+#cmakedefine01 HAVE_WINDOWS
+
 /* Defined to 1 if libgphoto2 is detected */
 #cmakedefine01 HAVE_GPHOTO
 

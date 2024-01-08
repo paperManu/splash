@@ -178,10 +178,10 @@ void Filter::updateSizeWrtRatio()
 void Filter::render()
 {
 #ifdef DEBUGGL
-    gfx::Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
+    _renderer->setRendererMsgCallbackData(getRendererMsgCallbackDataPtr());
     OnScopeExit
     {
-        gfx::Renderer::setGlMsgCallbackData(_root->getGlMsgCallbackDataPtr());
+        _renderer->setRendererMsgCallbackData(_scene->getRendererMsgCallbackDataPtr());
     };
 #endif
 
@@ -242,7 +242,7 @@ void Filter::render()
     _spec.timestamp = timestamp;
 
     _fbo->bindDraw();
-    _gfxImpl->setupViewport(_spec.width, _spec.height);
+    _gfxImpl->setupViewport(_spec.width, _spec.height, true);
 
     _screen->activate();
     updateUniforms();

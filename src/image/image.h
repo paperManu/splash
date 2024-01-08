@@ -166,7 +166,7 @@ class Image : public BufferObject
      * Currently this suppors only RGBA 32bpp images
      * \return The RGB value at (x, y)
      */
-    RgbValue readPixel(uint x, uint y) const;
+    RgbValue readPixel(uint32_t x, uint32_t y) const;
 
   protected:
     std::unique_ptr<ImageBuffer> _image{nullptr};

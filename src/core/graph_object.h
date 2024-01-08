@@ -259,7 +259,11 @@ class GraphObject : public BaseObject
      */
     virtual void render() {}
 
-    virtual const gfx::Renderer::GlMsgCallbackData* getGlMsgCallbackDataPtr() override;
+    /**
+     * Get a pointer to the rendering callback data, to be used by the rendering API error callback
+     * \return Return a pointer to the rendering callback data
+     */
+    virtual const gfx::Renderer::RendererMsgCallbackData* getRendererMsgCallbackDataPtr();
 
   protected:
     Category _category{Category::MISC};   //!< Object category, updated by the factory
@@ -269,6 +273,8 @@ class GraphObject : public BaseObject
     std::vector<GraphObject*> _parents{}; //!< Objects parents
     DenseSet<std::string> _lockedAttributes;
     std::unordered_map<std::string, int> _treeCallbackIds{};
+
+    gfx::Renderer::RendererMsgCallbackData _rendererMsgCallbackData;
 
     Priority _renderingPriority{Priority::NO_RENDER}; //!< Rendering priority, if negative the object won't be rendered
     bool _savable{true};                              //!< True if the object should be saved

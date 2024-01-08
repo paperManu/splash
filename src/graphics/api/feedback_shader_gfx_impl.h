@@ -18,7 +18,7 @@
  */
 
 /*
- * @feedback_shader.h
+ * @feedback_shader_gfx_impl.h
  * Base class for feedback shader, implementation specific rendering API
  */
 

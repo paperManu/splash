@@ -2,6 +2,7 @@
 
 #include "./core/root_object.h"
 #include "./core/scene.h"
+#include "./graphics/api/gles/renderer.h"
 #include "./graphics/texture_image.h"
 
 namespace Splash::gfx::gles
@@ -25,12 +26,12 @@ void WindowGfxImpl::setupFBOs(Scene* scene, uint32_t width, uint32_t height)
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
 
-    _depthTexture = scene->getRenderer()->createTexture_Image(scene);
+    _depthTexture = std::make_shared<Texture_Image>(scene);
     assert(_depthTexture != nullptr);
     _depthTexture->reset(width, height, "D");
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
 
-    _colorTexture = scene->getRenderer()->createTexture_Image(scene);
+    _colorTexture = std::make_shared<Texture_Image>(scene);
     assert(_colorTexture != nullptr);
     _colorTexture->reset(width, height, "RGBA");
     _colorTexture->setAttribute("filtering", {false});
@@ -57,7 +58,7 @@ void WindowGfxImpl::clearScreen(glm::vec4 color, bool clearDepth)
 {
     glClearColor(color[0], color[1], color[2], color[3]);
 
-    uint flags = GL_COLOR_BUFFER_BIT;
+    uint32_t flags = GL_COLOR_BUFFER_BIT;
 
     if (clearDepth)
         flags |= GL_DEPTH_BUFFER_BIT;
@@ -104,18 +105,10 @@ void WindowGfxImpl::endRender()
 }
 
 /*************/
-void WindowGfxImpl::setDebugData(const void* userData)
+void WindowGfxImpl::init(gfx::Renderer* renderer)
 {
-    glDebugMessageCallback(gfx::Renderer::glMsgCallback, userData);
-}
-
-/*************/
-void WindowGfxImpl::init(Scene* scene)
-{
-    auto w = scene->getNewSharedWindow();
-    if (w.get() == nullptr)
-        return;
-    _window = w;
+    assert(renderer != nullptr);
+    _renderingContext = renderer->createSharedContext();
 }
 
 /*************/
@@ -127,12 +120,12 @@ void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureU
     // the projector view(like the default config), the FPS will be half of the refresh rate (if you can hit it). Each window will decrease FPS further. This is due to either a bug
     // caused by OpenGL ES's limitations or a bug in the driver.
 
-    _window->setAsCurrentContext();
+    _renderingContext->setAsCurrentContext();
     glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
 
     // If this is the first window to be swapped, or NVSwapGroups are active,
     // this window should be synchronized to the vertical sync. So we will draw to back buffer
-    const bool isWindowSynchronized = Scene::getHasNVSwapGroup() or windowIndex == 0;
+    const bool isWindowSynchronized = gfx::Renderer::getHasNVSwapGroup() or windowIndex == 0;
 
     // If the window is not synchronized, draw directly to front buffer
     if (!isWindowSynchronized)
@@ -141,7 +134,7 @@ void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureU
         // we draw to the back buffer, then immediately present it
         GLenum buffers[] = {GL_BACK};
         glDrawBuffers(1, buffers);
-        glfwSwapBuffers(_window->get());
+        _renderingContext->swapBuffers();
     }
 
     if (srgb)
@@ -180,7 +173,7 @@ void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureU
     {
         // If this window is synchronized, so we wait for the vsync and swap
         // front and back buffers
-        glfwSwapBuffers(_window->get());
+        _renderingContext->swapBuffers();
     }
     else
     {
@@ -190,7 +183,7 @@ void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureU
         glDrawBuffers(1, buffers);
     }
 
-    _window->releaseContext();
+    _renderingContext->releaseContext();
 }
 
 } // namespace Splash::gfx::gles

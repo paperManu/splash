@@ -27,8 +27,11 @@
 
 #include "./config.h"
 
-#include <execinfo.h>
 #include <iostream>
+
+#if HAVE_LINUX
+#include <execinfo.h>
+#endif
 
 // clang-format off
 #include "./glad/glad.h"
@@ -60,6 +63,7 @@ static const uint32_t CONNECTION_TIMEOUT = 5;
 
 #define PRINT_FUNCTION_LINE std::cout << "------> " << __PRETTY_FUNCTION__ << "::" << __LINE__ << std::endl;
 
+#if HAVE_LINUX
 #define PRINT_CALL_STACK                                                                                                                                                           \
     {                                                                                                                                                                              \
         int j, nptrs;                                                                                                                                                              \
@@ -74,5 +78,6 @@ static const uint32_t CONNECTION_TIMEOUT = 5;
                                                                                                                                                                                    \
         free(strings);                                                                                                                                                             \
     }
+#endif
 
 #endif // SPLASH_CONSTANTS_H

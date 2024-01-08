@@ -35,10 +35,10 @@ bool Image_List::read(const std::string& dirname)
         if (!path.has_extension())
             return false;
 
-        std::string extension = path.extension();
+        auto extension = path.extension().string();
         Utils::toLower(extension);
         if (extension == ".jpg" || extension == ".png")
-            _filenameSeq.push_back(std::filesystem::absolute(path));
+            _filenameSeq.push_back(std::filesystem::absolute(path).string());
     }
 
     // sort in descending order
