@@ -256,6 +256,7 @@ staging:fedora:gcc-amd64-system-bundled-libs:
         yasm portaudio-devel python3-numpy opencv-devel jsoncpp-devel libuuid-devel libX11-devel
         libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel mesa-libGL-devel ccache
         libavcodec-free-devel libavformat-free-devel libavutil-free-devel libswscale-free-devel
+        libasan libubsan
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
@@ -266,10 +267,8 @@ staging:fedora:gcc-amd64-system-bundled-libs:
     - cmake -DCMAKE_BUILD_TYPE=Debug -DPROFILE=ON -DWITH_SANITIZE=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make check
-    - make package
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH == 'fedora'
-    - if: $CI_COMMIT_BRANCH == 'staging'
+    - if: $CI_COMMIT_BRANCH == 'staging' || $CI_COMMIT_BRANCH == 'fedora'
 
 staging:archlinux:gcc-amd64-bundled-libs:
   stage: staging
@@ -291,10 +290,8 @@ staging:archlinux:gcc-amd64-bundled-libs:
     - cmake -DCMAKE_BUILD_TYPE=Debug -DPROFILE=ON -DWITH_SANITIZE=ON -DCMAKE_INSTALL_PREFIX=/usr ..
     - make -j$(nproc)
     - make check
-    - make package
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH == 'archlinux'
-    - if: $CI_COMMIT_BRANCH == 'staging'
+    - if: $CI_COMMIT_BRANCH == 'staging' || $CI_COMMIT_BRANCH == 'archlinux'
 
 staging:windows:
   # Note: this job works on Windows with MSYS2 / MINGW64 already installed
