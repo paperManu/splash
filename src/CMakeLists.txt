@@ -376,7 +376,7 @@ target_link_libraries(splash-${API_VERSION} ${CALIMIRO_LIBRARIES})
 target_link_libraries(splash splash-${API_VERSION})
 
 if(WIN32)
-  set_icon(splash "data/share/icons/hicolor/128x128/apps/splash.ico")
+  set_icon(splash "data/share/icons/splash.ico")
 endif()
 
 #
