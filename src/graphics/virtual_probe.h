@@ -32,7 +32,7 @@
 #include "./core/constants.h"
 
 #include "./core/attribute.h"
-#include "./graphics/api/framebuffer.h"
+#include "./graphics/api/framebuffer_gfx_impl.h"
 #include "./graphics/geometry.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
@@ -142,8 +142,8 @@ class VirtualProbe final : public Texture
     };
 
     std::unique_ptr<gfx::FilterGfxImpl> _gfxImpl;
-    std::unique_ptr<gfx::Framebuffer> _fbo{nullptr};
-    std::unique_ptr<gfx::Framebuffer> _outFbo{nullptr};
+    std::unique_ptr<gfx::FramebufferGfxImpl> _fbo{nullptr};
+    std::unique_ptr<gfx::FramebufferGfxImpl> _outFbo{nullptr};
     std::vector<std::weak_ptr<Object>> _objects{};
     std::unique_ptr<Object> _screen{nullptr};
 

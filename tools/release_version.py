@@ -203,7 +203,7 @@ if __name__ == "__main__":
     assert(sys.version_info[0] == 3 and sys.version_info[1] > 6), f"This script must be ran with at least Python 3.7, detected Python {sys.version_info[0]}.{sys.version_info[1]}"
 
     choice = input(f"Make sure that the CI for the staging {staging_branch} passed successfully before release\n"
-                   "Type 'yes if it did, anything else if it did not: ")
+                   "Type 'yes' if it did, anything else if it did not: ")
 
     if choice != "yes":
         print(f"Exiting following user check of the {staging_branch}.")

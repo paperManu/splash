@@ -19,9 +19,15 @@
 
 #
 # Enable all warnings as errors
+# This is disable for anything but Linux, as it messes up some targets
+# for other platforms. More particularly the icon setting on Windows.
+# To solve this, the generation of the splash binary should be done in
+# another directory...
 #
-add_definitions(-Wall -Wextra -Werror)
-add_definitions(-Wno-unknown-pragmas)
+if(UNIX)
+    add_definitions(-Wall -Wextra -Werror)
+    add_definitions(-Wno-unknown-pragmas)
+endif()
 
 if (WITH_SANITIZE)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -48,7 +54,7 @@ set_source_files_properties(
 
 set_source_files_properties(
     ../external/tracy/public/TracyClient.cpp
-    PROPERTIES COMPILE_FLAGS "-Wno-error -Wno-all -Wno-extra -Wno-unused-parameter"
+    PROPERTIES COMPILE_FLAGS "-Wno-error -Wno-all -Wno-extra -Wno-unused-parameter -Wno-unused-result"
 )
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -90,6 +96,8 @@ include_directories(../external/imgui)
 include_directories(../external/libltc/src)
 include_directories(../external/stb)
 include_directories(../external/tracy/public)
+include_directories(../external/stduuid/include)
+include_directories(../external/stduuid)
 
 include_directories(${GLFW_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIRS})
@@ -175,6 +183,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/geometry.cpp
     graphics/object.cpp
     graphics/object_library.cpp
+    graphics/rendering_context.cpp
     graphics/shader.cpp
     graphics/texture.cpp
     graphics/texture_image.cpp
@@ -197,17 +206,20 @@ target_sources(splash-${API_VERSION} PRIVATE
     userinput/userinput_mouse.cpp
     utils/cgutils.cpp
     utils/jsonutils.cpp
-    utils/subprocess.cpp
+    utils/uuid.cpp
 
     # OpenGL ES API
     graphics/api/renderer.cpp
-    graphics/api/gles/framebuffer.cpp
+    graphics/api/gles/framebuffer_gfx_impl.cpp
     graphics/api/gles/geometry_gfx_impl.cpp
     graphics/api/gles/gl_utils.cpp
     graphics/api/gles/gpu_buffer.cpp
-    graphics/api/gles/compute_shader.cpp
-    graphics/api/gles/feedback_shader.cpp
-    graphics/api/gles/graphic_shader.cpp
+    graphics/api/gles/compute_shader_gfx_impl.cpp
+    graphics/api/gles/feedback_shader_gfx_impl.cpp
+    graphics/api/gles/graphic_shader_gfx_impl.cpp
+    graphics/api/gles/gui_gfx_impl.cpp
+    graphics/api/gles/pbo_gfx_impl.cpp
+    graphics/api/gles/renderer.cpp
     graphics/api/gles/shader_gfx_impl.cpp
     graphics/api/gles/shader_stage.cpp
     graphics/api/gles/shader_program.cpp
@@ -215,13 +227,16 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/api/gles/window_gfx_impl.cpp
 
     # OpenGL API
-    graphics/api/opengl/framebuffer.cpp
+    graphics/api/opengl/framebuffer_gfx_impl.cpp
     graphics/api/opengl/geometry_gfx_impl.cpp
     graphics/api/opengl/gl_utils.cpp
     graphics/api/opengl/gpu_buffer.cpp
-    graphics/api/opengl/compute_shader.cpp
-    graphics/api/opengl/feedback_shader.cpp
-    graphics/api/opengl/graphic_shader.cpp
+    graphics/api/opengl/compute_shader_gfx_impl.cpp
+    graphics/api/opengl/feedback_shader_gfx_impl.cpp
+    graphics/api/opengl/graphic_shader_gfx_impl.cpp
+    graphics/api/opengl/gui_gfx_impl.cpp
+    graphics/api/opengl/pbo_gfx_impl.cpp
+    graphics/api/opengl/renderer.cpp
     graphics/api/opengl/shader_gfx_impl.cpp
     graphics/api/opengl/shader_stage.cpp
     graphics/api/opengl/shader_program.cpp
@@ -229,6 +244,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     graphics/api/opengl/window_gfx_impl.cpp
 
     # External sources
+    ../external/glad/core/src/glad_core.c
     ../external/imgui/imgui_demo.cpp
     ../external/imgui/imgui_draw.cpp
     ../external/imgui/imgui_tables.cpp
@@ -238,10 +254,13 @@ target_sources(splash-${API_VERSION} PRIVATE
     ../external/tracy/public/TracyClient.cpp
 )
 
+if (UNIX)
     target_sources(splash-${API_VERSION} PRIVATE
-        ../external/glad/core/src/glad_core.c
+    	utils/subprocess.cpp
         image/image_v4l2.cpp
     )
+
+endif()
 
 if (GPHOTO_FOUND AND OPENCV_FOUND)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -327,12 +346,17 @@ endif()
 # Distributed third parties
 target_link_libraries(splash-${API_VERSION} snappy)
 target_link_libraries(splash-${API_VERSION} glfw)
-target_link_libraries(splash-${API_VERSION} dl) # Needed for Tracy
+
+if (UNIX)
+    target_link_libraries(splash-${API_VERSION} dl) # Needed for Tracy
+endif()
+
 if (USE_SYSTEM_LIBS)
     target_link_libraries(splash-${API_VERSION} zmq)
 else()
     target_link_libraries(splash-${API_VERSION} zmq.a)
 endif()
+
 # System libs
 target_link_libraries(splash-${API_VERSION} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(splash-${API_VERSION} ${JSONCPP_LIBRARIES})
@@ -351,10 +375,29 @@ target_link_libraries(splash-${API_VERSION} ${CALIMIRO_LIBRARIES})
 #
 target_link_libraries(splash splash-${API_VERSION})
 
+if(WIN32)
+  set_icon(splash "data/share/icons/hicolor/128x128/apps/splash.ico")
+endif()
+
 #
 # Installation
 #
 install(TARGETS splash DESTINATION "bin/")
+
+if (WIN32)
+  get_filename_component(MINGW_PATH ${CMAKE_CXX_COMPILER} PATH)
+  install(TARGETS splash
+    RUNTIME_DEPENDENCIES
+    PRE_EXCLUDE_REGEXES
+      "api-ms-"
+    POST_EXCLUDE_REGEXES
+      ".*system32/.*\\.dll"
+      ".*/msys64/mingw64/bin.*"
+    DIRECTORIES
+      ${MINGW_PATH}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  )
+endif()
 
 install(FILES
     shaders/geometric_calibration_filter.frag

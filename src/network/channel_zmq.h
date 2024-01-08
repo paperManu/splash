@@ -25,6 +25,7 @@
 #ifndef SPLASH_CHANNEL_ZMQ_H
 #define SPLASH_CHANNEL_ZMQ_H
 
+#include <atomic>
 #include <condition_variable>
 #include <deque>
 #include <memory>
@@ -66,25 +67,25 @@ class ChannelOutput_ZMQ final : public ChannelOutput
     ChannelOutput_ZMQ& operator=(ChannelOutput_ZMQ&&) = delete;
 
     /**
-     * Connect to a target
+     * Connect to the given target
      * \param target Target name
      * \return Return true if connection was successful
      */
-    [[nodiscard]] bool connectTo(const std::string& target) final;
+    [[nodiscard]] bool connectTo(const std::string&) final { return false; }
 
     /**
-     * Disconnect from a target
-     * \param target Target name
+     * Disconnect from the given target
+     * \param target name
      * \return Return true if disconnection was successful, false otherwise or if no connection existed
      */
-    [[nodiscard]] bool disconnectFrom(const std::string& target) final;
+    [[nodiscard]] bool disconnectFrom(const std::string&) final { return false; }
 
     /**
      * Get the connect direction for this channel type
      * ZMQ channels need the output to connect to the input
      * \return Return ConnectDirection::OutToIn
      */
-    ConnectDirection getConnectDirection() const final { return ConnectDirection::OutToIn; }
+    ConnectDirection getConnectDirection() const final { return ConnectDirection::InToOut; }
 
     /**
      * Send a message
@@ -119,11 +120,9 @@ class ChannelOutput_ZMQ final : public ChannelOutput
 
     std::string _pathPrefix;
 
-    zmq::context_t _context{1};
+    zmq::context_t _context;
     std::unique_ptr<zmq::socket_t> _socketMessageOut{nullptr};
     std::unique_ptr<zmq::socket_t> _socketBufferOut{nullptr};
-
-    std::set<std::string> _targets;
 
     static void freeSerializedBuffer(void* data, void* hint);
 };
@@ -155,29 +154,31 @@ class ChannelInput_ZMQ final : public ChannelInput
     ChannelInput_ZMQ& operator=(ChannelInput_ZMQ&&) = delete;
 
     /**
-     * Connect to the given target
+     * Connect to a target
      * \param target Target name
      * \return Return true if connection was successful
      */
-    [[nodiscard]] bool connectTo(const std::string&) final { return true; }
+    [[nodiscard]] bool connectTo(const std::string& target) final;
 
     /**
-     * Disconnect from the given target
-     * \param target name
+     * Disconnect from a target
+     * \param target Target name
      * \return Return true if disconnection was successful, false otherwise or if no connection existed
      */
-    [[nodiscard]] bool disconnectFrom(const std::string&) final { return true; }
+    [[nodiscard]] bool disconnectFrom(const std::string& target) final;
 
   private:
-    bool _continueListening;
+    std::atomic_bool _continueListening;
     std::string _pathPrefix;
 
-    zmq::context_t _context{1};
+    zmq::context_t _context;
     std::unique_ptr<zmq::socket_t> _socketMessageIn{nullptr};
     std::unique_ptr<zmq::socket_t> _socketBufferIn{nullptr};
 
     std::thread _messageInThread;
     std::thread _bufferInThread;
+
+    std::set<std::string> _targets;
 
     void handleInputMessages();
     void handleInputBuffers();

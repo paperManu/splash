@@ -55,7 +55,7 @@ class Texture_ImageGfxImpl
      * Get the id of the texture (API dependent)
      * \return Return the texture id
      */
-    virtual uint getTexId() const = 0;
+    virtual uint32_t getTexId() const = 0;
 
     /**
      * Enable / disable clamp to edge

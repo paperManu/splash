@@ -33,6 +33,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "./config.h"
 #include "./core/base_object.h"
 #include "./core/factory.h"
 #include "./core/graph_object.h"
@@ -70,7 +71,7 @@ class RootObject : public BaseObject
         std::string executablePath{""};
         std::string socketPrefix{""};
         std::string childSceneName{"scene"};
-        std::string configurationFile{std::string(DATADIR) + "splash.json"};
+        std::string configurationFile = std::string(DATADIR).append("splash.json");
         std::optional<std::string> pythonScriptPath{};
         Values pythonArgs{};
 #if HAVE_LINUX

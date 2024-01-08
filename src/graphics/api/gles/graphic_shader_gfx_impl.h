@@ -18,12 +18,12 @@
  */
 
 /*
- * @graphic_shader.h
- * Class for graphic shader, implementated for OpenGL
+ * @graphic_shader_gfx_impl.h
+ * Class for graphic shader, implementated for OpenGL ES
  */
 
-#ifndef SPLASH_OPENGL_GRAPHIC_SHADER_GFX_IMPL_H
-#define SPLASH_OPENGL_GRAPHIC_SHADER_GFX_IMPL_H
+#ifndef SPLASH_GLES_GRAPHIC_SHADER_GFX_IMPL_H
+#define SPLASH_GLES_GRAPHIC_SHADER_GFX_IMPL_H
 
 #include <string_view>
 #include <vector>
@@ -31,13 +31,13 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "./core/constants.h"
-#include "./graphics/api/graphic_shader.h"
-#include "./graphics/api/opengl/shader_gfx_impl.h"
-#include "./graphics/api/opengl/shader_program.h"
-#include "./graphics/api/opengl/shader_stage.h"
+#include "./graphics/api/gles/shader_gfx_impl.h"
+#include "./graphics/api/gles/shader_program.h"
+#include "./graphics/api/gles/shader_stage.h"
+#include "./graphics/api/graphic_shader_gfx_impl.h"
 #include "./graphics/texture.h"
 
-namespace Splash::gfx::opengl
+namespace Splash::gfx::gles
 {
 
 class GraphicShaderGfxImpl : public gfx::GraphicShaderGfxImpl, public ShaderGfxImpl
@@ -88,6 +88,6 @@ class GraphicShaderGfxImpl : public gfx::GraphicShaderGfxImpl, public ShaderGfxI
     void unsetTextures() override final;
 };
 
-} // namespace Splash::gfx::opengl
+} // namespace Splash::gfx::gles
 
 #endif

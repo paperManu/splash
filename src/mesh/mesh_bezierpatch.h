@@ -68,6 +68,13 @@ class Mesh_BezierPatch final : public Mesh
     std::vector<glm::vec2> getControlPoints() const { return _patch.vertices; }
 
     /**
+     * Get whether the Bezier patch is the default one (meaning no deformation/warping),
+     * or if it has been modified
+     * \return Return true if the Bezier patch has been modified
+     */
+    inline bool isPatchModified() const { return _patchModified; }
+
+    /**
      * Select the bezier mesh or the control points as the mesh to output
      * \param control If true, selects the control points
      */
@@ -90,7 +97,8 @@ class Mesh_BezierPatch final : public Mesh
     int _patchResolution{64};
     std::mutex _patchMutex{};
 
-    bool _patchUpdated{true};
+    bool _patchModified{false}; //!< False if the patch control points are not the default ones anymore
+    bool _patchUpdated{true};   //!< True if the patch control points have been changed and the mesh needs updating
     MeshContainer _bezierControl;
     MeshContainer _bezierMesh;
 
@@ -119,18 +127,18 @@ class Mesh_BezierPatch final : public Mesh
     }
 
     /**
-     * Initialization
-     */
-    void init();
-
-    /**
      * Create a patch
      * \param width Horizontal control point count
      * \param height Vertical control point count
+     * \return Return the patch
+     */
+    Patch createPatch(int width = 4, int height = 4);
+
+    /**
+     * Create Bezier control points from a patch
      * \param patch Patch description
      */
-    void createPatch(int width = 4, int height = 4);
-    void createPatch(Patch& patch);
+    void updateBezierFromPatch(Patch& patch);
 
     /**
      * Update the underlying mesh from the patch control points

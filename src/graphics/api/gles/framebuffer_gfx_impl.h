@@ -18,37 +18,37 @@
  */
 
 /*
- * @framebuffer.h
- * The framebuffer object class, implemented for OpenGL
+ * @framebuffer_gfx_impl.h
+ * The framebuffer object class, implemented for OpenGL ES
  */
 
-#ifndef SPLASH_OPENGL_FRAMEBUFFER_H
-#define SPLASH_OPENGL_FRAMEBUFFER_H
+#ifndef SPLASH_GLES_FRAMEBUFFER_H
+#define SPLASH_GLES_FRAMEBUFFER_H
 
-#include "./graphics/api/framebuffer.h"
+#include "./graphics/api/framebuffer_gfx_impl.h"
 
-namespace Splash::gfx::opengl
+namespace Splash::gfx::gles
 {
 
 /*************/
-class Framebuffer final : public Splash::gfx::Framebuffer
+class FramebufferGfxImpl final : public Splash::gfx::FramebufferGfxImpl
 {
   public:
     /**
      * Constructor
      */
-    Framebuffer();
+    FramebufferGfxImpl();
 
     /**
      * Destructor
      */
-    virtual ~Framebuffer() override;
+    ~FramebufferGfxImpl() override;
 
     /**
      * No copy constructor
      */
-    Framebuffer(const Framebuffer&) = delete;
-    Framebuffer& operator=(const Framebuffer&) = delete;
+    FramebufferGfxImpl(const FramebufferGfxImpl&) = delete;
+    FramebufferGfxImpl& operator=(const FramebufferGfxImpl&) = delete;
 
     /**
      * Bind the FBO to draw into it
@@ -60,7 +60,7 @@ class Framebuffer final : public Splash::gfx::Framebuffer
      * Blit the current FBO into the other one
      * \param dst Destination FBO
      */
-    void blit(const Splash::gfx::Framebuffer* dst) override;
+    void blit(const Splash::gfx::FramebufferGfxImpl* dst) override;
 
     /**
      * Get the depth at the given location
@@ -98,6 +98,6 @@ class Framebuffer final : public Splash::gfx::Framebuffer
     void setRenderingParameters() override;
 };
 
-} // namespace Splash::gfx::opengl
+} // namespace Splash::gfx::gles
 
 #endif

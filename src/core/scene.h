@@ -38,8 +38,8 @@
 #include "./core/factory.h"
 #include "./core/root_object.h"
 #include "./core/spinlock.h"
-#include "./graphics/gl_window.h"
 #include "./graphics/object_library.h"
+#include "./graphics/rendering_context.h"
 
 namespace Splash
 {
@@ -89,19 +89,6 @@ class Scene : public RootObject
      * \param name Object name
      */
     void addGhost(const std::string& type, const std::string& name = "");
-
-    /**
-     *  Get a glfw window sharing the same context as _mainWindow
-     * \param name Window name
-     * \return Return a shared pointer to the new window
-     */
-    std::shared_ptr<GlWindow> getNewSharedWindow(const std::string& name = "");
-
-    /**
-     * Get whether NV swap groups are available
-     * \return Return true if they are
-     */
-    static bool getHasNVSwapGroup() { return _hasNVSwapGroup; }
 
     /**
      * Get a reference to the object library
@@ -212,6 +199,12 @@ class Scene : public RootObject
      */
     Values sendMessageToWorldWithAnswer(const std::string& message, const Values& value = {}, const unsigned long long timeout = 0);
 
+    /**
+     * Get a pointer to the rendering callback data, to be used by the rendering API error callback
+     * \return Return a pointer to the rendering callback data
+     */
+    const gfx::Renderer::RendererMsgCallbackData* getRendererMsgCallbackDataPtr();
+
   protected:
     std::atomic_bool _isRunning{false};
 
@@ -238,8 +231,7 @@ class Scene : public RootObject
   private:
     std::unique_ptr<ObjectLibrary> _objectLibrary{nullptr};     //!< Library of 3D objects used by multiple GraphObjects
     static inline std::unique_ptr<gfx::Renderer> _renderer{nullptr}; // Must be static due to usage inside static functions in Scene.
-
-    static bool _hasNVSwapGroup; //!< If true, NV swap groups have been detected and are used
+    gfx::Renderer::RendererMsgCallbackData _rendererMsgCallbackData;
 
     bool _runInBackground{false}; //!< If true, no window will be created
     std::atomic_bool _started{false};
@@ -251,10 +243,6 @@ class Scene : public RootObject
     unsigned long long _targetFrameDuration{0}; //!< Duration in microseconds of a frame at the refresh rate of the primary monitor
     std::atomic_bool _doUploadTextures{false};  //!< True if the render loop should upload the textures
     int64_t _lastSyncMessageDate{0};            //!< Time in µs a sync message was sent from World
-
-    // NV Swap group specific
-    GLuint _maxSwapGroups{0};
-    GLuint _maxSwapBarriers{0};
 
     static std::vector<std::string> _ghostableTypes;
 

@@ -18,40 +18,52 @@
  */
 
 /*
- * @compute_shader.h
- * Class for compute shader, implementated for OpenGL
+ * @feedback_shader_gfx_impl.h
+ * Class for feedback shader, implementated for OpenGL
  */
 
-#ifndef SPLASH_OPENGL_COMPUTE_SHADER_GFX_IMPL_H
-#define SPLASH_OPENGL_COMPUTE_SHADER_GFX_IMPL_H
+#ifndef SPLASH_OPENGL_FEEDBACK_SHADER_GFX_IMPL_H
+#define SPLASH_OPENGL_FEEDBACK_SHADER_GFX_IMPL_H
+
+#include <string>
+#include <vector>
 
 #include "./core/constants.h"
-#include "./graphics/api/compute_shader.h"
+#include "./graphics/api/feedback_shader_gfx_impl.h"
 #include "./graphics/api/opengl/shader_gfx_impl.h"
 
 namespace Splash::gfx::opengl
 {
 
-class ComputeShaderGfxImpl : public gfx::ComputeShaderGfxImpl, public ShaderGfxImpl
+class FeedbackShaderGfxImpl : public gfx::FeedbackShaderGfxImpl, public ShaderGfxImpl
 {
   public:
     /**
      * Constructor
      */
-    ComputeShaderGfxImpl();
+    FeedbackShaderGfxImpl();
 
     /**
      * Destructor
      */
-    ~ComputeShaderGfxImpl() override = default;
+    virtual ~FeedbackShaderGfxImpl() override = default;
 
     /**
-     * Launch the compute shader
-     * \param numGroupsX Compute group count along X
-     * \param numGroupsY Compute group count along Y
-     * \return Return true if computation succeeded
+     * Activate the shader
+     * \return Return true if the activation succeeded
      */
-    bool compute(uint32_t numGroupsX = 1, uint32_t numGroupsY = 1) override final;
+    bool activate() override final;
+
+    /**
+     * Deactivate the program
+     */
+    void deactivate() override final;
+
+    /**
+     * Select the outputs (varyings) for the feedback
+     * \param varyingNames Names of the outputs
+     */
+    void selectVaryings(const std::vector<std::string>& varyingNames) override final;
 };
 
 } // namespace Splash::gfx::opengl

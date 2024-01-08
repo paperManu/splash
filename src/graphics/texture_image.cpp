@@ -11,6 +11,16 @@ namespace Splash
 {
 
 /*************/
+Texture_Image::Texture_Image(RootObject* root)
+    : Texture_Image(root, nullptr)
+{
+    if (!_scene)
+        return;
+
+    _gfxImpl = _renderer->createTexture_ImageGfxImpl();
+}
+
+/*************/
 Texture_Image::Texture_Image(RootObject* root, std::unique_ptr<gfx::Texture_ImageGfxImpl> gfxImpl)
     : Texture(root)
     , _gfxImpl(std::move(gfxImpl))
@@ -35,10 +45,10 @@ RgbValue Texture_Image::getMeanValue() const
     const auto width = imageSpec.width, height = imageSpec.height;
 
     RgbValue meanColor;
-    for (uint y = 0; y < height; ++y)
+    for (uint32_t y = 0; y < height; ++y)
     {
         RgbValue rowMeanColor;
-        for (uint x = 0; x < width; ++x)
+        for (uint32_t x = 0; x < width; ++x)
         {
             rowMeanColor += image->readPixel(x, y);
         }

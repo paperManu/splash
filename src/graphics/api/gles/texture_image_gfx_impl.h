@@ -38,7 +38,7 @@ class Texture_ImageGfxImpl final : public Splash::gfx::Texture_ImageGfxImpl
      */
     struct InitTuple
     {
-        uint numChannels, bitsPerChannel;
+        uint32_t numChannels, bitsPerChannel;
         ImageBufferSpec::Type pixelBitFormat;
         std::string stringName;
         GLenum texInternalFormat, texFormat, texType;
@@ -85,7 +85,7 @@ class Texture_ImageGfxImpl final : public Splash::gfx::Texture_ImageGfxImpl
      * Get the id of the texture (API dependent)
      * \return Return the texture id
      */
-    virtual uint getTexId() const override { return _glTex; }
+    virtual uint32_t getTexId() const override { return _glTex; }
 
     /**
      * Enable / disable clamp to edge

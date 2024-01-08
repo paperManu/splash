@@ -6,6 +6,7 @@
 #include <tracy/Tracy.hpp>
 #include <tracy/TracyOpenGL.hpp>
 
+#include "./config.h"
 #include "./controller/controller_blender.h"
 #include "./controller/controller_gui.h"
 #include "./core/constants.h"
@@ -35,12 +36,14 @@
 #include "./controller/colorcalibrator.h"
 #endif
 
+#if HAVE_LINUX
 // clang-format off
 #define GLFW_EXPOSE_NATIVE_X11
 #define GLFW_EXPOSE_NATIVE_GLX
 #include <GLFW/glfw3native.h>
 #include <GL/glxext.h>
 // clang-format on
+#endif
 
 #if HAVE_CALIMIRO
 #include "./controller/geometriccalibrator.h"
@@ -52,7 +55,6 @@ namespace chrono = std::chrono;
 namespace Splash
 {
 
-bool Scene::_hasNVSwapGroup{false};
 std::vector<std::string> Scene::_ghostableTypes{"camera", "warp"};
 
 /*************/
@@ -96,9 +98,9 @@ Scene::~Scene()
     // No renderer, probably means we failed to init anyway so no clean up is needed.
     if (_renderer)
     {
-        if (const auto mainWindow = _renderer->getMainWindow(); mainWindow)
+        if (const auto mainRenderingContext = _renderer->getMainContext(); mainRenderingContext)
         {
-            mainWindow->setAsCurrentContext();
+            mainRenderingContext->setAsCurrentContext();
             std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex); // We don't want any friend to try accessing the objects
 
             // Free objects manually
@@ -106,7 +108,7 @@ Scene::~Scene()
                 obj.second.reset();
             _objects.clear();
 
-            mainWindow->releaseContext();
+            mainRenderingContext->releaseContext();
         }
     }
 
@@ -396,8 +398,8 @@ void Scene::run()
         return;
     }
 
-    auto mainWindow = _renderer->getMainWindow();
-    mainWindow->setAsCurrentContext();
+    auto mainRenderingContext = _renderer->getMainContext();
+    mainRenderingContext->setAsCurrentContext();
     TracyGpuContext;
 
     while (_isRunning)
@@ -470,7 +472,7 @@ void Scene::run()
 
         FrameMarkEnd("Scene");
     }
-    mainWindow->releaseContext();
+    mainRenderingContext->releaseContext();
 
     signalBufferObjectUpdated();
 
@@ -509,7 +511,7 @@ void Scene::setAsMaster(const std::string& configFilePath)
 
     _isMaster = true;
 
-    _gui = std::make_shared<Gui>(_renderer->getMainWindow(), this);
+    _gui = std::make_shared<Gui>(_renderer->getMainContext(), this);
     if (_gui)
     {
         _gui->setName("gui");
@@ -562,66 +564,17 @@ void Scene::sendMessageToWorld(const std::string& message, const Values& value)
 }
 
 /*************/
-Values Scene::sendMessageToWorldWithAnswer(const std::string& message, const Values& value, const unsigned long long timeout)
+const gfx::Renderer::RendererMsgCallbackData* Scene::getRendererMsgCallbackDataPtr()
 {
-    return sendMessageWithAnswer("world", message, value, timeout);
+    _rendererMsgCallbackData.name = _name;
+    _rendererMsgCallbackData.type = "Scene";
+    return &_rendererMsgCallbackData;
 }
 
 /*************/
-std::shared_ptr<GlWindow> Scene::getNewSharedWindow(const std::string& name)
+Values Scene::sendMessageToWorldWithAnswer(const std::string& message, const Values& value, const unsigned long long timeout)
 {
-    std::string windowName;
-    name.size() == 0 ? windowName = "Splash::Window" : windowName = "Splash::" + name;
-
-    auto mainWindow = _renderer->getMainWindow();
-    if (!mainWindow)
-    {
-        Log::get() << Log::WARNING << __FUNCTION__ << " - Main window does not exist, unable to create new shared window" << Log::endl;
-        return {nullptr};
-    }
-
-    // The GL version is the same as in the initialization, so we don't have to reset it here
-    glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
-    glfwWindowHint(GLFW_VISIBLE, false);
-    GLFWwindow* window = glfwCreateWindow(512, 512, windowName.c_str(), NULL, mainWindow->get());
-    if (!window)
-    {
-        Log::get() << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;
-        return {nullptr};
-    }
-    auto glWindow = std::make_shared<GlWindow>(window, mainWindow->get());
-
-    glWindow->setAsCurrentContext();
-#ifdef DEBUGGL
-    gfx::Renderer::setGlMsgCallbackData(getGlMsgCallbackDataPtr());
-    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
-    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
-#endif
-
-#ifdef GLX_NV_swap_group
-    if (_maxSwapGroups)
-    {
-        PFNGLXJOINSWAPGROUPNVPROC nvGLJoinSwapGroup = (PFNGLXJOINSWAPGROUPNVPROC)glfwGetProcAddress("glXJoinSwapGroupNV");
-        auto nvResult = nvGLJoinSwapGroup(glfwGetX11Display(), glfwGetGLXWindow(window), 1);
-        if (nvResult)
-            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " successfully joined the NV swap group" << Log::endl;
-        else
-            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " couldn't join the NV swap group" << Log::endl;
-    }
-
-    if (_maxSwapBarriers)
-    {
-        PFNGLXBINDSWAPBARRIERNVPROC nvGLBindSwapBarrier = (PFNGLXBINDSWAPBARRIERNVPROC)glfwGetProcAddress("glXBindSwapBarrierNV");
-        auto nvResult = nvGLBindSwapBarrier(glfwGetX11Display(), 1, 1);
-        if (nvResult)
-            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " successfully bind the NV swap barrier" << Log::endl;
-        else
-            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " couldn't bind the NV swap barrier" << Log::endl;
-    }
-#endif
-    glWindow->releaseContext();
-
-    return glWindow;
+    return sendMessageWithAnswer("world", message, value, timeout);
 }
 
 /*************/
@@ -654,76 +607,6 @@ unsigned long long Scene::updateTargetFrameDuration()
         return 0ull;
 
     return static_cast<unsigned long long>(1e6 / refreshRate);
-}
-
-/*************/
-void glfwErrorCallback(int /*code*/, const char* msg)
-{
-    Log::get() << Log::WARNING << "glfwErrorCallback - " << msg << Log::endl;
-}
-
-/*************/
-void glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* userParam)
-{
-    const auto userParamsAsObj = reinterpret_cast<const BaseObject*>(userParam);
-    std::string typeString{"GL::other"};
-    std::string messageString;
-    Log::Priority logType{Log::MESSAGE};
-
-    switch (type)
-    {
-    case GL_DEBUG_TYPE_ERROR:
-        typeString = "GL::Error";
-        logType = Log::ERROR;
-        break;
-    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-        typeString = "GL::Deprecated behavior";
-        logType = Log::WARNING;
-        break;
-    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-        typeString = "GL::Undefined behavior";
-        logType = Log::ERROR;
-        break;
-    case GL_DEBUG_TYPE_PORTABILITY:
-        typeString = "GL::Portability";
-        logType = Log::WARNING;
-        break;
-    case GL_DEBUG_TYPE_PERFORMANCE:
-        typeString = "GL::Performance";
-        logType = Log::WARNING;
-        break;
-    case GL_DEBUG_TYPE_OTHER:
-        typeString = "GL::Other";
-        logType = Log::MESSAGE;
-        break;
-    }
-
-    switch (severity)
-    {
-    case GL_DEBUG_SEVERITY_LOW:
-        messageString = typeString + "::low";
-        break;
-    case GL_DEBUG_SEVERITY_MEDIUM:
-        messageString = typeString + "::medium";
-        break;
-    case GL_DEBUG_SEVERITY_HIGH:
-        messageString = typeString + "::high";
-        break;
-    case GL_DEBUG_SEVERITY_NOTIFICATION:
-        // Disable notifications, they are far too verbose
-        return;
-        // messageString = "\033[32;1m[" + typeString + "::notification]\033[0m";
-        // break;
-    }
-
-    if (userParam == nullptr)
-        Log::get() << logType << messageString << " - Object: unknown"
-                   << " - " << message << Log::endl;
-    else if (const auto userParamsAsGraphObject = dynamic_cast<const GraphObject*>(userParamsAsObj); userParamsAsGraphObject != nullptr)
-        Log::get() << logType << messageString << " - Object " << userParamsAsGraphObject->getName() << " of type " << userParamsAsGraphObject->getType() << " - " << message
-                   << Log::endl;
-    else
-        Log::get() << logType << messageString << " - Object " << userParamsAsObj->getName() << " - " << message << Log::endl;
 }
 
 /*************/

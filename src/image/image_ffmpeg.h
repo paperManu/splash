@@ -25,8 +25,6 @@
 #ifndef SPLASH_IMAGE_FFMPEG_H
 #define SPLASH_IMAGE_FFMPEG_H
 
-#include "./core/constants.h"
-
 #include <atomic>
 #include <condition_variable>
 #include <deque>
@@ -43,6 +41,7 @@ extern "C"
 #include <libswscale/swscale.h>
 }
 
+#include "./config.h"
 #include "./core/constants.h"
 
 #include "./core/attribute.h"

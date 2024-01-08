@@ -45,7 +45,7 @@ void GeometryGfxImpl::activateAsSharedBuffer()
 {
     const auto& buffers = _useAlternativeBuffers ? _glAlternativeBuffers : _glBuffers;
 
-    for (uint i = 0; i < buffers.size(); i++)
+    for (uint32_t i = 0; i < buffers.size(); i++)
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, i, buffers[i]->getId());
 
     _activatedAsSharedBuffers = true;
@@ -185,14 +185,14 @@ void GeometryGfxImpl::swapBuffers()
 }
 
 /*************/
-void GeometryGfxImpl::initVertices(float* data, uint numVerts)
+void GeometryGfxImpl::initVertices(float* data, uint32_t numVerts)
 {
     setVerticesNumber(numVerts);
     _glBuffers[0] = std::make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, data);
 }
 
 /*************/
-void GeometryGfxImpl::allocateOrInitBuffer(uint32_t bufferIndex, uint componentsPerElement, std::vector<float>& dataVec)
+void GeometryGfxImpl::allocateOrInitBuffer(uint32_t bufferIndex, uint32_t componentsPerElement, std::vector<float>& dataVec)
 {
     if (!dataVec.empty())
         _glBuffers[bufferIndex] = std::make_shared<GpuBuffer>(componentsPerElement, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, dataVec.data());
@@ -265,7 +265,7 @@ void GeometryGfxImpl::setVerticesNumber(uint32_t verticesNumber)
 }
 
 /*************/
-void GeometryGfxImpl::allocateOrInitTemporaryBuffer(uint32_t bufferIndex, uint componentsPerElement, uint tempVerticesNumber, char* data)
+void GeometryGfxImpl::allocateOrInitTemporaryBuffer(uint32_t bufferIndex, uint32_t componentsPerElement, uint32_t tempVerticesNumber, char* data)
 {
     if (!_glTemporaryBuffers[bufferIndex])
         _glTemporaryBuffers[bufferIndex] = std::make_shared<GpuBuffer>(componentsPerElement, GL_FLOAT, GL_STATIC_DRAW, tempVerticesNumber, reinterpret_cast<GLvoid*>(data));

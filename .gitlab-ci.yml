@@ -63,7 +63,7 @@ test:22.04:gcc-amd64-bundled-libs:
     - make -sC build -j$(nproc)
     - make check -sC build
     - ./build/src/splash --info
-    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --child --prefix unittest local &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH != '/^debian.*$/'
@@ -83,7 +83,7 @@ test:22.04:clang-amd64-system-libs:
     - make -sC build -j$(nproc)
     - make check -sC build
     - ./build/src/splash --info
-    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --child --prefix unittest local &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH != '/^debian.*$/'
@@ -112,6 +112,7 @@ analysis:coverage:
     name: "splash_coverage_${CI_BUILD_REF_NAME}"
     paths:
     - "coverage.zip"
+    expire_in: 2 week
   rules:
     - if: $CI_COMMIT_BRANCH == 'develop'
 
@@ -131,6 +132,48 @@ analysis:static-analysis:
     name: "splash_${CI_BUILD_REF_NAME}_analysis"
     paths:
       - "analysis"
+    expire_in: 2 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'staging'
+
+
+analysis:thread-sanitizer:
+  stage: analysis
+  extends:
+    - .amd64
+    - .ubuntu
+  image: ubuntu:22.04
+  allow_failure: true
+  script:
+    - DEBIAN_FRONTEND=noninteractive apt install -y clang
+    - ./make_deps.sh
+    - rm -rf build && mkdir build
+    - CC=clang CXX=clang++ cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=thread" -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - make -sC build -j$(nproc)
+    - make check -sC build
+    - ./build/src/splash --info
+    - ./build/src/splash --child --prefix unittest local &
+    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'staging'
+
+analysis:address-sanitizer:
+  stage: analysis
+  extends:
+    - .amd64
+    - .ubuntu
+  image: ubuntu:22.04
+  allow_failure: true
+  script:
+    - DEBIAN_FRONTEND=noninteractive apt install -y clang
+    - ./make_deps.sh
+    - rm -rf build && mkdir build
+    - CC=clang CXX=clang++ cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address" -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - make -sC build -j$(nproc)
+    - make check -sC build
+    - ./build/src/splash --info
+    - ./build/src/splash --child --prefix unittest local &
+    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging'
 
@@ -153,7 +196,8 @@ staging:22.04:gcc-arm64-bundled-libs:
     - make -sC build -j$(nproc)
     - make check -sC build
     - make package -sC build
-    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --info
+    - ./build/src/splash --child --prefix unittest local &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging'
@@ -172,7 +216,8 @@ staging:23.10:gcc-amd64-system-libs:
     - make -sC build -j$(nproc)
     - make check -sC build
     - make package -sC build
-    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --info
+    - ./build/src/splash --child --prefix unittest local &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging'
@@ -191,7 +236,8 @@ staging:23.10:clang-amd64-system-libs:
     - make -sC build -j$(nproc)
     - make check -sC build
     - make package -sC build
-    - ./build/src/splash --child --prefix unittest &
+    - ./build/src/splash --info
+    - ./build/src/splash --child --prefix unittest local &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging'
@@ -248,6 +294,29 @@ staging:archlinux:gcc-amd64-bundled-libs:
     - make package
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH == 'archlinux'
+    - if: $CI_COMMIT_BRANCH == 'staging'
+
+staging:windows:
+  # Note: this job works on Windows with MSYS2 / MINGW64 already installed
+  # See the README.md file or the manual compilation guide on the website
+  # for more information
+  stage: staging
+  tags:
+    - windows
+  variables:
+    MSYSTEM: 'UCRT64'
+    CHERE_INVOKING: 'yes'
+  script:
+    - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm'
+    - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm --needed zip git'
+    - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm --needed mingw-w64-ucrt-x86_64-{glfw,cmake,make,gcc,yasm,pkgconf,jsoncpp,glm,gsl,python3,portaudio,zlib,ffmpeg,zeromq,cppzmq,snappy,opencv,gphoto2}'
+    - C:\msys64\usr\bin\bash -lc 'bash -x ./tools/build_windows'
+  artifacts:
+    name: "splash_windows_installer"
+    paths:
+      - "splash-*-win64.exe"
+    expire_in: 2 weeks
+  rules:
     - if: $CI_COMMIT_BRANCH == 'staging'
 
 #
@@ -334,6 +403,30 @@ package:fullsources:
       - splash.tar.gz
   rules:
     - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == 'master'
+
+package:windows:
+  # Note: this job works on Windows with MSYS2 / MINGW64 already installed
+  # See the README.md file or the manual compilation guide on the website
+  # for more information
+  stage: package
+  tags:
+    - windows
+  variables:
+    MSYSTEM: 'UCRT64'
+    CHERE_INVOKING: 'yes'
+  script:
+    - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm'
+    - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm --needed zip git'
+    - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm --needed mingw-w64-ucrt-x86_64-{glfw,cmake,make,gcc,yasm,pkgconf,jsoncpp,glm,gsl,python3,portaudio,zlib,ffmpeg,zeromq,cppzmq,snappy,opencv,gphoto2}'
+    - C:\msys64\usr\bin\bash -lc 'bash -x ./tools/build_windows'
+  artifacts:
+    name: "splash_windows_installer"
+    paths:
+      - "splash-*-win64.exe"
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == 'master'
 
 #
 # ╺┳┓┏━╸┏━┓╻  ┏━┓╻ ╻
@@ -358,3 +451,4 @@ pages:
   artifacts:
     paths:
       - public
+    expire_in: 2 week

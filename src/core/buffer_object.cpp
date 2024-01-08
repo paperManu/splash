@@ -30,7 +30,10 @@ bool BufferObject::setSerializedObject(SerializedObject&& obj)
     if (obj.size() == 0)
         return false;
 
-    if (_serializedObjectWaitingMutex.try_lock())
+    // If a buffer is already being deserialized, this test will fail
+    // and the value will still be true. Otherwise it will succeed, and
+    // the value will be set to true.
+    if (!_serializedObjectWaiting.exchange(true))
     {
         _serializedObject = std::move(obj);
         _newSerializedObject = true;
@@ -39,7 +42,7 @@ bool BufferObject::setSerializedObject(SerializedObject&& obj)
         _deserializeFuture = std::async(std::launch::async, [this]() {
             std::lock_guard<Spinlock> updateLock(_updateMutex);
             deserialize();
-            _serializedObjectWaitingMutex.unlock();
+            _serializedObjectWaiting = false;
         });
 
         return true;

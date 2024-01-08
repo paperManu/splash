@@ -48,30 +48,31 @@ This project is made possible thanks to the [Society for Arts and Technologies](
 Splash relies on a few libraries to get the job done. The mandatory libraries are:
 
 - External dependencies:
-  - [FFmpeg](http://ffmpeg.org/) to read and write video files,
-  - [OpenGL](http://opengl.org), which should be installed by the graphic driver,
-  - [GSL](http://gnu.org/software/gsl) (GNU Scientific Library) to compute calibration,
+  - [FFmpeg](http://ffmpeg.org/) to read and write video files
+  - [OpenGL](http://opengl.org), which should be installed by the graphic driver
+  - [GSL](http://gnu.org/software/gsl) (GNU Scientific Library) to compute calibration
 - External dependencies bundled as submodules:
-  - [GLFW](http://glfw.org) to handle the GL context creation,
-  - [GLM](http://glm.g-truc.net) to ease matrix manipulation,
-  - [Snappy](https://code.google.com/p/snappy/) to handle Hap codec decompression,
-  - [ZMQ](http://zeromq.org) to communicate between the various process involved in a Splash session,
+  - [GLFW](http://glfw.org) to handle the GL context creation
+  - [GLM](http://glm.g-truc.net) to ease matrix manipulation
+  - [Snappy](https://code.google.com/p/snappy/) to handle Hap codec decompression
+  - [ZMQ](http://zeromq.org) to communicate between the various process involved in a Splash session
   - [cppzmq](https://github.com/zeromq/cppzmq.git) for its C++ bindings of ZMQ
-  - [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,
+  - [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration
+  - [stduuid](https://github.com/mariusbancila/stduuid) to help with UUIDs
 - Dependencies built at compile-time from submodules:
-  - [doctest](https://github.com/onqtam/doctest/) to do some unit testing,
-  - [ImGui](https://github.com/ocornut/imgui) to draw the GUI,
-  - [stb_image](https://github.com/nothings/stb) to read images.
+  - [doctest](https://github.com/onqtam/doctest/) to do some unit testing
+  - [ImGui](https://github.com/ocornut/imgui) to draw the GUI
+  - [stb_image](https://github.com/nothings/stb) to read images
 
 Some other libraries are optional:
 
 - External dependencies:
-  - [libshmdata](http://gitlab.com/sat-mtl/tools/shmdata) to read video flows from a shared memory,
-  - [portaudio](http://portaudio.com/) to read and output audio,
-  - [Python](https://python.org) for scripting capabilities,
-  - [GPhoto](http://gphoto.sourceforge.net/) to use a camera for color calibration.
+  - [libshmdata](http://gitlab.com/sat-mtl/tools/shmdata) to read video flows from a shared memory
+  - [portaudio](http://portaudio.com/) to read and output audio
+  - [Python](https://python.org) for scripting capabilities
+  - [GPhoto](http://gphoto.sourceforge.net/) to use a camera for color calibration
 - Dependencies built at compile-time from submodules:
-  - [libltc](http://x42.github.io/libltc/) to read timecodes from an audio input,
+  - [libltc](http://x42.github.io/libltc/) to read timecodes from an audio input
 
 Also, the [Roboto](https://www.fontsquirrel.com/fonts/roboto) font and the [DSEG font family](https://github.com/keshikan/DSEG) are used and distributed under their respective open source licenses.
 
@@ -89,7 +90,10 @@ To install from the binary packages, please refer to [Splash documentation](http
 
 You can also compile Splash by hand, especially if you are curious about its internals or want to tinker with the code (or even, who knows, contribute!). Note that although what follows compiles the develop branch, it is more likely to contain bugs alongside new features / optimizations so if you experience crash you can try with the master branch.
 
+##### Installing the dependencies
+
 The packages necessary to compile Splash are the following:
+
 - Ubuntu 20.04 and newer:
 
 ```bash
@@ -97,7 +101,7 @@ sudo apt install build-essential git-core cmake libxrandr-dev libxi-dev \
     mesa-common-dev libgsl0-dev libatlas3-base libgphoto2-dev libz-dev \
     libxinerama-dev libxcursor-dev python3-dev yasm portaudio19-dev \
     python3-numpy libopencv-dev libjsoncpp-dev libavcodec-dev libavformat-dev \
-    libavutil-dev libswscale-dev
+    libavutil-dev libswscale-dev ninja
 
 # Non mandatory libraries needed to link against system libraries only
 sudo apt install libglfw3-dev libglm-dev libsnappy-dev libzmq3-dev
@@ -118,42 +122,96 @@ sudo dnf install gcc g++ cmake gsl-devel atlas-devel libgphoto2-devel python3-de
     yasm portaudio-devel python3-numpy opencv-devel jsoncpp-devel libuuid-devel \
     libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel \
     mesa-libGL-devel libavcodec-free-devel libavformat-free-devel libavutil-free-devel \
-    libswscale-free-devel
+    libswscale-free-devel ninja
 ```
 
 - Archlinux (not well maintained, please signal any issue):
 
 ```bash
-pacman -Sy git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcursor jsoncpp \
+pacman -Sy git cmake ninja gcc yasm pkgconfig libxi libxinerama libxrandr libxcursor jsoncpp \
     mesa glm gsl libgphoto2 python3 portaudio zip zlib ffmpeg opencv qt5-base vtk hdf5 glew
 ```
 
-Once everything is installed, you can go on with building Splash. To build and link it against the bundled libraries:
+- Windows:
+
+On Windows, you need to install a development environment to be able to run Splash. Fortunately there are some very nice ones, and for Splash we use [MSYS2](https://www.msys2.org/). Install it as explained on their website, then run `MSYS2 UCRT64` from the Start menu. This will give you a terminal with the correct environment to build Splash.
+
+To finalize with the dependencies, you need to install a few ones:
 
 ```bash
-git clone https://gitlab.com/splashmapper/splash
+pacman -Sy --needed zip git
+pacman -Sy --needed mingw-w64-ucrt-x86_64-{glfw,cmake,make,gcc,yasm,pkg-config,jsoncpp,glm,gsl,python3,portaudio,zlib,ffmpeg,zeromq,cppzmq,snappy,opencv,gphoto2}
+```
+
+##### Building Splash
+
+Once everything is installed, you can go on with building Splash. To build and link it against the bundled libraries (note that this will not work on Windows):
+
+```bash
+git clone --recurse-submodules https://gitlab.com/splashmapper/splash
 cd splash
 ./make_deps.sh
 mkdir -p build && cd build
-cmake ..
-make -j$(nproc) && sudo make install
+# The BUILD_GENERIC_ARCH flag allows for building an executable which can run on any
+# sufficiently modern (less than 15 years) CPU. It is usually safe to remove it but
+# people had issues in the past with some arch-specific flags
+cmake -GNinja -GBUILD_GENERIC_ARCH=ON ..
+ninja
 ```
 
-Otherwise, to build Splash and link it against the system libraries:
+Otherwise, to build Splash and link it against the system libraries (this is the path to take on Windows):
 
 ```bash
-git clone https://gitlab.com/splashmapper/splash
+git clone --recurse-submodules https://gitlab.com/splashmapper/splash
 cd splash
 mkdir -p build && cd build
-cmake -DUSE_SYSTEM_LIBS=ON ..
-make -j$(nproc) && sudo make install
+# The BUILD_GENERIC_ARCH flag allows for building an executable which can run on any
+# sufficiently modern (less than 15 years) CPU. It is usually safe to remove it but
+# people had issues in the past with some arch-specific flags
+cmake -DUSE_SYSTEM_LIBS=ON -GBUILD_GENERIC_ARCH=ON ..
+ninja
 ```
 
 You can now try launching Splash:
 
 ```bash
+./src/splash --help
+```
+
+##### Installing and/or packaging
+
+- Linux: installing from the sources
+
+Once Splash is compiled (see previous subsection), you can install it from the build directory:
+
+```bash
+sudo ninja install
+# And then it can be run from anywhere 
 splash --help
 ```
+
+- Windows: generating a package ready to be installed and distributed
+
+On Windows, you can install it like on Linux using the `install` build target. But to do things more like they are done on Windows, it is suggested to generate an installation package and then install Splash like any other software. This way it will be available from the Start menu, among other advantages.
+
+First, you need to install the Nullsoft Scriptable Install System (or NSIS), after downloading it from [their webpage](https://nsis.sourceforge.io/Main_Page). This is used by CPack to generate the package. Once installed, run from the build directory:
+
+```bash
+ninja package
+```
+
+An installation file named `splash-$VERSION-win64.exe` will be generated. Double-click on it from the explorer to run it and install Splash. Once done it can be found in the Start menu, or in `C:\Program Files\splash\bin`.
+
+#### Uninstall Splash (when built from sources)
+
+To uninstall Splash when built from sources, you need to do from the very same directory where Splash has been built:
+
+```bash
+cd ${PATH_TO_SPLASH}/build
+sudo ninja uninstall
+```
+
+##### Advanced configuration
 
 If you want to have access to realtime scheduling within Splash, you need to create a group "realtime", add yourself to it and set some limits:
 
@@ -174,15 +232,6 @@ Then log out and log back in.
 If you want to specify some defaults values for the objects, you can set the environment variable SPLASH_DEFAULTS with the path to a file defining default values for given types. An example of such a file can be found in [data/config/splashrc](data/config/splashrc)
 
 And that's it, you can move on to the [First steps](https://splashmapper.xyz/en/tutorials/first_steps.html) page.
-
-#### Uninstall Splash (when built from sources)
-
-To uninstall Splash when built from sources, you need to do from the very same directory where Splash has been built:
-
-```bash
-cd ${PATH_TO_SPLASH}/build
-sudo make uninstall
-```
 
 
 ## Code contribution
