@@ -293,6 +293,28 @@ staging:archlinux:gcc-amd64-bundled-libs:
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging' || $CI_COMMIT_BRANCH == 'archlinux'
 
+staging:flatpak:
+  # Note: to run flatpak-builder inside docker, it needs to be configured as privileged
+  # in the Gitlab configuration file (usually in /etc/gitlab-runner/config.toml)
+  stage: staging
+  tags:
+    - privileged
+  image: ubuntu:22.04
+  allow_failure: false
+  before_script:
+    - apt update -qq
+    - DEBIAN_FRONTEND=noninteractive apt install -y flatpak-builder
+    - flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+    - flatpak install -y flathub org.freedesktop.Platform//22.08 org.freedesktop.Sdk//22.08
+  script:
+    - rm -rf splash.tar.gz && touch splash.tar.gz
+    - tar --exclude='.git' --exclude='ccache' --exclude='splash.tar.gz' -cvzf splash.tar.gz .
+    - cd tests/packaging
+    - flatpak-builder --ccache --repo=flatpak_repo build --force-clean xyz.splashmapper.Splash.json
+    - flatpak build-bundle flatpak_repo splash.flatpak xyz.splashmapper.Splash
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'staging' || $CI_COMMIT_BRANCH == 'flatpak'
+
 staging:windows:
   # Note: this job works on Windows with MSYS2 / MINGW64 already installed
   # See the README.md file or the manual compilation guide on the website
@@ -340,7 +362,7 @@ package:debian:22.04:
       - "*.deb"
       - "*.tar.bz2"
   rules:
-    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
     - if: $CI_COMMIT_BRANCH == 'master'
 
 package:debian:23.10:
@@ -362,7 +384,7 @@ package:debian:23.10:
       - "*.deb"
       - "*.tar.bz2"
   rules:
-    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
     - if: $CI_COMMIT_BRANCH == 'master'
 
 package:blender_addon:
@@ -384,7 +406,7 @@ package:blender_addon:
     paths:
       - "*.tar.bz2"
   rules:
-    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
     - if: $CI_COMMIT_BRANCH == 'master'
 
 package:fullsources:
@@ -394,12 +416,13 @@ package:fullsources:
     - apk update && apk upgrade
   script:
     # This job packages the whole sources, including the submodules
-    - tar cvzf splash.tar.gz --exclude='.git' --exclude='ccache' .
+    - rm -rf splash.tar.gz && touch splash.tar.gz
+    - tar --exclude='.git' --exclude='ccache' --exclude='splash.tar.gz' -cvzf splash.tar.gz .
   artifacts:
     paths:
       - splash.tar.gz
   rules:
-    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
     - if: $CI_COMMIT_BRANCH == 'master'
 
 package:windows:
@@ -422,7 +445,7 @@ package:windows:
     paths:
       - "splash-*-win64.exe"
   rules:
-    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
     - if: $CI_COMMIT_BRANCH == 'master'
 
 #
