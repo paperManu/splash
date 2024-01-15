@@ -101,7 +101,7 @@ sudo apt install build-essential git-core cmake libxrandr-dev libxi-dev \
     mesa-common-dev libgsl0-dev libatlas3-base libgphoto2-dev libz-dev \
     libxinerama-dev libxcursor-dev python3-dev yasm portaudio19-dev \
     python3-numpy libopencv-dev libjsoncpp-dev libavcodec-dev libavformat-dev \
-    libavutil-dev libswscale-dev ninja
+    libavutil-dev libswscale-dev ninja-build
 
 # Non mandatory libraries needed to link against system libraries only
 sudo apt install libglfw3-dev libglm-dev libsnappy-dev libzmq3-dev
@@ -122,7 +122,7 @@ sudo dnf install gcc g++ cmake gsl-devel atlas-devel libgphoto2-devel python3-de
     yasm portaudio-devel python3-numpy opencv-devel jsoncpp-devel libuuid-devel \
     libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel \
     mesa-libGL-devel libavcodec-free-devel libavformat-free-devel libavutil-free-devel \
-    libswscale-free-devel ninja
+    libswscale-free-devel ninja-build
 ```
 
 - Archlinux (not well maintained, please signal any issue):
