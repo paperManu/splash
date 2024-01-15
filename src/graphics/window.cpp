@@ -296,7 +296,7 @@ void Window::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void Window::updateSizeAndPos()
+void Window::refreshSizeAndPos()
 {
     const auto sizeAndPos = _gfxImpl->getRenderingContext()->getPositionAndSize();
 
@@ -320,7 +320,9 @@ void Window::render()
 #endif
 
     // Update the window position and size
-    updateSizeAndPos();
+    // This is called only if another resizing operation is _not_ in progress
+    if (!_resized)
+        refreshSizeAndPos();
 
     // Update the FBO configuration if needed
     if (_resized)

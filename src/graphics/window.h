@@ -246,9 +246,12 @@ class Window final : public GraphObject
     static std::atomic_bool _quitFlag;                                      // Grabs close window events
 
     /**
-     * Update size and position parameters based on the real window parameters
+     * Refresh size and position attributes based on the real window parameters,
+     * as per the window manager
+     *
+     * Internally, this updates _windowRect if needed, and sets the _resized flag to true.
      */
-    void updateSizeAndPos();
+    void refreshSizeAndPos();
 
     /**
      * Register new attributes
