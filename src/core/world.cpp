@@ -577,6 +577,12 @@ bool World::addScene(const std::string& sceneName, const std::string& /*sceneDis
         }
 
 #elif HAVE_WINDOWS // HAVE_LINUX
+        if (_embeddedScene)
+        {
+            Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - A Scene already exists, cannot created another one" << Log::endl;
+            return false;
+        }
+
         Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an embedded Scene" << Log::endl;
         auto sceneContext = _context;
         sceneContext.childSceneName = sceneName;
