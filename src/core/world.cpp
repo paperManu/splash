@@ -1109,7 +1109,7 @@ void World::registerAttributes()
     addAttribute("loadConfig",
         [&](const Values& args) {
             auto filename = args[0].as<std::string>();
-            runAsyncTask([=]() {
+            addTask([=]() {
                 Json::Value config;
                 if (loadConfig(filename, config))
                 {
