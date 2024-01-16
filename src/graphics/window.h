@@ -212,6 +212,7 @@ class Window final : public GraphObject
     int64_t _presentationDelay{0};
 
     bool _withDecoration{true};
+    int _fullscreen{-1};
     std::array<int32_t, 4> _windowRect{};
     bool _resized{true};
     Values _layout{0, 1, 2, 3};
@@ -244,14 +245,6 @@ class Window final : public GraphObject
     static std::atomic_bool _quitFlag;                                      // Grabs close window events
 
     /**
-     * Refresh size and position attributes based on the real window parameters,
-     * as per the window manager
-     *
-     * Internally, this updates _windowRect if needed, and sets the _resized flag to true.
-     */
-    void refreshSizeAndPos();
-
-    /**
      * Register new attributes
      */
     void registerAttributes();
@@ -260,6 +253,12 @@ class Window final : public GraphObject
      * Set up the user events callbacks
      */
     void setEventsCallbacks();
+
+    /**
+     * Set the monitor for full screen display
+     * \param index Monitor index, -1 to set as windowed
+     */
+    void setFullscreenMonitor(int32_t index);
 
     /**
      * Set whether the window has decorations

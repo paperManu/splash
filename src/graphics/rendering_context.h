@@ -79,6 +79,12 @@ class RenderingContext
     std::unique_ptr<RenderingContext> createSharedContext(std::string_view name);
 
     /**
+     * Get the monitor this context is set full screen to
+     * \return Return the index of the full screen monitor, or -1 if the context is windowed
+     */
+    int32_t getFullscreenMonitor() const;
+
+    /**
      * Get the pointer to the GLFW window
      * \return Return the pointer to the GLFW window
      */
@@ -89,6 +95,12 @@ class RenderingContext
      * \return Return the main rendering context
      */
     RenderingContext* getMainContext() const { return _mainContext; }
+
+    /**
+     * Get the names of the connected monitors
+     * \return Return a vector of the connected monitors
+     */
+    std::vector<std::string> getMonitorNames() const;
 
     /**
      * Get the position and size of the context
@@ -136,6 +148,13 @@ class RenderingContext
     void setEventsCallbacks();
 
     /**
+     * Set the context as full screen, or not
+     * \param index Monitor index, -1 to set as windowed
+     * \return Return true if the full screen state has been changed successfully
+     */
+    bool setFullscreenMonitor(int32_t index);
+
+    /**
      * Set the position and size of the context
      * \param posAndSize An array containg the x and y position, width and height
      */
@@ -166,7 +185,14 @@ class RenderingContext
     GLFWwindow* _window{nullptr};
     RenderingContext* _mainContext{nullptr};
 
+    static std::vector<GLFWmonitor*> _monitors;
     bool _isContextActive{false};
+
+    /**
+     * Get the list of monitors
+     * \return Return the list of connected monitors
+     */
+    std::vector<GLFWmonitor*> getMonitorList();
 
     /**
      * Callback for GLFW errors
@@ -174,6 +200,13 @@ class RenderingContext
      * \param msg Associated error message
      */
     static void glfwErrorCallback(int /*code*/, const char* msg) { Log::get() << Log::ERROR << "glfwErrorCallback - " << msg << Log::endl; }
+
+    /**
+     * Callback for connection/disconnection of monitors
+     * \param monitor Monitor which changed state
+     * \param even Event type
+     */
+    static void glfwMonitorCallback(GLFWmonitor* monitor, int event);
 };
 
 } // namespace Splash

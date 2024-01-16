@@ -296,19 +296,6 @@ void Window::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void Window::refreshSizeAndPos()
-{
-    const auto sizeAndPos = _gfxImpl->getRenderingContext()->getPositionAndSize();
-
-    for (size_t i = 0; i < 4; ++i)
-        if (sizeAndPos[i] != _windowRect[i])
-            _resized = true;
-
-    if (_resized)
-        _windowRect = sizeAndPos;
-}
-
-/*************/
 void Window::render()
 {
 #ifdef DEBUGGL
@@ -322,7 +309,18 @@ void Window::render()
     // Update the window position and size
     // This is called only if another resizing operation is _not_ in progress
     if (!_resized)
-        refreshSizeAndPos();
+    {
+        _fullscreen = _gfxImpl->getRenderingContext()->getFullscreenMonitor();
+
+        const auto sizeAndPos = _gfxImpl->getRenderingContext()->getPositionAndSize();
+
+        for (size_t i = 0; i < 4; ++i)
+            if (sizeAndPos[i] != _windowRect[i])
+                _resized = true;
+
+        if (_resized)
+            _windowRect = sizeAndPos;
+    }
 
     // Update the FBO configuration if needed
     if (_resized)
@@ -554,6 +552,15 @@ void Window::updateSwapInterval(int swapInterval)
 }
 
 /*************/
+void Window::setFullscreenMonitor(int32_t index)
+{
+    if (!_gfxImpl || !_gfxImpl->windowExists())
+        return;
+
+    _gfxImpl->getRenderingContext()->setFullscreenMonitor(index);
+}
+
+/*************/
 void Window::updateWindowShape()
 {
     if (!_gfxImpl || !_gfxImpl->windowExists())
@@ -580,6 +587,18 @@ void Window::registerAttributes()
         [&]() -> Values { return {_withDecoration}; },
         {'b'});
     setAttributeDescription("decorated", "If set to 0, the window is drawn without decoration");
+
+    addAttribute(
+        "fullscreen",
+        [&](const Values& args) {
+            _fullscreen = args[0].as<int>();
+            _resized = true;
+            addTask([=]() { setFullscreenMonitor(_fullscreen); });
+            return true;
+        },
+        [&]() -> Values { return {_fullscreen}; },
+        {'i'});
+    setAttributeDescription("fullscreen", "Index of the monitor to show the window fullscreen, -1 if windowed");
 
     addAttribute(
         "guiOnly",
