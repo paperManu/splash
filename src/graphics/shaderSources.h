@@ -1956,7 +1956,6 @@ const std::string FRAGMENT_SHADER_WINDOW{R"(
     #endif
     #endif
     #endif
-        uniform vec2 _gamma;
         in vec2 texCoord;
         out vec4 fragColor;
 
@@ -1988,11 +1987,6 @@ const std::string FRAGMENT_SHADER_WINDOW{R"(
                 #endif
                 #endif
                 #endif
-            }
-
-            if(_gamma.x == 0.0) {
-                float gamma = clamp(_gamma.y, 1.0 , 3.0);
-                fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / gamma));
             }
         }
     )"};

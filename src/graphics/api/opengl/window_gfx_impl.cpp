@@ -20,9 +20,7 @@ void WindowGfxImpl::setupFBOs(Scene* scene, uint32_t width, uint32_t height)
 {
     // Render FBO
     if (glIsFramebuffer(_renderFbo) == GL_FALSE)
-    {
         glGenFramebuffers(1, &_renderFbo);
-    }
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
 
@@ -33,7 +31,7 @@ void WindowGfxImpl::setupFBOs(Scene* scene, uint32_t width, uint32_t height)
 
     _colorTexture = std::make_shared<Texture_Image>(scene);
     assert(_colorTexture != nullptr);
-    _colorTexture->reset(width, height, "RGBA");
+    _colorTexture->reset(width, height, "sRGBA");
     _colorTexture->setAttribute("filtering", {false});
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
 
@@ -83,6 +81,7 @@ void WindowGfxImpl::beginRender(uint32_t width, uint32_t height)
 #endif
 
     glEnable(GL_BLEND);
+    glEnable(GL_FRAMEBUFFER_SRGB);
     glDisable(GL_DEPTH_TEST);
     glBlendEquation(GL_FUNC_ADD);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -101,6 +100,7 @@ void WindowGfxImpl::endRender()
 #endif
 
     glDisable(GL_BLEND);
+    glDisable(GL_FRAMEBUFFER_SRGB);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
@@ -112,7 +112,7 @@ void WindowGfxImpl::init(gfx::Renderer* renderer)
 }
 
 /*************/
-void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureUpdated, uint32_t width, uint32_t height)
+void WindowGfxImpl::swapBuffers(int windowIndex, bool& renderTextureUpdated, uint32_t width, uint32_t height)
 {
     /* Back to front buffer swap is done a bit differently than what is usually done
      * in most software. To understand why and how it works, you have to know that
@@ -156,9 +156,6 @@ void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureU
     if (!isWindowSynchronized)
         glDrawBuffer(GL_FRONT);
 
-    if (srgb)
-        glEnable(GL_FRAMEBUFFER_SRGB);
-
     // If the render texture specs have changed
     if (renderTextureUpdated)
     {
@@ -180,9 +177,6 @@ void WindowGfxImpl::swapBuffers(int windowIndex, bool srgb, bool& renderTextureU
 
     // Copy the rendered texture to the back/front buffer
     glBlitNamedFramebuffer(_readFbo, 0, 0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-    if (srgb)
-        glDisable(GL_FRAMEBUFFER_SRGB);
 
     if (isWindowSynchronized)
         // If this window is synchronized, so we wait for the vsync and swap

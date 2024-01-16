@@ -349,7 +349,6 @@ void Window::render()
 
         _screen->activate();
         _screen->getShader()->setUniform("layout", _layout);
-        _screen->getShader()->setUniform("_gamma", {static_cast<float>(_srgb), _gammaCorrection});
         _screen->draw();
         _screen->deactivate();
     }
@@ -412,7 +411,7 @@ void Window::swapBuffers()
     // Only one window will wait for vblank, the others draws directly into front buffer
     const auto windowIndex = _swappableWindowsCount++;
 
-    _gfxImpl->swapBuffers(windowIndex, _srgb, _renderTextureUpdated, _windowRect[2], _windowRect[3]);
+    _gfxImpl->swapBuffers(windowIndex, _renderTextureUpdated, _windowRect[2], _windowRect[3]);
 
     _frontBufferTimestamp = _backBufferTimestamp;
     _presentationDelay = Timer::getTime() - _frontBufferTimestamp;
@@ -591,26 +590,6 @@ void Window::registerAttributes()
         [&]() -> Values { return {_guiOnly}; },
         {'b'});
     setAttributeDescription("guiOnly", "If true, only the GUI will be able to link to this window. Does not affect pre-existing links.");
-
-    addAttribute(
-        "srgb",
-        [&](const Values& args) {
-            _srgb = args[0].as<bool>();
-            return true;
-        },
-        [&]() -> Values { return {_srgb}; },
-        {'b'});
-    setAttributeDescription("srgb", "If true, the window is drawn in the sRGB color space");
-
-    addAttribute(
-        "gamma",
-        [&](const Values& args) {
-            _gammaCorrection = args[0].as<float>();
-            return true;
-        },
-        [&]() -> Values { return {_gammaCorrection}; },
-        {'r'});
-    setAttributeDescription("gamma", "Set the gamma correction for this window");
 
     // Attribute to configure the placement of the various texture input
     addAttribute(
