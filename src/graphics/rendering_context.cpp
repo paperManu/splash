@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <stdlib.h>
 
 #include <GLFW/glfw3.h>
 
@@ -11,6 +12,7 @@ namespace Splash
 {
 
 bool RenderingContext::_glfwInitialized = false;
+bool RenderingContext::_glfwPlatformWayland = false;
 std::vector<GLFWmonitor*> RenderingContext::_monitors;
 
 /*************/
@@ -20,6 +22,11 @@ RenderingContext::RenderingContext(std::string_view name, const gfx::PlatformVer
     {
         glfwSetErrorCallback(glfwErrorCallback);
 
+        // By default, GLFW will prefer using X11 as Wayland support is not complete
+        // Using Wayland can be forced with the SPLASH_USE_WAYLAND env var
+        if (getenv(Constants::SPLASH_USE_WAYLAND))
+            glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_WAYLAND);
+
         if (!glfwInit())
         {
             Log::get() << Log::ERROR << "RenderingContext::" << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
@@ -28,6 +35,7 @@ RenderingContext::RenderingContext(std::string_view name, const gfx::PlatformVer
 
         glfwSetMonitorCallback(glfwMonitorCallback);
         _glfwInitialized = true;
+        _glfwPlatformWayland = (glfwGetPlatform() == GLFW_PLATFORM_WAYLAND);
     }
 
     _monitors = getMonitorList();
@@ -86,7 +94,11 @@ std::array<int32_t, 4> RenderingContext::getPositionAndSize() const
 {
     assert(_window != nullptr);
     std::array<int32_t, 4> posAndSize;
-    glfwGetWindowPos(_window, &posAndSize[0], &posAndSize[1]);
+
+    // Getting window's position is not available on Wayland
+    if (!_glfwPlatformWayland)
+        glfwGetWindowPos(_window, &posAndSize[0], &posAndSize[1]);
+
     glfwGetFramebufferSize(_window, &posAndSize[2], &posAndSize[3]);
     return posAndSize;
 }
@@ -95,7 +107,11 @@ std::array<int32_t, 4> RenderingContext::getPositionAndSize() const
 void RenderingContext::setPositionAndSize(const std::array<int32_t, 4>& posAndSize)
 {
     assert(_window != nullptr);
-    glfwSetWindowPos(_window, posAndSize[0], posAndSize[1]);
+
+    // Setting window's position is not available on Wayland
+    if (!_glfwPlatformWayland)
+        glfwSetWindowPos(_window, posAndSize[0], posAndSize[1]);
+
     glfwSetWindowSize(_window, posAndSize[2], posAndSize[3]);
 }
 
@@ -110,7 +126,7 @@ void RenderingContext::setDecorations(bool active)
     glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
     glfwWindowHint(GLFW_RESIZABLE, active);
     glfwWindowHint(GLFW_DECORATED, active);
-    auto window = glfwCreateWindow(posAndSize[2], posAndSize[3], ("Splash::" + _name).c_str(), 0, _mainContext->_window);
+    auto window = glfwCreateWindow(posAndSize[2], posAndSize[3], _name.c_str(), 0, _mainContext->_window);
 
     // Reset hints to default
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -170,7 +186,8 @@ void RenderingContext::setCursorVisible(bool visible)
 {
     assert(_window != nullptr);
     const auto cursor = visible ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN;
-    glfwSetInputMode(_window, GLFW_CURSOR, cursor);
+    if (!_glfwPlatformWayland)
+        glfwSetInputMode(_window, GLFW_CURSOR, cursor);
 }
 
 /*************/

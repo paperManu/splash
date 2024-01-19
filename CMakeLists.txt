@@ -17,7 +17,7 @@
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.16)
 
 # Force the installation prefix, as under certain circumstances on Windows it defaults
 # to "C:\Program Files (x86)", which is not correct and conflicts the installation path
@@ -86,10 +86,6 @@ endif()
 
 find_package(PkgConfig REQUIRED)
 find_package(Threads)
-
-if (USE_SYSTEM_LIBS)
-  find_package(glfw3)
-endif()
 
 if (BUILD_CODE)
     # Mandatory dependencies
@@ -269,7 +265,6 @@ endfunction()
 
 info_cfg_option(USE_SYSTEM_LIBS)
 info_cfg_option(GPHOTO_VERSION)
-info_cfg_option(glfw3_VERSION)
 info_cfg_option(FFMPEG_libavformat_VERSION)
 info_cfg_option(FFMPEG_libavcodec_VERSION)
 info_cfg_option(FFMPEG_libavutil_VERSION)

@@ -523,6 +523,9 @@ void Window::setEventsCallbacks()
 /*************/
 void Window::setWindowDecoration(bool hasDecoration)
 {
+    if (hasDecoration == _withDecoration)
+        return;
+
     auto renderingContext = _gfxImpl->getRenderingContext();
     renderingContext->setAsCurrentContext();
     renderingContext->setDecorations(hasDecoration);
@@ -535,6 +538,8 @@ void Window::setWindowDecoration(bool hasDecoration)
 
     setEventsCallbacks();
     showCursor(false);
+
+    _withDecoration = hasDecoration;
 
     return;
 }
@@ -577,9 +582,9 @@ void Window::registerAttributes()
     addAttribute(
         "decorated",
         [&](const Values& args) {
-            _withDecoration = args[0].as<bool>();
+            const auto withDecoration = args[0].as<bool>();
             addTask([=]() {
-                setWindowDecoration(_withDecoration);
+                setWindowDecoration(withDecoration);
                 updateWindowShape();
             });
             return true;

@@ -97,14 +97,14 @@ The packages necessary to compile Splash are the following:
 - Ubuntu 20.04 and newer:
 
 ```bash
-sudo apt install build-essential git-core cmake libxrandr-dev libxi-dev \
-    mesa-common-dev libgsl0-dev libatlas3-base libgphoto2-dev libz-dev \
-    libxinerama-dev libxcursor-dev python3-dev yasm portaudio19-dev \
+sudo apt install build-essential git-core cmake cmake-extras libxrandr-dev \
+    libxi-dev mesa-common-dev libgsl0-dev libatlas3-base libgphoto2-dev \
+    libz-dev libxinerama-dev libxcursor-dev python3-dev yasm portaudio19-dev \
     python3-numpy libopencv-dev libjsoncpp-dev libavcodec-dev libavformat-dev \
-    libavutil-dev libswscale-dev ninja-build
+    libavutil-dev libswscale-dev ninja-build libwayland-dev libxkbcommon-dev
 
 # Non mandatory libraries needed to link against system libraries only
-sudo apt install libglfw3-dev libglm-dev libsnappy-dev libzmq3-dev
+sudo apt install libglm-dev libsnappy-dev libzmq3-dev
 ```
 
 - Fedora 39:
@@ -122,14 +122,15 @@ sudo dnf install gcc g++ cmake gsl-devel atlas-devel libgphoto2-devel python3-de
     yasm portaudio-devel python3-numpy opencv-devel jsoncpp-devel libuuid-devel \
     libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel \
     mesa-libGL-devel libavcodec-free-devel libavformat-free-devel libavutil-free-devel \
-    libswscale-free-devel ninja-build
+    libswscale-free-devel ninja-build wayland-devel libxkbcommon-devel
 ```
 
 - Archlinux (not well maintained, please signal any issue):
 
 ```bash
 pacman -Sy git cmake ninja gcc yasm pkgconfig libxi libxinerama libxrandr libxcursor jsoncpp \
-    mesa glm gsl libgphoto2 python3 portaudio zip zlib ffmpeg opencv qt5-base vtk hdf5 glew
+    mesa glm gsl libgphoto2 python3 portaudio zip zlib ffmpeg opencv qt6-base vtk hdf5 glew \
+    libxkbcommon fmt
 ```
 
 - Windows:
@@ -140,7 +141,7 @@ To finalize with the dependencies, you need to install a few ones:
 
 ```bash
 pacman -Sy --needed zip git
-pacman -Sy --needed mingw-w64-ucrt-x86_64-{glfw,cmake,make,gcc,yasm,pkg-config,jsoncpp,glm,gsl,python3,portaudio,zlib,ffmpeg,zeromq,cppzmq,snappy,opencv,gphoto2}
+pacman -Sy --needed mingw-w64-ucrt-x86_64-{cmake,make,gcc,yasm,pkg-config,jsoncpp,glm,gsl,python3,portaudio,zlib,ffmpeg,zeromq,cppzmq,snappy,opencv,gphoto2}
 ```
 
 ##### Building Splash
@@ -213,6 +214,8 @@ sudo ninja uninstall
 
 ##### Advanced configuration
 
+###### Realtime scheduling
+
 If you want to have access to realtime scheduling within Splash, you need to create a group "realtime", add yourself to it and set some limits:
 
 ```bash
@@ -229,9 +232,21 @@ sudo adduser $USER syslog
 
 Then log out and log back in.
 
+###### Attributes default values
+
 If you want to specify some defaults values for the objects, you can set the environment variable SPLASH_DEFAULTS with the path to a file defining default values for given types. An example of such a file can be found in [data/config/splashrc](data/config/splashrc)
 
 And that's it, you can move on to the [First steps](https://splashmapper.xyz/en/tutorials/first_steps.html) page.
+
+###### Wayland support
+
+**Support for the Wayland display server is partial**, and follows the progress of the GLFW library which is used to give a cross-platform way to handle graphic contexts. An example of a current limitation is that if any Splash window is hidden, the whole rendering will be stalled on some Wayland compositors.
+
+To activate it, the `SPLASH_USE_WAYLAND` environment variable must be defined, to whichever value. For example, Splash can be run like this:
+
+```bash
+SPLASH_USE_WAYLAND=1 splash
+```
 
 
 ## Code contribution

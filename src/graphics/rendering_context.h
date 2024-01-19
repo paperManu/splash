@@ -121,6 +121,18 @@ class RenderingContext
     bool isInitialized() const { return _window != nullptr; }
 
     /**
+     * Return whether the underlying platform is Wayland
+     * \return Return true if the platform is Wayland
+     */
+    bool isPlatformWayland() const { return _glfwPlatformWayland; }
+
+    /**
+     * Return whether the context is visible
+     * \return Return true if the context is visible
+     */
+    bool isVisible() const { return glfwGetWindowAttrib(_window, GLFW_VISIBLE); }
+
+    /**
      * Release the context
      */
     void releaseContext();
@@ -179,6 +191,7 @@ class RenderingContext
 
   private:
     static bool _glfwInitialized;
+    static bool _glfwPlatformWayland;
 
     std::string _name{};
     GLFWwindow* _previouslyActiveWindow{nullptr};
