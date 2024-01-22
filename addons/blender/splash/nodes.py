@@ -43,7 +43,7 @@ class SplashLinkSocket(NodeSocket):
     bl_label = 'Splash Link Socket'
 
     def draw(self, context, layout, node, text):
-        if not self.is_output and self.is_linked:
+        if not self.is_output and self.is_linked and len(self.links):
             layout.label(text=self.links[0].from_node.name)
         else:
             layout.label(text=text)
@@ -327,7 +327,7 @@ class SplashMeshNode(SplashBaseNode):
     def init(self, context):
         self.inputs.new('NodeSocketString', 'File').default_value = ""
         self.inputs.new('NodeSocketString', 'Object').default_value = ""
-        self.inputs['Object'].enabled = False
+        self.inputs['Object'].hide = True
 
         self.outputs.new('SplashLinkSocket', "Output link")
 
@@ -335,7 +335,7 @@ class SplashMeshNode(SplashBaseNode):
         values = {}
         values['type'] = "\"" + self.sp_meshTypeProperty + "\""
 
-        if self.inputs['Object'].enabled:
+        if self.inputs['Object'].hide is False:
             import os
 
             if bpy.context.edit_object is not None:
@@ -346,8 +346,12 @@ class SplashMeshNode(SplashBaseNode):
             bpy.ops.object.select_all(action='DESELECT')
             bpy.data.objects[objectName].select_set(True)
             path = os.path.dirname(exportPath) + "/splash_" + objectName + ".obj"
-            bpy.ops.export_scene.obj(filepath=path, check_existing=False, use_selection=True, use_mesh_modifiers=True, use_materials=False,
-                                     use_uvs=True, axis_forward='Y', axis_up='Z')
+            if bpy.app.version[0] < 4:
+                bpy.ops.export_scene.obj(filepath=path, check_existing=False, use_selection=True, use_mesh_modifiers=True, use_materials=False,
+                                         use_uvs=True, axis_forward='Y', axis_up='Z')
+            else:
+                bpy.ops.wm.obj_export(filepath=path, check_existing=False, export_selected_objects=True, apply_modifiers=True, export_materials=False,
+                                      export_uv=True, forward_axis='Y', up_axis='Z')
 
             values['file'] = "\"" + "splash_" + objectName + ".obj" + "\""
         else:
@@ -362,13 +366,20 @@ class SplashMeshNode(SplashBaseNode):
         object_type = self.sp_meshTypeProperty
 
         if object_type == "mesh":
-            object_name = self.inputs['Object'].default_value
-            if object_name == "":
-                return False, "No object has been selected for node " + self.name
-            elif len(bpy.data.objects[object_name].data.uv_layers) == 0:
-                return False, "Object " + object_name + " does not have any UV coordinates"
-            else:
-                return True, ""
+            if self.inputs['Object'].hide is False:
+                object_name = self.inputs['Object'].default_value
+                if object_name == "":
+                    return False, "No object has been selected for node " + self.name
+                elif len(bpy.data.objects[object_name].data.uv_layers) == 0:
+                    return False, "Object " + object_name + " does not have any UV coordinates"
+                else:
+                    return True, ""
+            elif self.inputs['File'].hide is False:
+                file_path = self.inputs['File'].default_value
+                if file_path == "":
+                    return False, "No file path has been set for node " + self.name
+                else:
+                    return True, ""
         elif object_type == "mesh_shmdata":
             if self.inputs['File'].default_value == "":
                 return False, "No file path has been set for node " + self.name
