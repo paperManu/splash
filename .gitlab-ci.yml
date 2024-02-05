@@ -280,7 +280,7 @@ staging:archlinux:gcc-amd64-bundled-libs:
     - pacman -Syyu --noconfirm --disable-download-timeout
     - pacman -Sy --noconfirm --disable-download-timeout git cmake ninja gcc yasm pkgconfig
       libxi libxinerama libxrandr libxcursor jsoncpp mesa glm gsl libgphoto2 python3
-      portaudio zip zlib ffmpeg opencv qt6-base vtk hdf5 glew libxkbcommon fmt
+      portaudio zip zlib ffmpeg opencv qt6-base vtk hdf5 glew libxkbcommon fmt make
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
