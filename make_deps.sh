@@ -15,10 +15,6 @@ if [ ! -d third_parties ]; then
     mkdir third_parties
 fi
 
-# FFmpeg
-echo "Building FFmpeg..."
-./build_ffmpeg.sh
-
 # ZMQ
 echo "Building ZMQ..."
 ./build_zmq.sh

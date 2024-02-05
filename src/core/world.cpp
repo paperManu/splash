@@ -577,6 +577,12 @@ bool World::addScene(const std::string& sceneName, const std::string& /*sceneDis
         }
 
 #elif HAVE_WINDOWS // HAVE_LINUX
+        if (_embeddedScene)
+        {
+            Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - A Scene already exists, cannot created another one" << Log::endl;
+            return false;
+        }
+
         Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an embedded Scene" << Log::endl;
         auto sceneContext = _context;
         sceneContext.childSceneName = sceneName;
@@ -880,10 +886,24 @@ bool World::copyCameraParameters(const std::string& filename)
 bool World::loadConfig(const std::string& filename, Json::Value& configuration)
 {
     if (!Utils::loadJsonFile(filename, configuration))
+    {
+        Log::get() << Log::WARNING << "Unable to load configuration file " << filename << Log::endl;
         return false;
+    }
+
+    if (!configuration.isMember("description") || configuration["description"].asString() != Constants::FILE_CONFIGURATION)
+    {
+        Log::get() << Log::WARNING << "File " << filename << " is not a valid project file" << Log::endl;
+        return false;
+    }
 
     if (!Utils::checkAndUpgradeConfiguration(configuration))
+    {
+        Log::get() << Log::WARNING << "Configuration check failed for file " << filename << Log::endl;
         return false;
+    }
+
+    Log::get() << Log::MESSAGE << "Loading configuration file " << filename << Log::endl;
 
     _configFilename = filename;
     _configurationPath = Utils::getPathFromFilePath(_configFilename);
@@ -898,10 +918,18 @@ bool World::loadProject(const std::string& filename)
     {
         Json::Value partialConfig;
         if (!Utils::loadJsonFile(filename, partialConfig))
+        {
+            Log::get() << Log::WARNING << "Unable to load project file " << filename << Log::endl;
             return false;
+        }
 
         if (!partialConfig.isMember("description") || partialConfig["description"].asString() != Constants::FILE_PROJECT)
+        {
+            Log::get() << Log::WARNING << "File " << filename << " is not a valid project file" << Log::endl;
             return false;
+        }
+
+        Log::get() << Log::MESSAGE << "Loading project file " << filename << Log::endl;
 
         _projectFilename = filename;
         // The configuration path is overriden with the project file path
@@ -1087,7 +1115,7 @@ void World::registerAttributes()
     addAttribute("loadConfig",
         [&](const Values& args) {
             auto filename = args[0].as<std::string>();
-            runAsyncTask([=]() {
+            addTask([=]() {
                 Json::Value config;
                 if (loadConfig(filename, config))
                 {
@@ -1202,10 +1230,7 @@ void World::registerAttributes()
     addAttribute("loadProject",
         [&](const Values& args) {
             auto filename = args[0].as<std::string>();
-            addTask([this, filename]() {
-                Log::get() << "Loading partial configuration from " << filename << Log::endl;
-                loadProject(filename);
-            });
+            addTask([this, filename]() { loadProject(filename); });
             return true;
         },
         {'s'});

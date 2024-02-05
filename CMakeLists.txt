@@ -17,7 +17,7 @@
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.16)
 
 # Force the installation prefix, as under certain circumstances on Windows it defaults
 # to "C:\Program Files (x86)", which is not correct and conflicts the installation path
@@ -30,7 +30,7 @@ endif()
 
 project(
     splash
-    VERSION 0.10.4
+    VERSION 0.10.6
     LANGUAGES C CXX
 )
 
@@ -86,10 +86,6 @@ endif()
 
 find_package(PkgConfig REQUIRED)
 find_package(Threads)
-
-if (USE_SYSTEM_LIBS)
-  find_package(glfw3)
-endif()
 
 if (BUILD_CODE)
     # Mandatory dependencies
@@ -228,8 +224,8 @@ elseif (WIN32)
   set(CPACK_PACKAGE_EXECUTABLES "splash" "Splash")
   set(CPACK_PACKAGE_INSTALL_DIRECTORY "${CMAKE_PROJECT_NAME}")
   set(CPACK_NSIS_DISPLAY_NAME "splash")
-  set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/data/share/icons/hicolor/128x128/apps/splash.ico")
-  set(CPACK_NSIS_MUI_UNIICON "${CMAKE_SOURCE_DIR}/data/share/icons/hicolor/128x128/apps/splash.ico")
+  set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/data/share/icons/splash.ico")
+  set(CPACK_NSIS_MUI_UNIICON "${CMAKE_SOURCE_DIR}/data/share/icons/splash.ico")
   set(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\${CMAKE_PROJECT_NAME}.exe")
   set(CPACK_NSIS_HELP_LINK "https://splashmapper.xyz/en/contents.html")
   set(CPACK_NSIS_URL_INFO_ABOUT "https://splashmapper.xyz")
@@ -269,7 +265,6 @@ endfunction()
 
 info_cfg_option(USE_SYSTEM_LIBS)
 info_cfg_option(GPHOTO_VERSION)
-info_cfg_option(glfw3_VERSION)
 info_cfg_option(FFMPEG_libavformat_VERSION)
 info_cfg_option(FFMPEG_libavcodec_VERSION)
 info_cfg_option(FFMPEG_libavutil_VERSION)

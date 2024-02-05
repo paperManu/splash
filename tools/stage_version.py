@@ -26,7 +26,7 @@ metainfo_file = os.path.join("data", "share", "metainfo", "xyz.splashmapper.Spla
 desktop_file = os.path.join("data", "share", "applications", "splash.desktop")
 blender_addon_init_file = os.path.join("addons", "blender", "splash", "__init__.py")
 
-version_pattern = "\s+VERSION (\d+).(\d+).(\d+)"
+version_pattern = "\\s+VERSION (\\d+).(\\d+).(\\d+)"
 git_path = "git@gitlab.com:splashmapper"
 git_project = "Splash"
 remote_repo = 'origin'
@@ -135,7 +135,7 @@ def update_metainfo_file(project: str, version: List[int]) -> None:
         with open(changed_file, 'w') as new_file:
             found_releases = False
             for line in old_file:
-                release_line = re.search("    <release version=\"\d+\.+\d+\.+\d+\" date=", line)
+                release_line = re.search("    <release version=\"\\d+\\.+\\d+\\.+\\d+\" date=", line)
                 if release_line and not found_releases:
                     found_releases = True
                     new_line = f"    <release version=\"{version[0]}.{version[1]}.{version[2]}\" date=\"{datetime.date.today()}\" />\n"

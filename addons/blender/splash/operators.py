@@ -258,10 +258,15 @@ class SplashSelectFilePath(Operator):
                 self.current_node = nodeTree.nodes[nodeIndex]
 
         if self.current_node is not None:
-            self.current_node.inputs['File'].default_value = self.filepath
-            self.current_node.inputs['File'].enabled = True
-            self.current_node.inputs['Object'].default_value = ""
-            self.current_node.inputs['Object'].enabled = False
+            file_input = self.current_node.inputs.get('File')
+            if file_input:
+                file_input.default_value = self.filepath
+                file_input.hide = False
+
+            object_input = self.current_node.inputs.get('Object')
+            if object_input:
+                object_input.default_value = ""
+                object_input.hide = True
 
         return {'FINISHED'}
 
@@ -288,11 +293,12 @@ class SplashSelectObject(Operator):
             file_input = self.current_node.inputs.get('File')
             if file_input:
                 file_input.default_value = ""
-                file_input.enabled = False
+                file_input.hide = True
+
             object_input = self.current_node.inputs.get('Object')
             if object_input:
                 object_input.default_value = context.active_object.name
-                object_input.enabled = True
+                object_input.hide = False
 
         return {'FINISHED'}
 
