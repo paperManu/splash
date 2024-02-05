@@ -277,6 +277,7 @@ void Image_Shmdata::readUncompressedFrame(void* data, int /*data_size*/)
         {
             spec.format = "UYVY";
             spec.bpp = 16;
+            spec.channels = 2;
         }
 
         _readerBuffer = ImageBuffer(spec);
