@@ -115,12 +115,11 @@ class WindowGfxImpl : public Splash::gfx::WindowGfxImpl
     /**
      * Swap back and front buffers
      * \param windowIndex Window index, among all of Splash windows
-     * \param srgb True if the window is rendered in the sRGB color space
      * \param renderTextureUpdated True if the render textures have been updated
      * \param width Width of the rendering viewport
      * \param height Height of the rendering viewport
      */
-    void swapBuffers(int windowIndex, bool srgb, bool& renderTextureUpdated, uint32_t width, uint32_t height) final;
+    void swapBuffers(int windowIndex, bool& renderTextureUpdated, uint32_t width, uint32_t height) final;
 
   private:
     GLuint _readFbo{0};

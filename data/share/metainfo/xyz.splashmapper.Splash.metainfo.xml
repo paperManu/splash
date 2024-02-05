@@ -8,9 +8,21 @@
   <summary>Video-mapping software</summary>
   <description>
     <p>
-Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending and color), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers is planned.
+      Splash is a free (as in GPL) modular mapping software. Provided that the
+      user creates a 3D model with UV mapping of the projection surface, Splash
+      will take care of calibrating the videoprojectors (intrinsic and extrinsic
+      parameters, blending and color), and feed them with the input video
+      sources. Splash can handle multiple inputs, mapped on multiple 3D models,
+      and has been tested with up to eight outputs on two graphic cards. It
+      currently runs on a single computer but support for multiple computers is
+      planned.
     </p>
   </description>
+  <categories>
+    <category>Graphics</category>
+    <category>3DGraphics</category>
+    <category>Player</category>
+  </categories>
   <url type="homepage">https://splashmapper.xyz</url>
   <screenshots>
     <screenshot type="default">
@@ -19,6 +31,7 @@ Splash is a free (as in GPL) modular mapping software. Provided that the user cr
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.10.6" date="2024-02-05" />
     <release version="0.10.4" date="2024-01-08" />
     <release version="0.10.2" date="2023-12-05" />
     <release version="0.10.0" date="2023-11-12" />

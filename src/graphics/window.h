@@ -212,10 +212,9 @@ class Window final : public GraphObject
     int64_t _presentationDelay{0};
 
     bool _withDecoration{true};
+    int _fullscreen{-1};
     std::array<int32_t, 4> _windowRect{};
     bool _resized{true};
-    bool _srgb{true};
-    float _gammaCorrection{2.2f};
     Values _layout{0, 1, 2, 3};
     int _swapInterval{1};
     bool _guiOnly{false};
@@ -246,11 +245,6 @@ class Window final : public GraphObject
     static std::atomic_bool _quitFlag;                                      // Grabs close window events
 
     /**
-     * Update size and position parameters based on the real window parameters
-     */
-    void updateSizeAndPos();
-
-    /**
      * Register new attributes
      */
     void registerAttributes();
@@ -259,6 +253,12 @@ class Window final : public GraphObject
      * Set up the user events callbacks
      */
     void setEventsCallbacks();
+
+    /**
+     * Set the monitor for full screen display
+     * \param index Monitor index, -1 to set as windowed
+     */
+    void setFullscreenMonitor(int32_t index);
 
     /**
      * Set whether the window has decorations

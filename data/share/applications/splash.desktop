@@ -2,6 +2,6 @@
 Name=Splash
 Exec=splash
 Type=Application
-Icon=splash.png
+Icon=splash
 Categories=Graphics;3DGraphics;Player;
-Version=0.10.4
+Keywords=videomapping;projection;calibration;immersion;live;

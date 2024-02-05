@@ -296,19 +296,6 @@ void Window::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-void Window::updateSizeAndPos()
-{
-    const auto sizeAndPos = _gfxImpl->getRenderingContext()->getPositionAndSize();
-
-    for (size_t i = 0; i < 4; ++i)
-        if (sizeAndPos[i] != _windowRect[i])
-            _resized = true;
-
-    if (_resized)
-        _windowRect = sizeAndPos;
-}
-
-/*************/
 void Window::render()
 {
 #ifdef DEBUGGL
@@ -320,7 +307,20 @@ void Window::render()
 #endif
 
     // Update the window position and size
-    updateSizeAndPos();
+    // This is called only if another resizing operation is _not_ in progress
+    if (!_resized)
+    {
+        _fullscreen = _gfxImpl->getRenderingContext()->getFullscreenMonitor();
+
+        const auto sizeAndPos = _gfxImpl->getRenderingContext()->getPositionAndSize();
+
+        for (size_t i = 0; i < 4; ++i)
+            if (sizeAndPos[i] != _windowRect[i])
+                _resized = true;
+
+        if (_resized)
+            _windowRect = sizeAndPos;
+    }
 
     // Update the FBO configuration if needed
     if (_resized)
@@ -347,7 +347,6 @@ void Window::render()
 
         _screen->activate();
         _screen->getShader()->setUniform("layout", _layout);
-        _screen->getShader()->setUniform("_gamma", {static_cast<float>(_srgb), _gammaCorrection});
         _screen->draw();
         _screen->deactivate();
     }
@@ -410,7 +409,7 @@ void Window::swapBuffers()
     // Only one window will wait for vblank, the others draws directly into front buffer
     const auto windowIndex = _swappableWindowsCount++;
 
-    _gfxImpl->swapBuffers(windowIndex, _srgb, _renderTextureUpdated, _windowRect[2], _windowRect[3]);
+    _gfxImpl->swapBuffers(windowIndex, _renderTextureUpdated, _windowRect[2], _windowRect[3]);
 
     _frontBufferTimestamp = _backBufferTimestamp;
     _presentationDelay = Timer::getTime() - _frontBufferTimestamp;
@@ -524,6 +523,9 @@ void Window::setEventsCallbacks()
 /*************/
 void Window::setWindowDecoration(bool hasDecoration)
 {
+    if (hasDecoration == _withDecoration)
+        return;
+
     auto renderingContext = _gfxImpl->getRenderingContext();
     renderingContext->setAsCurrentContext();
     renderingContext->setDecorations(hasDecoration);
@@ -536,6 +538,8 @@ void Window::setWindowDecoration(bool hasDecoration)
 
     setEventsCallbacks();
     showCursor(false);
+
+    _withDecoration = hasDecoration;
 
     return;
 }
@@ -550,6 +554,15 @@ void Window::updateSwapInterval(int swapInterval)
     renderingContext->setAsCurrentContext();
     renderingContext->setSwapInterval(std::max<int>(-1, swapInterval));
     renderingContext->releaseContext();
+}
+
+/*************/
+void Window::setFullscreenMonitor(int32_t index)
+{
+    if (!_gfxImpl || !_gfxImpl->windowExists())
+        return;
+
+    _gfxImpl->getRenderingContext()->setFullscreenMonitor(index);
 }
 
 /*************/
@@ -569,9 +582,9 @@ void Window::registerAttributes()
     addAttribute(
         "decorated",
         [&](const Values& args) {
-            _withDecoration = args[0].as<bool>();
+            const auto withDecoration = args[0].as<bool>();
             addTask([=]() {
-                setWindowDecoration(_withDecoration);
+                setWindowDecoration(withDecoration);
                 updateWindowShape();
             });
             return true;
@@ -579,6 +592,18 @@ void Window::registerAttributes()
         [&]() -> Values { return {_withDecoration}; },
         {'b'});
     setAttributeDescription("decorated", "If set to 0, the window is drawn without decoration");
+
+    addAttribute(
+        "fullscreen",
+        [&](const Values& args) {
+            _fullscreen = args[0].as<int>();
+            _resized = true;
+            addTask([=]() { setFullscreenMonitor(_fullscreen); });
+            return true;
+        },
+        [&]() -> Values { return {_fullscreen}; },
+        {'i'});
+    setAttributeDescription("fullscreen", "Index of the monitor to show the window fullscreen, -1 if windowed");
 
     addAttribute(
         "guiOnly",
@@ -589,26 +614,6 @@ void Window::registerAttributes()
         [&]() -> Values { return {_guiOnly}; },
         {'b'});
     setAttributeDescription("guiOnly", "If true, only the GUI will be able to link to this window. Does not affect pre-existing links.");
-
-    addAttribute(
-        "srgb",
-        [&](const Values& args) {
-            _srgb = args[0].as<bool>();
-            return true;
-        },
-        [&]() -> Values { return {_srgb}; },
-        {'b'});
-    setAttributeDescription("srgb", "If true, the window is drawn in the sRGB color space");
-
-    addAttribute(
-        "gamma",
-        [&](const Values& args) {
-            _gammaCorrection = args[0].as<float>();
-            return true;
-        },
-        [&]() -> Values { return {_gammaCorrection}; },
-        {'r'});
-    setAttributeDescription("gamma", "Set the gamma correction for this window");
 
     // Attribute to configure the placement of the various texture input
     addAttribute(

@@ -33,11 +33,11 @@ cache:
   before_script:
     - apt update -qq
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends ca-certificates
-      ccache wget curl build-essential git-core libjsoncpp-dev zip cmake automake libtool
-      libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev
+      ccache wget curl build-essential git-core libjsoncpp-dev zip cmake cmake-extras automake
+      libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev
       libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev
       libopencv-dev software-properties-common uuid-dev libavcodec-dev libavformat-dev
-      libavutil-dev libswscale-dev
+      libavutil-dev libswscale-dev libwayland-dev libxkbcommon-dev ninja-build
   
     # CCache stuff
     - mkdir -p ccache
@@ -76,7 +76,7 @@ test:22.04:clang-amd64-system-libs:
   image: ubuntu:22.04
   script: 
     # Test using Clang with system libs
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglm-dev
       libsnappy-dev libzmq3-dev clang
     - rm -rf build && mkdir build
     - CC=clang CXX=clang++ cmake -B build -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
@@ -209,7 +209,7 @@ staging:23.10:gcc-amd64-system-libs:
     - .ubuntu
   image: ubuntu:23.10
   script: 
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglm-dev
       libsnappy-dev libzmq3-dev
     - rm -rf build && mkdir build
     - cmake -B build -DCMAKE_BUILD_TYPE=Debug -DPROFILE=ON -DWITH_SANITIZE=ON -DUSE_SYSTEM_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr
@@ -229,7 +229,7 @@ staging:23.10:clang-amd64-system-libs:
     - .ubuntu
   image: ubuntu:23.10
   script: 
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglfw3-dev libglm-dev
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglm-dev
       libsnappy-dev libzmq3-dev clang
     - rm -rf build && mkdir build
     - CC=clang CXX=clang++ cmake -B build -DCMAKE_BUILD_TYPE=Debug -DPROFILE=ON -DUSE_SYSTEM_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr
@@ -256,7 +256,7 @@ staging:fedora:gcc-amd64-system-bundled-libs:
         yasm portaudio-devel python3-numpy opencv-devel jsoncpp-devel libuuid-devel libX11-devel
         libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel mesa-libGL-devel ccache
         libavcodec-free-devel libavformat-free-devel libavutil-free-devel libswscale-free-devel
-        libasan libubsan
+        libasan libubsan wayland-devel libxkbcommon-devel ninja-build
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
@@ -278,8 +278,9 @@ staging:archlinux:gcc-amd64-bundled-libs:
   allow_failure: true
   before_script:
     - pacman -Syyu --noconfirm --disable-download-timeout
-    - pacman -Sy --noconfirm --disable-download-timeout git cmake make gcc yasm ccache pkgconfig libxi libxinerama libxrandr
-      libxcursor jsoncpp mesa gsl libgphoto2 python3 portaudio zip zlib ffmpeg opencv qt5-base vtk hdf5 glew fmt openmpi
+    - pacman -Sy --noconfirm --disable-download-timeout git cmake ninja gcc yasm pkgconfig
+      libxi libxinerama libxrandr libxcursor jsoncpp mesa glm gsl libgphoto2 python3
+      portaudio zip zlib ffmpeg opencv qt6-base vtk hdf5 glew libxkbcommon fmt
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
@@ -292,6 +293,34 @@ staging:archlinux:gcc-amd64-bundled-libs:
     - make check
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging' || $CI_COMMIT_BRANCH == 'archlinux'
+
+staging:flatpak:
+  # Note: to run flatpak-builder inside docker, it needs to be configured as privileged
+  # in the Gitlab configuration file (usually in /etc/gitlab-runner/config.toml)
+  stage: staging
+  tags:
+    - privileged
+  image: ubuntu:22.04
+  allow_failure: false
+  before_script:
+    - apt update -qq
+    - DEBIAN_FRONTEND=noninteractive apt install -y flatpak-builder
+    - flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+    - flatpak install -y flathub org.freedesktop.Platform//22.08 org.freedesktop.Sdk//22.08
+  script:
+    - rm -rf splash.tar.gz && touch splash.tar.gz
+    - tar --exclude='.git' --exclude='ccache' --exclude='splash.tar.gz' -cvzf splash.tar.gz .
+    - cd tests/packaging
+    - flatpak-builder --ccache --repo=flatpak_repo build --force-clean xyz.splashmapper.Splash.json
+    - flatpak build-bundle flatpak_repo splash.flatpak xyz.splashmapper.Splash
+    - mv splash.flatpak ../../
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'staging' || $CI_COMMIT_BRANCH == 'flatpak'
+  artifacts:
+    name: "splash-flatpak"
+    paths:
+      - "splash.flatpak"
+    expire_in: 2 weeks
 
 staging:windows:
   # Note: this job works on Windows with MSYS2 / MINGW64 already installed
@@ -306,7 +335,7 @@ staging:windows:
   script:
     - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm'
     - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm --needed zip git'
-    - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm --needed mingw-w64-ucrt-x86_64-{glfw,cmake,make,gcc,yasm,pkgconf,jsoncpp,glm,gsl,python3,portaudio,zlib,ffmpeg,zeromq,cppzmq,snappy,opencv,gphoto2}'
+    - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm --needed mingw-w64-ucrt-x86_64-{cmake,make,gcc,yasm,pkgconf,jsoncpp,glm,gsl,python3,portaudio,zlib,ffmpeg,zeromq,cppzmq,snappy,opencv,gphoto2}'
     - C:\msys64\usr\bin\bash -lc 'bash -x ./tools/build_windows'
   artifacts:
     name: "splash_windows_installer"
@@ -340,7 +369,7 @@ package:debian:22.04:
       - "*.deb"
       - "*.tar.bz2"
   rules:
-    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
     - if: $CI_COMMIT_BRANCH == 'master'
 
 package:debian:23.10:
@@ -362,7 +391,7 @@ package:debian:23.10:
       - "*.deb"
       - "*.tar.bz2"
   rules:
-    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
     - if: $CI_COMMIT_BRANCH == 'master'
 
 package:blender_addon:
@@ -384,7 +413,7 @@ package:blender_addon:
     paths:
       - "*.tar.bz2"
   rules:
-    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
     - if: $CI_COMMIT_BRANCH == 'master'
 
 package:fullsources:
@@ -394,12 +423,13 @@ package:fullsources:
     - apk update && apk upgrade
   script:
     # This job packages the whole sources, including the submodules
-    - tar cvzf splash.tar.gz --exclude='.git' --exclude='ccache' .
+    - rm -rf splash.tar.gz && touch splash.tar.gz
+    - tar --exclude='.git' --exclude='ccache' --exclude='splash.tar.gz' -cvzf splash.tar.gz .
   artifacts:
     paths:
       - splash.tar.gz
   rules:
-    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
     - if: $CI_COMMIT_BRANCH == 'master'
 
 package:windows:
@@ -415,14 +445,14 @@ package:windows:
   script:
     - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm'
     - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm --needed zip git'
-    - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm --needed mingw-w64-ucrt-x86_64-{glfw,cmake,make,gcc,yasm,pkgconf,jsoncpp,glm,gsl,python3,portaudio,zlib,ffmpeg,zeromq,cppzmq,snappy,opencv,gphoto2}'
+    - C:\msys64\usr\bin\bash -lc 'pacman -Syuu --noconfirm --needed mingw-w64-ucrt-x86_64-{cmake,make,gcc,yasm,pkgconf,jsoncpp,glm,gsl,python3,portaudio,zlib,ffmpeg,zeromq,cppzmq,snappy,opencv,gphoto2}'
     - C:\msys64\usr\bin\bash -lc 'bash -x ./tools/build_windows'
   artifacts:
     name: "splash_windows_installer"
     paths:
       - "splash-*-win64.exe"
   rules:
-    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
     - if: $CI_COMMIT_BRANCH == 'master'
 
 #

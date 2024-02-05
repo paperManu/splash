@@ -23,5 +23,5 @@ add_custom_command(
 )
 
 add_custom_target(splash-launcher ALL DEPENDS update_version)
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/share DESTINATION "/")
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/share/" DESTINATION "share")
 install(FILES share/icons/hicolor/512x512/apps/splash.png DESTINATION "share/splash/")

@@ -130,12 +130,11 @@ class WindowGfxImpl
     /**
      * Copy the given portion of rendered FBO up to the front buffer, respecting vertical sync if active
      * \param windowIndex Window index, among all of Splash windows
-     * \param srgb True if the window is rendered in the sRGB color space
      * \param renderTextureUpdated True if the render textures have been updated
      * \param width Width of the rendering viewport
      * \param height Height of the rendering viewport
      */
-    virtual void swapBuffers(int windowIndex, bool _srgb, bool& _renderTextureUpdated, uint32_t width, uint32_t height) = 0;
+    virtual void swapBuffers(int windowIndex, bool& _renderTextureUpdated, uint32_t width, uint32_t height) = 0;
 
   protected:
     std::unique_ptr<RenderingContext> _renderingContext{nullptr};
