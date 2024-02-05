@@ -4,6 +4,7 @@
   <id>xyz.splashmapper.Splash</id>
   <launchable type="desktop-id">xyz.splashmapper.Splash.desktop</launchable>
   <content_rating type="oars-1.1" />
+  <developer_name>Emmanuel Durand</developer_name>
   <name>Splash</name>
   <summary>Video-mapping software</summary>
   <description>
