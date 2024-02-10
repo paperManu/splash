@@ -103,6 +103,7 @@ include_directories(${GLFW_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIRS})
 include_directories(${ZMQ_INCLUDE_DIRS})
 include_directories(${JSONCPP_INCLUDE_DIRS})
+include_directories(${SH4LT_INCLUDE_DIRS})
 include_directories(${SHMDATA_INCLUDE_DIRS})
 include_directories(${GPHOTO_INCLUDE_DIRS})
 include_directories(${FFMPEG_INCLUDE_DIRS})
@@ -119,6 +120,7 @@ link_directories(${GLFW_LIBRARY_DIRS})
 
 link_directories(${JSONCPP_LIBRARY_DIRS})
 link_directories(${GSL_LIBRARY_DIRS})
+link_directories(${SH4LT_LIBRARY_DIRS})
 link_directories(${SHMDATA_LIBRARY_DIRS})
 link_directories(${GPHOTO_LIBRARY_DIRS})
 link_directories(${PORTAUDIO_LIBRARY_DIRS})
@@ -302,6 +304,12 @@ if (CALIMIRO_FOUND AND OPENCV_FOUND)
     )
 endif()
 
+if (HAVE_SH4LT)
+    target_sources(splash-${API_VERSION} PRIVATE
+        image/image_sh4lt.cpp
+    )
+endif()
+
 if (HAVE_SHMDATA)
     target_sources(splash-${API_VERSION} PRIVATE
         image/image_ndi.cpp
@@ -362,6 +370,7 @@ target_link_libraries(splash-${API_VERSION} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(splash-${API_VERSION} ${JSONCPP_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${FFMPEG_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GSL_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} ${SH4LT_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${SHMDATA_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GPHOTO_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${PORTAUDIO_LIBRARIES})

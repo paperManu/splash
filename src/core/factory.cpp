@@ -34,6 +34,10 @@
 #include "./image/image_gphoto.h"
 #endif
 
+#if HAVE_SH4LT
+#include "./image/image_sh4lt.h"
+#endif
+
 #if HAVE_SHMDATA
 #include "./image/image_ndi.h"
 #include "./image/image_shmdata.h"
@@ -299,6 +303,22 @@ void Factory::registerObjects()
         GraphObject::Category::IMAGE,
         "digital camera",
         "Image object reading from from a GPhoto2 compatible camera.",
+        true);
+#endif
+
+#if HAVE_SH4LT
+    _objectBook["image_sh4lt"] = Page(
+        [&](RootObject* root) {
+            std::shared_ptr<GraphObject> object;
+            if (!_scene)
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image_Sh4lt>(root));
+            else
+                object = std::dynamic_pointer_cast<GraphObject>(std::make_shared<Image>(root));
+            return object;
+        },
+        GraphObject::Category::IMAGE,
+        "video through Sh4lt (shared memory)",
+        "Image object reading frames from a Sh4lt shared memory.",
         true);
 #endif
 
