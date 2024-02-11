@@ -216,6 +216,12 @@ add_executable(perf_dense_map performance_tests/perf_dense_map.cpp)
 target_link_libraries(perf_dense_map splash-${API_VERSION})
 add_custom_command(OUTPUT run_perf_dense_map COMMAND ./perf_dense_map DEPENDS perf_dense_map)
 
+if (HAVE_SH4LT)
+    add_executable(perf_sh4lt performance_tests/perf_sh4lt.cpp)
+    target_link_libraries(perf_sh4lt splash-${API_VERSION})
+    add_custom_command(OUTPUT run_perf_sh4lt COMMAND ./perf_sh4lt DEPENDS perf_sh4lt)
+endif()
+
 if (HAVE_SHMDATA)
     add_executable(perf_shmdata performance_tests/perf_shmdata.cpp)
     target_link_libraries(perf_shmdata splash-${API_VERSION})
