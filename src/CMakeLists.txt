@@ -307,6 +307,8 @@ endif()
 if (HAVE_SH4LT)
     target_sources(splash-${API_VERSION} PRIVATE
         image/image_sh4lt.cpp
+        sink/sink_sh4lt.cpp
+        sink/sink_sh4lt_encoded.cpp
     )
 endif()
 

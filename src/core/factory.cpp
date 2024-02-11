@@ -36,6 +36,8 @@
 
 #if HAVE_SH4LT
 #include "./image/image_sh4lt.h"
+#include "./sink/sink_sh4lt.h"
+#include "./sink/sink_sh4lt_encoded.h"
 #endif
 
 #if HAVE_SHMDATA
@@ -394,6 +396,18 @@ void Factory::registerObjects()
         GraphObject::Category::MISC,
         "sink a texture to a host buffer",
         "Get the texture content to a host buffer. Only used internally.");
+
+#if HAVE_SH4LT
+    _objectBook["sink_sh4lt"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Sink_Sh4lt>(root)); },
+        GraphObject::Category::MISC,
+        "sink a texture to a Sh4lt",
+        "Outputs texture to a Sh4lt shared memory.");
+
+    _objectBook["sink_sh4lt_encoded"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Sink_Sh4lt_Encoded>(root)); },
+        GraphObject::Category::MISC,
+        "sink a texture as an encoded video to a Sh4lt shared memory",
+        "Outputs texture as a compressed frame to a Sh4lt shared memory.");
+#endif
 
 #if HAVE_SHMDATA
     _objectBook["sink_shmdata"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Sink_Shmdata>(root)); },
