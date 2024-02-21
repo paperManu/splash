@@ -26,7 +26,7 @@ void Sink_Sh4lt::handlePixels(const char* pixels, const ImageBufferSpec& spec)
         _previousFramerate = _framerate;
         _shtype = sh4lt::shtype::shtype_from_gst_caps(getCaps(), _label, _group);
         _writer.reset();
-        _writer = std::make_unique<sh4lt::Writer>(_shtype, size, &_logger);
+        _writer = std::make_unique<sh4lt::Writer>(_shtype, size, std::make_shared<Utils::Sh4ltLogger>());
     }
 
     if (_writer)

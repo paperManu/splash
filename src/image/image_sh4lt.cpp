@@ -43,12 +43,10 @@ bool Image_Sh4lt::read(const std::string& filename)
 {
     _reader = std::make_unique<sh4lt::Follower>(
         filename,
-        [&](void* data, size_t size, const sh4lt::Time::info_t*) {
-            onData(data, size);
-        },
+        [&](void* data, size_t size, const sh4lt::Time::info_t*) { onData(data, size); },
         [&](const sh4lt::ShType& caps) { onShType(caps); },
         [&]() {},
-        &_logger);
+        std::make_shared<Utils::Sh4ltLogger>());
 
     return true;
 }
@@ -63,7 +61,7 @@ bool Image_Sh4lt::read_by_label()
         },
         [&](const sh4lt::ShType& caps) { onShType(caps); },
         [&]() {},
-        &_logger);
+        std::make_shared<Utils::Sh4ltLogger>());
 
     return true;
 }
@@ -103,12 +101,6 @@ void Image_Sh4lt::onShType(const sh4lt::ShType& shtype)
     _isYUV = false;
     _is420 = false;
     _is422 = false;
-
-    //         regVideo = std::regex("(.*video/x-raw)(.*)", std::regex_constants::extended);
-    //     regHap = std::regex("(.*video/x-gst-fourcc-HapY)(.*)", std::regex_constants::extended);
-    //     regFormat = std::regex("(.*format=\\(string\\))(.*)", std::regex_constants::extended);
-    //     regWidth = std::regex("(.*width=)(.*)", std::regex_constants::extended);
-    //     regHeight = std::regex("(.*height=)(.*)", std::regex_constants::extended);
 
     if (shtype.media() == "video/x-raw")
     {

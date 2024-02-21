@@ -65,7 +65,6 @@ class Image_Sh4lt final : public Image
     static const uint32_t _sh4ltCopyThreads = 2;
     std::string _label{""};
     std::string _group{sh4lt::ShType::default_group()};
-    Utils::Sh4ltLogger _logger;
     std::unique_ptr<sh4lt::Follower> _reader{nullptr};
 
     ImageBuffer _readerBuffer;

@@ -33,7 +33,7 @@
 const sh4lt::ShType shtype{/*media=*/"nomedia", /*label=*/"perf_sh4lt", /*group=*/"test"};
 const size_t shmsize = 1 << 26;
 const size_t loopCount = 1 << 8;
-Splash::Utils::Sh4ltLogger shmlogger;
+auto shmlogger = std::make_shared<Splash::Utils::Sh4ltLogger>();
 
 std::atomic_int bufferCount{0};
 std::mutex copyMutex{};
@@ -54,9 +54,9 @@ void onData(void* data, size_t size)
 int main()
 {
 
-    sh4lt::Writer writer(shtype, shmsize, &shmlogger);
+    sh4lt::Writer writer(shtype, shmsize, shmlogger);
     sh4lt::Follower follower(
-        shtype.path(), [&](void* data, size_t size, const sh4lt::Time::info_t*) { onData(data, size); }, nullptr, nullptr, &shmlogger);
+        shtype.path(), [&](void* data, size_t size, const sh4lt::Time::info_t*) { onData(data, size); }, nullptr, nullptr, shmlogger);
 
     std::cout << "Preparing buffer data...\n";
     for (size_t i = 0; i < shmsize; ++i)

@@ -69,7 +69,6 @@ class Sink_Sh4lt_Encoded final : public Sink
     std::string _group{sh4lt::ShType::default_group()};
     std::string _label{"splash encoded"};
     sh4lt::ShType _shtype{};
-    Utils::Sh4ltLogger _logger;
     std::unique_ptr<sh4lt::Writer> _writer{nullptr};
     ImageBufferSpec _previousSpec{};
     uint32_t _previousFramerate{0};
