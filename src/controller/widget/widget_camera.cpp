@@ -77,7 +77,7 @@ void GuiCamera::render()
         int w = ImGui::GetWindowWidth() - 3 * leftMargin;
         int h = w * size[1].as<int>() / size[0].as<int>();
 
-        if (ImGui::ImageButton((void*)(intptr_t)camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
+        if (ImGui::ImageButton(camera->getName().c_str(), (void*)(intptr_t)camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
         {
             // If shift is pressed, we hide / unhide this camera
             if (io.KeyCtrl)
@@ -489,38 +489,38 @@ void GuiCamera::processKeyEvents()
         return;
 
     ImGuiIO& io = ImGui::GetIO();
-    if (ImGui::IsKeyPressed(' ', false))
+    if (ImGui::IsKeyPressed((ImGuiKey)' ', false))
     {
         nextCamera();
         return;
     }
-    else if (ImGui::IsKeyPressed('A', false))
+    else if (ImGui::IsKeyPressed((ImGuiKey)'A', false))
     {
         showAllCalibrationPoints();
         return;
     }
-    else if (ImGui::IsKeyPressed('C', false))
+    else if (ImGui::IsKeyPressed((ImGuiKey)'C', false))
     {
         doCalibration();
         return;
     }
-    else if (ImGui::IsKeyPressed('H', false))
+    else if (ImGui::IsKeyPressed((ImGuiKey)'H', false))
     {
         _hideCameras = !_camerasHidden;
         return;
     }
-    else if (ImGui::IsKeyPressed('O', false))
+    else if (ImGui::IsKeyPressed((ImGuiKey)'O', false))
     {
         showAllCamerasCalibrationPoints();
         return;
     }
-    else if (ImGui::IsKeyPressed('V', false))
+    else if (ImGui::IsKeyPressed((ImGuiKey)'V', false))
     {
         _camerasColorized = !_camerasColorized;
         return;
     }
     // Reset to the previous camera calibration
-    else if (ImGui::IsKeyPressed('Z', false))
+    else if (ImGui::IsKeyPressed((ImGuiKey)'Z', false))
     {
         if (io.KeyCtrl)
             revertCalibration();

@@ -106,7 +106,7 @@ int main()
 
     const auto end = std::chrono::steady_clock::now();
     const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-    std::cout << "Sent " << loopCount << " buffers of size " << static_cast<float>(bufferSize) / static_cast<float>(1 << 20) << " MB through shmdata, in " << duration << " us\n";
+    std::cout << "Sent " << loopCount << " buffers of size " << static_cast<float>(bufferSize) / static_cast<float>(1 << 20) << " MB through zmq, in " << duration << " us\n";
     std::cout << "Bandwidth : " << (static_cast<double>(loopCount * bufferSize) / static_cast<double>(1 << 20)) / (static_cast<double>(duration) / 1000000.0) << " MB/sec\n";
 
     continueThread = false;

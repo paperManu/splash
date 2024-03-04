@@ -1,7 +1,8 @@
-#include "./image/image_shmdata.h"
+#include "./image_sh4lt.h"
+
+#include <regex>
 
 #include <hap.h>
-#include <regex>
 
 // All existing 64bits x86 CPUs have SSE2
 #if __x86_64__
@@ -22,42 +23,61 @@ namespace Splash
 {
 
 /*************/
-Image_Shmdata::Image_Shmdata(RootObject* root)
+Image_Sh4lt::Image_Sh4lt(RootObject* root)
     : Image(root)
 {
     init();
 }
 
 /*************/
-Image_Shmdata::~Image_Shmdata()
+Image_Sh4lt::~Image_Sh4lt()
 {
     _reader.reset();
 #ifdef DEBUG
-    Log::get() << Log::DEBUGGING << "Image_Shmdata::~Image_Shmdata - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Image_Sh4lt::~Image_Sh4lt - Destructor" << Log::endl;
 #endif
 }
 
 /*************/
-bool Image_Shmdata::read(const std::string& filename)
+bool Image_Sh4lt::read(const std::string& filename)
 {
-    _reader = std::make_unique<shmdata::Follower>(
-        filename, [&](void* data, size_t size) { onData(data, size); }, [&](const std::string& caps) { onCaps(caps); }, [&]() {}, &_logger);
+    _reader = std::make_unique<sh4lt::Follower>(
+        filename,
+        [&](void* data, size_t size, const sh4lt::Time::info_t*) { onData(data, size); },
+        [&](const sh4lt::ShType& caps) { onShType(caps); },
+        [&]() {},
+        std::make_shared<Utils::Sh4ltLogger>());
+
+    return true;
+}
+
+/*************/
+bool Image_Sh4lt::read_by_label()
+{
+    _reader = std::make_unique<sh4lt::Follower>(
+        sh4lt::ShType::get_path(_label, _group),
+        [&](void* data, size_t size, const sh4lt::Time::info_t*) {
+            onData(data, size);
+        },
+        [&](const sh4lt::ShType& caps) { onShType(caps); },
+        [&]() {},
+        std::make_shared<Utils::Sh4ltLogger>());
 
     return true;
 }
 
 /*************/
 // Small function to work around a bug in GCC's libstdc++
-void removeExtraParenthesis(std::string& str)
+void Image_Sh4lt::removeExtraParenthesis(std::string& str)
 {
     if (str.find(")") == 0)
         str = str.substr(1);
 }
 
 /*************/
-void Image_Shmdata::init()
+void Image_Sh4lt::init()
 {
-    _type = "image_shmdata";
+    _type = "image_sh4lt";
     registerAttributes();
 
     // This is used for getting documentation "offline"
@@ -66,137 +86,90 @@ void Image_Shmdata::init()
 }
 
 /*************/
-void Image_Shmdata::onCaps(const std::string& dataType)
+void Image_Sh4lt::onShType(const sh4lt::ShType& shtype)
 {
-    Log::get() << Log::MESSAGE << "Image_Shmdata::" << __FUNCTION__ << " - Trying to connect with the following caps: " << dataType << Log::endl;
+    Log::get() << Log::MESSAGE << "Image_Sh4lt::" << __FUNCTION__ << " - Trying to connect with the following ShType: " << sh4lt::ShType::serialize(shtype) << Log::endl;
 
-    if (dataType != _inputDataType)
+    _bpp = 0;
+    _width = 0;
+    _height = 0;
+    _red = 0;
+    _green = 0;
+    _blue = 0;
+    _channels = 0;
+    _isHap = false;
+    _isYUV = false;
+    _is420 = false;
+    _is422 = false;
+
+    if (shtype.media() == "video/x-raw")
     {
-        _inputDataType = dataType;
-
-        _bpp = 0;
-        _width = 0;
-        _height = 0;
-        _red = 0;
-        _green = 0;
-        _blue = 0;
-        _channels = 0;
-        _isHap = false;
-        _isYUV = false;
-        _is420 = false;
-        _is422 = false;
-
-        std::regex regHap, regWidth, regHeight;
-        std::regex regVideo, regFormat;
-        try
+        const auto format = shtype.get_prop("format").as<std::string>();
+        if ("BGR" == format)
         {
-            regVideo = std::regex("(.*video/x-raw)(.*)", std::regex_constants::extended);
-            regHap = std::regex("(.*video/x-gst-fourcc-HapY)(.*)", std::regex_constants::extended);
-            regFormat = std::regex("(.*format=\\(string\\))(.*)", std::regex_constants::extended);
-            regWidth = std::regex("(.*width=\\(int\\))(.*)", std::regex_constants::extended);
-            regHeight = std::regex("(.*height=\\(int\\))(.*)", std::regex_constants::extended);
+            _bpp = 24;
+            _channels = 3;
+            _red = 2;
+            _green = 1;
+            _blue = 0;
         }
-        catch (const std::regex_error& e)
+        else if ("RGB" == format)
         {
-            auto errorString = e.what(); // string();
-            Log::get() << Log::WARNING << "Image_Shmdata::" << __FUNCTION__ << " - Regex error: " << errorString << Log::endl;
-            return;
+            _bpp = 24;
+            _channels = 3;
+            _red = 0;
+            _green = 1;
+            _blue = 2;
         }
-
-        std::smatch match;
-        std::string substr, format;
-
-        if (std::regex_match(dataType, regVideo))
+        else if ("RGBA" == format)
         {
-
-            if (std::regex_match(dataType, match, regFormat))
-            {
-                std::ssub_match subMatch = match[2];
-                substr = subMatch.str();
-                removeExtraParenthesis(substr);
-                substr = substr.substr(0, substr.find(","));
-
-                if ("BGR" == substr)
-                {
-                    _bpp = 24;
-                    _channels = 3;
-                    _red = 2;
-                    _green = 1;
-                    _blue = 0;
-                }
-                else if ("RGB" == substr)
-                {
-                    _bpp = 24;
-                    _channels = 3;
-                    _red = 0;
-                    _green = 1;
-                    _blue = 2;
-                }
-                else if ("RGBA" == substr)
-                {
-                    _bpp = 32;
-                    _channels = 4;
-                    _red = 2;
-                    _green = 1;
-                    _blue = 0;
-                }
-                else if ("BGRA" == substr)
-                {
-                    _bpp = 32;
-                    _channels = 4;
-                    _red = 0;
-                    _green = 1;
-                    _blue = 2;
-                }
-                else if ("I420" == substr)
-                {
-                    _bpp = 12;
-                    _channels = 3;
-                    _isYUV = true;
-                    _is420 = true;
-                }
-                else if ("UYVY" == substr)
-                {
-                    _bpp = 12;
-                    _channels = 3;
-                    _isYUV = true;
-                    _is422 = true;
-                }
-            }
+            _bpp = 32;
+            _channels = 4;
+            _red = 2;
+            _green = 1;
+            _blue = 0;
         }
-        else if (std::regex_match(dataType, regHap))
+        else if ("BGRA" == format)
         {
-            _isHap = true;
+            _bpp = 32;
+            _channels = 4;
+            _red = 0;
+            _green = 1;
+            _blue = 2;
         }
-
-        if (std::regex_match(dataType, match, regWidth))
+        else if ("I420" == format)
         {
-            std::ssub_match subMatch = match[2];
-            substr = subMatch.str();
-            removeExtraParenthesis(substr);
-            substr = substr.substr(0, substr.find(","));
-            _width = stoi(substr);
+            _bpp = 12;
+            _channels = 3;
+            _isYUV = true;
+            _is420 = true;
         }
-
-        if (std::regex_match(dataType, match, regHeight))
+        else if ("UYVY" == format)
         {
-            std::ssub_match subMatch = match[2];
-            substr = subMatch.str();
-            removeExtraParenthesis(substr);
-            substr = substr.substr(0, substr.find(","));
-            _height = stoi(substr);
+            _bpp = 12;
+            _channels = 3;
+            _isYUV = true;
+            _is422 = true;
         }
-
-        Log::get() << Log::MESSAGE << "Image_Shmdata::" << __FUNCTION__ << " - Connection successful" << Log::endl;
     }
+
+    if (shtype.media() == "video/x-gst-fourcc-HapY")
+    {
+        _isHap = true;
+    }
+
+    _width = shtype.get_prop("width").as<int>();
+    _height = shtype.get_prop("height").as<int>();
+
+    Log::get() << Log::MESSAGE << "Image_Sh4lt::" << __FUNCTION__ << " - Connection successful" << Log::endl;
 }
 
 /*************/
-void Image_Shmdata::onData(void* data, int data_size)
+void Image_Sh4lt::onData(void* data, int data_size)
 {
     if (Timer::get().isDebug())
     {
-        Timer::get() << "image_shmdata " + _name;
+        Timer::get() << "image_sh4lt " + _name;
     }
 
     // Standard images, RGB or YUV
@@ -211,11 +184,11 @@ void Image_Shmdata::onData(void* data, int data_size)
     }
 
     if (Timer::get().isDebug())
-        Timer::get() >> ("image_shmdata " + _name);
+        Timer::get() >> ("image_sh4lt " + _name);
 }
 
 /*************/
-void Image_Shmdata::readHapFrame(void* data, int data_size)
+void Image_Sh4lt::readHapFrame(void* data, int data_size)
 {
     // We are using kind of a hack to store a DXT compressed image in an ImageBuffer
     // First, we check the texture format type
@@ -259,7 +232,7 @@ void Image_Shmdata::readHapFrame(void* data, int data_size)
 }
 
 /*************/
-void Image_Shmdata::readUncompressedFrame(void* data, int /*data_size*/)
+void Image_Sh4lt::readUncompressedFrame(void* data, int /*data_size*/)
 {
     // Check if we need to resize the reader buffer
     auto bufSpec = _readerBuffer.getSpec();
@@ -287,17 +260,17 @@ void Image_Shmdata::readUncompressedFrame(void* data, int /*data_size*/)
     {
         char* pixels = (char*)(_readerBuffer).data();
         std::vector<std::future<void>> threads;
-        for (uint32_t block = 0; block < _shmdataCopyThreads; ++block)
+        for (uint32_t block = 0; block < _sh4ltCopyThreads; ++block)
         {
             int size = _width * _height * _channels * sizeof(char);
             threads.push_back(std::async(std::launch::async, [=]() {
-                int sizeOfBlock; // We compute the size of the block, to handle image size non divisible by _shmdataCopyThreads
-                if (size - size / _shmdataCopyThreads * block < 2 * size / _shmdataCopyThreads)
-                    sizeOfBlock = size - size / _shmdataCopyThreads * block;
+                int sizeOfBlock; // We compute the size of the block, to handle image size non divisible by _sh4ltCopyThreads
+                if (size - size / _sh4ltCopyThreads * block < 2 * size / _sh4ltCopyThreads)
+                    sizeOfBlock = size - size / _sh4ltCopyThreads * block;
                 else
-                    sizeOfBlock = size / _shmdataCopyThreads;
+                    sizeOfBlock = size / _sh4ltCopyThreads;
 
-                memcpy(pixels + size / _shmdataCopyThreads * block, (const char*)data + size / _shmdataCopyThreads * block, sizeOfBlock);
+                memcpy(pixels + size / _sh4ltCopyThreads * block, (const char*)data + size / _sh4ltCopyThreads * block, sizeOfBlock);
             }));
         }
     }
@@ -339,8 +312,28 @@ void Image_Shmdata::readUncompressedFrame(void* data, int /*data_size*/)
 }
 
 /*************/
-void Image_Shmdata::registerAttributes()
+void Image_Sh4lt::registerAttributes()
 {
+    addAttribute(
+        "label",
+        [&](const Values& args) {
+            _label = args[0].as<std::string>();
+            return read_by_label();
+        },
+        [&]() -> Values { return {_label}; },
+        {'s'});
+    setAttributeDescription("label", "Label for the Sh4lt (applied if filename attribute is empty)");
+
+    addAttribute(
+        "group",
+        [&](const Values& args) {
+            _group = args[0].as<std::string>();
+            return read_by_label();
+        },
+        [&]() -> Values { return {_group}; },
+        {'s'});
+    setAttributeDescription("group", "Group for the Sh4lt (applied if filename attribute is empty)");
+
     Image::registerAttributes();
 }
 } // namespace Splash

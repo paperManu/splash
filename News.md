@@ -1,6 +1,23 @@
 Splash release notes
 ====================
 
+Splash 0.10.8 (2024-03-04)
+-------------------------
+Improvements:
+* Updated imgui to 1.90.4
+* Updated GLM to version 1.0.0
+* Updated Snappy to 1.1.10
+* Updated GLFW to version 3.4.0
+* Updated libltc to 1.3.2
+* Added support for Sh4lt memory sharing library
+* Replaced Ubuntu 23.10 for 24.04 in CI
+
+Documentation:
+* Fixed typo in README.md
+
+Bugs Fixed:
+* Fixed YUYV and UYVY decoding from shmdata sources
+
 Splash 0.10.6 (2024-02-05)
 -------------------------
 Improvements:
