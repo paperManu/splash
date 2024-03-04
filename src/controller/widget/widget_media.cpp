@@ -52,7 +52,7 @@ void GuiMedia::render()
             int w = ImGui::GetWindowWidth() - 3 * leftMargin;
             int h = w * spec.height / spec.width;
 
-            if (ImGui::ImageButton((void*)(intptr_t)filter->getTexId(), ImVec2(w, h)))
+            if (ImGui::ImageButton(filter->getName().c_str(), (void*)(intptr_t)filter->getTexId(), ImVec2(w, h)))
                 _selectedMediaName = media->getName();
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("%s", media->getAlias().c_str());
