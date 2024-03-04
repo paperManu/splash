@@ -57,26 +57,33 @@ set_source_files_properties(
     PROPERTIES COMPILE_FLAGS "-Wno-error -Wno-all -Wno-extra -Wno-unused-parameter -Wno-unused-result"
 )
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+set_source_files_properties(
+    graphics/shader.cpp
+    graphics/object.cpp
+    graphics/camera.cpp
+    PROPERTIES COMPILE_FLAGS "-Wno-type-limits"
+)
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set_source_files_properties(
         network/channel_zmq.cpp
         PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized"
     )
+
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
+        set_source_files_properties(
+            image/image.cpp
+            PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-stringop-overflow"
+        )
+    endif()
 endif()
 
-if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   # This needs to be set because of stb_image.h
   set_source_files_properties(
       image/image.cpp
       PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers"
   )
-
-  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    set_source_files_properties(
-        image/image.cpp
-        PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-stringop-overflow"
-    )
-  endif()
 endif()
 
 #
@@ -268,7 +275,7 @@ if (GPHOTO_FOUND AND OPENCV_FOUND)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         set_source_files_properties(
             controller/colorcalibrator.cpp
-            PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized"
+            PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized -Wno-type-limits"
         )
     endif()
 
