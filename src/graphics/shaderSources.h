@@ -1057,12 +1057,10 @@ const std::string FRAGMENT_SHADER_IMAGE_FILTER{R"(
                 color.rgb = color.bgr;
 
             // Color balance
-        
-        vec2 colorBalance = _colorBalance;
+            vec2 colorBalance = _colorBalance;
 
-        if(colorBalance.x == 0.0f && colorBalance.y == 0.0f) {
-        colorBalance = vec2(1.0f, 1.0f);
-        }
+            if(colorBalance.x == 0.0f && colorBalance.y == 0.0f)
+                colorBalance = vec2(1.0f, 1.0f);
 
             float maxBalanceRatio = max(colorBalance.r, _colorBalance.g);
             color.r *= colorBalance.r / maxBalanceRatio;
@@ -1993,6 +1991,6 @@ const std::string FRAGMENT_SHADER_WINDOW{R"(
 
 const std::string FRAGMENT_SHADER_EMPTY = "void main() {}";
 
-} // namespace Splash
+} // namespace Splash::ShaderSources
 
 #endif // SPLASH_SHADERSOURCES_H

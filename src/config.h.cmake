@@ -19,6 +19,9 @@
 /* Defined to 1 if jack is detected */
 #cmakedefine01 HAVE_JACK
 
+/* Defined to 1 if sh4lt is detected */
+#cmakedefine01 HAVE_SH4LT
+
 /* Defined to 1 if shmdata-1.0 is detected */
 #cmakedefine01 HAVE_SHMDATA
 

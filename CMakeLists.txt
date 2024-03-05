@@ -30,7 +30,7 @@ endif()
 
 project(
     splash
-    VERSION 0.10.6
+    VERSION 0.10.8
     LANGUAGES C CXX
 )
 
@@ -100,6 +100,7 @@ if (BUILD_CODE)
     pkg_search_module(GPHOTO libgphoto2)
     pkg_search_module(JACK jack)
     pkg_search_module(PORTAUDIO portaudio-2.0)
+    pkg_search_module(SH4LT sh4lt-0.1)
     pkg_search_module(SHMDATA shmdata-1.3)
     pkg_search_module(CALIMIRO calimiro-0.2)
 endif()
@@ -127,6 +128,7 @@ endif()
 set(HAVE_GPHOTO ${GPHOTO_FOUND})
 set(HAVE_OPENCV ${OPENCV_FOUND})
 set(HAVE_PORTAUDIO ${PORTAUDIO_FOUND})
+set(HAVE_SH4LT ${SH4LT_FOUND})
 set(HAVE_SHMDATA ${SHMDATA_FOUND})
 set(HAVE_PYTHON ${Python3_FOUND})
 set(HAVE_CALIMIRO ${CALIMIRO_FOUND})
@@ -274,6 +276,7 @@ info_cfg_option(PORTAUDIO_VERSION)
 info_cfg_option(JACK_VERSION)
 info_cfg_option(Python3_VERSION)
 info_cfg_option(JSONCPP_VERSION)
+info_cfg_option(SH4LT_VERSION)
 info_cfg_option(SHMDATA_VERSION)
 info_cfg_option(CALIMIRO_VERSION)
 info_cfg_option(ZMQ_VERSION)

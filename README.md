@@ -156,7 +156,7 @@ mkdir -p build && cd build
 # The BUILD_GENERIC_ARCH flag allows for building an executable which can run on any
 # sufficiently modern (less than 15 years) CPU. It is usually safe to remove it but
 # people had issues in the past with some arch-specific flags
-cmake -GNinja -GBUILD_GENERIC_ARCH=ON ..
+cmake -GNinja -DBUILD_GENERIC_ARCH=ON ..
 ninja
 ```
 
@@ -169,7 +169,7 @@ mkdir -p build && cd build
 # The BUILD_GENERIC_ARCH flag allows for building an executable which can run on any
 # sufficiently modern (less than 15 years) CPU. It is usually safe to remove it but
 # people had issues in the past with some arch-specific flags
-cmake -DUSE_SYSTEM_LIBS=ON -GBUILD_GENERIC_ARCH=ON ..
+cmake -DUSE_SYSTEM_LIBS=ON -DBUILD_GENERIC_ARCH=ON ..
 ninja
 ```
 

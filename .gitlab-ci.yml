@@ -121,7 +121,7 @@ analysis:static-analysis:
   extends:
     - .amd64
     - .ubuntu
-  image: ubuntu:23.10
+  image: ubuntu:24.04
   script:
     - DEBIAN_FRONTEND=noninteractive apt install -y clang-tools
     - ./make_deps.sh
@@ -202,12 +202,12 @@ staging:22.04:gcc-arm64-bundled-libs:
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging'
 
-staging:23.10:gcc-amd64-system-libs:
+staging:24.04:gcc-amd64-system-libs:
   stage: staging
   extends:
     - .amd64
     - .ubuntu
-  image: ubuntu:23.10
+  image: ubuntu:24.04
   script: 
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglm-dev
       libsnappy-dev libzmq3-dev
@@ -222,12 +222,12 @@ staging:23.10:gcc-amd64-system-libs:
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging'
 
-staging:23.10:clang-amd64-system-libs:
+staging:24.04:clang-amd64-system-libs:
   stage: staging
   extends:
     - .amd64
     - .ubuntu
-  image: ubuntu:23.10
+  image: ubuntu:24.04
   script: 
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglm-dev
       libsnappy-dev libzmq3-dev clang
@@ -372,11 +372,11 @@ package:debian:22.04:
     - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
     - if: $CI_COMMIT_BRANCH == 'master'
 
-package:debian:23.10:
+package:debian:24.04:
   stage: package
   extends:
     - .ubuntu
-  image: ubuntu:23.10
+  image: ubuntu:24.04
   script:
     # Build package
     - ./make_deps.sh

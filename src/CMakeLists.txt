@@ -57,26 +57,33 @@ set_source_files_properties(
     PROPERTIES COMPILE_FLAGS "-Wno-error -Wno-all -Wno-extra -Wno-unused-parameter -Wno-unused-result"
 )
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+set_source_files_properties(
+    graphics/shader.cpp
+    graphics/object.cpp
+    graphics/camera.cpp
+    PROPERTIES COMPILE_FLAGS "-Wno-type-limits"
+)
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set_source_files_properties(
         network/channel_zmq.cpp
         PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized"
     )
+
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
+        set_source_files_properties(
+            image/image.cpp
+            PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-stringop-overflow"
+        )
+    endif()
 endif()
 
-if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   # This needs to be set because of stb_image.h
   set_source_files_properties(
       image/image.cpp
       PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers"
   )
-
-  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    set_source_files_properties(
-        image/image.cpp
-        PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-stringop-overflow"
-    )
-  endif()
 endif()
 
 #
@@ -103,6 +110,7 @@ include_directories(${GLFW_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIRS})
 include_directories(${ZMQ_INCLUDE_DIRS})
 include_directories(${JSONCPP_INCLUDE_DIRS})
+include_directories(${SH4LT_INCLUDE_DIRS})
 include_directories(${SHMDATA_INCLUDE_DIRS})
 include_directories(${GPHOTO_INCLUDE_DIRS})
 include_directories(${FFMPEG_INCLUDE_DIRS})
@@ -119,6 +127,7 @@ link_directories(${GLFW_LIBRARY_DIRS})
 
 link_directories(${JSONCPP_LIBRARY_DIRS})
 link_directories(${GSL_LIBRARY_DIRS})
+link_directories(${SH4LT_LIBRARY_DIRS})
 link_directories(${SHMDATA_LIBRARY_DIRS})
 link_directories(${GPHOTO_LIBRARY_DIRS})
 link_directories(${PORTAUDIO_LIBRARY_DIRS})
@@ -266,7 +275,7 @@ if (GPHOTO_FOUND AND OPENCV_FOUND)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         set_source_files_properties(
             controller/colorcalibrator.cpp
-            PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized"
+            PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized -Wno-type-limits"
         )
     endif()
 
@@ -299,6 +308,14 @@ if (CALIMIRO_FOUND AND OPENCV_FOUND)
     target_sources(splash-${API_VERSION} PRIVATE
         controller/geometriccalibrator.cpp
         controller/texcoordgenerator.cpp
+    )
+endif()
+
+if (HAVE_SH4LT)
+    target_sources(splash-${API_VERSION} PRIVATE
+        image/image_sh4lt.cpp
+        sink/sink_sh4lt.cpp
+        sink/sink_sh4lt_encoded.cpp
     )
 endif()
 
@@ -362,6 +379,7 @@ target_link_libraries(splash-${API_VERSION} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(splash-${API_VERSION} ${JSONCPP_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${FFMPEG_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GSL_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} ${SH4LT_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${SHMDATA_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GPHOTO_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${PORTAUDIO_LIBRARIES})

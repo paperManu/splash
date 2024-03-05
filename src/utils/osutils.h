@@ -46,6 +46,9 @@
 #include "./core/constants.h"
 #include "./utils/log.h"
 
+#if HAVE_SH4LT
+#include <sh4lt/logger/logger.hpp>
+#endif
 #if HAVE_SHMDATA
 #include <shmdata/abstract-logger.hpp>
 #endif
@@ -336,6 +339,22 @@ inline std::string getCurrentExecutablePath()
 #endif
     return currentExePath;
 }
+
+#if HAVE_SH4LT
+/**
+ * Sh4lt logger dedicated to splash
+ */
+class Sh4ltLogger : public sh4lt::logger::Logger
+{
+  private:
+    void on_error(std::string&& str) final { Log::get() << Log::ERROR << "Sh4lt::Sh4ltLogger - " << str << Log::endl; }
+    void on_critical(std::string&& str) final { Log::get() << Log::ERROR << "Sh4lt::Sh4ltLogger - " << str << Log::endl; }
+    void on_warning(std::string&& str) final { Log::get() << Log::WARNING << "Sh4lt::Sh4ltLogger - " << str << Log::endl; }
+    void on_message(std::string&& str) final { Log::get() << Log::MESSAGE << "Sh4lt::Sh4ltLogger - " << str << Log::endl; }
+    void on_info(std::string&& str) final { Log::get() << Log::MESSAGE << "Sh4lt::Sh4ltLogger - " << str << Log::endl; }
+    void on_debug(std::string&& str) final { Log::get() << Log::DEBUGGING << "Sh4lt::Sh4ltLogger - " << str << Log::endl; }
+};
+#endif
 
 #if HAVE_SHMDATA
 /**

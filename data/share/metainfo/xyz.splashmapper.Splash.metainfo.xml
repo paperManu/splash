@@ -4,6 +4,7 @@
   <id>xyz.splashmapper.Splash</id>
   <launchable type="desktop-id">xyz.splashmapper.Splash.desktop</launchable>
   <content_rating type="oars-1.1" />
+  <developer_name>Emmanuel Durand</developer_name>
   <name>Splash</name>
   <summary>Video-mapping software</summary>
   <description>
@@ -31,6 +32,7 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.10.8" date="2024-03-04" />
     <release version="0.10.6" date="2024-02-05" />
     <release version="0.10.4" date="2024-01-08" />
     <release version="0.10.2" date="2023-12-05" />
