@@ -77,7 +77,9 @@ void GuiCamera::render()
         int w = ImGui::GetWindowWidth() - 3 * leftMargin;
         int h = w * size[1].as<int>() / size[0].as<int>();
 
-        if (ImGui::ImageButton(camera->getName().c_str(), (void*)(intptr_t)camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
+        // We must make sure that the camera name, used as ID, is not empty
+        const std::string cameraName = camera->getName().empty() ? "##" : camera->getName();
+        if (ImGui::ImageButton(cameraName.c_str(), (void*)(intptr_t)camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
         {
             // If shift is pressed, we hide / unhide this camera
             if (io.KeyCtrl)
