@@ -563,6 +563,32 @@ struct Value
         }
     }
 
+    /**
+     * Return whether the value is empty
+     * \return Return true if the value is empty
+     */
+    bool isEmpty() const
+    {
+        switch (_type)
+        {
+        default:
+            assert(false);
+            return true;
+        case Type::empty:
+            return true;
+        case Type::boolean:
+        case Type::integer:
+        case Type::real:
+            return false;
+        case Type::string:
+            return std::get<std::string>(_data).empty();
+        case Type::values:
+            return std::get<Values>(_data).empty();
+        case Type::buffer:
+            return std::get<Buffer>(_data).size() > 0;
+        }
+    }
+
   private:
     std::string _name{""};
     mutable Type _type{Type::empty};

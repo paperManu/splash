@@ -64,8 +64,8 @@ namespace Splash
 {
 
 /*************/
-Camera::Camera(RootObject* root)
-    : GraphObject(root)
+Camera::Camera(RootObject* root, TreeRegisterStatus registerToTree)
+    : GraphObject(root, registerToTree)
 {
     _type = "camera";
     _renderingPriority = Priority::CAMERA;

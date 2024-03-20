@@ -9,8 +9,9 @@ namespace Splash
 {
 
 /*************/
-GraphObject::GraphObject(RootObject* root)
+GraphObject::GraphObject(RootObject* root, TreeRegisterStatus registerToTree)
     : _root(root)
+    , _registerToTree(registerToTree)
 {
     initializeTree();
     registerAttributes();
@@ -73,6 +74,10 @@ void GraphObject::linkToParent(GraphObject* obj)
     if (parentIt == _parents.end())
         _parents.push_back(obj);
 
+    // If the object is not registered to the tree, we don't update the link status there
+    if (_registerToTree == TreeRegisterStatus::NotRegistered)
+        return;
+
     if (_root && !_name.empty() && !obj->getName().empty())
     {
         auto rootName = _root->getName();
@@ -97,6 +102,10 @@ void GraphObject::unlinkFromParent(GraphObject* obj)
     auto parentIt = find(_parents.begin(), _parents.end(), obj);
     if (parentIt != _parents.end())
         _parents.erase(parentIt);
+
+    // If the object is not registered to the tree, we don't update the link status there
+    if (_registerToTree == TreeRegisterStatus::NotRegistered)
+        return;
 
     if (_root && !_name.empty() && !obj->getName().empty())
     {
@@ -140,6 +149,10 @@ bool GraphObject::linkTo(const std::shared_ptr<GraphObject>& obj)
     _linkedObjects.push_back(obj);
     obj->linkToParent(this);
 
+    // If the object is not registered to the tree, we don't update the link status there
+    if (_registerToTree == TreeRegisterStatus::NotRegistered)
+        return true;
+
     if (_root && !_name.empty() && !obj->getName().empty())
     {
         auto rootName = _root->getName();
@@ -178,6 +191,10 @@ void GraphObject::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
     unlinkIt(obj);
     _linkedObjects.erase(objectIt);
     obj->unlinkFromParent(this);
+
+    // If the object is not registered to the tree, we don't update the link status there
+    if (_registerToTree == TreeRegisterStatus::NotRegistered)
+        return;
 
     if (_root && !_name.empty() && !obj->getName().empty())
     {
@@ -307,6 +324,9 @@ void GraphObject::registerAttributes()
 void GraphObject::initializeTree()
 {
     if (!_root || _name.empty())
+        return;
+
+    if (_registerToTree == TreeRegisterStatus::NotRegistered)
         return;
 
     auto tree = _root->getTree();

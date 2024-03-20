@@ -46,11 +46,12 @@ Gui::Gui(RenderingContext* renderingContext, RootObject* scene)
     _fbo->setResizable(true);
 
     // Create the default GUI camera
-    _guiCamera = std::make_shared<Camera>(scene);
+    _guiCamera = std::make_shared<Camera>(scene, TreeRegisterStatus::NotRegistered);
     _guiCamera->setName("Overview camera");
     _guiCamera->setAttribute("eye", {2.0, 2.0, 0.0});
     _guiCamera->setAttribute("target", {0.0, 0.0, 0.5});
     _guiCamera->setAttribute("size", {640, 480});
+    _guiCamera->setAttribute("savable", {false});
 
     // Intialize the GUI widgets
     ImGui::CreateContext();
