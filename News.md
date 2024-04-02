@@ -1,6 +1,14 @@
 Splash release notes
 ====================
 
+Splash 0.10.10 (2024-04-02)
+-------------------------
+Bugs fixed:
+* Fixed configuration trying to save the GUI camera
+* Fixed GUI camera not having a name, leading sometimes to a crash
+* Fixed build issue with static analysis
+* Fixed navigating through calibration points with tab when no point is set
+
 Splash 0.10.8 (2024-03-04)
 -------------------------
 Improvements:
