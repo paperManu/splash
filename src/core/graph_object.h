@@ -69,6 +69,12 @@ class GraphObject : public BaseObject
         TEXTURE
     };
 
+    enum class TreeRegisterStatus : bool
+    {
+        Registered,
+        NotRegistered
+    };
+
   public:
     /**
      * Constructor.
@@ -80,10 +86,18 @@ class GraphObject : public BaseObject
     }
 
     /**
-     * Constructor.
+     * Constructor. By default the newly created graph object will be registered
+     * into the tree, but in cases where this is not the desired behavior it can
+     * be disabled.
+     *
+     * This can be the case for example for graph objects which are used only in
+     * the UI, or which are part of other graph objects which take care of their
+     * configuration.
+     *
      * \param root Specify the root object.
+     * \param registerToTree Register the object into the root tree
      */
-    explicit GraphObject(RootObject* root);
+    explicit GraphObject(RootObject* root, TreeRegisterStatus registerToTree = TreeRegisterStatus::Registered);
 
     /**
      * Destructor.
@@ -282,9 +296,10 @@ class GraphObject : public BaseObject
 
     bool _isConnectedToRemote{false}; //!< True if the object gets data from a World object
 
-    RootObject* _root;   //!< Root object, Scene or World
-    Scene* _scene;       //!< Pointer to the Scene, if any
-    gfx::Renderer* _renderer; //!< Pointer to the graphic renderer
+    RootObject* _root;                  //!< Root object, Scene or World
+    Scene* _scene;                      //!< Pointer to the Scene, if any
+    gfx::Renderer* _renderer;           //!< Pointer to the graphic renderer
+    TreeRegisterStatus _registerToTree; //!< Register the object to the root tree if true
 
     std::vector<std::weak_ptr<GraphObject>> _linkedObjects; //!< Linked objects
 
