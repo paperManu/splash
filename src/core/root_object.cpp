@@ -591,7 +591,7 @@ Json::Value RootObject::getRootConfigurationAsJson(const std::string& rootName)
     for (const auto& objectName : _tree.getBranchListAt(objectsPath))
     {
         Value confValue;
-        if (_tree.getValueForLeafAt(objectsPath + "/" + objectName + "/attributes/savable", confValue) && confValue[0].as<bool>() == false)
+        if (_tree.getValueForLeafAt(objectsPath + "/" + objectName + "/attributes/savable", confValue) && !confValue.isEmpty() && confValue[0].as<bool>() == false)
             continue;
         if (_tree.getValueForLeafAt(objectsPath + "/" + objectName + "/ghost", confValue) && confValue.as<bool>() == true)
             continue;
@@ -603,7 +603,7 @@ Json::Value RootObject::getRootConfigurationAsJson(const std::string& rootName)
         for (const auto& parent : value.as<Values>())
         {
             auto linkName = parent.as<std::string>();
-            if (_tree.getValueForLeafAt(objectsPath + "/" + linkName + "/attributes/savable", confValue) && confValue[0].as<bool>() == false)
+            if (_tree.getValueForLeafAt(objectsPath + "/" + linkName + "/attributes/savable", confValue) && !confValue.isEmpty() && confValue[0].as<bool>() == false)
                 continue;
             if (_tree.getValueForLeafAt(objectsPath + "/" + linkName + "/ghost", confValue) && confValue.as<bool>() == true)
                 continue;

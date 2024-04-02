@@ -69,8 +69,9 @@ class Camera : public GraphObject
     /**
      * Constructor
      * \param root Root object
+     * \param registerToTree Register the object into the root tree
      */
-    Camera(RootObject* root);
+    explicit Camera(RootObject* root, TreeRegisterStatus registerToTree = TreeRegisterStatus::Registered);
 
     /**
      * Destructor

@@ -64,8 +64,8 @@ namespace Splash
 {
 
 /*************/
-Camera::Camera(RootObject* root)
-    : GraphObject(root)
+Camera::Camera(RootObject* root, TreeRegisterStatus registerToTree)
+    : GraphObject(root, registerToTree)
 {
     _type = "camera";
     _renderingPriority = Priority::CAMERA;
@@ -1339,6 +1339,9 @@ void Camera::registerAttributes()
 
     addAttribute("selectNextCalibrationPoint",
         [&](const Values&) {
+            if (_calibrationPoints.empty())
+                return true;
+
             _selectedCalibrationPoint = (_selectedCalibrationPoint + 1) % _calibrationPoints.size();
             return true;
         },
@@ -1347,6 +1350,9 @@ void Camera::registerAttributes()
 
     addAttribute("selectPreviousCalibrationPoint",
         [&](const Values&) {
+            if (_calibrationPoints.empty())
+                return true;
+
             if (_selectedCalibrationPoint == 0)
                 _selectedCalibrationPoint = _calibrationPoints.size() - 1;
             else
