@@ -1,5 +1,6 @@
 #include "./graphics/filter.h"
 
+#include "./core/attribute.h"
 #include "./core/scene.h"
 #include "./graphics/camera.h"
 #include "./graphics/texture_image.h"
@@ -57,12 +58,11 @@ bool Filter::linkIt(const std::shared_ptr<GraphObject>& obj)
     if (!obj)
         return false;
 
-    if (std::dynamic_pointer_cast<Texture>(obj))
+    if (auto tex = std::dynamic_pointer_cast<Texture>(obj))
     {
         if (!_inTextures.empty() && _inTextures[_inTextures.size() - 1].expired())
             _screen->removeTexture(_inTextures[_inTextures.size() - 1].lock());
 
-        auto tex = std::dynamic_pointer_cast<Texture>(obj);
         _screen->addTexture(tex);
         _inTextures.push_back(tex);
         _sizeOverride[0] = -1;
@@ -78,9 +78,8 @@ bool Filter::linkIt(const std::shared_ptr<GraphObject>& obj)
         else
             return false;
     }
-    else if (std::dynamic_pointer_cast<Camera>(obj).get())
+    else if (auto cam = std::dynamic_pointer_cast<Camera>(obj))
     {
-        auto cam = std::dynamic_pointer_cast<Camera>(obj).get();
         auto tex = cam->getTexture();
         return linkTo(tex);
     }

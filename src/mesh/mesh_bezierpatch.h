@@ -51,7 +51,7 @@ class Mesh_BezierPatch final : public Mesh
     /**
      * Destructor
      */
-    ~Mesh_BezierPatch() final;
+    ~Mesh_BezierPatch() final = default;
 
     /**
      * Constructors/operators

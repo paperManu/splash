@@ -1,5 +1,6 @@
 #include "./mesh/mesh.h"
 
+#include "./core/attribute.h"
 #include "./core/root_object.h"
 #include "./core/serialize/serialize_mesh.h"
 #include "./core/serializer.h"
@@ -15,12 +16,6 @@ namespace Splash
 Mesh::Mesh(RootObject* root, MeshContainer meshContainer)
     : BufferObject(root)
     , _mesh(meshContainer)
-{
-    init();
-}
-
-/*************/
-void Mesh::init()
 {
     _type = "mesh";
     _renderingPriority = Priority::MEDIA;

@@ -33,7 +33,6 @@
 
 #include "./core/constants.h"
 
-#include "./core/attribute.h"
 #include "./core/buffer_object.h"
 
 namespace Splash
@@ -42,6 +41,11 @@ namespace Splash
 class Mesh : public BufferObject
 {
   public:
+    /**
+     * Structure containing the mesh data, which is directly used for rendering
+     * Meshes are rendered as triangles, so vertices are used three at a time
+     * to render a specific triangle. Other attributes must match the vertices.
+     */
     struct MeshContainer
     {
         std::string name;
@@ -166,8 +170,6 @@ class Mesh : public BufferObject
     void registerAttributes();
 
   private:
-    void init();
-
     /**
      * Create a plane mesh, subdivided according to the parameter
      * \param subdiv Number of subdivision for the plane
