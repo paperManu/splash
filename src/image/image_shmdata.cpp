@@ -81,6 +81,7 @@ void Image_Shmdata::onCaps(const std::string& dataType)
         _green = 0;
         _blue = 0;
         _channels = 0;
+        _isDepth = false;
         _isHap = false;
         _isYUV = false;
         _is420 = false;
@@ -147,6 +148,12 @@ void Image_Shmdata::onCaps(const std::string& dataType)
                     _red = 0;
                     _green = 1;
                     _blue = 2;
+                }
+                else if ("D" == substr)
+                {
+                    _bpp = 16;
+                    _channels = 1;
+                    _isDepth = true;
                 }
                 else if ("I420" == substr)
                 {
@@ -273,7 +280,13 @@ void Image_Shmdata::readUncompressedFrame(void* data, int /*data_size*/)
         if (_channels == 4)
             spec.format.push_back('A');
 
-        if (_is420 || _is422)
+        if (_isDepth)
+        {
+            spec.format = "R";
+            spec.bpp = 16;
+            spec.channels = 1;
+        }
+        else if (_is420 || _is422)
         {
             spec.format = "UYVY";
             spec.bpp = 16;
@@ -300,6 +313,11 @@ void Image_Shmdata::readUncompressedFrame(void* data, int /*data_size*/)
                 memcpy(pixels + size / _shmdataCopyThreads * block, (const char*)data + size / _shmdataCopyThreads * block, sizeOfBlock);
             }));
         }
+    }
+    else if (_isDepth)
+    {
+        auto pixels = reinterpret_cast<char*>(_readerBuffer.data());
+        memcpy(pixels, data, _readerBuffer.getSpec().rawSize());
     }
     else if (_is420)
     {

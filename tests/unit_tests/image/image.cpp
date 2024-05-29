@@ -95,4 +95,7 @@ TEST_CASE("Testing Image read/write")
         CHECK(otherImage.read(directory + "/test_image.tga"));
         CHECK_EQ(otherImage.get().getSize(), imageSize);
     }
+
+    // Check 16bits images
+    CHECK(image.read(Utils::getCurrentWorkingDirectory() + "/data/depthmap.png"));
 }
