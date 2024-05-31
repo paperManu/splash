@@ -97,6 +97,7 @@ void Image_Sh4lt::onShType(const sh4lt::ShType& shtype)
     _green = 0;
     _blue = 0;
     _channels = 0;
+    _isVideo = false;
     _isDepth = false;
     _isHap = false;
     _isYUV = false;
@@ -159,14 +160,19 @@ void Image_Sh4lt::onShType(const sh4lt::ShType& shtype)
             _is422 = true;
         }
     }
-
-    if (shtype.media() == "video/x-gst-fourcc-HapY")
+    else if (shtype.media() == "video/x-gst-fourcc-HapY")
     {
         _isHap = true;
+    }
+    else
+    {
+        Log::get() << Log::WARNING << "Image_Sh4lt::" << __FUNCTION__ << " - Incoming sh4lt seems not to be of a supported video format" << Log::endl;
+        return;
     }
 
     _width = shtype.get_prop("width").as<int>();
     _height = shtype.get_prop("height").as<int>();
+    _isVideo = true;
 
     Log::get() << Log::MESSAGE << "Image_Sh4lt::" << __FUNCTION__ << " - Connection successful" << Log::endl;
 }
@@ -175,20 +181,17 @@ void Image_Sh4lt::onShType(const sh4lt::ShType& shtype)
 void Image_Sh4lt::onData(void* data, int data_size)
 {
     if (Timer::get().isDebug())
-    {
         Timer::get() << "image_sh4lt " + _name;
-    }
+
+    if (!_isVideo)
+        return;
 
     // Standard images, RGB or YUV
     if (_width != 0 && _height != 0 && _bpp != 0 && _channels != 0)
-    {
         readUncompressedFrame(data, data_size);
-    }
     // Hap compressed images
     else if (_isHap == true)
-    {
         readHapFrame(data, data_size);
-    }
 
     if (Timer::get().isDebug())
         Timer::get() >> ("image_sh4lt " + _name);
