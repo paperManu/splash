@@ -12,11 +12,8 @@ namespace Splash
 Mesh_Shmdata::Mesh_Shmdata(RootObject* root)
     : Mesh(root)
 {
-    init();
+    _type = "mesh_shmdata";
 }
-
-/*************/
-Mesh_Shmdata::~Mesh_Shmdata() {}
 
 /*************/
 bool Mesh_Shmdata::read(const std::string& filename)
@@ -25,17 +22,6 @@ bool Mesh_Shmdata::read(const std::string& filename)
         filename, [&](void* data, size_t size) { onData(data, size); }, [&](const std::string& caps) { onCaps(caps); }, [&]() {}, &_logger);
 
     return true;
-}
-
-/*************/
-void Mesh_Shmdata::init()
-{
-    _type = "mesh_shmdata";
-    registerAttributes();
-
-    // This is used for getting documentation "offline"
-    if (!_root)
-        return;
 }
 
 /*************/
@@ -121,12 +107,6 @@ void Mesh_Shmdata::onData(void* data, int /*data_size*/)
 
     if (Timer::get().isDebug())
         Timer::get() >> ("mesh_shmdata " + _name);
-}
-
-/*************/
-void Mesh_Shmdata::registerAttributes()
-{
-    Mesh::registerAttributes();
 }
 
 } // namespace Splash

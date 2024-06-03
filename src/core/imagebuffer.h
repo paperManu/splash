@@ -68,7 +68,7 @@ class ImageBufferSpec
      * \param t Component type
      * \param f Format as a string
      */
-    ImageBufferSpec(unsigned int w, unsigned int h, unsigned int c, uint8_t b, ImageBufferSpec::Type t = Type::UINT8, const std::string& f = "RGBA")
+    ImageBufferSpec(unsigned int w, unsigned int h, unsigned int c, uint8_t b, ImageBufferSpec::Type t = Type::UINT8, const std::string& f = "")
         : width(w)
         , height(h)
         , channels(c)

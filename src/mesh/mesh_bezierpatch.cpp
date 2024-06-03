@@ -21,14 +21,6 @@ Mesh_BezierPatch::Mesh_BezierPatch(RootObject* root)
 }
 
 /*************/
-Mesh_BezierPatch::~Mesh_BezierPatch()
-{
-#ifdef DEBUG
-    Log::get() << Log::DEBUGGING << "Mesh_BezierPatch::~Mesh_BezierPatch - Destructor" << Log::endl;
-#endif
-}
-
-/*************/
 void Mesh_BezierPatch::switchMeshes(bool control)
 {
     if (control)

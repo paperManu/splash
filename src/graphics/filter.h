@@ -33,12 +33,10 @@
 
 #include "./core/constants.h"
 
-#include "./core/attribute.h"
 #include "./graphics/api/filter_gfx_impl.h"
 #include "./graphics/api/framebuffer_gfx_impl.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
-#include "./graphics/texture_image.h"
 #include "./image/image.h"
 
 namespace Splash
