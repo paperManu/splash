@@ -38,8 +38,9 @@ TEST_CASE("Testing read function")
     auto image = Image_List(&root);
     image.read(Utils::getCurrentWorkingDirectory() + "/data/");
     auto fileList = image.getFileList();
-    CHECK_EQ(fileList.size(), 1);
-    CHECK_EQ(std::filesystem::path(fileList[0]).filename(), "color_map.png");
+    CHECK_EQ(fileList.size(), 2);
+    CHECK_EQ(std::filesystem::path(fileList[0]).filename(), "depthmap.png");
+    CHECK_EQ(std::filesystem::path(fileList[1]).filename(), "color_map.png");
 }
 
 TEST_CASE("Testing capture")
@@ -48,12 +49,13 @@ TEST_CASE("Testing capture")
     auto image = Image_List(&root);
     image.read(Utils::getCurrentWorkingDirectory() + "/data/");
     auto fileList = image.getFileList();
-    // there is only one image in the directory
-    CHECK_EQ(fileList.size(), 1);
+    // there are two images in the directory
+    CHECK_EQ(fileList.size(), 2);
 
     // When capture is called, the next image is read
     // the vector of filepaths will be empty as there
     // is only one image in the directory
+    image.capture();
     image.capture();
     fileList = image.getFileList();
     CHECK_EQ(fileList.empty(), true);

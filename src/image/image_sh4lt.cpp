@@ -97,6 +97,8 @@ void Image_Sh4lt::onShType(const sh4lt::ShType& shtype)
     _green = 0;
     _blue = 0;
     _channels = 0;
+    _isVideo = false;
+    _isDepth = false;
     _isHap = false;
     _isYUV = false;
     _is420 = false;
@@ -137,6 +139,12 @@ void Image_Sh4lt::onShType(const sh4lt::ShType& shtype)
             _green = 1;
             _blue = 2;
         }
+        else if ("D" == format)
+        {
+            _bpp = 16;
+            _channels = 1;
+            _isDepth = true;
+        }
         else if ("I420" == format)
         {
             _bpp = 12;
@@ -152,14 +160,19 @@ void Image_Sh4lt::onShType(const sh4lt::ShType& shtype)
             _is422 = true;
         }
     }
-
-    if (shtype.media() == "video/x-gst-fourcc-HapY")
+    else if (shtype.media() == "video/x-gst-fourcc-HapY")
     {
         _isHap = true;
+    }
+    else
+    {
+        Log::get() << Log::WARNING << "Image_Sh4lt::" << __FUNCTION__ << " - Incoming sh4lt seems not to be of a supported video format" << Log::endl;
+        return;
     }
 
     _width = shtype.get_prop("width").as<int>();
     _height = shtype.get_prop("height").as<int>();
+    _isVideo = true;
 
     Log::get() << Log::MESSAGE << "Image_Sh4lt::" << __FUNCTION__ << " - Connection successful" << Log::endl;
 }
@@ -168,20 +181,17 @@ void Image_Sh4lt::onShType(const sh4lt::ShType& shtype)
 void Image_Sh4lt::onData(void* data, int data_size)
 {
     if (Timer::get().isDebug())
-    {
         Timer::get() << "image_sh4lt " + _name;
-    }
+
+    if (!_isVideo)
+        return;
 
     // Standard images, RGB or YUV
     if (_width != 0 && _height != 0 && _bpp != 0 && _channels != 0)
-    {
         readUncompressedFrame(data, data_size);
-    }
     // Hap compressed images
     else if (_isHap == true)
-    {
         readHapFrame(data, data_size);
-    }
 
     if (Timer::get().isDebug())
         Timer::get() >> ("image_sh4lt " + _name);
@@ -246,7 +256,13 @@ void Image_Sh4lt::readUncompressedFrame(void* data, int /*data_size*/)
         if (_channels == 4)
             spec.format.push_back('A');
 
-        if (_is420 || _is422)
+        if (_isDepth)
+        {
+            spec.format = "R";
+            spec.bpp = 16;
+            spec.channels = 1;
+        }
+        else if (_is420 || _is422)
         {
             spec.format = "UYVY";
             spec.bpp = 16;
@@ -256,6 +272,7 @@ void Image_Sh4lt::readUncompressedFrame(void* data, int /*data_size*/)
         _readerBuffer = ImageBuffer(spec);
     }
 
+    
     if (!_isYUV && (_channels == 3 || _channels == 4))
     {
         char* pixels = (char*)(_readerBuffer).data();
@@ -273,6 +290,11 @@ void Image_Sh4lt::readUncompressedFrame(void* data, int /*data_size*/)
                 memcpy(pixels + size / _sh4ltCopyThreads * block, (const char*)data + size / _sh4ltCopyThreads * block, sizeOfBlock);
             }));
         }
+    }
+    else if (_isDepth)
+    {
+        auto pixels = reinterpret_cast<char*>(_readerBuffer.data());
+        memcpy(pixels, data, _readerBuffer.getSpec().rawSize());
     }
     else if (_is420)
     {

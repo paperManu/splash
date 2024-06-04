@@ -20,6 +20,7 @@
 #include "./image/image_list.h"
 #include "./image/queue.h"
 #include "./mesh/mesh.h"
+#include "./mesh/mesh_depthmap.h"
 #include "./network/link.h"
 #include "./sink/sink.h"
 #include "./utils/jsonutils.h"
@@ -374,6 +375,12 @@ void Factory::registerObjects()
         GraphObject::Category::MESH,
         "mesh from obj file",
         "Mesh (vertices and UVs) describing a projection surface, read from a .obj file.",
+        true);
+
+    _objectBook["mesh_depthmap"] = Page([&](RootObject* root) { return std::dynamic_pointer_cast<GraphObject>(std::make_shared<Mesh_Depthmap>(root)); },
+        GraphObject::Category::MESH,
+        "mesh from a depth map",
+        "Mesh generated from a depth map, through an Image to connect to it.",
         true);
 
 #if HAVE_SHMDATA

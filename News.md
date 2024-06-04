@@ -1,6 +1,15 @@
 Splash release notes
 ====================
 
+Splash 0.10.12 (2024-06-03)
+-------------------------
+Improvements:
+* Added Mesh_Depthmap, which creates a mesh from a depthmap and a few parameters
+* Added support for 16bits images in Image, Image_Shmdata and Image_Sh4lt
+
+Bugs fixed:
+* Fixed Image_Shmdata caps parsing to accept caps with no type specified
+
 Splash 0.10.10 (2024-04-02)
 -------------------------
 Bugs fixed:

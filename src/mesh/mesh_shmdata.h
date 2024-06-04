@@ -19,7 +19,7 @@
 
 /*
  * @mesh_shmdata.h
- * The Mesh_Shmdata_Shmdata class
+ * The Mesh_Shmdata class
  */
 
 #ifndef SPLASH_MESH_SHMDATA_H
@@ -52,7 +52,7 @@ class Mesh_Shmdata final : public Mesh
     /**
      * Destructor
      */
-    ~Mesh_Shmdata() final;
+    ~Mesh_Shmdata() final = default;
 
     /**
      * Constructors/operators
@@ -75,11 +75,6 @@ class Mesh_Shmdata final : public Mesh
     bool _capsIsValid{false};
 
     /**
-     * Base init for the class
-     */
-    void init();
-
-    /**
      * Callback called when receiving a new caps
      * \param dataType String holding the data type
      */
@@ -91,11 +86,6 @@ class Mesh_Shmdata final : public Mesh
      * \param data_size Size of the buffer
      */
     void onData(void* data, int data_size);
-
-    /**
-     * Register new functors to modify attributes
-     */
-    void registerAttributes();
 };
 
 } // namespace Splash

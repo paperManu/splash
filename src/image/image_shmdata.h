@@ -76,6 +76,8 @@ class Image_Shmdata final : public Image
     uint32_t _green{0};
     uint32_t _blue{0};
     uint32_t _channels{0};
+    bool _isVideo{false};
+    bool _isDepth{false};
     bool _isHap{false};
     bool _isYUV{false};
     bool _is420{false};

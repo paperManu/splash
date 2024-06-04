@@ -181,9 +181,13 @@ bool Image::readFile(const std::string& filename)
         return false;
     }
 
+    const bool is16bits = stbi_is_16_bit(filename.c_str());
+
     int w, h, c;
-    // We force conversion to RGBA
-    uint8_t* rawImage = stbi_load(filename.c_str(), &w, &h, &c, 4);
+
+    // All 8bpc images are converted to RGBA, to facilitate handling later on
+    // 16bpc images are left as is
+    uint8_t* rawImage = is16bits ? reinterpret_cast<uint8_t*>(stbi_load_16(filename.c_str(), &w, &h, &c, 0)) : stbi_load(filename.c_str(), &w, &h, &c, 4);
 
     if (!rawImage)
     {
@@ -191,11 +195,16 @@ bool Image::readFile(const std::string& filename)
         return false;
     }
 
-    auto spec = ImageBufferSpec(w, h, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
+    const auto channels = is16bits ? c : 4;
+    const int32_t bpp = is16bits ? channels * 16 : channels * 8;
+    const auto type = is16bits ? ImageBufferSpec::Type::UINT16 : ImageBufferSpec::Type::UINT8;
+
+    auto spec = ImageBufferSpec(w, h, channels, bpp, type);
     spec.videoFrame = false;
 
     auto img = ImageBuffer(spec);
-    memcpy(img.data(), rawImage, w * h * 4);
+    memcpy(img.data(), rawImage, spec.rawSize());
+
     stbi_image_free(rawImage);
 
     {
