@@ -52,7 +52,7 @@ set(PACKAGE_VERSION ${PROJECT_VERSION})
 #
 # Build options
 #
-set(BUILD_GENERIC_ARCH OFF CACHE BOOL "Enable building without architecture-specitif optimization")
+set(BUILD_GENERIC_ARCH OFF CACHE BOOL "Enable building generic binaries, without more modern extensions")
 set(BUILD_CODE ON CACHE BOOL "Enable building the code")
 set(DEBUG_OPENGL OFF CACHE BOOL "Enable OpenGL debugging")
 set(PROFILE OFF CACHE BOOL "Enable profiling")
@@ -170,8 +170,8 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.cmake" "${CMAKE_CURRENT
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
 if(COMPILER_SUPPORTS_MARCH_NATIVE AND NOT BUILD_GENERIC_ARCH)
-    include(OptimizeForArchitecture)
-    OptimizeForArchitecture()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 endif()
 
 #
