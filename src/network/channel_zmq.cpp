@@ -113,9 +113,8 @@ bool ChannelOutput_ZMQ::sendBuffer(SerializedObject&& buffer)
         _sendQueueMutex.lock();
         _bufferSendQueue.push_back(std::move(buffer));
         auto& queuedBuffer = _bufferSendQueue.back();
-        _sendQueueMutex.unlock();
-
         _sendQueueBufferCount++;
+        _sendQueueMutex.unlock();
 
         zmq::message_t msg(queuedBuffer.data(), queuedBuffer.size(), ChannelOutput_ZMQ::freeSerializedBuffer, this);
         _socketBufferOut->send(msg, zmq::send_flags::none);
@@ -138,6 +137,7 @@ void ChannelOutput_ZMQ::freeSerializedBuffer(void* data, void* hint)
     ChannelOutput_ZMQ* ctx = reinterpret_cast<ChannelOutput_ZMQ*>(hint);
 
     std::unique_lock<std::mutex> lock(ctx->_bufferTransmittedMutex);
+    std::unique_lock<Spinlock> lockBuffer(ctx->_sendQueueMutex);
 
     uint32_t index = 0;
     for (; index < ctx->_bufferSendQueue.size(); ++index)
