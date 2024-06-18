@@ -26,7 +26,9 @@
 #define SPLASH_MESH_DEPTHMAP
 
 #include <memory>
+#include <thread>
 
+#include "./core/imagebuffer.h"
 #include "./mesh/mesh.h"
 
 namespace Splash
@@ -62,7 +64,7 @@ class Mesh_Depthmap final : public Mesh
     /**
      * Destructor
      */
-    ~Mesh_Depthmap() final = default;
+    ~Mesh_Depthmap() final;
 
     /**
      * Constructors/operators
@@ -103,11 +105,21 @@ class Mesh_Depthmap final : public Mesh
     };
 
   private:
+    std::thread _meshThread;
+    std::mutex _meshThreadMutex;
+    bool _meshThreadRunning{false};
+
     std::shared_ptr<Image> _depthMap{nullptr};
     int64_t _depthUpdateTimestamp{0};
 
     float _maxDepthDistance{1.f}; //< Max distance represented by the max value in the depth map
     CameraIntrinsics _intrinsics{};
+
+    /**
+     * Convert depth map to mesh and update _bufferMesh
+     * \param depthBuffer Depthmap buffer to convert to mesh
+     */
+    void convertDepthmapToMesh(ImageBuffer depthBuffer);
 
     /**
      * Register new functors to modify attributes
