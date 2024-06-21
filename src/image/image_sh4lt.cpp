@@ -135,7 +135,7 @@ void Image_Sh4lt::onShType(const sh4lt::ShType& shtype)
             _green = 1;
             _blue = 2;
         }
-        else if ("D" == format)
+        else if ("Y16" == format)
         {
             _bpp = 16;
             _channels = 1;
