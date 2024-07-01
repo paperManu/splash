@@ -150,7 +150,7 @@ void Image_Shmdata::onCaps(const std::string& dataType)
                     _green = 1;
                     _blue = 2;
                 }
-                else if ("D" == substr)
+                else if ("Y16" == substr)
                 {
                     _bpp = 16;
                     _channels = 1;

@@ -39,15 +39,11 @@ Image_Sh4lt::~Image_Sh4lt()
 }
 
 /*************/
-bool Image_Sh4lt::read(const std::string& filename)
+bool Image_Sh4lt::read(const std::string& /*filename*/)
 {
-    _reader = std::make_unique<sh4lt::Follower>(
-        filename,
-        [&](void* data, size_t size, const sh4lt::Time::info_t*) { onData(data, size); },
-        [&](const sh4lt::ShType& caps) { onShType(caps); },
-        [&]() {},
-        std::make_shared<Utils::Sh4ltLogger>());
-
+    // We don't do anything with the mere filename,
+    // reading is done by setting the group and label
+    // attributes
     return true;
 }
 
@@ -139,7 +135,7 @@ void Image_Sh4lt::onShType(const sh4lt::ShType& shtype)
             _green = 1;
             _blue = 2;
         }
-        else if ("D" == format)
+        else if ("Y16" == format)
         {
             _bpp = 16;
             _channels = 1;
