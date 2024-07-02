@@ -350,7 +350,7 @@ staging:windows:
 # ┣━┛┣━┫┃  ┣┻┓┣━┫┃╺┓┣╸ 
 # ╹  ╹ ╹┗━╸╹ ╹╹ ╹┗━┛┗━╸
 #
-package:debian:22.04:
+.package:debian:22.04:
   stage: package
   extends:
     - .ubuntu
@@ -373,7 +373,17 @@ package:debian:22.04:
     - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
     - if: $CI_COMMIT_BRANCH == 'master'
 
-package:debian:24.04:
+package:debian:22.04:amd64:
+  extends:
+    - .package:debian:22.04
+    - .amd64
+
+package:debian:22.04:arm64:
+  extends:
+    - .package:debian:22.04
+    - .arm64
+
+.package:debian:24.04:
   stage: package
   extends:
     - .ubuntu
@@ -395,6 +405,16 @@ package:debian:24.04:
   rules:
     - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
     - if: $CI_COMMIT_BRANCH == 'master'
+
+package:debian:24.04:amd64:
+  extends:
+    - .package:debian:24.04
+    - .amd64
+
+package:debian:24.04:arm64:
+  extends:
+    - .package:debian:24.04
+    - .arm64
 
 package:blender_addon:
   stage: package

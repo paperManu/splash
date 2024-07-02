@@ -1,6 +1,17 @@
 Splash release notes
 ====================
 
+Splash 0.10.14 (2024-07-01)
+-------------------------
+Improvements:
+* Moved mesh generation from depthmap to a thread
+* Fixed depth format for ImageSh4lt and ImageShmdata to the more standard Y16
+* Cleaned up the CMake project file, by removing an unecessary module
+
+Bugs fixed:
+* Fixed random crash when using the ZMQ channel backend
+* Fixed image_sh4lt not initializing correctly when loading a configuration
+
 Splash 0.10.12 (2024-06-03)
 -------------------------
 Improvements:
