@@ -550,16 +550,12 @@ void Image_FFmpeg::readLoop()
     av_frame_free(&frame);
     if (!isHap)
         sws_freeContext(swsContext);
-    avcodec_close(videoCodecContext);
     avcodec_free_context(&videoCodecContext);
     _videoStreamIndex = -1;
 
 #if HAVE_PORTAUDIO
     if (audioCodecContext)
-    {
-        avcodec_close(audioCodecContext);
         avcodec_free_context(&audioCodecContext);
-    }
     _audioStreamIndex = -1;
 #endif
 }
