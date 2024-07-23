@@ -13,5 +13,5 @@ fi
 cd ${SOURCE_DIR}/zmq
 rm -rf build
 mkdir build && cd build
-cmake -GNinja -DCMAKE_INSTALL_PREFIX=${SOURCE_DIR}/third_parties -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_LIBDIR=lib -DWITH_LIBSODIUM=OFF -DWITH_TLS=OFF -DENABLE_WS=OFF ..
+cmake -GNinja -DCMAKE_INSTALL_PREFIX=${SOURCE_DIR}/third_parties -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_LIBDIR=lib -DBUILD_TESTS=OFF -DWITH_LIBSODIUM=OFF -DENABLE_WS=OFF ..
 ninja && ninja install

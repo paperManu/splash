@@ -1,0 +1,14 @@
+FROM ubuntu:22.04 as build
+LABEL MAINTAINER Emmanuel Durand <manu@lab148.xyz>
+
+RUN apt update -qq && apt upgrade -y \
+    && DEBIAN_FRONTEND=noninterative apt install -y --no-install-recommends \
+       ca-certificates ccache wget curl build-essential clang clang-tools \
+       doxygen flatpak-builder git-core git-lfs libjsoncpp-dev zip cmake \
+       cmake-extras automake lcov libtool libxcb-shm0-dev libxrandr-dev \
+       libxi-dev libglm-dev libgsl0-dev libatlas3-base libgphoto2-dev \
+       libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm \
+       libgl1-mesa-dev libopencv-dev software-properties-common uuid-dev \
+       libavcodec-dev libavformat-dev libavutil-dev libswscale-dev \
+       libsnappy-dev libzmq3-dev libwayland-dev libxkbcommon-dev ninja-build \
+       pkg-config zip
