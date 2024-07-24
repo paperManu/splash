@@ -346,7 +346,7 @@ void Window::render()
         _gfxImpl->clearScreen(glm::vec4(0.0, 0.0, 0.0, 1.0), false);
 
         _screen->activate();
-        _screen->getShader()->setUniform("layout", _layout);
+        _screen->getShader()->setUniform("_layout", _layout);
         _screen->draw();
         _screen->deactivate();
     }

@@ -1,10 +1,12 @@
 variables:
   DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "" # Instructs Docker not to start over TLS, needed for DinD
   GIT_STRATEGY: clone
   GIT_SUBMODULE_STRATEGY: recursive
   TRACY_NO_INVARIANT_CHECK: 1
 
 stages:
+  - deps
   - test
   - analysis
   - staging
@@ -22,28 +24,80 @@ cache:
 # ┗━╸╹ ╹ ╹ ┗━╸╹ ╹┗━┛╹┗━┛╹ ╹┗━┛
 #
 .amd64:
+  variables:
+    ARCH: amd64
   tags:
     - amd64
+    - privileged
 
 .arm64:
+  variables:
+    ARCH: arm64
   tags:
     - arm64
+    - privileged
 
-.ubuntu:
+.ubuntu-22.04:
+  variables:
+    UBUNTU_VERSION: 22.04
+
+.ubuntu-24.04:
+  variables:
+    UBUNTU_VERSION: 24.04
+
+.ubuntu-deps:
   before_script:
-    - apt update -qq
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends ca-certificates
-      ccache wget curl build-essential git-core libjsoncpp-dev zip cmake cmake-extras automake
-      libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev
-      libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev
-      libopencv-dev software-properties-common uuid-dev libavcodec-dev libavformat-dev
-      libavutil-dev libswscale-dev libwayland-dev libxkbcommon-dev ninja-build
-  
     # CCache stuff
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
     - export PATH="/usr/lib/ccache:${PATH}"
+
+#
+# ╺┳┓┏━╸┏━┓┏━╸┏┓╻╺┳┓┏━╸┏┓╻┏━╸╻┏━╸┏━┓
+#  ┃┃┣╸ ┣━┛┣╸ ┃┗┫ ┃┃┣╸ ┃┗┫┃  ┃┣╸ ┗━┓
+# ╺┻┛┗━╸╹  ┗━╸╹ ╹╺┻┛┗━╸╹ ╹┗━╸╹┗━╸┗━┛
+#
+.deps:container:
+  stage: deps
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  timeout: 12h
+  variables:
+    IMAGE_NAME: ${CI_REGISTRY_IMAGE}:ubuntu-${UBUNTU_VERSION}-${ARCH}
+  before_script:
+    - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} $CI_REGISTRY
+  script:
+    - docker buildx build -f tools/docker/dockerfile-ubuntu-${UBUNTU_VERSION} -t ${IMAGE_NAME} --push .
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      changes:
+      - tools/docker/**/*
+
+deps:container:22.04:amd64:
+  extends:
+    - .amd64
+    - .ubuntu-22.04
+    - .deps:container
+
+deps:container:22.04:arm64:
+  extends:
+    - .arm64
+    - .ubuntu-22.04
+    - .deps:container
+
+deps:container:24.04:amd64:
+  extends:
+    - .amd64
+    - .ubuntu-24.04
+    - .deps:container
+
+deps:container:24.04:arm64:
+  extends:
+    - .arm64
+    - .ubuntu-24.04
+    - .deps:container
 
 #
 # ╺┳╸┏━╸┏━┓╺┳╸┏━┓
@@ -52,10 +106,10 @@ cache:
 #
 test:22.04:gcc-amd64-bundled-libs:
   stage: test
+  image: ${CI_REGISTRY_IMAGE}:ubuntu-22.04-${ARCH}
   extends:
     - .amd64
-    - .ubuntu
-  image: ubuntu:22.04
+    - .ubuntu-deps
   script: 
     - ./make_deps.sh
     - rm -rf build && mkdir build
@@ -66,18 +120,16 @@ test:22.04:gcc-amd64-bundled-libs:
     - ./build/src/splash --child --prefix unittest local &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH != '/^debian.*$/'
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
 
 test:22.04:clang-amd64-system-libs:
   stage: test
+  image: ${CI_REGISTRY_IMAGE}:ubuntu-22.04-${ARCH}
   extends:
     - .amd64
-    - .ubuntu
-  image: ubuntu:22.04
+    - .ubuntu-deps
   script: 
     # Test using Clang with system libs
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglm-dev
-      libsnappy-dev libzmq3-dev clang
     - rm -rf build && mkdir build
     - CC=clang CXX=clang++ cmake -B build -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr -DUSE_SYSTEM_LIBS=ON
     - make -sC build -j$(nproc)
@@ -86,7 +138,7 @@ test:22.04:clang-amd64-system-libs:
     - ./build/src/splash --child --prefix unittest local &
     - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_BRANCH != '/^debian.*$/'
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
 
 #
 # ┏━┓┏┓╻┏━┓╻  ╻ ╻┏━┓╻┏━┓
@@ -95,10 +147,10 @@ test:22.04:clang-amd64-system-libs:
 #
 analysis:coverage:
   stage: analysis
+  image: ${CI_REGISTRY_IMAGE}:ubuntu-22.04-${ARCH}
   extends:
     - .amd64
-    - .ubuntu
-  image: ubuntu:22.04
+    - .ubuntu-deps
   script: 
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends lcov zip
     - ./make_deps.sh
@@ -118,10 +170,10 @@ analysis:coverage:
 
 analysis:static-analysis:
   stage: analysis
+  image: ${CI_REGISTRY_IMAGE}:ubuntu-24.04-${ARCH}
   extends:
     - .amd64
-    - .ubuntu
-  image: ubuntu:24.04
+    - .ubuntu-deps
   script:
     - DEBIAN_FRONTEND=noninteractive apt install -y clang-tools
     - ./make_deps.sh
@@ -139,10 +191,10 @@ analysis:static-analysis:
 
 analysis:thread-sanitizer:
   stage: analysis
+  image: ${CI_REGISTRY_IMAGE}:ubuntu-22.04-${ARCH}
   extends:
     - .amd64
-    - .ubuntu
-  image: ubuntu:22.04
+    - .ubuntu-deps
   allow_failure: true
   script:
     - DEBIAN_FRONTEND=noninteractive apt install -y clang
@@ -159,10 +211,10 @@ analysis:thread-sanitizer:
 
 analysis:address-sanitizer:
   stage: analysis
+  image: ${CI_REGISTRY_IMAGE}:ubuntu-22.04-${ARCH}
   extends:
     - .amd64
-    - .ubuntu
-  image: ubuntu:22.04
+    - .ubuntu-deps
   allow_failure: true
   script:
     - DEBIAN_FRONTEND=noninteractive apt install -y clang
@@ -184,10 +236,10 @@ analysis:address-sanitizer:
 #
 staging:22.04:gcc-arm64-bundled-libs:
   stage: staging
+  image: ${CI_REGISTRY_IMAGE}:ubuntu-22.04-${ARCH}
   extends:
     - .arm64
-    - .ubuntu
-  image: ubuntu:22.04
+    - .ubuntu-deps
   allow_failure: true
   script: 
     - ./make_deps.sh
@@ -204,13 +256,11 @@ staging:22.04:gcc-arm64-bundled-libs:
 
 staging:24.04:gcc-amd64-system-libs:
   stage: staging
+  image: ${CI_REGISTRY_IMAGE}:ubuntu-24.04-${ARCH}
   extends:
     - .amd64
-    - .ubuntu
-  image: ubuntu:24.04
+    - .ubuntu-deps
   script: 
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglm-dev
-      libsnappy-dev libzmq3-dev
     - rm -rf build && mkdir build
     - cmake -B build -DCMAKE_BUILD_TYPE=Debug -DPROFILE=ON -DWITH_SANITIZE=ON -DUSE_SYSTEM_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
@@ -224,13 +274,11 @@ staging:24.04:gcc-amd64-system-libs:
 
 staging:24.04:clang-amd64-system-libs:
   stage: staging
+  image: ${CI_REGISTRY_IMAGE}:ubuntu-24.04-${ARCH}
   extends:
     - .amd64
-    - .ubuntu
-  image: ubuntu:24.04
+    - .ubuntu-deps
   script: 
-    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libglm-dev
-      libsnappy-dev libzmq3-dev clang
     - rm -rf build && mkdir build
     - CC=clang CXX=clang++ cmake -B build -DCMAKE_BUILD_TYPE=Debug -DPROFILE=ON -DUSE_SYSTEM_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
@@ -242,7 +290,7 @@ staging:24.04:clang-amd64-system-libs:
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging'
  
-staging:fedora:gcc-amd64-system-bundled-libs:
+staging:fedora:gcc-amd64-system-libs:
   stage: staging
   extends:
     - .amd64
@@ -352,9 +400,9 @@ staging:windows:
 #
 .package:debian:22.04:
   stage: package
+  image: ${CI_REGISTRY_IMAGE}:ubuntu-22.04-${ARCH}
   extends:
-    - .ubuntu
-  image: ubuntu:22.04
+    - .ubuntu-deps
   script:
     # Build package
     - ./make_deps.sh
@@ -385,9 +433,9 @@ package:debian:22.04:arm64:
 
 .package:debian:24.04:
   stage: package
+  image: ${CI_REGISTRY_IMAGE}:ubuntu-24.04-${ARCH}
   extends:
-    - .ubuntu
-  image: ubuntu:24.04
+    - .ubuntu-deps
   script:
     # Build package
     - ./make_deps.sh
@@ -418,9 +466,10 @@ package:debian:24.04:arm64:
 
 package:blender_addon:
   stage: package
+  image: ${CI_REGISTRY_IMAGE}:ubuntu-22.04-${ARCH}
   extends:
-    - .ubuntu
-  image: ubuntu:22.04
+    - .amd64
+    - .ubuntu-deps
   before_script:
     - apt update -qq
     - DEBIAN_FRONTEND=noninteractive apt install -y git git-lfs zip cmake build-essential pkg-config
@@ -487,9 +536,10 @@ package:windows:
 #
 pages:
   stage: deploy
+  image: ${CI_REGISTRY_IMAGE}:ubuntu-22.04-${ARCH}
   extends:
-    - .ubuntu
-  image: ubuntu:22.04
+    - .amd64
+    - .ubuntu-deps
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
   script:

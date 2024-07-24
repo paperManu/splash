@@ -302,6 +302,20 @@ The release process is handled semi-automatically, see the dedicated [Release pr
 	
 This repository includes a CI pipeline, used to validate that incoming commits do not break the build, and that all unit tests still pass. It will be run automatically when a new commit is pushed to the repository. If the pipeline fails, it is your responsability to checkout the [CI Jobs page](https://gitlab.com/splashmapper/splash/-/jobs) and figure out how to fix it. A Merge Requests that breaks the pipeline will not be merged by the core developers.
 
+The CI pipeline is configured in the file `./.gitlab-ci.yml`, see the [official documentation](https://docs.gitlab.com/ee/ci/yaml/) for reference. The jobs are organized in multiple stages, namely:
+
+- deps: generates Ubuntu Docker images with Splash dependencies, to prevent reinstalling them at each merge request
+- test: build Splash and run the unit tests on Ubuntu
+- analysis: run sanitizers to help discover issues preemptively
+- staging: build Splash and test it on a variety of operating systems: Ubuntu, Archlinux, Fedora, and Windows
+- package: generate packages for Debian, Ubuntu and Windows
+- deploy: generate Doxygen documentation and deploys it
+
+Not all jobs are executed everytime. At minimum, a merge request must be created to have the test stages running. The following stages are executed only when staging and releasing Splash.
+
+The built Docker images are for Ubuntu 22.04 and 24.04, for AMD64 and ARM64 platforms. They are built once and are not rebuilt unless the docker files, located in `./tools/docker` are modified.
+
+Lastly, tags are used to know which job to run on each platform. AMD64 runners must have the `amd64` tag, and ARM64 platforms must have the `arm64` tag. And all platforms must run in privileged mode, to allow for Docker image generation inside Docker. See the [Gitlab documentation related to this](https://docs.gitlab.com/ee/ci/docker/using_docker_build.html). To ensure that this has been taken into consideration, a `privileged` tag is also added to all runners.
 
 ## Merge Request Process
 
