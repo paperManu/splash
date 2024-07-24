@@ -1,6 +1,15 @@
 Splash release notes
 ====================
 
+Splash 0.10.16 (2024-07-24)
+-------------------------
+Improvements:
+* Accelerated CI through the use of Docker images
+
+Bugs fixed:
+* Fixed Image_FFmpeg by removing a deprecated function
+* Fixed Window showing only the first texture connected to it, possibly multiple times
+
 Splash 0.10.14 (2024-07-01)
 -------------------------
 Improvements:
