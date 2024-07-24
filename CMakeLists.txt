@@ -30,7 +30,7 @@ endif()
 
 project(
     splash
-    VERSION 0.10.15
+    VERSION 0.10.17
     LANGUAGES C CXX
 )
 
