@@ -161,7 +161,7 @@ analysis:coverage:
     - zip -r coverage.zip build/coverage
   coverage: '/  lines......: \d+\.\d+/'
   artifacts:
-    name: "splash_coverage_${CI_BUILD_REF_NAME}"
+    name: "splash_coverage_${CI_COMMIT_REF_NAME}"
     paths:
     - "coverage.zip"
     expire_in: 2 week
@@ -181,7 +181,7 @@ analysis:static-analysis:
     - scan-build cmake -B build -DCMAKE_BUILD_TYPE=Debug -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
     - scan-build -o ./analysis make -sC build -j$(nproc)
   artifacts:
-    name: "splash_${CI_BUILD_REF_NAME}_analysis"
+    name: "splash_${CI_COMMIT_REF_NAME}_analysis"
     paths:
       - "analysis"
     expire_in: 2 week
@@ -412,10 +412,9 @@ staging:windows:
     - make package
     - mv *.deb ../
   artifacts:
-    name: "splash_${CI_BUILD_REF_NAME}"
+    name: "splash_${CI_COMMIT_REF_NAME}"
     paths:
       - "*.deb"
-      - "*.tar.bz2"
     expire_in: never
   rules:
     - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
@@ -445,10 +444,9 @@ package:debian:22.04:arm64:
     - make package
     - mv *.deb ../
   artifacts:
-    name: "splash_${CI_BUILD_REF_NAME}"
+    name: "splash_${CI_COMMIT_REF_NAME}"
     paths:
       - "*.deb"
-      - "*.tar.bz2"
     expire_in: never
   rules:
     - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
@@ -480,7 +478,7 @@ package:blender_addon:
     - make blenderSplash
     - mv addons/blender/*.tar.bz2 ../
   artifacts:
-    name: "splash_blender_addon_${CI_BUILD_REF_NAME}"
+    name: "splash_blender_addon_${CI_COMMIT_REF_NAME}"
     paths:
       - "*.tar.bz2"
     expire_in: never
