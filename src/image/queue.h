@@ -84,10 +84,26 @@ class Queue : public BufferObject
     SerializedObject serialize() const override;
 
     /**
-     * Returns always true, the Queue object handles update itself
+     * Set the updated buffer flag for the inner
+     * current source to false.
+     */
+    void setNotUpdated() override
+    {
+        if (_currentSource != nullptr)
+            _currentSource->setNotUpdated();
+    }
+
+    /**
+     * Returns whether the inner current source was updated
      * \return Return true if the queue was updated
      */
-    bool wasUpdated() const override { return true; }
+    bool wasUpdated() const override
+    {
+        if (_currentSource != nullptr)
+            return _currentSource->wasUpdated();
+        else
+            return false;
+    }
 
     /**
      * Update the current texture
@@ -208,10 +224,10 @@ class QueueSurrogate final : public Texture
     /**
      * Update the texture according to the owned Image
      */
-    void update() final{};
+    void update() final {};
 
   private:
-    int _filterIndex{0};
+    static int _filterIndex;
     std::shared_ptr<Filter> _filter;
     std::shared_ptr<GraphObject> _source;
 

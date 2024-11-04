@@ -397,6 +397,8 @@ void Queue::registerAttributes()
 /*************/
 /*************/
 
+int QueueSurrogate::_filterIndex = 0;
+
 /*************/
 QueueSurrogate::QueueSurrogate(RootObject* root)
     : Texture(root)
