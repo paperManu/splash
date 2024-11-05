@@ -1,6 +1,11 @@
 Splash release notes
 ====================
 
+Splash 0.10.20 (2024-11-04)
+-------------------------
+Bugs fixed:
+* Fix multiple queues not working as expected: same content for all instances,...
+
 Splash 0.10.18 (2024-09-02)
 -------------------------
 Improvements:
