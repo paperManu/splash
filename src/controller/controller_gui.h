@@ -312,13 +312,13 @@ class Gui final : public ControllerObject
      * Get the clipboard
      * \return Return a pointer to the text
      */
-    static const char* getClipboardText(void* userData);
+    static const char* getClipboardText(ImGuiContext* userData);
 
     /**
      * Set the clipboard
      * \param text Text to set the clipboard to
      */
-    static void setClipboardText(void* userData, const char* text);
+    static void setClipboardText(ImGuiContext* userData, const char* text);
 
     /**
      * Copy camera parameters from the specified configuration file to the current configuration

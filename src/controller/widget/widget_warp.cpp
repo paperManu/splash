@@ -52,7 +52,7 @@ void GuiWarp::render()
         int w = ImGui::GetWindowWidth() - 4 * leftMargin;
         int h = w * warpSpec.height / warpSpec.width;
 
-        if (ImGui::ImageButton(warp->getName().c_str(), (void*)(intptr_t)warp->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
+        if (ImGui::ImageButton(warp->getName().c_str(), (ImTextureID)(intptr_t)warp->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
             _currentWarp = i;
 
         if (ImGui::IsItemHovered())
@@ -100,7 +100,7 @@ void GuiWarp::render()
                     w = h * warpSpec.width / warpSpec.height;
                 }
 
-                ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(texture->getTexId())), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+                ImGui::Image((ImTextureID)(intptr_t)(texture->getTexId()), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
 
                 if (ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly))
                 {

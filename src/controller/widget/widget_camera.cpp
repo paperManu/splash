@@ -79,7 +79,7 @@ void GuiCamera::render()
 
         // We must make sure that the camera name, used as ID, is not empty
         const std::string cameraName = camera->getName().empty() ? "##" : camera->getName();
-        if (ImGui::ImageButton(cameraName.c_str(), (void*)(intptr_t)camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
+        if (ImGui::ImageButton(cameraName.c_str(), (ImTextureID)(intptr_t)camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
         {
             // If shift is pressed, we hide / unhide this camera
             if (io.KeyCtrl)
@@ -219,7 +219,7 @@ void GuiCamera::render()
         _camWidth = w;
         _camHeight = h;
 
-        ImGui::Image((void*)(intptr_t)_camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+        ImGui::Image((ImTextureID)(intptr_t)_camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly))
             _noMove = true;
         else
@@ -577,14 +577,14 @@ void GuiCamera::processMouseEvents()
                 return;
 
             // Set a calibration point
-            if (io.KeyCtrl && io.MouseClicked[0])
+            if (ImGui::IsKeyPressed(ImGuiMod_Ctrl) && io.MouseClicked[0])
             {
                 Values position = _camera->pickCalibrationPoint(mousePos.x, mousePos.y);
                 if (position.size() == 3)
                     setObjectAttribute(_camera->getName(), "removeCalibrationPoint", {position[0], position[1], position[2]});
             }
-            else if (io.KeyShift) // Define the screenpoint corresponding to the
-                                  // selected calibration point
+            else if (ImGui::IsKeyPressed(ImGuiMod_Shift)) // Define the screenpoint corresponding to the
+                                                          // selected calibration point
                 setObjectAttribute(_camera->getName(), "setCalibrationPoint", {mousePos.x * 2.f - 1.f, mousePos.y * 2.f - 1.f});
             else if (io.MouseClicked[0]) // Add a new calibration point
             {

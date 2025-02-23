@@ -34,7 +34,7 @@ void GuiFilters::render()
         int w = ImGui::GetWindowWidth() - 3 * leftMargin;
         int h = w * spec.height / spec.width;
 
-        if (ImGui::ImageButton(filter->getName().c_str(), (void*)(intptr_t)filter->getTexId(), ImVec2(w, h), ImVec2(0, 0), ImVec2(1, 1)))
+        if (ImGui::ImageButton(filter->getName().c_str(), (ImTextureID)(intptr_t)filter->getTexId(), ImVec2(w, h), ImVec2(0, 0), ImVec2(1, 1)))
             _selectedFilterName = filter->getName();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", filter->getAlias().c_str());
@@ -127,7 +127,7 @@ void GuiFilters::render()
         int w = ImGui::GetWindowWidth() - 2 * leftMargin;
         int h = w * ratio;
 
-        ImGui::Image(reinterpret_cast<ImTextureID>(filter->getTexId()), ImVec2(w, h));
+        ImGui::Image((ImTextureID)(intptr_t)(filter->getTexId()), ImVec2(w, h));
         ImGui::TreePop();
     }
 

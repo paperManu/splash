@@ -44,7 +44,7 @@ void GuiTexturesView::render()
         w = ImGui::GetWindowWidth() - 4 * leftMargin;
         h = sizeX != 0 ? w * sizeY / sizeX : 1;
         if (camera)
-            ImGui::Image((void*)(intptr_t)camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Image((ImTextureID)(intptr_t)camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
 
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", camera->getAlias().c_str());
@@ -76,7 +76,7 @@ void GuiTexturesView::render()
 
         w = ImGui::GetWindowWidth() - 4 * leftMargin;
         h = sizeX != 0 ? w * sizeY / sizeX : 1;
-        ImGui::Image((void*)(intptr_t)object->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+        ImGui::Image((ImTextureID)(intptr_t)object->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
 
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", object->getAlias().c_str());
