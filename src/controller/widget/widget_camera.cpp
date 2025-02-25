@@ -491,38 +491,38 @@ void GuiCamera::processKeyEvents()
         return;
 
     ImGuiIO& io = ImGui::GetIO();
-    if (ImGui::IsKeyPressed((ImGuiKey)' ', false))
+    if (ImGui::IsKeyPressed(ImGuiKey_Space, false))
     {
         nextCamera();
         return;
     }
-    else if (ImGui::IsKeyPressed((ImGuiKey)'A', false))
+    else if (ImGui::IsKeyPressed(ImGuiKey_A, false))
     {
         showAllCalibrationPoints();
         return;
     }
-    else if (ImGui::IsKeyPressed((ImGuiKey)'C', false))
+    else if (ImGui::IsKeyPressed(ImGuiKey_C, false))
     {
         doCalibration();
         return;
     }
-    else if (ImGui::IsKeyPressed((ImGuiKey)'H', false))
+    else if (ImGui::IsKeyPressed(ImGuiKey_H, false))
     {
         _hideCameras = !_camerasHidden;
         return;
     }
-    else if (ImGui::IsKeyPressed((ImGuiKey)'O', false))
+    else if (ImGui::IsKeyPressed(ImGuiKey_O, false))
     {
         showAllCamerasCalibrationPoints();
         return;
     }
-    else if (ImGui::IsKeyPressed((ImGuiKey)'V', false))
+    else if (ImGui::IsKeyPressed(ImGuiKey_V, false))
     {
         _camerasColorized = !_camerasColorized;
         return;
     }
     // Reset to the previous camera calibration
-    else if (ImGui::IsKeyPressed((ImGuiKey)'Z', false))
+    else if (ImGui::IsKeyPressed(ImGuiKey_Z, false))
     {
         if (io.KeyCtrl)
             revertCalibration();
