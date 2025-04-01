@@ -40,6 +40,7 @@
 #include "./controller/colorcalibrator.h"
 #endif
 #include "./controller/widget/widget.h"
+#include "./controller/widget/widget_attributes.h"
 #include "./core/attribute.h"
 #include "./graphics/api/framebuffer_gfx_impl.h"
 #include "./graphics/api/gui_gfx_impl.h"
@@ -237,6 +238,7 @@ class Gui final : public ControllerObject
     MenuAction _menuAction{MenuAction::None};
     ImGuiWindowFlags _windowFlags{0};
     std::map<FontType, ImFont*> _guiFonts{};
+    std::shared_ptr<GuiAttributes> _guiAttributes;
     std::vector<std::shared_ptr<GuiWidget>> _guiWidgets;
     std::vector<std::shared_ptr<GuiWidget>> _guiBottomWidgets;
 

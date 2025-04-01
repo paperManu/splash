@@ -48,11 +48,10 @@ void GuiFilters::render()
     ImGui::SameLine();
     ImGui::BeginChild("##filterInfo", ImVec2(0, 0), true);
 
-    ImGui::Text("Parameters:");
-    auto attributes = getObjectAttributes(_selectedFilterName);
-    drawAttributes(_selectedFilterName, attributes);
+    ImGui::Text("Filter name: %s", _selectedFilterName.c_str());
 
     // If RGB curves are present, special treatment for them
+    auto attributes = getObjectAttributes(_selectedFilterName);
     auto colorCurves = attributes.find("colorCurves");
     if (colorCurves != attributes.end())
     {
@@ -118,17 +117,15 @@ void GuiFilters::render()
         }
     }
 
-    if (ImGui::TreeNode(("Filter preview: " + _selectedFilterName).c_str()))
     {
-        auto spec = filter->getSpec();
-        auto ratio = static_cast<float>(spec.height) / static_cast<float>(spec.width);
+        const auto spec = filter->getSpec();
+        const auto ratio = static_cast<float>(spec.height) / static_cast<float>(spec.width);
 
-        auto leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
-        int w = ImGui::GetWindowWidth() - 2 * leftMargin;
-        int h = w * ratio;
+        const auto leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
+        const int w = ImGui::GetWindowWidth() - 2 * leftMargin;
+        const int h = w * ratio;
 
         ImGui::Image((ImTextureID)(intptr_t)(filter->getTexId()), ImVec2(w, h));
-        ImGui::TreePop();
     }
 
     ImGui::EndChild();

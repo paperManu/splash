@@ -36,6 +36,7 @@ class GuiMedia : public GuiWidget
   public:
     GuiMedia(Scene* scene, const std::string& name);
     void render() final;
+    std::optional<std::string> getActiveObjectName() const final { return _selectedMediaName.empty() ? std::optional<std::string>() : _selectedMediaName; }
     int updateWindowFlags() final;
 
   private:

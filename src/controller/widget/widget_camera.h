@@ -42,6 +42,7 @@ class GuiCamera : public GuiWidget
     void render() final;
     void update() final;
     int updateWindowFlags() final;
+    std::optional<std::string> getActiveObjectName() const final { return _camera ? _camera->getName() : std::optional<std::string>(); }
     void setCamera(const std::shared_ptr<Camera>& cam);
     void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons);
 

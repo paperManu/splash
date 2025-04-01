@@ -1,6 +1,7 @@
 #include "./controller/controller_gui.h"
 
 #include <fstream>
+#include <optional>
 
 #include "./controller/controller.h"
 #include "./controller/widget/widget_calibration.h"
@@ -1098,16 +1099,11 @@ void Gui::render()
 
         drawMenuBar();
 
+        std::optional<std::string> activeObjectName;
         ImGui::BeginChild("##controlWidgets", ImVec2(0, -256));
+        ImGui::BeginChild("##tabulations", ImVec2(-384, 0));
         if (ImGui::BeginTabBar("Tabs", ImGuiTabBarFlags_None))
         {
-            // Main tabulation
-            if (ImGui::BeginTabItem("Main"))
-            {
-                drawMainTab();
-                ImGui::EndTabItem();
-            }
-
             // Controls tabulations
             for (auto& widget : _guiWidgets)
             {
@@ -1116,13 +1112,31 @@ void Gui::render()
                 {
                     ImGui::BeginChild(widget->getName().c_str());
                     widget->render();
+                    activeObjectName = widget->getActiveObjectName();
                     ImGui::EndChild();
                     ImGui::EndTabItem();
                 }
                 _windowFlags |= widget->updateWindowFlags();
             }
 
+            // Options tabulation
+            if (ImGui::BeginTabItem("Options"))
+            {
+                drawMainTab();
+                ImGui::EndTabItem();
+            }
+
             ImGui::EndTabBar();
+        }
+        ImGui::EndChild();
+
+        if (activeObjectName)
+        {
+            ImGui::SameLine();
+            ImGui::BeginChild("##objectAttributes");
+            _guiAttributes->setTargetObjectName(activeObjectName.value());
+            _guiAttributes->render();
+            ImGui::EndChild();
         }
         ImGui::EndChild();
 
@@ -1375,47 +1389,26 @@ void Gui::setClipboardText(ImGuiContext* userData, const char* text)
 /*************/
 void Gui::initImWidgets()
 {
-    // Control
-    auto controlView = std::make_shared<GuiControl>(_scene, "Graph");
-    _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(controlView));
+    // Attributes can be shown in whichever widget,
+    // this is why this widget is stored separately
+    _guiAttributes = std::make_shared<GuiAttributes>(_scene, "Attributes");
 
-    // Media
-    auto mediaSelector = std::make_shared<GuiMedia>(_scene, "Medias");
-    _guiWidgets.push_back(mediaSelector);
+    _guiWidgets.push_back(std::make_shared<GuiControl>(_scene, "Graph"));
+    _guiWidgets.push_back(std::make_shared<GuiMeshes>(_scene, "Meshes"));
+    _guiWidgets.push_back(std::make_shared<GuiMedia>(_scene, "Medias"));
+    _guiWidgets.push_back(std::make_shared<GuiFilters>(_scene, "Filters"));
 
-    // Filters
-    auto filterPanel = std::make_shared<GuiFilters>(_scene, "Filters");
-    _guiWidgets.push_back(filterPanel);
-
-    // Meshes
-    auto meshesSelector = std::make_shared<GuiMeshes>(_scene, "Meshes");
-    _guiWidgets.push_back(meshesSelector);
-
-    // GUI camera view
     auto globalView = std::make_shared<GuiCamera>(_scene, "Cameras");
     globalView->setCamera(_guiCamera);
     _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(globalView));
 
-    // Warp control
-    auto warpControl = std::make_shared<GuiWarp>(_scene, "Warps");
-    _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWarp>(warpControl));
-
-    // Calibration (Calimiro)
-    auto calibrationControl = std::make_shared<GuiCalibration>(_scene, "Calibration");
-    _guiWidgets.push_back(std::dynamic_pointer_cast<GuiCalibration>(calibrationControl));
+    _guiWidgets.push_back(std::make_shared<GuiWarp>(_scene, "Warps"));
 
     if (Log::get().getVerbosity() == Log::DEBUGGING)
     {
-        // Performance graph
-        auto perfGraph = std::make_shared<GuiGraph>(_scene, "Performances");
-        _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(perfGraph));
-
-        auto texturesView = std::make_shared<GuiTexturesView>(_scene, "Textures");
-        _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(texturesView));
-
-        // Tree view
-        auto treeView = std::make_shared<GuiTree>(_scene, "Tree view");
-        _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(treeView));
+        _guiWidgets.push_back(std::make_shared<GuiGraph>(_scene, "Performances"));
+        _guiWidgets.push_back(std::make_shared<GuiTexturesView>(_scene, "Textures"));
+        _guiWidgets.push_back(std::make_shared<GuiTree>(_scene, "Tree view"));
     }
 
     // Bottom widgets

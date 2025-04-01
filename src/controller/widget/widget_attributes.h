@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Splash authors
+ * Copyright (C) 2025 Splash authors
  *
  * This file is part of Splash.
  *
@@ -18,43 +18,31 @@
  */
 
 /*
- * @widget_warp.h
- * The warp view widget
+ * @widget_attribute.h
+ * A widget to show all of an object's attributes
  */
 
-#ifndef SPLASH_WIDGET_WARP_H
-#define SPLASH_WIDGET_WARP_H
+#ifndef SPLASH_WIDGET_ATTRIBUTES_H
+#define SPLASH_WIDGET_ATTRIBUTES_H
 
-#include "./graphics/warp.h"
 #include "./widget.h"
 
 namespace Splash
 {
 
 /*************/
-class GuiWarp : public GuiWidget
+class GuiAttributes : public GuiWidget
 {
   public:
-    GuiWarp(Scene* scene, const std::string& name)
+    GuiAttributes(Scene* scene, const std::string& name)
         : GuiWidget(scene, name)
     {
     }
     void render() final;
-    void update() final;
-    int updateWindowFlags() final;
-    std::optional<std::string> getActiveObjectName() const final { return _currentWarpName.empty() ? std::optional<std::string>() : _currentWarpName; }
+    void setTargetObjectName(const std::string& name) { _targetObjectName = name; }
 
   private:
-    bool _noMove{false};
-
-    bool _rendered{false};
-    uint32_t _currentWarp{0};
-    std::string _currentWarpName{""};
-    int _currentControlPointIndex{0};
-    glm::vec2 _deltaAtPicking;
-
-    void processKeyEvents(const std::shared_ptr<Warp>& warp);
-    void processMouseEvents(const std::shared_ptr<Warp>& warp, int warpWidth, int warpHeight);
+    std::string _targetObjectName{};
 };
 
 } // namespace Splash

@@ -83,25 +83,24 @@ void GuiMedia::render()
     {
         auto mediaAlias = getObjectAlias(_selectedMediaName);
 
-        ImGui::Text("Change media type: ");
+        ImGui::Text("Media name: %s", _selectedMediaName.c_str());
+        ImGui::Text("Current media type: ");
         ImGui::SameLine();
         if (_mediaTypeIndex.find(_selectedMediaName) == _mediaTypeIndex.end())
             _mediaTypeIndex[_selectedMediaName] = 0;
+
+        const auto mediaTypeIt = _mediaTypes.find(_mediaTypesReversed[media->getRemoteType()]);
+        int mediaTypeIndex = std::distance(_mediaTypes.begin(), mediaTypeIt);
 
         std::vector<const char*> mediaTypes;
         for (const auto& type : _mediaTypes)
             mediaTypes.push_back(type.first.c_str());
 
-        if (ImGui::Combo("##mediaType", &_mediaTypeIndex[_selectedMediaName], mediaTypes.data(), mediaTypes.size()))
+        if (ImGui::Combo("##mediaType", &mediaTypeIndex, mediaTypes.data(), mediaTypes.size()))
             replaceMedia(_selectedMediaName, mediaAlias, mediaTypes[_mediaTypeIndex[_selectedMediaName]]);
 
-        ImGui::Text("Current media type: %s", _mediaTypesReversed[media->getRemoteType()].c_str());
-
-        ImGui::Text("Parameters:");
-        const auto attributes = getObjectAttributes(media->getName());
-        drawAttributes(_selectedMediaName, attributes);
-
         // Display the playlist if this is a queue
+        const auto attributes = getObjectAttributes(media->getName());
         if (std::dynamic_pointer_cast<QueueSurrogate>(media))
         {
             if (ImGui::TreeNode("Playlist"))
@@ -361,7 +360,6 @@ void GuiMedia::render()
             for (const auto& filterAsObj : filters)
             {
                 auto filterName = filterAsObj->getName();
-                if (ImGui::TreeNode(("Filter preview: " + filterName).c_str()))
                 {
                     auto filter = std::dynamic_pointer_cast<Filter>(filterAsObj);
                     auto spec = filter->getSpec();
@@ -372,7 +370,6 @@ void GuiMedia::render()
                     int h = w * ratio;
 
                     ImGui::Image((ImTextureID)(intptr_t)(filter->getTexId()), ImVec2(w, h));
-                    ImGui::TreePop();
                 }
             }
         }

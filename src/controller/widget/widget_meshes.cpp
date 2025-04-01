@@ -60,7 +60,8 @@ void GuiMeshes::render()
     {
         auto meshAlias = getObjectAlias(_selectedMeshName);
 
-        ImGui::Text("Change mesh type: ");
+        ImGui::Text("Mesh name: %s", _selectedMeshName.c_str());
+        ImGui::Text("Current mesh type: ");
         ImGui::SameLine();
         if (_meshTypeIndex.find(_selectedMeshName) == _meshTypeIndex.end())
             _meshTypeIndex[_selectedMeshName] = 0;
@@ -69,14 +70,12 @@ void GuiMeshes::render()
         for (const auto& type : _meshType)
             meshTypes.push_back(type.first.c_str());
 
-        if (ImGui::Combo("##meshType", &_meshTypeIndex[_selectedMeshName], meshTypes.data(), meshTypes.size()))
+        const auto meshTypeIt = _meshType.find(_meshTypeReversed[mesh->getRemoteType()]);
+        int meshTypeIndex = std::distance(_meshType.begin(), meshTypeIt);
+
+        if (ImGui::Combo("##meshType", &meshTypeIndex, meshTypes.data(), meshTypes.size()))
             replaceMesh(_selectedMeshName, meshAlias, meshTypes[_meshTypeIndex[_selectedMeshName]]);
 
-        ImGui::Text("Current mesh type: %s", _meshTypeReversed[mesh->getRemoteType()].c_str());
-
-        ImGui::Text("Parameters:");
-        auto attributes = getObjectAttributes(mesh->getName());
-        drawAttributes(_selectedMeshName, attributes);
     }
 
     ImGui::EndChild();

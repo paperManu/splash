@@ -382,7 +382,7 @@ void Object::resetVisibility(int primitiveIdShift)
             auto verticesNbr = geom->getVerticesNumber();
             _computeShaderResetVisibility->setUniform("_vertexNbr", verticesNbr);
             _computeShaderResetVisibility->setUniform("_primitiveIdShift", primitiveIdShift);
-            if (!_computeShaderResetVisibility->doCompute(verticesNbr / 3 / 128 + 1))
+            if (!_computeShaderResetVisibility->doCompute(verticesNbr / (3 * 128) + 1))
                 Log::get() << Log::WARNING << "Object::" << __FUNCTION__ << " - Error while computing the visibility" << Log::endl;
             geom->deactivate();
         }

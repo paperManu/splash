@@ -31,6 +31,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 
 #include "./core/constants.h"
@@ -90,6 +91,13 @@ class GuiWidget : public ControllerObject
      * Render the widget
      */
     virtual void render() override {}
+
+    /**
+     * Get the currently active object name
+     *
+     * \return The object name, if any
+     */
+    virtual std::optional<std::string> getActiveObjectName() const { return {}; }
 
     /**
      * Get the window flags as updated by the widget

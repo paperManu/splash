@@ -37,6 +37,7 @@ class GuiMeshes : public GuiWidget
     GuiMeshes(Scene* scene, const std::string& name);
     void render() final;
     int updateWindowFlags() final;
+    std::optional<std::string> getActiveObjectName() const final { return _selectedMeshName.empty() ? std::optional<std::string>() : _selectedMeshName; }
 
   private:
     std::map<std::string, int> _meshTypeIndex;

@@ -39,6 +39,7 @@ class GuiFilters : public GuiWidget
     {
     }
     void render() final;
+    std::optional<std::string> getActiveObjectName() const final { return _selectedFilterName.empty() ? std::optional<std::string>() : _selectedFilterName; }
 
   private:
     std::map<std::string, int> _meshTypeIndex;
