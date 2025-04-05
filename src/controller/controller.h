@@ -46,9 +46,10 @@ class ControllerObject : public GraphObject
     /**
      * Constructor
      * \param root RootObject
+     * \param registerToTree Register the object into the root tree
      */
-    explicit ControllerObject(RootObject* root)
-        : GraphObject(root)
+    explicit ControllerObject(RootObject* root, TreeRegisterStatus registerToTree = TreeRegisterStatus::Registered)
+        : GraphObject(root, registerToTree)
     {
         registerAttributes();
     }

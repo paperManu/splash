@@ -46,8 +46,10 @@ class Image : public BufferObject
      * Constructor
      * \param root Root object
      * \param spec Image specifications
+     * \param registerToTree Register the object into the root tree
      */
-    Image(RootObject* root, const std::optional<ImageBufferSpec> spec = std::nullopt);
+    Image(RootObject* root, const std::optional<ImageBufferSpec> spec = std::nullopt, TreeRegisterStatus registerToTree = TreeRegisterStatus::Registered);
+    explicit Image(RootObject* root, TreeRegisterStatus registerToTree);
 
     /**
      * Destructor

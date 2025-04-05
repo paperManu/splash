@@ -15,8 +15,8 @@ namespace Splash
 {
 
 /*************/
-Filter::Filter(RootObject* root)
-    : Texture(root)
+Filter::Filter(RootObject* root, TreeRegisterStatus registerToTree)
+    : Texture(root, registerToTree)
 {
     _type = "filter";
     _renderingPriority = Priority::FILTER;

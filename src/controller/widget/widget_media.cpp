@@ -30,7 +30,7 @@ void GuiMedia::render()
 {
     auto mediaList = getSceneMedia();
 
-    if (mediaList.size() == 1)
+    if (mediaList.size() != 0 && _selectedMediaName.empty())
     {
         assert(mediaList.front() != nullptr);
         _selectedMediaName = mediaList.front()->getName();

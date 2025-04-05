@@ -295,14 +295,6 @@ Gui::Gui(RenderingContext* renderingContext, RootObject* scene)
     _fbo = _renderer->createFramebuffer();
     _fbo->setResizable(true);
 
-    // Create the default GUI camera
-    _guiCamera = std::make_shared<Camera>(scene, TreeRegisterStatus::NotRegistered);
-    _guiCamera->setName("Overview camera");
-    _guiCamera->setAttribute("eye", {2.0, 2.0, 0.0});
-    _guiCamera->setAttribute("target", {0.0, 0.0, 0.5});
-    _guiCamera->setAttribute("size", {640, 480});
-    _guiCamera->setAttribute("savable", {false});
-
     // Intialize the GUI widgets
     ImGui::CreateContext();
     initImGui(_width, _height);
@@ -641,7 +633,11 @@ bool Gui::linkIt(const std::shared_ptr<GraphObject>& obj)
     if (std::dynamic_pointer_cast<Object>(obj))
     {
         auto object = std::dynamic_pointer_cast<Object>(obj);
-        _guiCamera->linkTo(object);
+        for (auto& widget : _guiWidgets)
+            widget->linkTo(object);
+        for (auto& widget : _guiBottomWidgets)
+            widget->linkTo(object);
+
         return true;
     }
 
@@ -652,7 +648,12 @@ bool Gui::linkIt(const std::shared_ptr<GraphObject>& obj)
 void Gui::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
     if (std::dynamic_pointer_cast<Object>(obj).get() != nullptr)
-        _guiCamera->unlinkFrom(obj);
+    {
+        for (auto& widget : _guiWidgets)
+            widget->unlinkFrom(obj);
+        for (auto& widget : _guiBottomWidgets)
+            widget->unlinkFrom(obj);
+    }
 }
 
 /*************/
@@ -1403,7 +1404,6 @@ void Gui::initImWidgets()
     _guiWidgets.push_back(std::make_shared<GuiFilters>(_scene, "Filters"));
 
     auto globalView = std::make_shared<GuiCamera>(_scene, "Cameras");
-    globalView->setCamera(_guiCamera);
     _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(globalView));
 
     _guiWidgets.push_back(std::make_shared<GuiWarp>(_scene, "Warps"));

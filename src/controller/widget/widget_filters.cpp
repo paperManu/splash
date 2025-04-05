@@ -21,6 +21,9 @@ void GuiFilters::render()
     }
     filterList.erase(std::remove_if(filterList.begin(), filterList.end(), [](const auto& filter) { return !filter->getSavable(); }), filterList.end());
 
+    if (filterList.size() != 0 && _selectedFilterName.empty())
+        _selectedFilterName = filterList[0]->getName();
+
     ImVec2 availableSize = ImGui::GetContentRegionAvail();
     ImGui::BeginChild("##filters", ImVec2(availableSize.x * 0.25, availableSize.y), true);
     ImGui::Text("Filter list");

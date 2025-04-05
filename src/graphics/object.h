@@ -47,8 +47,9 @@ class Object : public GraphObject
     /**
      * Constructor
      * \param root Root object
+     * \param registerToTree Register the object into the root tree
      */
-    Object(RootObject* root);
+    Object(RootObject* root, TreeRegisterStatus registerToTree = TreeRegisterStatus::Registered);
 
     /**
      * Destructor

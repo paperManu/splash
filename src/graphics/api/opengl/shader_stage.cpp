@@ -57,6 +57,7 @@ bool ShaderStage::setSource(std::string_view source)
     else
     {
         Log::get() << Log::WARNING << "gfx::ShaderStage::" << __FUNCTION__ << " - Error while compiling a shader of type " << stringFromShaderType() << Log::endl;
+        Log::get() << Log::WARNING << "gfx::ShaderStage::" << __FUNCTION__ << " - Shader source: " << source << Log::endl;
         const auto log = getShaderInfoLog();
         Log::get() << Log::WARNING << "gfx::ShaderStage::" << __FUNCTION__ << " - Error log: \n" << log << Log::endl;
     }

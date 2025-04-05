@@ -1,6 +1,7 @@
 #include "./graphics/filter_custom.h"
 
 #include "./graphics/api/shader_gfx_impl.h"
+#include "./utils/files.h"
 
 namespace Splash
 {
@@ -112,20 +113,13 @@ void FilterCustom::registerAttributes()
             if (srcFile.empty())
                 return true; // No shader specified
 
-            std::ifstream in(srcFile, std::ios::in | std::ios::binary);
-            if (in)
+            const auto source = Utils::getTextFileContent(srcFile);
+            if (!source.empty())
             {
-                std::string contents;
-                in.seekg(0, std::ios::end);
-                contents.resize(in.tellg());
-                in.seekg(0, std::ios::beg);
-                in.read(&contents[0], contents.size());
-                in.close();
-
                 _shaderSourceFile = srcFile;
                 _shaderSource = "";
                 addTask([=]() {
-                    setFilterSource(contents);
+                    setFilterSource(source);
                     _lastShaderSourceRead = Timer::getTime();
                 });
 

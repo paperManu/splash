@@ -22,8 +22,8 @@ namespace Splash
 {
 
 /*************/
-Object::Object(RootObject* root)
-    : GraphObject(root)
+Object::Object(RootObject* root, TreeRegisterStatus registerToTree)
+    : GraphObject(root, registerToTree)
 {
     init();
 }
@@ -588,6 +588,7 @@ void Object::setShader(const std::shared_ptr<Shader>& shader)
 {
     _graphicsShaders["userDefined"] = shader;
     _fill = "userDefined";
+    _fillParameters.clear();
 }
 
 /*************/

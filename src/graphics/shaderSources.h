@@ -843,32 +843,6 @@ const std::string GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
 /**************************/
 
 /**
- * Vertex shader which transmits the vertex attributes as-is
- */
-const std::string VERTEX_SHADER_DEFAULT{R"(
-        precision mediump float;
-
-        layout(location = 0) in vec4 _vertex;
-        layout(location = 1) in vec2 _texCoord;
-        layout(location = 2) in vec4 _normal;
-
-        out VertexData
-        {
-            vec4 position;
-            vec2 texCoord;
-            vec4 normal;
-        } vertexOut;
-
-        void main(void)
-        {
-            vertexOut.position = vec4(_vertex.xyz, 1.0);
-            gl_Position = vertexOut.position;
-            vertexOut.normal = _normal;
-            vertexOut.texCoord = _texCoord;
-        }
-    )"};
-
-/**
  * Vertex shader which projects the vertices using the modelview matrix
  */
 const std::string VERTEX_SHADER_MODELVIEW{R"(
@@ -919,38 +893,6 @@ const std::string VERTEX_SHADER_FILTER{R"(
         {
             gl_Position = vec4(_vertex.xyz, 1.0);
             texCoord = _texCoord;
-        }
-    )"};
-
-/**
- * Default fragment shader for filters
- * Does not do much except for applying the intput texture
- */
-const std::string FRAGMENT_SHADER_DEFAULT_FILTER{R"(
-        precision mediump float;
-
-    #ifdef TEXTURE_RECT
-        uniform sampler2DRect _tex0;
-    #else
-        uniform sampler2D _tex0;
-    #endif
-
-        in vec2 texCoord;
-        out vec4 fragColor;
-
-        uniform vec2 _tex0_size;
-
-        uniform float _blackLevel;
-
-        void main()
-        {
-    #ifdef TEXTURE_RECT
-            vec4 color = texture(_tex0, texCoord * _tex0_size);
-    #else
-            vec4 color = texture(_tex0, texCoord);
-    #endif
-
-            fragColor.rgb = color.rgb;
         }
     )"};
 

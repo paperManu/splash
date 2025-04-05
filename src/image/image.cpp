@@ -19,8 +19,8 @@ namespace Splash
 {
 
 /*************/
-Image::Image(RootObject* root, const std::optional<ImageBufferSpec> spec)
-    : BufferObject(root)
+Image::Image(RootObject* root, const std::optional<ImageBufferSpec> spec, TreeRegisterStatus registerToTree)
+    : BufferObject(root, registerToTree)
     , _image(std::make_unique<ImageBuffer>())
     , _bufferImage(std::make_unique<ImageBuffer>())
 {
@@ -39,6 +39,12 @@ Image::Image(RootObject* root, const std::optional<ImageBufferSpec> spec)
     }
 
     update();
+}
+
+/*************/
+Image::Image(RootObject* root, TreeRegisterStatus registerToTree)
+    : Image(root, std::nullopt, registerToTree)
+{
 }
 
 /*************/

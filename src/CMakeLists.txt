@@ -422,4 +422,6 @@ endif()
 
 install(FILES
     shaders/geometric_calibration_filter.frag
+    shaders/mesh_preview_shader.frag
+    shaders/mesh_preview_shader.geom
     DESTINATION "share/splash/shaders")

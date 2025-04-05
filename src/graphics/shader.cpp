@@ -13,6 +13,7 @@
 #include "./graphics/api/graphic_shader_gfx_impl.h"
 #include "./graphics/programSources.h"
 #include "./graphics/shaderSources.h"
+#include "./utils/files.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
@@ -150,6 +151,7 @@ void Shader::setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4
 bool Shader::setSource(const gfx::ShaderType type, const std::string& src)
 {
     const auto parsedSources = parseIncludes(src);
+    _currentSources[type] = parsedSources;
     return _gfxImpl->setSource(type, parsedSources);
 }
 
@@ -162,7 +164,7 @@ bool Shader::setSource(const std::map<gfx::ShaderType, std::string>& sources)
 
     bool status = true;
     if (sources.find(gfx::ShaderType::vertex) == sources.end())
-        status &= setSource(gfx::ShaderType::vertex, ShaderSources::VERSION_DIRECTIVE_GL32_ES + ShaderSources::VERTEX_SHADER_DEFAULT);
+        status &= setSource(gfx::ShaderType::vertex, ShaderSources::VERSION_DIRECTIVE_GL32_ES + ShaderSources::VERTEX_SHADER_TEXTURE);
     for (const auto& [shaderType, source] : sources)
         status &= setSource(shaderType, source);
 
@@ -172,16 +174,10 @@ bool Shader::setSource(const std::map<gfx::ShaderType, std::string>& sources)
 /*************/
 bool Shader::setSourceFromFile(const gfx::ShaderType type, const std::string& filename)
 {
-    std::ifstream in(filename, std::ios::in | std::ios::binary);
-    if (in)
+    const auto content = Utils::getTextFileContent(filename);
+    if (!content.empty())
     {
-        std::string contents;
-        in.seekg(0, std::ios::end);
-        contents.resize(in.tellg());
-        in.seekg(0, std::ios::beg);
-        in.read(&contents[0], contents.size());
-        in.close();
-        return setSource(type, contents);
+        return setSource(type, content);
     }
     else
     {
@@ -260,13 +256,12 @@ void Shader::selectFillMode(std::string_view mode, const std::vector<std::string
     {
         _gfxImpl->removeShaderType(gfx::ShaderType::tess_eval);
         _gfxImpl->removeShaderType(gfx::ShaderType::tess_ctrl);
-        _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
         _gfxImpl->removeShaderType(gfx::ShaderType::compute);
 
-        if (_currentSources.find(static_cast<int>(gfx::ShaderType::vertex)) == _currentSources.end())
-            setSource(gfx::ShaderType::vertex, options.append(ShaderSources::VERTEX_SHADER_DEFAULT));
-        if (_currentSources.find(static_cast<int>(gfx::ShaderType::fragment)) == _currentSources.end())
-            setSource(gfx::ShaderType::fragment, options.append(ShaderSources::FRAGMENT_SHADER_DEFAULT_FILTER));
+        if (_currentSources.find(gfx::ShaderType::vertex) == _currentSources.end())
+            setSource(gfx::ShaderType::vertex, options + ShaderSources::VERTEX_SHADER_TEXTURE);
+        if (_currentSources.find(gfx::ShaderType::fragment) == _currentSources.end())
+            setSource(gfx::ShaderType::fragment, options + ShaderSources::FRAGMENT_SHADER_TEXTURE);
 
         return;
     }

@@ -239,7 +239,7 @@ bool InputText(const char* label, std::string& str, ImGuiInputTextFlags flags)
 /*************/
 /*************/
 GuiWidget::GuiWidget(Scene* scene, const std::string& name)
-    : ControllerObject(scene)
+    : ControllerObject(scene, TreeRegisterStatus::NotRegistered)
     , _scene(scene)
 {
     _name = name;

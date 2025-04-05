@@ -229,8 +229,6 @@ class Gui final : public ControllerObject
     bool _resized{false};
     int _initialGuiPos[2]{16, 16}; //!< Gui position at startup
 
-    // GUI specific camera
-    std::shared_ptr<Camera> _guiCamera{nullptr};
     std::shared_ptr<Texture_Image> _splashLogo{nullptr};
 
     // ImGUI objects
