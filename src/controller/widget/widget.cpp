@@ -319,7 +319,8 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
             {
                 auto tmp = attribute[0].as<int64_t>();
                 static const int step = 1;
-                if (ImGui::InputScalar(attrName.c_str(), ImGuiDataType_S64, &tmp, &step, &step, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
+                ImGui::InputScalar(attrName.c_str(), ImGuiDataType_S64, &tmp, &step, &step, nullptr);
+                if (ImGui::IsItemDeactivatedAfterEdit())
                     setObjectAttribute(objName, attrName, {static_cast<int64_t>(tmp)});
                 break;
             }
@@ -328,7 +329,8 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                 std::array<int64_t, 2> tmp;
                 tmp[0] = attribute[0].as<int64_t>();
                 tmp[1] = attribute[1].as<int64_t>();
-                if (ImGui::InputScalarN(attrName.c_str(), ImGuiDataType_S64, tmp.data(), 2, nullptr, nullptr, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
+                ImGui::InputScalarN(attrName.c_str(), ImGuiDataType_S64, tmp.data(), 2, nullptr, nullptr, nullptr);
+                if (ImGui::IsItemDeactivatedAfterEdit())
                     setObjectAttribute(objName, attrName, {tmp[0], tmp[1]});
                 break;
             }
@@ -338,7 +340,8 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                 tmp[0] = attribute[0].as<int64_t>();
                 tmp[1] = attribute[1].as<int64_t>();
                 tmp[2] = attribute[2].as<int64_t>();
-                if (ImGui::InputScalarN(attrName.c_str(), ImGuiDataType_S64, tmp.data(), 3, nullptr, nullptr, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
+                ImGui::InputScalarN(attrName.c_str(), ImGuiDataType_S64, tmp.data(), 3, nullptr, nullptr, nullptr);
+                if (ImGui::IsItemDeactivatedAfterEdit())
                     setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2]});
                 break;
             }
@@ -349,7 +352,8 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                 tmp[1] = attribute[1].as<int64_t>();
                 tmp[2] = attribute[2].as<int64_t>();
                 tmp[3] = attribute[3].as<int64_t>();
-                if (ImGui::InputScalarN(attrName.c_str(), ImGuiDataType_S64, tmp.data(), 4, nullptr, nullptr, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
+                ImGui::InputScalarN(attrName.c_str(), ImGuiDataType_S64, tmp.data(), 4, nullptr, nullptr, nullptr);
+                if (ImGui::IsItemDeactivatedAfterEdit())
                     setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2], tmp[3]});
                 break;
             }
@@ -379,7 +383,8 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                 {
                     auto tmp = attribute[0].as<float>();
                     const auto step = 0.01f * tmp;
-                    if (ImGui::InputFloat(attrName.c_str(), &tmp, step, step, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+                    ImGui::InputFloat(attrName.c_str(), &tmp, step, step, "%.3f");
+                    if (ImGui::IsItemDeactivatedAfterEdit())
                         setObjectAttribute(objName, attrName, {tmp});
                 }
                 else
@@ -387,7 +392,8 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                     auto tmp = attribute[0].as<int32_t>();
                     const auto stepSlow = 1;
                     const auto stepFast = 100;
-                    if (ImGui::InputInt(attrName.c_str(), &tmp, stepSlow, stepFast, ImGuiInputTextFlags_EnterReturnsTrue))
+                    ImGui::InputInt(attrName.c_str(), &tmp, stepSlow, stepFast);
+                    if (ImGui::IsItemDeactivatedAfterEdit())
                         setObjectAttribute(objName, attrName, {tmp});
                 }
                 break;
@@ -399,7 +405,8 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                     std::array<float, 2> tmp;
                     tmp[0] = attribute[0].as<float>();
                     tmp[1] = attribute[1].as<float>();
-                    if (ImGui::InputFloat2(attrName.c_str(), tmp.data(), "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+                    ImGui::InputFloat2(attrName.c_str(), tmp.data(), "%.3f");
+                    if (ImGui::IsItemDeactivatedAfterEdit())
                         setObjectAttribute(objName, attrName, {tmp[0], tmp[1]});
                 }
                 else
@@ -407,7 +414,8 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                     std::array<int32_t, 2> tmp;
                     tmp[0] = attribute[0].as<int32_t>();
                     tmp[1] = attribute[1].as<int32_t>();
-                    if (ImGui::InputInt2(attrName.c_str(), tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
+                    ImGui::InputInt2(attrName.c_str(), tmp.data());
+                    if (ImGui::IsItemDeactivatedAfterEdit())
                         setObjectAttribute(objName, attrName, {tmp[0], tmp[1]});
                 }
                 break;
@@ -420,7 +428,8 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                     tmp[0] = attribute[0].as<float>();
                     tmp[1] = attribute[1].as<float>();
                     tmp[2] = attribute[2].as<float>();
-                    if (ImGui::InputFloat3(attrName.c_str(), tmp.data(), "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+                    ImGui::InputFloat3(attrName.c_str(), tmp.data(), "%.3f");
+                    if (ImGui::IsItemDeactivatedAfterEdit())
                         setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2]});
                 }
                 else
@@ -429,7 +438,8 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                     tmp[0] = attribute[0].as<int32_t>();
                     tmp[1] = attribute[1].as<int32_t>();
                     tmp[2] = attribute[2].as<int32_t>();
-                    if (ImGui::InputInt3(attrName.c_str(), tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
+                    ImGui::InputInt3(attrName.c_str(), tmp.data());
+                    if (ImGui::IsItemDeactivatedAfterEdit())
                         setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2]});
                 }
                 break;
@@ -443,7 +453,8 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                     tmp[1] = attribute[1].as<float>();
                     tmp[2] = attribute[2].as<float>();
                     tmp[3] = attribute[3].as<float>();
-                    if (ImGui::InputFloat4(attrName.c_str(), tmp.data(), "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+                    ImGui::InputFloat4(attrName.c_str(), tmp.data(), "%.3f");
+                    if (ImGui::IsItemDeactivatedAfterEdit())
                         setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2], tmp[3]});
                 }
                 else
@@ -453,7 +464,8 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                     tmp[1] = attribute[1].as<int32_t>();
                     tmp[2] = attribute[2].as<int32_t>();
                     tmp[3] = attribute[3].as<int32_t>();
-                    if (ImGui::InputInt4(attrName.c_str(), tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
+                    ImGui::InputInt4(attrName.c_str(), tmp.data());
+                    if (ImGui::IsItemDeactivatedAfterEdit())
                         setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2], tmp[3]});
                 }
                 break;
@@ -503,7 +515,8 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                 {
 
                     std::string tmp = v.as<std::string>();
-                    if (SplashImGui::InputText("", tmp, ImGuiInputTextFlags_EnterReturnsTrue))
+                    SplashImGui::InputText("", tmp);
+                    if (ImGui::IsItemDeactivatedAfterEdit())
                         setObjectAttribute(objName, attrName, {tmp});
 
                     // Callback for dragndrop: replace the file path in the field
@@ -537,7 +550,8 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                 else
                 {
                     std::string tmp = v.as<std::string>();
-                    if (SplashImGui::InputText(attrName.c_str(), tmp, ImGuiInputTextFlags_EnterReturnsTrue))
+                    SplashImGui::InputText(attrName.c_str(), tmp);
+                    if (ImGui::IsItemDeactivatedAfterEdit())
                         setObjectAttribute(objName, attrName, {tmp});
                 }
             }

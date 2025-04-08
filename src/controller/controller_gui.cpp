@@ -749,7 +749,8 @@ void Gui::drawMainTab()
     if (!clockDeviceValue.empty())
     {
         auto clockDeviceName = clockDeviceValue[0].as<std::string>();
-        if (SplashImGui::InputText("##clockDeviceName", clockDeviceName, ImGuiInputTextFlags_EnterReturnsTrue))
+        SplashImGui::InputText("##clockDeviceName", clockDeviceName);
+        if (ImGui::IsItemDeactivatedAfterEdit())
             setWorldAttribute("clockDeviceName", {clockDeviceName});
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("If a JACK audio server is used, specify the input device name to read the LTC clock from.\nOtherwise the default Pulseaudio input is used.");
@@ -773,11 +774,13 @@ void Gui::drawMainTab()
     ImGui::Separator();
     ImGui::Text("Blending parameters");
     static auto blendWidth = 0.05f;
-    if (ImGui::InputFloat("Blending width", &blendWidth, 0.01f, 0.04f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+    ImGui::InputFloat("Blending width", &blendWidth, 0.01f, 0.04f, "%.3f");
+    if (ImGui::IsItemDeactivatedAfterEdit())
         setObjectsOfType("camera", "blendWidth", {blendWidth});
 
     static auto blendPrecision = 0.1f;
-    if (ImGui::InputFloat("Blending precision", &blendPrecision, 0.01f, 0.04f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+    ImGui::InputFloat("Blending precision", &blendPrecision, 0.01f, 0.04f, "%.3f");
+    if (ImGui::IsItemDeactivatedAfterEdit())
         setObjectsOfType("camera", "blendPrecision", {blendPrecision});
 
     auto depthAwareBlendingValue = getObjectAttribute("blender", "depthAwareBlending");
@@ -798,7 +801,8 @@ void Gui::drawMainTab()
     ImGui::Text("Testing tools");
 
     static auto syncTestFrameDelay = 0;
-    if (ImGui::InputInt("Outputs synchronization test", &syncTestFrameDelay, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
+    ImGui::InputInt("Outputs synchronization test", &syncTestFrameDelay, 1, 100);
+    if (ImGui::IsItemDeactivatedAfterEdit())
     {
         syncTestFrameDelay = std::max(syncTestFrameDelay, 0);
         setWorldAttribute("swapTest", {syncTestFrameDelay});

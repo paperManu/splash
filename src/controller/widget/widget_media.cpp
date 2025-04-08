@@ -160,7 +160,8 @@ void GuiMedia::render()
                         auto tmpFloat = values[2].as<float>();
                         const auto step = 1.0f;
                         ImGui::PushID((idStack + "start").c_str());
-                        if (ImGui::InputFloat("", &tmpFloat, step, step, "%.2f", ImGuiInputTextFlags_EnterReturnsTrue))
+                        ImGui::InputFloat("", &tmpFloat, step, step, "%.2f");
+                        if (ImGui::IsItemDeactivatedAfterEdit())
                         {
                             source[2] = tmpFloat;
                             updated = true;
@@ -174,7 +175,8 @@ void GuiMedia::render()
                         ImGui::PushItemWidth(96);
                         tmpFloat = values[3].as<float>();
                         ImGui::PushID((idStack + "stop").c_str());
-                        if (ImGui::InputFloat("", &tmpFloat, step, step, "%.2f", ImGuiInputTextFlags_EnterReturnsTrue))
+                        ImGui::InputFloat("", &tmpFloat, step, step, "%.2f");
+                        if (ImGui::IsItemDeactivatedAfterEdit())
                         {
                             source[3] = tmpFloat;
                             updated = true;
@@ -257,7 +259,8 @@ void GuiMedia::render()
                 ImGui::PushID("newMediaStart");
                 const auto stepSlow = 0.1f;
                 const auto stepFast = 1.0f;
-                if (ImGui::InputFloat("", &_newMediaStart, stepSlow, stepFast, "%.2f", ImGuiInputTextFlags_EnterReturnsTrue))
+                ImGui::InputFloat("", &_newMediaStart, stepSlow, stepFast, "%.2f");
+                if (ImGui::IsItemDeactivatedAfterEdit())
                     _newMedia[2] = _newMediaStart;
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("Start time (s)");
@@ -267,7 +270,8 @@ void GuiMedia::render()
                 ImGui::SameLine();
                 ImGui::PushItemWidth(96); // Width for the media stop time input box
                 ImGui::PushID("newMediaStop");
-                if (ImGui::InputFloat("", &_newMediaStop, stepSlow, stepFast, "%.2f", ImGuiInputTextFlags_EnterReturnsTrue))
+                ImGui::InputFloat("", &_newMediaStop, stepSlow, stepFast, "%.2f");
+                if (ImGui::IsItemDeactivatedAfterEdit())
                     _newMedia[3] = _newMediaStop;
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("Stop time (s)");
@@ -288,7 +292,8 @@ void GuiMedia::render()
                 ImGui::PushItemWidth(-32.f); // Go up to the other edge, minus this value
                 ImGui::PushID("newMediaFile");
                 std::string filepath = _newMedia[1].as<std::string>();
-                if (SplashImGui::InputText("", filepath, ImGuiInputTextFlags_EnterReturnsTrue))
+                SplashImGui::InputText("", filepath);
+                if (ImGui::IsItemDeactivatedAfterEdit())
                     _newMedia[1] = filepath;
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("Media path");
