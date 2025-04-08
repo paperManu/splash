@@ -59,10 +59,11 @@ void GuiMeshes::render()
 {
     auto meshList = getSceneMeshes();
 
-    if (meshList.size() == 1)
+    if (meshList.size() != 0 && _selectedMeshName.empty())
     {
         assert(meshList.front() != nullptr);
         _selectedMeshName = meshList.front()->getName();
+        _previewObject->linkTo(meshList.front());
     }
 
     ImVec2 availableSize = ImGui::GetContentRegionAvail();
