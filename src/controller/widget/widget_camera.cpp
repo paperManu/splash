@@ -19,8 +19,9 @@ GuiCamera::GuiCamera(Scene* scene, const std::string& name)
     // Create the default GUI camera
     _overviewCamera = std::make_shared<Camera>(scene, TreeRegisterStatus::NotRegistered);
     _overviewCamera->setName("Overview camera");
-    _overviewCamera->setAttribute("eye", {2.0, 2.0, 0.0});
+    _overviewCamera->setAttribute("eye", {4.0, 4.0, 0.0});
     _overviewCamera->setAttribute("target", {0.0, 0.0, 0.5});
+    _overviewCamera->setAttribute("fov", {50.0});
     _overviewCamera->setAttribute("size", {800, 600});
     _overviewCamera->setAttribute("savable", {false});
 
@@ -229,6 +230,13 @@ void GuiCamera::render()
 
     if (_camera != nullptr)
     {
+        if (_camera == _overviewCamera)
+        {
+            // Adjust the overview camera to be as big as possible
+            const auto targetCameraSize = ImGui::GetContentRegionAvail();
+            _camera->setAttribute("size", {static_cast<int>(targetCameraSize.x), static_cast<int>(targetCameraSize.y)});
+        }
+
         Values reprojectionError;
         _camera->getAttribute("getReprojectionError", reprojectionError);
         ImGui::Text("Current camera: %s - Reprojection error: %f", _camera->getAlias().c_str(), reprojectionError[0].as<float>());
@@ -716,8 +724,6 @@ void GuiCamera::processMouseEvents()
 std::vector<std::shared_ptr<Camera>> GuiCamera::getCameras()
 {
     auto cameras = std::vector<std::shared_ptr<Camera>>();
-
-    _overviewCamera->setAttribute("size", {static_cast<int>(ImGui::GetWindowWidth()), static_cast<int>(ImGui::GetWindowWidth() * 3.f / 4.f)});
 
     auto rtMatrices = getCamerasRTMatrices();
     for (auto& matrix : rtMatrices)
