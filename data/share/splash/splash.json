@@ -228,7 +228,7 @@
          "swapInterval" : [ 1 ]
       }
    },
-   "version" : "0.10.1",
+   "version" : "0.10.21",
    "world" : {
       "clock" : [ 1884832083 ],
       "clockDeviceName" : [ "" ],

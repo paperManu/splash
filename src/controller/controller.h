@@ -75,6 +75,12 @@ class ControllerObject : public GraphObject
     bool checkObjectExists(const std::string& name) const;
 
     /**
+     * Get a list of the generated attributes
+     * \return A list of the generated attributes
+     */
+    std::vector<std::string> getGeneratedAttributes(const std::string& objName) const;
+
+    /**
      * Get a ptr to the named object
      * \return The object
      */

@@ -199,6 +199,26 @@ bool checkAndUpgradeConfiguration(Json::Value& configuration)
         configuration = newConfig;
     }
 
+    if ((versionMajor == 0 && versionMinor < 10) || (versionMajor == 0 && versionMinor == 10 && versionMaintainance < 21))
+    {
+        Json::Value newConfig = configuration;
+        for (auto& scene : newConfig["scenes"])
+        {
+            if (!scene.isMember("objects"))
+                continue;
+
+            for (auto& object : scene["objects"])
+            {
+                if (object["type"] != "window" && !object.isMember("fullscreen"))
+                    continue;
+
+                object["fullscreen"] = "windowed";
+            }
+        }
+
+        configuration = newConfig;
+    }
+
     configuration["version"] = std::string(PACKAGE_VERSION);
 
     return true;

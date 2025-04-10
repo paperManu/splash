@@ -516,7 +516,8 @@ Json::Value RootObject::getObjectConfigurationAsJson(const std::string& object, 
     Json::Value root;
     for (const auto& rootName : rootList)
     {
-        auto attrPath = "/" + rootName + "/objects/" + object + "/attributes";
+        const auto attrPath = "/" + rootName + "/objects/" + object + "/attributes";
+        const auto docPath = "/" + rootName + "/objects/" + object + "/documentation";
         if (!_tree.hasBranchAt(attrPath))
             continue;
 
@@ -529,16 +530,24 @@ Json::Value RootObject::getObjectConfigurationAsJson(const std::string& object, 
             if (attrValue.size() == 0)
                 continue;
 
+            // For generated attributes, we only need to save the first value
+            // See Attribute documentation/header for more info
+            const auto generatedPath = docPath + "/" + attrName + "/generated";
+            Value generatedValue;
+            const bool generated = _tree.getValueForLeafAt(generatedPath, generatedValue) ? generatedValue.as<bool>() : false;
+
             Json::Value jsValue;
-            if (attrValue.getType() == Value::Type::values)
+            if (attrValue.getType() == Value::Type::values && !generated)
                 jsValue = getValuesAsJson(attrValue.as<Values>());
+            else if (generated)
+                jsValue = getValuesAsJson({attrValue[0]});
             else
                 jsValue = getValuesAsJson({attrValue});
             root[attrName] = jsValue;
         }
 
         // Type is handled separately
-        auto typePath = "/" + rootName + "/objects/" + object + "/type";
+        const auto typePath = "/" + rootName + "/objects/" + object + "/type";
         if (_tree.hasLeafAt(typePath))
         {
             Value typeValue;
@@ -557,7 +566,7 @@ Json::Value RootObject::getRootConfigurationAsJson(const std::string& rootName)
         return {};
 
     Json::Value root;
-    auto attrPath = "/" + rootName + "/attributes";
+    const auto attrPath = "/" + rootName + "/attributes";
     assert(_tree.hasBranchAt(attrPath));
 
     for (const auto& attrName : _tree.getLeafListAt(attrPath))
@@ -586,7 +595,7 @@ Json::Value RootObject::getRootConfigurationAsJson(const std::string& rootName)
     root["objects"] = Json::Value();
     root["links"] = Json::Value();
 
-    auto objectsPath = "/" + rootName + "/objects";
+    const auto objectsPath = "/" + rootName + "/objects";
     assert(_tree.hasBranchAt(objectsPath));
     for (const auto& objectName : _tree.getBranchListAt(objectsPath))
     {
@@ -602,7 +611,7 @@ Json::Value RootObject::getRootConfigurationAsJson(const std::string& rootName)
         _tree.getValueForLeafAt(objectsPath + "/" + objectName + "/links/children", value);
         for (const auto& parent : value.as<Values>())
         {
-            auto linkName = parent.as<std::string>();
+            const auto linkName = parent.as<std::string>();
             if (_tree.getValueForLeafAt(objectsPath + "/" + linkName + "/attributes/savable", confValue) && !confValue.isEmpty() && confValue[0].as<bool>() == false)
                 continue;
             if (_tree.getValueForLeafAt(objectsPath + "/" + linkName + "/ghost", confValue) && confValue.as<bool>() == true)

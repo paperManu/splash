@@ -61,6 +61,7 @@ std::vector<std::string> Scene::_ghostableTypes{"camera", "warp"};
 Scene::Scene(Context context)
     : RootObject(context)
 {
+    _type = "scene";
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
 #endif

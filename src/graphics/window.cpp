@@ -310,8 +310,6 @@ void Window::render()
     // This is called only if another resizing operation is _not_ in progress
     if (!_resized)
     {
-        _fullscreen = _gfxImpl->getRenderingContext()->getFullscreenMonitor();
-
         const auto sizeAndPos = _gfxImpl->getRenderingContext()->getPositionAndSize();
 
         for (size_t i = 0; i < 4; ++i)
@@ -596,14 +594,40 @@ void Window::registerAttributes()
     addAttribute(
         "fullscreen",
         [&](const Values& args) {
-            _fullscreen = args[0].as<int>();
-            _resized = true;
-            addTask([=]() { setFullscreenMonitor(_fullscreen); });
+            const std::vector<std::string> monitors = _gfxImpl ? _gfxImpl->getRenderingContext()->getMonitorNames() : std::vector<std::string>({"windowed"});
+            int32_t fullscreen;
+            if (const auto it = std::find(monitors.begin(), monitors.end(), args[0].as<std::string>()); it != monitors.end())
+            {
+                const int id = std::distance(monitors.begin(), it);
+                fullscreen = id;
+                _resized = true;
+            }
+            else
+            {
+                fullscreen = -1;
+                _resized = true;
+            }
+            addTask([=]() { setFullscreenMonitor(fullscreen); });
             return true;
         },
-        [&]() -> Values { return {_fullscreen}; },
-        {'i'});
-    setAttributeDescription("fullscreen", "Index of the monitor to show the window fullscreen, -1 if windowed");
+        [&]() -> Values {
+            const std::vector<std::string> monitors = _gfxImpl ? _gfxImpl->getRenderingContext()->getMonitorNames() : std::vector<std::string>({"windowed"});
+            const auto fullscreen = _gfxImpl ? _gfxImpl->getRenderingContext()->getFullscreenMonitor() : -1;
+            Values returnValues;
+            if (fullscreen == -1)
+                returnValues.push_back("windowed");
+            else
+                returnValues.push_back(monitors[fullscreen]);
+
+            // Fill in the available values
+            returnValues.push_back("windowed");
+            for (const auto& monitor : monitors)
+                returnValues.push_back(monitor);
+            return returnValues;
+        },
+        {'s'},
+        true);
+    setAttributeDescription("fullscreen", "Name of the monitor to show the window fullscreen, or windowed");
 
     addAttribute(
         "guiOnly",
@@ -643,9 +667,7 @@ void Window::registerAttributes()
             addTask([=]() { updateWindowShape(); });
             return true;
         },
-        [&]() -> Values {
-            return {_windowRect[0], _windowRect[1]};
-        },
+        [&]() -> Values { return {_windowRect[0], _windowRect[1]}; },
         {'i', 'i'});
     setAttributeDescription("position", "Set the window position");
 
@@ -666,9 +688,7 @@ void Window::registerAttributes()
             addTask([=]() { updateWindowShape(); });
             return true;
         },
-        [&]() -> Values {
-            return {_windowRect[2], _windowRect[3]};
-        },
+        [&]() -> Values { return {_windowRect[2], _windowRect[3]}; },
         {'i', 'i'});
     setAttributeDescription("size", "Set the window dimensions");
 

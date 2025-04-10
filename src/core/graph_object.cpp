@@ -39,9 +39,9 @@ Attribute& GraphObject::operator[](const std::string& attr)
 
 /*************/
 Attribute& GraphObject::addAttribute(
-    const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types)
+    const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types, bool generated)
 {
-    auto& attribute = BaseObject::addAttribute(name, set, get, types);
+    auto& attribute = BaseObject::addAttribute(name, set, get, types, generated);
     initializeTree();
     return attribute;
 }
@@ -377,22 +377,25 @@ void GraphObject::initializeTree()
 
     // Store the documentation inside the tree
     {
-        auto docPath = path + "/documentation/";
-        auto attributesDescriptions = getAttributesDescriptions();
-        for (auto& d : attributesDescriptions)
+        const auto docPath = path + "/documentation/";
+        const auto attributesDescriptions = getAttributesDescriptions();
+        for (const auto& d : attributesDescriptions)
         {
             if (d[1].size() == 0)
                 continue;
-            auto attrName = d[0].as<std::string>();
-            auto attrPath = docPath + attrName;
+            const auto attrName = d[0].as<std::string>();
+            const auto attrPath = docPath + attrName;
             tree->createBranchAt(attrPath);
             tree->createLeafAt(attrPath + "/description");
             tree->createLeafAt(attrPath + "/arguments");
+            tree->createLeafAt(attrPath + "/generated");
 
-            auto description = d[1].as<std::string>();
-            auto arguments = d[2].as<Values>();
+            const auto description = d[1].as<std::string>();
+            const auto arguments = d[2].as<Values>();
+            const auto generated = d[3].as<bool>();
             tree->setValueForLeafAt(attrPath + "/description", description);
             tree->setValueForLeafAt(attrPath + "/arguments", arguments);
+            tree->setValueForLeafAt(attrPath + "/generated", generated);
         }
     }
 

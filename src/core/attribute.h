@@ -103,12 +103,18 @@ class Attribute
 
     /**
      * Constructor.
+     * 
+     * If the values accepted by setFunc are to be taken from a generated list, then:
+     * - types should be a single value
+     * - the generated choices should be appended to the actual value when calling getFunc
+     *
      * \param name Name of the attribute.
      * \param setFunc Setter function. Can be nullptr
      * \param getFunc Getter function. Can be nullptr
      * \param types Vector of char defining the parameters types the setter function expects.
+     * \param generated Set to true if the accepted values must be taken from a generated list
      */
-    Attribute(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::function<Values()>& getFunc, const std::vector<char>& types);
+    Attribute(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::function<Values()>& getFunc, const std::vector<char>& types, bool generated = false);
     Attribute(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::vector<char>& types);
     Attribute(const std::string& name, const std::function<Values()>& getFunc);
 
@@ -137,6 +143,12 @@ class Attribute
      * \return Returns the expected types in a Values.
      */
     Values getArgsTypes() const;
+
+    /**
+     * Get whether the accepted values are to be taken from a generated list
+     * \return True if it's the case
+     */
+    bool getIsGenerated() const { return _generated; }
 
     /**
      * Get whether a setter is defined
@@ -225,6 +237,7 @@ class Attribute
 
     std::function<bool(const Values&)> _setFunc{}; // Setter function
     std::function<const Values()> _getFunc{};      // Getter function
+    bool _generated{false};
 
     Sync _syncMethod{Sync::auto_sync};         // Synchronization to consider while setting this attribute
     std::map<uint32_t, Callback> _callbacks{}; // Callbacks invoked when attribute is modified

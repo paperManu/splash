@@ -112,15 +112,24 @@ class GraphObject : public BaseObject
     Attribute& operator[](const std::string& attr);
 
     /**
-     * Add a new attribute to this object
+     * Add a new attribute to this object, and specify a setter, getter and accepted types.
+     *
+     * It is also possible for accepted values to be from a generated list. In this case,
+     * the list must be given by the getter alongside the actual value (which is first).
+     * Also only single value types are accepted in this case, not multiple ones.
+     *
+     * The accepted (generated) values are to be appended to the actual value of the attribute,
+     * when calling the get function.
+     *
      * \param name Attribute name
      * \param set Set function
      * \param get Get function
      * \param types Vector of char holding the expected parameters for the set function
+     * \param generated Set to true if the accepted values must be taken from a generated list
      * \return Return a reference to the created attribute
      */
     Attribute& addAttribute(
-        const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types) override;
+        const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types, bool generated = false) override;
     Attribute& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types) override;
     Attribute& addAttribute(const std::string& name, const std::function<const Values()>& get) override;
 
@@ -130,12 +139,6 @@ class GraphObject : public BaseObject
      * \param description Attribute description
      */
     void setAttributeDescription(const std::string& name, const std::string& description);
-
-    /**
-     * Get the real type of this BaseObject, as a std::string.
-     * \return Returns the type.
-     */
-    inline std::string getType() const { return _type; }
 
     /**
      * Get the object's root
@@ -281,7 +284,6 @@ class GraphObject : public BaseObject
 
   protected:
     Category _category{Category::MISC};   //!< Object category, updated by the factory
-    std::string _type{"baseobject"};      //!< Internal type
     std::string _remoteType{""};          //!< When the object root is a Scene, this is the type of the corresponding object in the World
     std::string _alias{""};               //!< Alias name
     std::vector<GraphObject*> _parents{}; //!< Objects parents

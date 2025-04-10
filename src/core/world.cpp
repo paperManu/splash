@@ -43,6 +43,7 @@ World* World::_that;
 World::World(Context context)
     : RootObject(context)
 {
+    _type = "world";
     _name = "world";
 
     _that = this;
