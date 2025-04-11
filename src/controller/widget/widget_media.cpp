@@ -97,7 +97,7 @@ void GuiMedia::render()
             mediaTypes.push_back(type.first.c_str());
 
         if (ImGui::Combo("##mediaType", &mediaTypeIndex, mediaTypes.data(), mediaTypes.size()))
-            replaceMedia(_selectedMediaName, mediaAlias, mediaTypes[_mediaTypeIndex[_selectedMediaName]]);
+            replaceMedia(_selectedMediaName, mediaAlias, mediaTypes[mediaTypeIndex]);
 
         // Display the playlist if this is a queue
         const auto attributes = getObjectAttributes(media->getName());

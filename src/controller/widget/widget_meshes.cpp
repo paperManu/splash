@@ -114,7 +114,7 @@ void GuiMeshes::render()
         int meshTypeIndex = std::distance(_meshType.begin(), meshTypeIt);
 
         if (ImGui::Combo("##meshType", &meshTypeIndex, meshTypes.data(), meshTypes.size()))
-            replaceMesh(_selectedMeshName, meshAlias, meshTypes[_meshTypeIndex[_selectedMeshName]]);
+            replaceMesh(_selectedMeshName, meshAlias, meshTypes[meshTypeIndex]);
 
         if (_previewCamera != nullptr)
         {
