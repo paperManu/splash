@@ -5,29 +5,17 @@
 #include <algorithm>
 #include <array>
 #include <filesystem>
-#include <fstream>
 
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <imgui_internal.h>
 
-#include "./graphics/camera.h"
-#include "./image/image.h"
-#include "./image/image_ffmpeg.h"
 #if HAVE_SHMDATA
 #include "./image/image_shmdata.h"
 #endif
 #include "./core/scene.h"
-#include "./graphics/object.h"
-#include "./graphics/texture.h"
-#include "./graphics/texture_image.h"
-#include "./utils/log.h"
 #include "./utils/osutils.h"
-#include "./utils/timer.h"
-
-#if HAVE_GPHOTO and HAVE_OPENCV
-#include "./controller/colorcalibrator.h"
-#endif
+#include "./utils/scope_guard.h"
 
 namespace filesystem = std::filesystem;
 
@@ -266,7 +254,7 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
             continue;
 
         const auto& attribute = attributes.find(attrName)->second;
-        if (attribute.empty() || attribute.size() > 4)
+        if (attribute.empty())
             continue;
 
         // Check whether the attribute is locked, in which case we set
@@ -275,6 +263,11 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
             std::find_if(lockedAttributes.begin(), lockedAttributes.end(), [&](const Value& name) { return name.as<std::string>() == attrName; }) != lockedAttributes.end();
 
         ImGui::PushID((objName + attrName).c_str());
+        OnScopeExit
+        {
+            ImGui::PopID();
+        };
+
         if (isLocked)
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.15, 0.01, 0.01, 1.0));
         if (ImGui::Button("L"))
@@ -296,7 +289,7 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
         if (isGenerated)
         {
             /**
-             * If the valid attribute values are generated, we should show a 
+             * If the valid attribute values are generated, we should show a
              * combo box. In this case the list of valid values are stored inside
              * the attribute value (as per returned by the getter), and as such
              * start at index 1.
@@ -306,53 +299,53 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
 
             switch (attribute[0].getType())
             {
-                default:
-                    assert(false);
-                    continue;
-                case Value::Type::boolean:
+            default:
+                assert(false);
+                continue;
+            case Value::Type::boolean:
+            {
+                const auto currentValue = attribute[0].as<bool>();
+                for (size_t i = 1; i < attribute.size(); ++i)
                 {
-                    const auto currentValue = attribute[0].as<bool>();
-                    for (size_t i = 1; i < attribute.size(); ++i)
-                    {
-                        labels.push_back(attribute[i].as<std::string>());
-                        if (attribute[i].as<bool>() == currentValue)
-                            currentSelection = i - 1;
-                    }
-                    break;
+                    labels.push_back(attribute[i].as<std::string>());
+                    if (attribute[i].as<bool>() == currentValue)
+                        currentSelection = i - 1;
                 }
-                case Value::Type::integer:
+                break;
+            }
+            case Value::Type::integer:
+            {
+                const auto currentValue = attribute[0].as<int64_t>();
+                for (size_t i = 1; i < attribute.size(); ++i)
                 {
-                    const auto currentValue = attribute[0].as<int64_t>();
-                    for (size_t i = 1; i < attribute.size(); ++i)
-                    {
-                        labels.push_back(attribute[i].as<std::string>());
-                        if (attribute[i].as<int64_t>() == currentValue)
-                            currentSelection = i - 1;
-                    }
-                    break;
+                    labels.push_back(attribute[i].as<std::string>());
+                    if (attribute[i].as<int64_t>() == currentValue)
+                        currentSelection = i - 1;
                 }
-                case Value::Type::real:
+                break;
+            }
+            case Value::Type::real:
+            {
+                const auto currentValue = attribute[0].as<float>();
+                for (size_t i = 1; i < attribute.size(); ++i)
                 {
-                    const auto currentValue = attribute[0].as<float>();
-                    for (size_t i = 1; i < attribute.size(); ++i)
-                    {
-                        labels.push_back(attribute[i].as<std::string>());
-                        if (attribute[i].as<float>() == currentValue)
-                            currentSelection = i - 1;
-                    }
-                    break;
+                    labels.push_back(attribute[i].as<std::string>());
+                    if (attribute[i].as<float>() == currentValue)
+                        currentSelection = i - 1;
                 }
-                case Value::Type::string:
+                break;
+            }
+            case Value::Type::string:
+            {
+                const auto currentValue = attribute[0].as<std::string>();
+                for (size_t i = 1; i < attribute.size(); ++i)
                 {
-                    const auto currentValue = attribute[0].as<std::string>();
-                    for (size_t i = 1; i < attribute.size(); ++i)
-                    {
-                        labels.push_back(attribute[i].as<std::string>());
-                        if (attribute[i].as<std::string>() == currentValue)
-                            currentSelection = i - 1;
-                    }
-                    break;
+                    labels.push_back(attribute[i].as<std::string>());
+                    if (attribute[i].as<std::string>() == currentValue)
+                        currentSelection = i - 1;
                 }
+                break;
+            }
             }
 
             std::vector<const char*> labelsAsChars;
@@ -638,7 +631,6 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
             }
             }
         }
-        ImGui::PopID();
 
         if (ImGui::IsItemHovered())
         {
