@@ -286,7 +286,7 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
 
         const auto isGenerated = std::find(generatedAttributes.begin(), generatedAttributes.end(), attrName) != generatedAttributes.end();
 
-        if (isGenerated)
+        if (isGenerated && attribute.size() > 1)
         {
             /**
              * If the valid attribute values are generated, we should show a

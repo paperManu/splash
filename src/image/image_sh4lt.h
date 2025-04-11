@@ -25,7 +25,12 @@
 #ifndef SPLASH_IMAGE_SH4LT_H
 #define SPLASH_IMAGE_SH4LT_H
 
+#include <map>
+#include <mutex>
+#include <set>
+
 #include <sh4lt/follower.hpp>
+#include <sh4lt/monitor/monitor.hpp>
 
 #include "./core/constants.h"
 
@@ -67,6 +72,12 @@ class Image_Sh4lt final : public Image
     std::string _group{sh4lt::ShType::default_group()};
     std::unique_ptr<sh4lt::Follower> _reader{nullptr};
 
+    std::unique_ptr<sh4lt::monitor::Monitor> _monitor{nullptr};
+    std::mutex _monitorMutex;
+    std::set<std::string> _groups;              //!< All available groups
+    std::set<std::string> _labels;              //!< Available labels for current _group
+    std::map<std::string, std::string> _medias; //!< Media info for all of _labels
+
     ImageBuffer _readerBuffer;
     uint32_t _bpp{0};
     uint32_t _width{0};
@@ -89,11 +100,6 @@ class Image_Sh4lt final : public Image
      * Compute some LUT (currently only the YCbCr to RGB one)
      */
     void computeLUT();
-
-    /**
-     * Base init for the class
-     */
-    void init();
 
     /**
      * Callback called when receiving a new caps

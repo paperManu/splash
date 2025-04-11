@@ -624,6 +624,7 @@ void Window::registerAttributes()
             returnValues.push_back("windowed");
             for (const auto& monitor : monitors)
                 returnValues.push_back(monitor);
+
             return returnValues;
         },
         {'s'},

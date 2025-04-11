@@ -381,8 +381,6 @@ void GraphObject::initializeTree()
         const auto attributesDescriptions = getAttributesDescriptions();
         for (const auto& d : attributesDescriptions)
         {
-            if (d[1].size() == 0)
-                continue;
             const auto attrName = d[0].as<std::string>();
             const auto attrPath = docPath + attrName;
             tree->createBranchAt(attrPath);

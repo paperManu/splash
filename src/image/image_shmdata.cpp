@@ -25,7 +25,12 @@ namespace Splash
 Image_Shmdata::Image_Shmdata(RootObject* root)
     : Image(root)
 {
-    init();
+    _type = "image_shmdata";
+    registerAttributes();
+
+    // This is used for getting documentation "offline"
+    if (!_root)
+        return;
 }
 
 /*************/
@@ -52,17 +57,6 @@ void removeExtraParenthesis(std::string& str)
 {
     if (str.find(")") == 0)
         str = str.substr(1);
-}
-
-/*************/
-void Image_Shmdata::init()
-{
-    _type = "image_shmdata";
-    registerAttributes();
-
-    // This is used for getting documentation "offline"
-    if (!_root)
-        return;
 }
 
 /*************/

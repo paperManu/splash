@@ -19,6 +19,8 @@
 #include "./utils/osutils.h"
 #include "./utils/timer.h"
 
+#define MEDIA_BASE_CAPS "video/"
+
 namespace Splash
 {
 
@@ -26,7 +28,46 @@ namespace Splash
 Image_Sh4lt::Image_Sh4lt(RootObject* root)
     : Image(root)
 {
-    init();
+    _type = "image_sh4lt";
+    registerAttributes();
+
+    // This is used for getting documentation "offline"
+    if (!_root)
+        return;
+
+    _monitor = std::make_unique<sh4lt::monitor::Monitor>(std::make_shared<Utils::Sh4ltLogger>(), sh4lt::ShType::get_socket_dir());
+
+    addPeriodicTask(
+        "update-monitor",
+        [this]() {
+            _monitor->update();
+            const auto stats = _monitor->get_stats();
+            std::set<std::string> groups = {sh4lt::ShType::default_group()};
+            std::set<std::string> labels;
+            std::map<std::string, std::string> medias;
+            for (const auto& key : stats->get_child_keys("infos"))
+            {
+                const auto group = sh4lt::Any::to_string(stats->branch_get_value("infos." + key + ".shtype.group"));
+                const auto label = sh4lt::Any::to_string(stats->branch_get_value("infos." + key + ".shtype.label"));
+                const auto media = sh4lt::Any::to_string(stats->branch_get_value("infos." + key + ".shtype.media"));
+
+                if (media.find(MEDIA_BASE_CAPS) == std::string::npos)
+                    continue;
+
+                groups.insert(group);
+                if (group != _group)
+                    continue;
+
+                labels.insert(label);
+                medias.insert_or_assign(label, media);
+            }
+
+            std::unique_lock<std::mutex> lock(_monitorMutex);
+            _groups = std::move(groups);
+            _labels = std::move(labels);
+            _medias = std::move(medias);
+        },
+        2000);
 }
 
 /*************/
@@ -52,9 +93,7 @@ bool Image_Sh4lt::read_by_label()
 {
     _reader = std::make_unique<sh4lt::Follower>(
         sh4lt::ShType::get_path(_label, _group),
-        [&](void* data, size_t size, const sh4lt::Time::info_t*) {
-            onData(data, size);
-        },
+        [&](void* data, size_t size, const sh4lt::Time::info_t*) { onData(data, size); },
         [&](const sh4lt::ShType& caps) { onShType(caps); },
         [&]() {},
         std::make_shared<Utils::Sh4ltLogger>());
@@ -68,17 +107,6 @@ void Image_Sh4lt::removeExtraParenthesis(std::string& str)
 {
     if (str.find(")") == 0)
         str = str.substr(1);
-}
-
-/*************/
-void Image_Sh4lt::init()
-{
-    _type = "image_sh4lt";
-    registerAttributes();
-
-    // This is used for getting documentation "offline"
-    if (!_root)
-        return;
 }
 
 /*************/
@@ -268,7 +296,6 @@ void Image_Sh4lt::readUncompressedFrame(void* data, int /*data_size*/)
         _readerBuffer = ImageBuffer(spec);
     }
 
-    
     if (!_isYUV && (_channels == 3 || _channels == 4))
     {
         char* pixels = (char*)(_readerBuffer).data();
@@ -338,8 +365,16 @@ void Image_Sh4lt::registerAttributes()
             _label = args[0].as<std::string>();
             return read_by_label();
         },
-        [&]() -> Values { return {_label}; },
-        {'s'});
+        [&]() -> Values {
+            Values retValues = {_label};
+            std::unique_lock<std::mutex> lock(_monitorMutex);
+            for (const auto& label : _labels)
+                retValues.push_back(label);
+
+            return retValues;
+        },
+        {'s'},
+        true);
     setAttributeDescription("label", "Label for the Sh4lt (applied if filename attribute is empty)");
 
     addAttribute(
@@ -348,9 +383,25 @@ void Image_Sh4lt::registerAttributes()
             _group = args[0].as<std::string>();
             return read_by_label();
         },
-        [&]() -> Values { return {_group}; },
-        {'s'});
+        [&]() -> Values {
+            Values retValues = {_group};
+            std::unique_lock<std::mutex> lock(_monitorMutex);
+            for (const auto& group : _groups)
+                retValues.push_back(group);
+
+            return retValues;
+        },
+        {'s'},
+        true);
     setAttributeDescription("group", "Group for the Sh4lt (applied if filename attribute is empty)");
+
+    addAttribute("sh4ltInfo", [&]() -> Values {
+        std::unique_lock<std::mutex> lock(_monitorMutex);
+        if (_medias.find(_label) != _medias.end())
+            return {_medias[_label]};
+        return {};
+    });
+    setAttributeDescription("sh4ltInfo", "Media information for the Sh4lt input");
 
     Image::registerAttributes();
 }
