@@ -87,7 +87,6 @@ class GuiWidget : public ControllerObject
     /**
      * Constructor
      * \param root RootObject
-     * \param registerToTree Register the object into the root tree
      */
     GuiWidget(Scene* scene, const std::string& name = "");
     virtual ~GuiWidget() override = default;

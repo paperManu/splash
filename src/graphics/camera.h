@@ -342,11 +342,6 @@ class Camera : public GraphObject
     static double calibrationCostFunc(const gsl_vector* v, void* params);
 
     /**
-     * Load some defaults models, like the locator for calibration
-     */
-    void loadDefaultModels();
-
-    /**
      * Send calibration points to the model
      */
     void sendCalibrationPointsToObjects();

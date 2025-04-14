@@ -280,8 +280,8 @@ ImGuiKey ImGuiGLFWToImGuiKey(int keycode)
 }
 
 /*************/
-Gui::Gui(RenderingContext* renderingContext, RootObject* scene)
-    : ControllerObject(scene)
+Gui::Gui(RenderingContext* renderingContext, RootObject* root)
+    : ControllerObject(root)
 {
     _type = "gui";
     _renderingPriority = Priority::GUI;

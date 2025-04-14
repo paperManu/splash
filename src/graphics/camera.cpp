@@ -83,9 +83,6 @@ Camera::Camera(RootObject* root, TreeRegisterStatus registerToTree)
     _msFbo->setMultisampling(_multisample);
     _msFbo->setSixteenBpc(_render16bits);
     _outFbo->setSixteenBpc(_render16bits);
-
-    // Load some models
-    loadDefaultModels();
 }
 
 /*************/
@@ -1029,28 +1026,6 @@ dmat4 Camera::computeViewMatrix()
 
     dmat4 viewMatrix = lookAt(_eye, _target, _up);
     return viewMatrix;
-}
-
-/*************/
-void Camera::loadDefaultModels()
-{
-    auto datapath = std::string(DATADIR);
-    std::map<std::string, std::string> files{
-        {"3d_marker", datapath + "/3d_marker.obj"}, {"2d_marker", datapath + "/2d_marker.obj"}, {"camera", datapath + "/camera.obj"}, {"probe", datapath + "/probe.obj"}};
-
-    auto scene = dynamic_cast<Scene*>(_root);
-    assert(scene != nullptr);
-
-    for (auto& file : files)
-    {
-        if (!scene->getObjectLibrary()->loadModel(file.first, file.second))
-            continue;
-
-        auto object = scene->getObjectLibrary()->getModel(file.first);
-        assert(object != nullptr);
-
-        object->setAttribute("fill", {"color"});
-    }
 }
 
 /*************/

@@ -50,6 +50,7 @@ class BufferObject : public GraphObject
         friend BufferObject;
 
       public:
+        BufferObjectLockRead() = default;
         ~BufferObjectLockRead()
         {
             if (_bufferObject == nullptr)

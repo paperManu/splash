@@ -3,6 +3,7 @@
 #include <fstream>
 #include <utility>
 
+#include "./core/graph_object.h"
 #include "./core/scene.h"
 
 namespace Splash
@@ -39,14 +40,14 @@ bool ObjectLibrary::loadModel(const std::string& name, const std::string& filena
 
     assert(_renderer != nullptr);
 
-    auto mesh = std::make_shared<Mesh>(_scene);
+    auto mesh = std::make_shared<Mesh>(_scene, GraphObject::TreeRegisterStatus::NotRegistered);
     mesh->setAttribute("file", {filepath});
 
     // We create the geometry manually for it not to be registered in the root
     auto geometry = _renderer->createGeometry(_scene);
     geometry->setMesh(mesh);
 
-    auto obj = std::make_unique<Object>(_scene);
+    auto obj = std::make_unique<Object>(_scene, GraphObject::TreeRegisterStatus::NotRegistered);
     obj->addGeometry(geometry);
 
     _library[name] = std::move(obj);

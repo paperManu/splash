@@ -52,9 +52,6 @@ Object::~Object()
 /*************/
 void Object::activate()
 {
-    if (_geometries.size() == 0)
-        return;
-
     _mutex.lock();
 
     // Create and store the shader depending on its type
@@ -112,7 +109,7 @@ void Object::activate()
     _shader->setUniform("_normalExp", _normalExponent);
     _shader->setUniform("_color", {_color.r, _color.g, _color.b, _color.a});
 
-    if (_geometries.size() > 0)
+    if (!_geometries.empty())
     {
         _geometries[0]->update();
         _geometries[0]->activate();
@@ -151,7 +148,7 @@ glm::dmat4 Object::computeModelMatrix() const
 void Object::deactivate()
 {
     _shader->deactivate();
-    if (_geometries.size() > 0)
+    if (!_geometries.empty())
         _geometries[0]->deactivate();
     _mutex.unlock();
 }
@@ -191,7 +188,7 @@ void Object::removeCalibrationPoint(const glm::dvec3& point)
 /*************/
 void Object::draw()
 {
-    if (_geometries.size() == 0)
+    if (_geometries.empty())
         return;
 
     for (const auto& geometry : _geometries)

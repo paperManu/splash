@@ -290,8 +290,9 @@ void Window::unlinkIt(const std::shared_ptr<GraphObject>& obj)
         if (gui->getTexture() == _guiTexture)
         {
             _screenGui->removeTexture(_guiTexture);
-            _guiTexture = nullptr;
+            _guiTexture.reset();
         }
+        _gui.reset();
     }
 }
 

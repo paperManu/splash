@@ -60,8 +60,10 @@ class Mesh : public BufferObject
      * Constructor
      * \param root Root object
      * \param meshContainer Mesh container to initialize the Mesh from
+     * \param registerToTree Register the object into the root tree
      */
-    explicit Mesh(RootObject* root, MeshContainer meshContainer = MeshContainer());
+    Mesh(RootObject* root, MeshContainer meshContainer = MeshContainer(), TreeRegisterStatus registerToTree = TreeRegisterStatus::Registered);
+    explicit Mesh(RootObject* root, TreeRegisterStatus registerToTree);
 
     /**
      * Destructor
