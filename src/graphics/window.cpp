@@ -70,12 +70,12 @@ Window::Window(RootObject* root)
     _screen = std::make_shared<Object>(_root);
     _screen->setAttribute("fill", {"window"});
     auto virtualScreen = _renderer->createGeometry(_root);
-    _screen->addGeometry(virtualScreen);
+    _screen->setGeometry(virtualScreen);
 
     _screenGui = std::make_shared<Object>(_root);
     _screenGui->setAttribute("fill", {"window"});
     virtualScreen = _renderer->createGeometry(_root);
-    _screenGui->addGeometry(virtualScreen);
+    _screenGui->setGeometry(virtualScreen);
 
     _gfxImpl->releaseContext();
 

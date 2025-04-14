@@ -81,10 +81,10 @@ class Object : public GraphObject
     void deactivate();
 
     /**
-     * Add a geometry to this object
-     * \param geometry Geometry to add
+     * Set the geometry for this object
+     * \param geometry Geometry to set
      */
-    void addGeometry(const std::shared_ptr<Geometry>& geometry) { _geometries.push_back(geometry); }
+    void setGeometry(const std::shared_ptr<Geometry>& geometry) { _geometry = geometry; }
 
     /**
      * Add a texture to this object
@@ -156,10 +156,10 @@ class Object : public GraphObject
     float pickVertex(glm::dvec3 p, glm::dvec3& v);
 
     /**
-     * Remove a geometry from this object
+     * Reset the geometry (to no geometry)
      * \param geometry Geometry to remove
      */
-    void removeGeometry(const std::shared_ptr<Geometry>& geometry);
+    void resetGeometry();
 
     /**
      * Remove a texture from this object
@@ -247,7 +247,7 @@ class Object : public GraphObject
     std::map<std::string, std::shared_ptr<Shader>> _graphicsShaders;
 
     std::vector<std::shared_ptr<Texture>> _textures;
-    std::vector<std::shared_ptr<Geometry>> _geometries;
+    std::shared_ptr<Geometry> _geometry;
 
     bool _vertexBlendingActive{false};
 

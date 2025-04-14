@@ -347,7 +347,7 @@ void Warp::setupFBO()
     auto virtualScreen = _renderer->createGeometry(_root);
     _screenMesh = std::make_shared<Mesh_BezierPatch>(_root);
     virtualScreen->linkTo(_screenMesh);
-    _screen->addGeometry(virtualScreen);
+    _screen->setGeometry(virtualScreen);
 }
 
 /*************/

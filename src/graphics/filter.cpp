@@ -35,7 +35,7 @@ Filter::Filter(RootObject* root, TreeRegisterStatus registerToTree)
     _screen = std::make_shared<Object>(_root);
     _screen->setAttribute("fill", {"image_filter"});
     auto virtualScreen = _renderer->createGeometry(_root);
-    _screen->addGeometry(virtualScreen);
+    _screen->setGeometry(virtualScreen);
 }
 
 /*************/
