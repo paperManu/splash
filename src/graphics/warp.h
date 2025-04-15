@@ -84,6 +84,12 @@ class Warp final : public Texture
     std::unordered_map<std::string, Values> getShaderUniforms() const override final;
 
     /**
+     *  Get spec of the warp
+     * \return Return the warp spec
+     */
+    ImageBufferSpec getSpec() const override;
+
+    /**
      * Get the texture the warp is rendered to
      * \return Return the rendered texture
      */
