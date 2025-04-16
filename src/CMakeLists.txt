@@ -373,8 +373,14 @@ endif()
 
 if (USE_SYSTEM_LIBS)
     target_link_libraries(splash-${API_VERSION} zmq)
+    if (HAVE_SH4LT)
+        target_link_libraries(splash-${API_VERSION} sh4lt-0.1)
+    endif()
 else()
     target_link_libraries(splash-${API_VERSION} zmq.a)
+    if (HAVE_SH4LT)
+        target_link_libraries(splash-${API_VERSION} sh4lt-0.1_static.a)
+    endif()
 endif()
 
 # System libs
