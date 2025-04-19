@@ -156,11 +156,6 @@ std::shared_ptr<GraphObject> Scene::addObject(const std::string& type, const std
         {
             if (obj->getType() == "object")
                 link(obj, std::dynamic_pointer_cast<GraphObject>(_gui));
-            else if (obj->getType() == "window" && !_guiLinkedToWindow)
-            {
-                link(std::dynamic_pointer_cast<GraphObject>(_gui), obj);
-                _guiLinkedToWindow = true;
-            }
         }
     }
 
@@ -246,7 +241,6 @@ bool Scene::getEnableJoystickInput() const
 void Scene::remove(const std::string& name)
 {
     std::shared_ptr<GraphObject> obj;
-
     std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
 
     if (_objects.find(name) != _objects.end())

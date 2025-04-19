@@ -18,7 +18,7 @@ void GuiWarp::render()
 
     ImVec2 availableSize = ImGui::GetContentRegionAvail();
 
-    ImGui::BeginChild("Warps", ImVec2(ImGui::GetWindowWidth() * 0.25, availableSize.y), true);
+    ImGui::BeginChild("Warps", ImVec2(ImGui::GetWindowWidth() * 0.25, availableSize.y), ImGuiChildFlags_Borders);
     ImGui::Text("Warp list");
 
     auto leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
@@ -61,7 +61,7 @@ void GuiWarp::render()
     ImGui::EndChild();
 
     ImGui::SameLine();
-    ImGui::BeginChild("Configure warp", ImVec2(0, 0), true);
+    ImGui::BeginChild("Configure warp", ImVec2(0, 0), ImGuiChildFlags_Borders);
     if (_currentWarp < warps.size())
     {
         auto& warp = warps[_currentWarp];

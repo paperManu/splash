@@ -1,6 +1,7 @@
 #include "./controller/controller_gui.h"
 
 #include <fstream>
+#include <memory>
 #include <optional>
 
 #include "./controller/controller.h"
@@ -26,6 +27,8 @@
 #include "./utils/log.h"
 #include "./utils/osutils.h"
 #include "./utils/timer.h"
+
+#define GUI_WINDOW_NAME "__gui_window"
 
 namespace Splash
 {
@@ -302,6 +305,9 @@ Gui::Gui(RenderingContext* renderingContext, RootObject* root)
     loadIcon();
 
     registerAttributes();
+
+    // Callback for dragndrop: load the dropped file
+    UserInput::setCallback(UserInput::State("dragndrop"), [=](const UserInput::State& state) { setWorldAttribute("loadConfig", {state.value[0].as<std::string>()}); });
 }
 
 /*************/
@@ -495,8 +501,11 @@ void Gui::key(int key, int action, int mods)
     {
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
         {
-            _isVisible = !_isVisible;
+            if (!_fullscreen)
+                _isVisible = !_isVisible;
         }
+        else if (action == GLFW_PRESS && mods == GLFW_MOD_SHIFT)
+            toggleGuiDocking();
         else
             goto sendAsDefault;
         break;
@@ -836,31 +845,41 @@ void Gui::drawMenuBar()
                 _menuAction = MenuAction::OpenConfiguration;
                 _showFileSelector = true;
             }
-
-            static std::string menuOpenProject = std::string("Open project (Ctrl+Shift+") + getLocalKeyName('O') + ")";
-            if (ImGui::MenuItem(menuOpenProject.c_str(), nullptr))
-            {
-                _menuAction = MenuAction::OpenProject;
-                _showFileSelector = true;
-            }
-            if (ImGui::MenuItem("Copy calibration from configuration", nullptr))
-            {
-                _menuAction = MenuAction::CopyCalibration;
-                _showFileSelector = true;
-            }
             ImGui::Separator();
             static std::string menuSaveConfiguration = std::string("Save configuration (Ctrl+") + getLocalKeyName('S') + ")";
             if (ImGui::MenuItem(menuSaveConfiguration.c_str(), nullptr))
             {
                 setWorldAttribute("save", {_configurationPath});
             }
-
             static std::string menuSaveConfigurationAs = std::string("Save configuration as... (Ctrl+Shift+") + getLocalKeyName('S') + ")";
             if (ImGui::MenuItem(menuSaveConfigurationAs.c_str(), nullptr))
             {
                 _menuAction = MenuAction::SaveConfigurationAs;
                 _showFileSelector = true;
             }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Copy calibration from configuration", nullptr))
+            {
+                _menuAction = MenuAction::CopyCalibration;
+                _showFileSelector = true;
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Quit", nullptr))
+            {
+                setWorldAttribute("quit", {});
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Project"))
+        {
+            static std::string menuOpenProject = std::string("Open project (Ctrl+Shift+") + getLocalKeyName('O') + ")";
+            if (ImGui::MenuItem(menuOpenProject.c_str(), nullptr))
+            {
+                _menuAction = MenuAction::OpenProject;
+                _showFileSelector = true;
+            }
+            ImGui::Separator();
             if (ImGui::MenuItem("Save project", nullptr))
             {
                 setWorldAttribute("saveProject", {_projectPath});
@@ -870,10 +889,14 @@ void Gui::drawMenuBar()
                 _menuAction = MenuAction::SaveProjectAs;
                 _showFileSelector = true;
             }
-            ImGui::Separator();
-            if (ImGui::MenuItem("Quit", nullptr))
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("View"))
+        {
+            if (ImGui::MenuItem("Toggle GUI docking (Shift+Tab)", nullptr))
             {
-                setWorldAttribute("quit", {});
+                toggleGuiDocking();
             }
             ImGui::EndMenu();
         }
@@ -1003,7 +1026,8 @@ void Gui::renderHelp()
     ImGui::SetNextWindowSize(ImVec2(helpWidth, helpHeight));
     ImGui::Begin("Help", &isOpen, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
 
-    ImGui::Text("Tab: show / hide this GUI");
+    ImGui::Text("Ctrl+Tab: show / hide this GUI");
+    ImGui::Text("Shift+Tab: toggle setting this GUI to its own window");
     ImGui::Text("General shortcuts:");
     ImGui::Text("  Ctrl+%s: open a configuration", getLocalKeyName('O'));
     ImGui::Text("  Ctrl+Shift+%s: open a project", getLocalKeyName('O'));
@@ -1052,6 +1076,52 @@ void Gui::renderHelp()
 }
 
 /*************/
+void Gui::toggleGuiDocking()
+{
+    if (_window != _selfWindow.get())
+    {
+        setInScene("unlink", {_name, _window->getName()});
+    }
+    else
+    {
+        const auto windowNames = getObjectsOfType("window");
+        const auto windows = getObjectsPtr(windowNames);
+        for (auto& window : windows)
+        {
+            assert(window != nullptr);
+            if (_selfWindow && window->getName() == _selfWindow->getName())
+                continue;
+            setInScene("link", {_name, window->getName()});
+            break;
+        }
+    }
+
+    // Make sure the GUI is visible
+    _isVisible = true;
+}
+
+/*************/
+void Gui::updateGuiWindow()
+{
+    if (!_window && !_selfWindow)
+    {
+        _selfWindow = std::dynamic_pointer_cast<Window>(_scene->createObject("window", GUI_WINDOW_NAME).lock());
+        if (!_selfWindow)
+            return;
+
+        _selfWindow->setSavable(false);
+        _scene->link(_name, GUI_WINDOW_NAME);
+        _fullscreen = true;
+    }
+    else if (_window != _selfWindow.get())
+    {
+        _selfWindow.reset();
+        _scene->disposeObject(GUI_WINDOW_NAME);
+        _fullscreen = false;
+    }
+}
+
+/*************/
 void Gui::render()
 {
     if (!_isInitialized)
@@ -1061,10 +1131,11 @@ void Gui::render()
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
 
-    using namespace ImGui;
+    // If not linked to any Window, create our own one
+    updateGuiWindow();
 
-    // Callback for dragndrop: load the dropped file
-    UserInput::setCallback(UserInput::State("dragndrop"), [=](const UserInput::State& state) { setWorldAttribute("loadConfig", {state.value[0].as<std::string>()}); });
+    // Let's start the UI for real
+    using namespace ImGui;
 
     ImGuiIO& io = GetIO();
     io.MouseDrawCursor = _mouseHoveringWindow;
@@ -1158,7 +1229,7 @@ void Gui::render()
             for (auto& widget : _guiBottomWidgets)
             {
                 widget->update();
-                ImGui::BeginChild(widget->getName().c_str(), ImVec2(availableSize.x / static_cast<float>(_guiBottomWidgets.size()), 0), true);
+                ImGui::BeginChild(widget->getName().c_str(), ImVec2(availableSize.x / static_cast<float>(_guiBottomWidgets.size()), 0), ImGuiChildFlags_Borders);
                 widget->render();
                 ImGui::EndChild();
                 ImGui::SameLine();
@@ -1552,6 +1623,15 @@ void Gui::registerAttributes()
         [&]() -> Values { return {_fullscreen}; },
         {'b'});
     setAttributeDescription("fullscreen", "The GUI will take the whole window if set to true");
+
+    addAttribute(
+        "toggleDocking",
+        [&](const Values& /*args*/) {
+            toggleGuiDocking();
+            return true;
+        },
+        [&]() -> Values { return {false}; },
+        {'b'});
 }
 
 } // namespace Splash

@@ -37,7 +37,7 @@ void GuiMedia::render()
     }
 
     ImVec2 availableSize = ImGui::GetContentRegionAvail();
-    ImGui::BeginChild("##medias", ImVec2(availableSize.x * 0.25, availableSize.y), true);
+    ImGui::BeginChild("##medias", ImVec2(availableSize.x * 0.25, availableSize.y), ImGuiChildFlags_Borders);
     ImGui::Text("Media list");
 
     auto leftMargin = static_cast<int>(ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x);
@@ -72,7 +72,7 @@ void GuiMedia::render()
     ImGui::EndChild();
 
     ImGui::SameLine();
-    ImGui::BeginChild("##mediaInfo", ImVec2(0, 0), true);
+    ImGui::BeginChild("##mediaInfo", ImVec2(0, 0), ImGuiChildFlags_Borders);
 
     auto media = getObjectPtr(_selectedMediaName);
     if (!media)

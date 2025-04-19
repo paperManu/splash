@@ -67,7 +67,7 @@ void GuiMeshes::render()
     }
 
     ImVec2 availableSize = ImGui::GetContentRegionAvail();
-    ImGui::BeginChild("##meshes", ImVec2(availableSize.x * 0.25, availableSize.y), true);
+    ImGui::BeginChild("##meshes", ImVec2(availableSize.x * 0.25, availableSize.y), ImGuiChildFlags_Borders);
     ImGui::Text("Mesh list");
 
     auto leftMargin = static_cast<int>(ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x);
@@ -89,7 +89,7 @@ void GuiMeshes::render()
     ImGui::EndChild();
 
     ImGui::SameLine();
-    ImGui::BeginChild("##meshInfo", ImVec2(0, 0), true);
+    ImGui::BeginChild("##meshInfo", ImVec2(0, 0), ImGuiChildFlags_Borders);
 
     auto mesh = getObjectPtr(_selectedMeshName);
     if (!mesh)

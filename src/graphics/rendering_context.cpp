@@ -76,6 +76,21 @@ RenderingContext::RenderingContext(std::string_view name, RenderingContext* cont
 /*************/
 RenderingContext::~RenderingContext()
 {
+    // If the window is focused, we must be sure to consume all remaining inputs
+    // before destroying it. Otherwise, glfwPollEvents might try to read events
+    // for an already destroyed window, and lead to a crash.
+    // To try to make sure of that, we hide the window, wait a bit and
+    // call glfwPollEvents again to catch all events before destroying the window.
+    // This might not work on slow systems, umong other situations.
+    const auto focused = glfwGetWindowAttrib(_window, GLFW_FOCUSED);
+    if (focused)
+    {
+        glfwHideWindow(_window);
+        glfwPollEvents();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        glfwPollEvents();
+    }
+
     if (_window != nullptr)
         glfwDestroyWindow(_window);
 }

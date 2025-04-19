@@ -131,7 +131,7 @@ bool FileSelector(const std::string& label, std::string& path, bool& cancelled, 
             manualPath = true;
     }
 
-    ImGui::BeginChild("##filelist", ImVec2(0, -48), true);
+    ImGui::BeginChild("##filelist", ImVec2(0, -48), ImGuiChildFlags_Borders);
     static std::unordered_map<std::string, uint32_t> selectedId{};
     if (selectedId.find(label) == selectedId.end())
         selectedId[label] = 0;
@@ -394,7 +394,7 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                     static const int step = 1;
                     ImGui::InputScalar(attrName.c_str(), ImGuiDataType_S64, &tmp, &step, &step, nullptr);
                     if (ImGui::IsItemDeactivatedAfterEdit())
-                        setObjectAttribute(objName, attrName, {static_cast<int64_t>(tmp)});
+                        setObjectAttribute(objName, attrName, {tmp});
                     break;
                 }
                 case 2:

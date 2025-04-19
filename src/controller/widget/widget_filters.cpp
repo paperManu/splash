@@ -25,7 +25,7 @@ void GuiFilters::render()
         _selectedFilterName = filterList[0]->getName();
 
     ImVec2 availableSize = ImGui::GetContentRegionAvail();
-    ImGui::BeginChild("##filters", ImVec2(availableSize.x * 0.25, availableSize.y), true);
+    ImGui::BeginChild("##filters", ImVec2(availableSize.x * 0.25, availableSize.y), ImGuiChildFlags_Borders);
     ImGui::Text("Filter list");
 
     auto leftMargin = static_cast<int>(ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x);
@@ -49,7 +49,7 @@ void GuiFilters::render()
         return;
 
     ImGui::SameLine();
-    ImGui::BeginChild("##filterInfo", ImVec2(0, 0), true);
+    ImGui::BeginChild("##filterInfo", ImVec2(0, 0), ImGuiChildFlags_Borders);
 
     ImGui::Text("Filter name: %s", _selectedFilterName.c_str());
 
@@ -70,7 +70,7 @@ void GuiFilters::render()
 
         if (hasCurves)
         {
-            ImGui::BeginChild(colorCurves->first.c_str(), ImVec2(0, curveHeight + 4), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
+            ImGui::BeginChild(colorCurves->first.c_str(), ImVec2(0, curveHeight + 4), ImGuiChildFlags_Borders, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
 
             int curveCount = colorCurves->second.size();
             int w = ImGui::GetWindowWidth() - 3 * leftMargin;

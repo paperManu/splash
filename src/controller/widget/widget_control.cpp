@@ -12,7 +12,7 @@ namespace Splash
 void GuiControl::render()
 {
     ImVec2 availableSize = ImGui::GetContentRegionAvail();
-    ImGui::BeginChild("##nodeView", ImVec2(availableSize.x, availableSize.y), true);
+    ImGui::BeginChild("##nodeView", ImVec2(availableSize.x, availableSize.y), ImGuiChildFlags_Borders);
 
     // Node view
     if (!_nodeView)

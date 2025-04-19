@@ -10,14 +10,14 @@ namespace Splash
 void GuiAttributes::render()
 {
     ImVec2 availableSize = ImGui::GetContentRegionAvail();
-    ImGui::BeginChild("##objectParameters", availableSize, true);
+    ImGui::BeginChild("##objectParameters", availableSize, ImGuiChildFlags_Borders);
 
     if (_targetObjectName != "")
     {
         ImGui::Text("Object name: %s", _targetObjectName.c_str());
         ImGui::Text("Type: %s", getObjectTypes()[_targetObjectName].c_str());
 
-        ImGui::BeginChild("##parameters", ImVec2(0, -26), true);
+        ImGui::BeginChild("##parameters", ImVec2(0, -26), ImGuiChildFlags_Borders);
         auto attributes = getObjectAttributes(_targetObjectName);
         drawAttributes(_targetObjectName, attributes);
         ImGui::EndChild();

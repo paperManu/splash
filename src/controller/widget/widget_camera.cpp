@@ -96,7 +96,7 @@ void GuiCamera::render()
     //
     // Draw all cameras to allow for selecting one
     //
-    ImGui::BeginChild("Cameras", ImVec2(availableSize.x * 0.25, availableSize.y), true);
+    ImGui::BeginChild("Cameras", ImVec2(availableSize.x * 0.25, availableSize.y), ImGuiChildFlags_Borders);
     ImGui::Text("Camera list");
 
     double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
@@ -166,7 +166,7 @@ void GuiCamera::render()
     // Draw the selected camera and some display parameters
     //
     ImGui::SameLine();
-    ImGui::BeginChild("Calibration", ImVec2(0, availableSize.y), true);
+    ImGui::BeginChild("Calibration", ImVec2(0, availableSize.y), ImGuiChildFlags_Borders);
 
     if (ImGui::Button("Calibrate camera"))
         doCalibration();

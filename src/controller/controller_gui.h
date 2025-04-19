@@ -230,6 +230,7 @@ class Gui final : public ControllerObject
     int _initialGuiPos[2]{16, 16}; //!< Gui position at startup
 
     std::shared_ptr<Texture_Image> _splashLogo{nullptr};
+    std::shared_ptr<Window> _selfWindow{nullptr}; //!< Window when GUI is not linked to any other
 
     // ImGUI objects
     bool _showFileSelector{false};
@@ -345,6 +346,20 @@ class Gui final : public ControllerObject
      * Register new functors to modify attributes
      */
     void registerAttributes();
+
+    /**
+     * Update GUI display into a Window.
+     * If it is not linked to any Window, it will create its own one.
+     * If it then gets linked to a Window, it destroys its own one.
+     */
+    void updateGuiWindow();
+
+    /**
+     * Switch the GUI docking state into a Window.
+     * If linked to a Window, unlinks and uses its own window.
+     * If not, links to the first window as returned by Controller::getObjectsOfType.
+     */
+    void toggleGuiDocking();
 };
 
 } // namespace Splash

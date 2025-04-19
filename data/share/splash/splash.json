@@ -12,7 +12,6 @@
             [ "object_image_filter", "object" ],
             [ "image", "object" ],
             [ "image", "object_image_filter" ],
-            [ "gui", "win1" ],
             [ "cam1", "window_1" ],
             [ "window_1_cam1_warp", "window_1" ],
             [ "cam1", "window_1_cam1_warp" ]
@@ -157,22 +156,6 @@
                "sizeOverride" : [ -1, -1 ],
                "timestamp" : [ 1853296687 ],
                "type" : "filter"
-            },
-            "win1" : {
-               "alias" : [ "win1" ],
-               "decorated" : [ true ],
-               "gamma" : [ 2.2000000476837158 ],
-               "guiOnly" : [ true ],
-               "layout" : [ 0, 1, 2, 3 ],
-               "position" : [ 28, 23 ],
-               "presentationDelay" : [ 1884895086 ],
-               "priorityShift" : [ 0 ],
-               "savable" : [ true ],
-               "size" : [ 1280, 1024 ],
-               "snapDistance" : [ 16 ],
-               "srgb" : [ true ],
-               "timestamp" : [ 0 ],
-               "type" : "window"
             },
             "window_1" : {
                "alias" : [ "window_1" ],

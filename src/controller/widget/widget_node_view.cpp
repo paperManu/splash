@@ -138,7 +138,7 @@ void GuiNodeView::render()
     ImGui::Text("Click: select ; Shift + click: link ; Ctrl + click: unlink ; Middle click or Alt + right click: pan");
 
     // Begin a subwindow to enclose nodes
-    ImGui::BeginChild("NodeView", ImVec2(0, -26), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+    ImGui::BeginChild("NodeView", ImVec2(0, -26), ImGuiChildFlags_Borders, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
     if (_firstRender)
     {
@@ -290,7 +290,7 @@ void GuiNodeView::renderNode(const std::string& name)
         coloredSelectedNode = true;
     }
 
-    ImGui::BeginChild(std::string("node_" + name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1]), false);
+    ImGui::BeginChild(std::string("node_" + name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1]), ImGuiChildFlags_None);
 
     ImGui::Button(getObjectAlias(name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1]));
     if (ImGui::IsItemHovered())

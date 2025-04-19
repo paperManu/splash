@@ -209,9 +209,6 @@ bool Window::linkIt(const std::shared_ptr<GraphObject>& obj)
         return true;
     }
 
-    if (_guiOnly)
-        return false;
-
     if (std::dynamic_pointer_cast<Texture>(obj))
     {
         auto tex = std::dynamic_pointer_cast<Texture>(obj);
@@ -292,6 +289,7 @@ void Window::unlinkIt(const std::shared_ptr<GraphObject>& obj)
             _screenGui->removeTexture(_guiTexture);
             _guiTexture.reset();
         }
+        _gui->setOutputWindow(nullptr);
         _gui.reset();
     }
 }
@@ -352,8 +350,6 @@ void Window::render()
 
     if (_guiTexture != nullptr)
     {
-        if (_guiOnly)
-            _gui->setAttribute("fullscreen", {true});
         _screenGui->activate();
         _screenGui->draw();
         _screenGui->deactivate();
@@ -630,16 +626,6 @@ void Window::registerAttributes()
         {'s'},
         true);
     setAttributeDescription("fullscreen", "Name of the monitor to show the window fullscreen, or windowed");
-
-    addAttribute(
-        "guiOnly",
-        [&](const Values& args) {
-            _guiOnly = args[0].as<bool>();
-            return true;
-        },
-        [&]() -> Values { return {_guiOnly}; },
-        {'b'});
-    setAttributeDescription("guiOnly", "If true, only the GUI will be able to link to this window. Does not affect pre-existing links.");
 
     // Attribute to configure the placement of the various texture input
     addAttribute(
