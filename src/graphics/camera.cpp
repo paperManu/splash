@@ -435,11 +435,38 @@ void Camera::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 Values Camera::pickVertex(float x, float y)
 {
     // Convert the normalized coordinates ([0, 1]) to pixel coordinates
-    float realX = x * _width;
-    float realY = y * _height;
+    const float realX = x * _width;
+    const float realY = y * _height;
 
     // Get the depth at the given point
     auto depth = _outFbo->getDepthAt(realX, realY);
+
+    if (depth == 1.f)
+    {
+        float depthSum = 0.f;
+        float count = 0.f;
+
+        for (float shiftx = -_depthSearchRadius; shiftx <= _depthSearchRadius; shiftx += _depthSearchRadius)
+        {
+            for (float shifty = -_depthSearchRadius; shifty <= _depthSearchRadius; shifty += _depthSearchRadius)
+            {
+                const auto shiftedX = (x + shiftx) * _width;
+                const auto shiftedY = (y + shifty) * _height;
+                depth = _outFbo->getDepthAt(shiftedX, shiftedY);
+                if (depth != 1.f)
+                {
+                    depthSum += depth;
+                    count++;
+                }
+            }
+        }
+
+        if (count != 0.f)
+            depth = depthSum / count;
+        else
+            depth = 1.f;
+    }
+
     if (depth == 1.f)
         return Values();
 
