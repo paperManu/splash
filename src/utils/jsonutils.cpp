@@ -207,13 +207,20 @@ bool checkAndUpgradeConfiguration(Json::Value& configuration)
             if (!scene.isMember("objects"))
                 continue;
 
-            for (auto& object : scene["objects"])
+            std::vector<std::string> windowsToDelete;
+            for (const auto& objectName : scene["objects"].getMemberNames())
             {
+                auto& object = scene["objects"][objectName];
                 if (object["type"] != "window" && !object.isMember("fullscreen"))
                     continue;
 
                 object["fullscreen"] = "windowed";
+                if (object.isMember("guiOnly") && object["guiOnly"][0].asBool())
+                    windowsToDelete.push_back(objectName);
             }
+
+            for (const auto& objectName : windowsToDelete)
+                scene["objects"].removeMember(objectName);
         }
 
         configuration = newConfig;
