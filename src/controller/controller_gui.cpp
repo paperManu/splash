@@ -1078,18 +1078,24 @@ void Gui::renderHelp()
 /*************/
 void Gui::toggleGuiDocking()
 {
+    // It can happen that no window is currently linked, for
+    // example when a self-owned window has been asked to be created
+    // by the updateGuiWindow method.
+    // If that is the case, we do nothing for now.
+    if (!_window)
+        return;
+
     if (_window != _selfWindow.get())
     {
         setInScene("unlink", {_name, _window->getName()});
     }
-    else
+    else if (_selfWindow)
     {
         const auto windowNames = getObjectsOfType("window");
         const auto windows = getObjectsPtr(windowNames);
         for (auto& window : windows)
         {
-            assert(window != nullptr);
-            if (_selfWindow && window->getName() == _selfWindow->getName())
+            if (window->getName() == _selfWindow->getName())
                 continue;
             setInScene("link", {_name, window->getName()});
             break;
@@ -1103,20 +1109,31 @@ void Gui::toggleGuiDocking()
 /*************/
 void Gui::updateGuiWindow()
 {
-    if (!_window && !_selfWindow)
+    if (!_window && !_selfWindow && !_creatingWindow)
     {
-        _selfWindow = std::dynamic_pointer_cast<Window>(_scene->createObject("window", GUI_WINDOW_NAME).lock());
-        if (!_selfWindow)
-            return;
-
-        _selfWindow->setSavable(false);
-        _scene->link(_name, GUI_WINDOW_NAME);
-        _fullscreen = true;
+        // If no window exist for this GUI, and none is currently being created
+        setWorldAttribute("addObject", {"window", GUI_WINDOW_NAME});
+        _creatingWindow = true;
     }
-    else if (_window != _selfWindow.get())
+    else if (_creatingWindow)
     {
+        // If a window is currently being created
+        auto window = std::dynamic_pointer_cast<Window>(getObjectPtr(GUI_WINDOW_NAME));
+        if (!window)
+            return;
+        _selfWindow = window;
+        _selfWindow->setSavable(false);
+        setWorldAttribute("link", {_name, GUI_WINDOW_NAME});
+        _fullscreen = true;
+        _creatingWindow = false;
+    }
+    else if (_selfWindow && _window && _window != _selfWindow.get())
+    {
+        // If the window linked is not the same as the self-owned window
+        // This means the GUI was previously shown in the self-owned window,
+        // and that this changed recently.
+        setWorldAttribute("deleteObject", {GUI_WINDOW_NAME});
         _selfWindow.reset();
-        _scene->disposeObject(GUI_WINDOW_NAME);
         _fullscreen = false;
     }
 }

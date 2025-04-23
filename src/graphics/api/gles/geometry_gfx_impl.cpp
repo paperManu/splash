@@ -23,7 +23,9 @@ GeometryGfxImpl::~GeometryGfxImpl()
 /*************/
 void GeometryGfxImpl::activate()
 {
-    glBindVertexArray(_vertexArray[glfwGetCurrentContext()]);
+    const auto currentGlfwContext = glfwGetCurrentContext();
+    if (const auto vaoIt = _vertexArray.find(currentGlfwContext); vaoIt != _vertexArray.end())
+        glBindVertexArray(vaoIt->second);
 }
 
 /*************/

@@ -230,7 +230,8 @@ class Gui final : public ControllerObject
     int _initialGuiPos[2]{16, 16}; //!< Gui position at startup
 
     std::shared_ptr<Texture_Image> _splashLogo{nullptr};
-    std::shared_ptr<Window> _selfWindow{nullptr}; //!< Window when GUI is not linked to any other
+    std::shared_ptr<Window> _selfWindow{nullptr}; //!< Self-owned window when GUI is not linked to any other
+    bool _creatingWindow{false}; //!< True if a self-owned window is being created
 
     // ImGUI objects
     bool _showFileSelector{false};

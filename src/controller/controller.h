@@ -212,6 +212,9 @@ class ControllerObject : public GraphObject
 
     /**
      * Set the given scene-related attribute
+     * This should preferably not be called to add or remove objects, and especially
+     * not objects contained OpenGL resources.
+     *
      * \param name Attribute name
      * \param values Value to set the attribute to
      */
