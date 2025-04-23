@@ -8,6 +8,9 @@
 
 #include "./graphics/window.h"
 
+#define DEFAULT_WINDOW_WIDTH 1024
+#define DEFAULT_WINDOW_HEIGHT 768
+
 namespace Splash
 {
 
@@ -61,7 +64,7 @@ RenderingContext::RenderingContext(std::string_view name, const gfx::PlatformVer
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, static_cast<int>(platformVersion.minor));
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
-    _window = glfwCreateWindow(512, 512, name.data(), nullptr, nullptr);
+    _window = glfwCreateWindow(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, name.data(), nullptr, nullptr);
 }
 
 /*************/
@@ -69,7 +72,7 @@ RenderingContext::RenderingContext(std::string_view name, RenderingContext* cont
 {
     assert(context != nullptr);
     _name = std::string(name);
-    _window = glfwCreateWindow(512, 512, name.data(), nullptr, context->_window);
+    _window = glfwCreateWindow(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, name.data(), nullptr, context->_window);
     _mainContext = context;
 }
 

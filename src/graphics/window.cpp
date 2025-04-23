@@ -59,8 +59,6 @@ Window::Window(RootObject* root)
 
     if (!_gfxImpl->windowExists())
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while creating the Window" << Log::endl;
-    else
-        Log::get() << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Window created successfully" << Log::endl;
 
     // Set the projection surface
     _gfxImpl->setAsCurrentContext();
