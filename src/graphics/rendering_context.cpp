@@ -24,11 +24,9 @@ RenderingContext::RenderingContext(std::string_view name, const gfx::PlatformVer
     if (!_glfwInitialized)
     {
         glfwSetErrorCallback(glfwErrorCallback);
-
-        // By default, GLFW will prefer using X11 as Wayland support is not complete
-        // Using Wayland can be forced with the SPLASH_USE_WAYLAND env var
-        if (getenv(Constants::SPLASH_USE_WAYLAND))
-            glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_WAYLAND);
+        glfwInitHint(GLFW_PLATFORM, GLFW_ANY_PLATFORM);
+        if (glfwPlatformSupported(GLFW_PLATFORM_WAYLAND))
+            glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_PREFER_LIBDECOR);
 
         if (!glfwInit())
         {

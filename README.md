@@ -240,13 +240,7 @@ And that's it, you can move on to the [First steps](https://splashmapper.xyz/en/
 
 ###### Wayland support
 
-**Support for the Wayland display server is partial**, and follows the progress of the GLFW library which is used to give a cross-platform way to handle graphic contexts. An example of a current limitation is that if any Splash window is hidden, the whole rendering will be stalled on some Wayland compositors.
-
-To activate it, the `SPLASH_USE_WAYLAND` environment variable must be defined, to whichever value. For example, Splash can be run like this:
-
-```bash
-SPLASH_USE_WAYLAND=1 splash
-```
+**Support for the Wayland display server is still a work-in-progress**, and follows the progress of the GLFW library which is used to give a cross-platform way to handle graphic contexts. An example of a current limitation is that if any Splash window is hidden, the whole rendering will be stalled on some Wayland compositors.
 
 
 ## Code contribution

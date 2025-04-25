@@ -42,7 +42,6 @@ namespace Splash::Constants
 {
 static const char ALL_PEERS[] = "__ALL__";
 static const char DEFAULT_FILE_ENV[] = "SPLASH_DEFAULTS";
-static const char SPLASH_USE_WAYLAND[] = "SPLASH_USE_WAYLAND";
 
 static const char FILE_CONFIGURATION[] = "splashConfiguration";
 static const char FILE_PROJECT[] = "splashProject";
