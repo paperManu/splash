@@ -25,6 +25,10 @@
     <category>Player</category>
   </categories>
   <url type="homepage">https://splashmapper.xyz</url>
+  <url type="bugtracker">https://gitlab.com/splashmapper/splash/-/issues</url>
+  <url type="help">https://splashmapper.xyz/en/contents.html</url>
+  <url type="contact">https://matrix.to/#/#splashmapper:matrix.org</url>
+  <url type="donation">https://opencollective.com/splash</url>
   <screenshots>
     <screenshot type="default">
       <image>https://splashmapper.xyz/en/_images/splash_multiview_gui.jpg</image>
