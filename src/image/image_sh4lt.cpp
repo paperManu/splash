@@ -89,7 +89,7 @@ bool Image_Sh4lt::read(const std::string& /*filename*/)
 }
 
 /*************/
-bool Image_Sh4lt::read_by_label()
+bool Image_Sh4lt::readByLabel()
 {
     _reader = std::make_unique<sh4lt::Follower>(
         sh4lt::ShType::get_path(_label, _group),
@@ -321,21 +321,9 @@ void Image_Sh4lt::readUncompressedFrame(void* data, int /*data_size*/)
     }
     else if (_is420)
     {
-        const unsigned char* Y = static_cast<const unsigned char*>(data);
-        const unsigned char* U = static_cast<const unsigned char*>(data) + _width * _height;
-        const unsigned char* V = static_cast<const unsigned char*>(data) + _width * _height * 5 / 4;
-        char* pixels = (char*)(_readerBuffer).data();
-
-        for (uint32_t y = 0; y < _height; ++y)
-        {
-            for (uint32_t x = 0; x < _width; x += 2)
-            {
-                pixels[(x + y * _width) * 2 + 0] = U[(x / 2) + (y / 2) * (_width / 2)];
-                pixels[(x + y * _width) * 2 + 1] = Y[x + y * _width];
-                pixels[(x + y * _width) * 2 + 2] = V[(x / 2) + (y / 2) * (_width / 2)];
-                pixels[(x + y * _width) * 2 + 3] = Y[x + y * _width + 1];
-            }
-        }
+        const auto input = std::span(reinterpret_cast<uint8_t*>(data), _width * _height * 3 / 2);
+        auto output = std::span(_readerBuffer.data(), _readerBuffer.getSize());
+        cvtI420toUYVY(input, output, _width, _height);
     }
     else if (_is422)
     {
@@ -363,7 +351,7 @@ void Image_Sh4lt::registerAttributes()
         "label",
         [&](const Values& args) {
             _label = args[0].as<std::string>();
-            return read_by_label();
+            return readByLabel();
         },
         [&]() -> Values {
             Values retValues = {_label};
@@ -381,7 +369,7 @@ void Image_Sh4lt::registerAttributes()
         "group",
         [&](const Values& args) {
             _group = args[0].as<std::string>();
-            return read_by_label();
+            return readByLabel();
         },
         [&]() -> Values {
             Values retValues = {_group};

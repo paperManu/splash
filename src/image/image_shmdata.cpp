@@ -329,21 +329,9 @@ void Image_Shmdata::readUncompressedFrame(void* data, int /*data_size*/)
     }
     else if (_is420)
     {
-        const unsigned char* Y = static_cast<const unsigned char*>(data);
-        const unsigned char* U = static_cast<const unsigned char*>(data) + _width * _height;
-        const unsigned char* V = static_cast<const unsigned char*>(data) + _width * _height * 5 / 4;
-        char* pixels = (char*)(_readerBuffer).data();
-
-        for (uint32_t y = 0; y < _height; ++y)
-        {
-            for (uint32_t x = 0; x < _width; x += 2)
-            {
-                pixels[(x + y * _width) * 2 + 0] = U[(x / 2) + (y / 2) * (_width / 2)];
-                pixels[(x + y * _width) * 2 + 1] = Y[x + y * _width];
-                pixels[(x + y * _width) * 2 + 2] = V[(x / 2) + (y / 2) * (_width / 2)];
-                pixels[(x + y * _width) * 2 + 3] = Y[x + y * _width + 1];
-            }
-        }
+        const auto input = std::span(reinterpret_cast<uint8_t*>(data), _width * _height * 3 / 2);
+        auto output = std::span(_readerBuffer.data(), _readerBuffer.getSize());
+        cvtI420toUYVY(input, output, _width, _height);
     }
     else if (_is422)
     {

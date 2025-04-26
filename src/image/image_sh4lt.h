@@ -110,7 +110,7 @@ class Image_Sh4lt final : public Image
     /**
      * Construct the internal Sh4lt using label and group
      **/
-    bool read_by_label();
+    bool readByLabel();
 
     /**
      * Callback called when receiving a new frame
@@ -134,6 +134,7 @@ class Image_Sh4lt final : public Image
      * Register new functors to modify attributes
      */
     void registerAttributes();
+
     /**
      * Small function to work around a bug in GCC's libstdc++
      *

@@ -102,6 +102,7 @@ include_directories(../external/glad/core/include)
 include_directories(../external/hap/source)
 include_directories(../external/imgui)
 include_directories(../external/libltc/src)
+include_directories(../external/ndi-sdk/include)
 include_directories(../external/stb)
 include_directories(../external/tracy/public)
 include_directories(../external/stduuid/include)
@@ -204,6 +205,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     image/image.cpp
     image/image_ffmpeg.cpp
     image/image_list.cpp
+    image/image_ndi.cpp
     image/queue.cpp
     mesh/mesh.cpp
     mesh/mesh_bezierpatch.cpp
@@ -324,7 +326,6 @@ endif()
 
 if (HAVE_SHMDATA)
     target_sources(splash-${API_VERSION} PRIVATE
-        image/image_ndi.cpp
         image/image_shmdata.cpp
         mesh/mesh_shmdata.cpp
         network/channel_shmdata.cpp
