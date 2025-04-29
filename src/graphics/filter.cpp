@@ -327,7 +327,7 @@ void Filter::registerAttributes()
         [&](const Values& args) {
             auto width = args[0].as<int>();
             auto height = args[1].as<int>();
-            addTask([=]() {
+            addTask([=, this]() {
                 _sizeOverride[0] = width;
                 _sizeOverride[1] = height;
             });

@@ -455,7 +455,7 @@ void Image_GPhoto::registerAttributes()
 
     addAttribute("detect",
         [&](const Values&) {
-            runAsyncTask([=]() { detectCameras(); });
+            runAsyncTask([=, this]() { detectCameras(); });
             return true;
         },
         {});

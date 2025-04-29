@@ -205,7 +205,7 @@ void Image_V4L2::captureThreadFunc()
                         if (_outputWidth != _v4l2SourceFormat.fmt.pix.width || _outputHeight != _v4l2SourceFormat.fmt.pix.height)
                         {
                             _automaticResizing = true;
-                            addTask([=]() {
+                            addTask([=, this]() {
                                 stopCapture();
                                 _outputWidth = std::max(320u, _v4l2SourceFormat.fmt.pix.width);
                                 _outputHeight = std::max(240u, _v4l2SourceFormat.fmt.pix.height);
@@ -716,7 +716,7 @@ void Image_V4L2::updateMoreMediaInfo(Values& mediaInfo)
 void Image_V4L2::scheduleCapture()
 {
     _shouldCapture = true;
-    addTask([=]() {
+    addTask([=, this]() {
         if (_shouldCapture and !_capturing)
         {
             doCapture();
@@ -806,7 +806,7 @@ void Image_V4L2::registerAttributes()
         "file",
         [&](const Values& args) {
             const auto path = args[0].as<std::string>();
-            addTask([=] { setAttribute("device", {path}); });
+            addTask([=, this] { setAttribute("device", {path}); });
             return true;
         },
         [&]() -> Values { return {_devicePath}; },

@@ -55,7 +55,7 @@ void FilterColorCurves::registerDefaultShaderAttributes()
             if (pointCount < 2)
                 return false;
 
-            addTask([=]() {
+            addTask([=, this]() {
                 _colorCurves = args;
                 updateShaderParameters();
             });
@@ -78,7 +78,7 @@ void FilterColorCurves::registerDefaultShaderAttributes()
             for (uint32_t i = 0; i < count; ++i)
                 linearCurve.push_back(static_cast<float>(i) / (static_cast<float>(count - 1)));
 
-            addTask([=]() {
+            addTask([=, this]() {
                 _colorCurves.clear();
                 for (uint32_t i = 0; i < 3; ++i)
                     _colorCurves.push_back(linearCurve);

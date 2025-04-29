@@ -66,11 +66,11 @@ bool FilterCustom::setFilterSource(const std::string& source)
         _filterUniforms[u.first] = u.second;
         addAttribute(
             u.first,
-            [=](const Values& args) {
+            [=, this](const Values& args) {
                 _filterUniforms[u.first] = args;
                 return true;
             },
-            [=]() -> Values { return _filterUniforms[u.first]; },
+            [=, this]() -> Values { return _filterUniforms[u.first]; },
             types);
 
         auto documentation = uniformsDocumentation.find(u.first);
@@ -99,7 +99,7 @@ void FilterCustom::registerAttributes()
                 return true; // No shader specified
             _shaderSource = src;
             _shaderSourceFile = "";
-            addTask([=]() { setFilterSource(src); });
+            addTask([=, this]() { setFilterSource(src); });
             return true;
         },
         [&]() -> Values { return {_shaderSource}; },
@@ -118,7 +118,7 @@ void FilterCustom::registerAttributes()
             {
                 _shaderSourceFile = srcFile;
                 _shaderSource = "";
-                addTask([=]() {
+                addTask([=, this]() {
                     setFilterSource(source);
                     _lastShaderSourceRead = Timer::getTime();
                 });
@@ -147,7 +147,7 @@ void FilterCustom::registerAttributes()
             {
                 addPeriodicTask(
                     "watchShader",
-                    [=]() {
+                    [=, this]() {
                         if (_shaderSourceFile.empty())
                             return;
 

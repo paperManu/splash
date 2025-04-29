@@ -83,7 +83,7 @@ std::weak_ptr<GraphObject> RootObject::createObject(const std::string& type, con
 /*************/
 void RootObject::disposeObject(const std::string& name)
 {
-    addTask([=]() {
+    addTask([=, this]() {
         std::lock_guard<std::recursive_mutex> registerLock(_objectsMutex);
         auto objectIt = _objects.find(name);
         if (objectIt != _objects.end() && objectIt->second.use_count() == 1)
@@ -165,7 +165,7 @@ bool RootObject::set(const std::string& name, const std::string& attrib, const V
 
     if (async)
     {
-        addTask([=]() {
+        addTask([=, this]() {
             auto object = getObject(name);
             if (object)
                 object->setAttribute(attrib, args);
@@ -417,7 +417,7 @@ void RootObject::initializeTree()
             if (!_tree.createLeafAt(leafPath))
                 throw std::runtime_error("Error while adding a leaf at path " + leafPath);
 
-            _treeCallbackIds[attributeName] = _tree.addCallbackToLeafAt(leafPath, [=](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
+            _treeCallbackIds[attributeName] = _tree.addCallbackToLeafAt(leafPath, [=, this](const Value& value, const chrono::system_clock::time_point& /*timestamp*/) {
                 auto attribIt = _attribFunctions.find(attributeName);
                 if (attribIt == _attribFunctions.end())
                     return;

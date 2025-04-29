@@ -102,7 +102,7 @@ void TexCoordGenerator::generateTexCoordOnMesh()
         if (objFile.writeMesh(newFile) && _replaceMesh)
         {
             PRINT_FUNCTION_LINE
-            runAsyncTask([=]() { setObjectAttribute(_meshName, "file", {newFile}); });
+            runAsyncTask([this]() { setObjectAttribute(_meshName, "file", {newFile}); });
         }
     }
 }

@@ -307,7 +307,7 @@ Gui::Gui(RenderingContext* renderingContext, RootObject* root)
     registerAttributes();
 
     // Callback for dragndrop: load the dropped file
-    UserInput::setCallback(UserInput::State("dragndrop"), [=](const UserInput::State& state) { setWorldAttribute("loadConfig", {state.value[0].as<std::string>()}); });
+    UserInput::setCallback(UserInput::State("dragndrop"), [this](const UserInput::State& state) { setWorldAttribute("loadConfig", {state.value[0].as<std::string>()}); });
 }
 
 /*************/

@@ -311,7 +311,7 @@ void Image_Shmdata::readUncompressedFrame(void* data, int /*data_size*/)
         for (uint32_t block = 0; block < _shmdataCopyThreads; ++block)
         {
             int size = _width * _height * _channels * sizeof(char);
-            threads.push_back(std::async(std::launch::async, [=]() {
+            threads.push_back(std::async(std::launch::async, [=, this]() {
                 int sizeOfBlock; // We compute the size of the block, to handle image size non divisible by _shmdataCopyThreads
                 if (size - size / _shmdataCopyThreads * block < 2 * size / _shmdataCopyThreads)
                     sizeOfBlock = size - size / _shmdataCopyThreads * block;

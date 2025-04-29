@@ -364,7 +364,7 @@ void GraphObject::initializeTree()
                 continue;
 
             tree->createLeafAt(leafPath);
-            _treeCallbackIds[attributeName] = tree->addCallbackToLeafAt(leafPath, [=](const Value& value, const std::chrono::system_clock::time_point& /*timestamp*/) {
+            _treeCallbackIds[attributeName] = tree->addCallbackToLeafAt(leafPath, [=, this](const Value& value, const std::chrono::system_clock::time_point& /*timestamp*/) {
                 auto attribIt = _attribFunctions.find(attributeName);
                 if (attribIt == _attribFunctions.end())
                     return;

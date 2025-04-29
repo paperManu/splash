@@ -576,7 +576,7 @@ void Window::registerAttributes()
         "decorated",
         [&](const Values& args) {
             const auto withDecoration = args[0].as<bool>();
-            addTask([=]() {
+            addTask([=, this]() {
                 setWindowDecoration(withDecoration);
                 updateWindowShape();
             });
@@ -602,7 +602,7 @@ void Window::registerAttributes()
                 fullscreen = -1;
                 _resized = true;
             }
-            addTask([=]() { setFullscreenMonitor(fullscreen); });
+            addTask([=, this]() { setFullscreenMonitor(fullscreen); });
             return true;
         },
         [&]() -> Values {
@@ -650,7 +650,7 @@ void Window::registerAttributes()
         [&](const Values& args) {
             _windowRect[0] = args[0].as<int>();
             _windowRect[1] = args[1].as<int>();
-            addTask([=]() { updateWindowShape(); });
+            addTask([=, this]() { updateWindowShape(); });
             return true;
         },
         [&]() -> Values { return {_windowRect[0], _windowRect[1]}; },
@@ -660,7 +660,7 @@ void Window::registerAttributes()
     addAttribute("showCursor",
         [&](const Values& args) {
             const auto shown = args[0].as<bool>();
-            addTask([=]() { showCursor(shown); });
+            addTask([=, this]() { showCursor(shown); });
             return true;
         },
         {'b'});
@@ -671,7 +671,7 @@ void Window::registerAttributes()
             _windowRect[2] = args[0].as<int>();
             _windowRect[3] = args[1].as<int>();
             _resized = true;
-            addTask([=]() { updateWindowShape(); });
+            addTask([=, this]() { updateWindowShape(); });
             return true;
         },
         [&]() -> Values { return {_windowRect[2], _windowRect[3]}; },
@@ -681,7 +681,7 @@ void Window::registerAttributes()
     addAttribute("swapInterval",
         [&](const Values& args) {
             const auto interval = args[0].as<int>();
-            addTask([=]() { updateSwapInterval(interval); });
+            addTask([=, this]() { updateSwapInterval(interval); });
             return true;
         },
         {'i'});

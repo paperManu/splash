@@ -448,7 +448,7 @@ void QueueSurrogate::registerAttributes()
             if (args.size() != 1)
                 return false;
 
-            addTask([=]() {
+            addTask([=, this]() {
                 auto sourceName = _name + DISTANT_NAME_SUFFIX;
                 auto type = args[0].as<std::string>();
 
