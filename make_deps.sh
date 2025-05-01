@@ -18,3 +18,7 @@ fi
 # ZMQ
 echo "Building ZMQ..."
 ./build_zmq.sh
+
+# Sh4lt
+echo "Building Sh4lt..."
+./build_sh4lt.sh

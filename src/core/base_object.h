@@ -129,6 +129,12 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     Attribute::Sync getAttributeSyncMethod(const std::string& name);
 
     /**
+     * Get the real type of this BaseObject, as a std::string.
+     * \return Returns the type.
+     */
+    inline std::string getType() const { return _type; }
+
+    /**
      * Register a callback to any call to the setter
      * \param attr Attribute to add a callback to
      * \param cb Callback function
@@ -150,6 +156,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
 
   protected:
     std::string _name{""};                               //!< Object name
+    std::string _type{"baseobject"};                     //!< Internal type
     DenseMap<std::string, Attribute> _attribFunctions{}; //!< Map of all attributes
     mutable std::recursive_mutex _attribMutex;
     bool _updatedParams{true}; //!< True if the parameters have been updated and the object needs to reflect these changes
@@ -191,15 +198,24 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     void addPeriodicTask(const std::string& name, const std::function<void()>& task, uint32_t period = 0);
 
     /**
-     * Add a new attribute to this object
+     * Add a new attribute to this object, and specify a setter, getter and accepted types.
+     *
+     * It is also possible for accepted values to be from a generated list. In this case,
+     * the list must be given by the getter alongside the actual value (which is first).
+     * Only single value types are accepted in this case, not multiple ones.
+     *
+     * The accepted (generated) values are to be appended to the actual value of the attribute,
+     * when calling the get function.
+     *
      * \param name Attribute name
      * \param set Set function
      * \param get Get function
      * \param types Vector of char holding the expected parameters for the set function
+     * \param generated Set to true if the accepted values must be taken from a generated list
      * \return Return a reference to the created attribute
      */
     virtual Attribute& addAttribute(
-        const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types);
+        const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types, bool generated = false);
     virtual Attribute& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types);
     virtual Attribute& addAttribute(const std::string& name, const std::function<const Values()>& get);
 

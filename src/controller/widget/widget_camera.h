@@ -25,8 +25,8 @@
 #ifndef SPLASH_WIDGET_GLOBAL_VIEW_H
 #define SPLASH_WIDGET_GLOBAL_VIEW_H
 
+#include "./controller/widget/widget.h"
 #include "./graphics/camera.h"
-#include "./widget.h"
 
 namespace Splash
 {
@@ -35,19 +35,20 @@ namespace Splash
 class GuiCamera : public GuiWidget
 {
   public:
-    GuiCamera(Scene* scene, const std::string& name = "")
-        : GuiWidget(scene, name)
-    {
-    }
+    GuiCamera(Scene* scene, const std::string& name = "");
     void render() final;
     void update() final;
     int updateWindowFlags() final;
-    void setCamera(const std::shared_ptr<Camera>& cam);
+    std::optional<std::string> getActiveObjectName() const final { return _camera ? _camera->getName() : std::optional<std::string>(); }
     void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons);
+
+  protected:
+    bool linkIt(const std::shared_ptr<GraphObject>& obj) final;
+    void unlinkIt(const std::shared_ptr<GraphObject>& obj) final;
 
   private:
     std::shared_ptr<Camera> _camera{nullptr};
-    std::shared_ptr<Camera> _guiCamera{nullptr};
+    std::shared_ptr<Camera> _overviewCamera{nullptr};
     bool _rendered{false};
     bool _camerasHidden{false};
     bool _noMove{false};

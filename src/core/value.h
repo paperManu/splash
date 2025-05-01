@@ -194,6 +194,19 @@ struct Value
         }
     }
 
+    const Value& operator[](int index) const
+    {
+        if (_type == Type::values)
+        {
+            const auto& data = std::get<Values>(_data);
+            return data[index];
+        }
+        else
+        {
+            return *this;
+        }
+    }
+
     template <class T>
     T as() const
     {
@@ -497,7 +510,9 @@ struct Value
     {
         if (_type == Type::integer && type == Type::real)
             return true;
-        if (_type == type)
+        else if (_type == Type::real && type == Type::integer)
+            return true;
+        else if (_type == type)
             return true;
         return false;
     }

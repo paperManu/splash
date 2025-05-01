@@ -15,8 +15,8 @@ namespace Splash
 {
 
 /*************/
-Filter::Filter(RootObject* root)
-    : Texture(root)
+Filter::Filter(RootObject* root, TreeRegisterStatus registerToTree)
+    : Texture(root, registerToTree)
 {
     _type = "filter";
     _renderingPriority = Priority::FILTER;
@@ -35,7 +35,7 @@ Filter::Filter(RootObject* root)
     _screen = std::make_shared<Object>(_root);
     _screen->setAttribute("fill", {"image_filter"});
     auto virtualScreen = _renderer->createGeometry(_root);
-    _screen->addGeometry(virtualScreen);
+    _screen->setGeometry(virtualScreen);
 }
 
 /*************/
@@ -327,7 +327,7 @@ void Filter::registerAttributes()
         [&](const Values& args) {
             auto width = args[0].as<int>();
             auto height = args[1].as<int>();
-            addTask([=]() {
+            addTask([=, this]() {
                 _sizeOverride[0] = width;
                 _sizeOverride[1] = height;
             });

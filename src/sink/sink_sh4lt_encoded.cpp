@@ -143,7 +143,6 @@ void Sink_Sh4lt_Encoded::freeFFmpegObjects()
 {
     if (_context)
     {
-        avcodec_close(_context);
         av_free(_context);
         _context = nullptr;
     }

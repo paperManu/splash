@@ -46,9 +46,10 @@ class ControllerObject : public GraphObject
     /**
      * Constructor
      * \param root RootObject
+     * \param registerToTree Register the object into the root tree
      */
-    explicit ControllerObject(RootObject* root)
-        : GraphObject(root)
+    explicit ControllerObject(RootObject* root, TreeRegisterStatus registerToTree = TreeRegisterStatus::Registered)
+        : GraphObject(root, registerToTree)
     {
         registerAttributes();
     }
@@ -72,6 +73,12 @@ class ControllerObject : public GraphObject
      * \return Return true if the object exists, false otherwise
      */
     bool checkObjectExists(const std::string& name) const;
+
+    /**
+     * Get a list of the generated attributes
+     * \return A list of the generated attributes
+     */
+    std::vector<std::string> getGeneratedAttributes(const std::string& objName) const;
 
     /**
      * Get a ptr to the named object
@@ -205,6 +212,9 @@ class ControllerObject : public GraphObject
 
     /**
      * Set the given scene-related attribute
+     * This should preferably not be called to add or remove objects, and especially
+     * not objects contained OpenGL resources.
+     *
      * \param name Attribute name
      * \param values Value to set the attribute to
      */

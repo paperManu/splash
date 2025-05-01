@@ -296,6 +296,7 @@ class Camera : public GraphObject
     float _saturation{1.f};                //!< Saturation correction
     float _colorTemperature{6500.f};       //!< Color temperature correction
     bool _weightedCalibrationPoints{true}; //!< If true, calibration points closer to the borders have a higher influence on the calibration
+    float _depthSearchRadius{0.02f};       //!< Radius (normalized coordinates) to look for a valid depth value, for picking
 
     // Calibration parameters
     bool _calibrationCalledOnce{false};
@@ -340,11 +341,6 @@ class Camera : public GraphObject
 
     // Function used for the calibration (camera parameters optimization)
     static double calibrationCostFunc(const gsl_vector* v, void* params);
-
-    /**
-     * Load some defaults models, like the locator for calibration
-     */
-    void loadDefaultModels();
 
     /**
      * Send calibration points to the model

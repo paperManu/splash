@@ -217,7 +217,7 @@ class Shader
     gfx::Renderer* _renderer;
     std::unique_ptr<gfx::ShaderGfxImpl> _gfxImpl;
 
-    std::unordered_map<int, std::string> _currentSources;
+    std::unordered_map<gfx::ShaderType, std::string> _currentSources;
     std::vector<std::shared_ptr<Texture>> _textures; // Currently used textures
     std::string _currentProgramName{};
 

@@ -40,6 +40,7 @@ class GuiControl : public GuiWidget
     }
     void render() final;
     int updateWindowFlags() final;
+    std::optional<std::string> getActiveObjectName() const final { return _targetObjectName; }
 
   private:
     std::shared_ptr<GuiWidget> _nodeView;

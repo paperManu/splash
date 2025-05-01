@@ -28,7 +28,11 @@ TEST_CASE("Testing attributes for all objects the Factory can create")
             const auto& value = ret.value();
             if (value.empty())
                 continue;
-            CHECK(object->setAttribute(attribute, value) != BaseObject::SetAttrStatus::failure);
+
+            const auto setRet = object->setAttribute(attribute, value);
+            CHECK(setRet != BaseObject::SetAttrStatus::failure);
+            if (setRet == BaseObject::SetAttrStatus::no_setter)
+                continue;
 
             const auto retAfterSet = object->getAttribute(attribute);
             const auto& valueAfterSet = retAfterSet.value();

@@ -61,6 +61,7 @@ std::vector<std::string> Scene::_ghostableTypes{"camera", "warp"};
 Scene::Scene(Context context)
     : RootObject(context)
 {
+    _type = "scene";
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
 #endif
@@ -155,11 +156,6 @@ std::shared_ptr<GraphObject> Scene::addObject(const std::string& type, const std
         {
             if (obj->getType() == "object")
                 link(obj, std::dynamic_pointer_cast<GraphObject>(_gui));
-            else if (obj->getType() == "window" && !_guiLinkedToWindow)
-            {
-                link(std::dynamic_pointer_cast<GraphObject>(_gui), obj);
-                _guiLinkedToWindow = true;
-            }
         }
     }
 
@@ -245,7 +241,6 @@ bool Scene::getEnableJoystickInput() const
 void Scene::remove(const std::string& name)
 {
     std::shared_ptr<GraphObject> obj;
-
     std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
 
     if (_objects.find(name) != _objects.end())
@@ -350,7 +345,7 @@ void Scene::render()
                     if (obj->wasUpdated())
                     {
                         // If a mesh has been updated, force blending update
-                        addTask([=]() { std::dynamic_pointer_cast<Blender>(_blender)->forceUpdate(); });
+                        addTask([this]() { std::dynamic_pointer_cast<Blender>(_blender)->forceUpdate(); });
                         obj->setNotUpdated();
                     }
                 if (objectCategory == GraphObject::Category::IMAGE || objectCategory == GraphObject::Category::TEXTURE)
@@ -586,6 +581,28 @@ void Scene::init(const std::string& name)
         return;
 
     _objectLibrary = std::make_unique<ObjectLibrary>(this);
+    // *Note*: strange non-elucidated issues arise if the object library
+    // is not populated _before_ preloading objects, to the GUI in particular.
+    // Namely, one observed issue is that destroyed a Window will make
+    // the GUI disappear completely.
+    // A possibility is that some OpenGL state gets initialized correctly
+    // in the process, which is not otherwise. It might also be outside of
+    // OpenGL. Anyway, beware when moving this away from here.
+    addTask([this]() {
+        const auto datapath = std::string(DATADIR);
+        const std::map<std::string, std::string> files{
+            {"3d_marker", datapath + "/3d_marker.obj"}, {"2d_marker", datapath + "/2d_marker.obj"}, {"camera", datapath + "/camera.obj"}, {"probe", datapath + "/probe.obj"}};
+
+        for (const auto& file : files)
+        {
+            if (!_objectLibrary->loadModel(file.first, file.second))
+                continue;
+
+            auto object = _objectLibrary->getModel(file.first);
+            assert(object != nullptr);
+            object->setAttribute("fill", {"color"});
+        }
+    });
 
     _isInitialized = true;
     _renderer->init(name);
@@ -614,7 +631,7 @@ void Scene::registerAttributes()
 {
     addAttribute("addObject",
         [&](const Values& args) {
-            addTask([=]() {
+            addTask([=, this]() {
                 std::string type = args[0].as<std::string>();
                 std::string name = args[1].as<std::string>();
                 std::string sceneName = args.size() > 2 ? args[2].as<std::string>() : "";
@@ -640,7 +657,7 @@ void Scene::registerAttributes()
 
     addAttribute("deleteObject",
         [&](const Values& args) {
-            addTask([=]() -> void {
+            addTask([=, this]() -> void {
                 // We wait until we can indeed delete the object
                 bool expectedAtomicValue = false;
                 while (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true, std::memory_order_acquire))
@@ -658,7 +675,10 @@ void Scene::registerAttributes()
                     return;
 
                 for (auto& localObject : _objects)
+                {
                     unlink(object, localObject.second);
+                    unlink(localObject.second, object);
+                }
                 _objects.erase(objectName);
             });
 
@@ -694,7 +714,7 @@ void Scene::registerAttributes()
 
     addAttribute("link",
         [&](const Values& args) {
-            addTask([=]() {
+            addTask([=, this]() {
                 std::string src = args[0].as<std::string>();
                 std::string dst = args[1].as<std::string>();
                 link(src, dst);
@@ -732,7 +752,7 @@ void Scene::registerAttributes()
 
     addAttribute("sync",
         [&](const Values&) {
-            addTask([=]() { sendMessageToWorld("answerMessage", {"sync", _name}); });
+            addTask([this]() { sendMessageToWorld("answerMessage", {"sync", _name}); });
             return true;
         },
         {});
@@ -740,7 +760,7 @@ void Scene::registerAttributes()
 
     addAttribute("remove",
         [&](const Values& args) {
-            addTask([=]() {
+            addTask([=, this]() {
                 std::string name = args[1].as<std::string>();
                 remove(name);
             });
@@ -752,7 +772,7 @@ void Scene::registerAttributes()
 
     addAttribute("setMaster",
         [&](const Values& args) {
-            addTask([=]() {
+            addTask([=, this]() {
                 if (args.empty())
                     setAsMaster();
                 else
@@ -782,7 +802,7 @@ void Scene::registerAttributes()
 
     addAttribute("swapTest",
         [&](const Values& args) {
-            addTask([=]() {
+            addTask([=, this]() {
                 std::lock_guard<std::recursive_mutex> lock(_objectsMutex);
                 for (auto& obj : _objects)
                     if (obj.second->getType() == "window")
@@ -795,7 +815,7 @@ void Scene::registerAttributes()
 
     addAttribute("swapTestColor",
         [&](const Values& args) {
-            addTask([=]() {
+            addTask([=, this]() {
                 std::lock_guard<std::recursive_mutex> lock(_objectsMutex);
                 for (auto& obj : _objects)
                     if (obj.second->getType() == "window")
@@ -817,7 +837,7 @@ void Scene::registerAttributes()
 
     addAttribute("quit",
         [&](const Values&) {
-            addTask([=]() {
+            addTask([this]() {
                 _started = false;
                 _isRunning = false;
             });
@@ -828,7 +848,7 @@ void Scene::registerAttributes()
 
     addAttribute("unlink",
         [&](const Values& args) {
-            addTask([=]() {
+            addTask([=, this]() {
                 std::string src = args[0].as<std::string>();
                 std::string dst = args[1].as<std::string>();
                 unlink(src, dst);
@@ -841,7 +861,7 @@ void Scene::registerAttributes()
 
     addAttribute("wireframe",
         [&](const Values& args) {
-            addTask([=]() {
+            addTask([=, this]() {
                 std::lock_guard<std::recursive_mutex> lock(_objectsMutex);
                 for (auto& obj : _objects)
                     if (obj.second->getType() == "camera")

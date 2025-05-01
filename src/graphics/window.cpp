@@ -59,8 +59,6 @@ Window::Window(RootObject* root)
 
     if (!_gfxImpl->windowExists())
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while creating the Window" << Log::endl;
-    else
-        Log::get() << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Window created successfully" << Log::endl;
 
     // Set the projection surface
     _gfxImpl->setAsCurrentContext();
@@ -70,12 +68,12 @@ Window::Window(RootObject* root)
     _screen = std::make_shared<Object>(_root);
     _screen->setAttribute("fill", {"window"});
     auto virtualScreen = _renderer->createGeometry(_root);
-    _screen->addGeometry(virtualScreen);
+    _screen->setGeometry(virtualScreen);
 
     _screenGui = std::make_shared<Object>(_root);
     _screenGui->setAttribute("fill", {"window"});
     virtualScreen = _renderer->createGeometry(_root);
-    _screenGui->addGeometry(virtualScreen);
+    _screenGui->setGeometry(virtualScreen);
 
     _gfxImpl->releaseContext();
 
@@ -209,9 +207,6 @@ bool Window::linkIt(const std::shared_ptr<GraphObject>& obj)
         return true;
     }
 
-    if (_guiOnly)
-        return false;
-
     if (std::dynamic_pointer_cast<Texture>(obj))
     {
         auto tex = std::dynamic_pointer_cast<Texture>(obj);
@@ -290,8 +285,10 @@ void Window::unlinkIt(const std::shared_ptr<GraphObject>& obj)
         if (gui->getTexture() == _guiTexture)
         {
             _screenGui->removeTexture(_guiTexture);
-            _guiTexture = nullptr;
+            _guiTexture.reset();
         }
+        _gui->setOutputWindow(nullptr);
+        _gui.reset();
     }
 }
 
@@ -310,8 +307,6 @@ void Window::render()
     // This is called only if another resizing operation is _not_ in progress
     if (!_resized)
     {
-        _fullscreen = _gfxImpl->getRenderingContext()->getFullscreenMonitor();
-
         const auto sizeAndPos = _gfxImpl->getRenderingContext()->getPositionAndSize();
 
         for (size_t i = 0; i < 4; ++i)
@@ -353,8 +348,6 @@ void Window::render()
 
     if (_guiTexture != nullptr)
     {
-        if (_guiOnly)
-            _gui->setAttribute("fullscreen", {true});
         _screenGui->activate();
         _screenGui->draw();
         _screenGui->deactivate();
@@ -583,7 +576,7 @@ void Window::registerAttributes()
         "decorated",
         [&](const Values& args) {
             const auto withDecoration = args[0].as<bool>();
-            addTask([=]() {
+            addTask([=, this]() {
                 setWindowDecoration(withDecoration);
                 updateWindowShape();
             });
@@ -596,24 +589,41 @@ void Window::registerAttributes()
     addAttribute(
         "fullscreen",
         [&](const Values& args) {
-            _fullscreen = args[0].as<int>();
-            _resized = true;
-            addTask([=]() { setFullscreenMonitor(_fullscreen); });
+            const std::vector<std::string> monitors = _gfxImpl ? _gfxImpl->getRenderingContext()->getMonitorNames() : std::vector<std::string>({"windowed"});
+            int32_t fullscreen;
+            if (const auto it = std::find(monitors.begin(), monitors.end(), args[0].as<std::string>()); it != monitors.end())
+            {
+                const int id = std::distance(monitors.begin(), it);
+                fullscreen = id;
+                _resized = true;
+            }
+            else
+            {
+                fullscreen = -1;
+                _resized = true;
+            }
+            addTask([=, this]() { setFullscreenMonitor(fullscreen); });
             return true;
         },
-        [&]() -> Values { return {_fullscreen}; },
-        {'i'});
-    setAttributeDescription("fullscreen", "Index of the monitor to show the window fullscreen, -1 if windowed");
+        [&]() -> Values {
+            const std::vector<std::string> monitors = _gfxImpl ? _gfxImpl->getRenderingContext()->getMonitorNames() : std::vector<std::string>({"windowed"});
+            const auto fullscreen = _gfxImpl ? _gfxImpl->getRenderingContext()->getFullscreenMonitor() : -1;
+            Values returnValues;
+            if (fullscreen == -1)
+                returnValues.push_back("windowed");
+            else
+                returnValues.push_back(monitors[fullscreen]);
 
-    addAttribute(
-        "guiOnly",
-        [&](const Values& args) {
-            _guiOnly = args[0].as<bool>();
-            return true;
+            // Fill in the available values
+            returnValues.push_back("windowed");
+            for (const auto& monitor : monitors)
+                returnValues.push_back(monitor);
+
+            return returnValues;
         },
-        [&]() -> Values { return {_guiOnly}; },
-        {'b'});
-    setAttributeDescription("guiOnly", "If true, only the GUI will be able to link to this window. Does not affect pre-existing links.");
+        {'s'},
+        true);
+    setAttributeDescription("fullscreen", "Name of the monitor to show the window fullscreen, or windowed");
 
     // Attribute to configure the placement of the various texture input
     addAttribute(
@@ -640,19 +650,17 @@ void Window::registerAttributes()
         [&](const Values& args) {
             _windowRect[0] = args[0].as<int>();
             _windowRect[1] = args[1].as<int>();
-            addTask([=]() { updateWindowShape(); });
+            addTask([=, this]() { updateWindowShape(); });
             return true;
         },
-        [&]() -> Values {
-            return {_windowRect[0], _windowRect[1]};
-        },
+        [&]() -> Values { return {_windowRect[0], _windowRect[1]}; },
         {'i', 'i'});
     setAttributeDescription("position", "Set the window position");
 
     addAttribute("showCursor",
         [&](const Values& args) {
             const auto shown = args[0].as<bool>();
-            addTask([=]() { showCursor(shown); });
+            addTask([=, this]() { showCursor(shown); });
             return true;
         },
         {'b'});
@@ -663,19 +671,17 @@ void Window::registerAttributes()
             _windowRect[2] = args[0].as<int>();
             _windowRect[3] = args[1].as<int>();
             _resized = true;
-            addTask([=]() { updateWindowShape(); });
+            addTask([=, this]() { updateWindowShape(); });
             return true;
         },
-        [&]() -> Values {
-            return {_windowRect[2], _windowRect[3]};
-        },
+        [&]() -> Values { return {_windowRect[2], _windowRect[3]}; },
         {'i', 'i'});
     setAttributeDescription("size", "Set the window dimensions");
 
     addAttribute("swapInterval",
         [&](const Values& args) {
             const auto interval = args[0].as<int>();
-            addTask([=]() { updateSwapInterval(interval); });
+            addTask([=, this]() { updateSwapInterval(interval); });
             return true;
         },
         {'i'});

@@ -27,7 +27,7 @@ void GuiCalibration::render()
 {
     ImVec2 availableSize = ImGui::GetContentRegionAvail();
 
-    ImGui::BeginChild("##calibration_wrapper", ImVec2(availableSize.x, availableSize.y), true);
+    ImGui::BeginChild("##calibration_wrapper", ImVec2(availableSize.x, availableSize.y), ImGuiChildFlags_Borders);
 
 #if !HAVE_CALIMIRO
     ImGui::Text("Install Calimiro for calibration options");

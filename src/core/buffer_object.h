@@ -50,6 +50,7 @@ class BufferObject : public GraphObject
         friend BufferObject;
 
       public:
+        BufferObjectLockRead() = default;
         ~BufferObjectLockRead()
         {
             if (_bufferObject == nullptr)
@@ -75,9 +76,10 @@ class BufferObject : public GraphObject
     /**
      * Constructor
      * \param root Root object
+     * \param registerToTree Register the object into the root tree
      */
-    BufferObject(RootObject* root)
-        : GraphObject(root)
+    BufferObject(RootObject* root, TreeRegisterStatus registerToTree = TreeRegisterStatus::Registered)
+        : GraphObject(root, registerToTree)
     {
         registerAttributes();
     }

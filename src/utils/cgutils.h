@@ -25,6 +25,7 @@
 #ifndef SPLASH_CGUTILS_H
 #define SPLASH_CGUTILS_H
 
+#include <span>
 #include <vector>
 
 #include <glm/glm.hpp>
@@ -156,6 +157,108 @@ struct RgbValue
     float g{0.f};
     float b{0.f};
 };
+
+/**
+ * Convert to input YUV I420 planar buffer to an interlaced UYVY
+ * Output buffer must have the right size, hence 16bits per pixel
+ *
+ * \param input Input I420 planar buffer
+ * \param output Output UYVY planar buffer
+ * \param width Image width
+ * \param height Image height
+ */
+inline void cvtI420toUYVY(const std::span<uint8_t>& input, std::span<uint8_t>& output, uint32_t width, uint32_t height)
+{
+    const auto data = input.data();
+    const auto Y = data;
+    const auto U = data + width * height;
+    const auto V = data + width * height * 5 / 4;
+    auto pixels = output.data();
+
+    for (uint32_t y = 0; y < height; ++y)
+    {
+        for (uint32_t x = 0; x < width; x += 2)
+        {
+            pixels[(x + y * width) * 2 + 0] = U[(x / 2) + (y / 2) * (width / 2)];
+            pixels[(x + y * width) * 2 + 1] = Y[x + y * width];
+            pixels[(x + y * width) * 2 + 2] = V[(x / 2) + (y / 2) * (width / 2)];
+            pixels[(x + y * width) * 2 + 3] = Y[x + y * width + 1];
+        }
+    }
+}
+
+/**
+ * Convert to input YUV YV12 planar buffer to an interlaced UYVY
+ * Output buffer must have the right size, hence 16bits per pixel
+ *
+ * \param input Input YV12 planar buffer
+ * \param output Output UYVY planar buffer
+ * \param width Image width
+ * \param height Image height
+ */
+inline void cvtYV12toUYVY(const std::span<uint8_t>& input, std::span<uint8_t>& output, uint32_t width, uint32_t height)
+{
+    const auto data = input.data();
+    const auto Y = data;
+    const auto V = data + width * height;
+    const auto U = data + width * height * 5 / 4;
+    auto pixels = output.data();
+
+    for (uint32_t y = 0; y < height; ++y)
+    {
+        for (uint32_t x = 0; x < width; x += 2)
+        {
+            pixels[(x + y * width) * 2 + 0] = U[(x / 2) + (y / 2) * (width / 2)];
+            pixels[(x + y * width) * 2 + 1] = Y[x + y * width];
+            pixels[(x + y * width) * 2 + 2] = V[(x / 2) + (y / 2) * (width / 2)];
+            pixels[(x + y * width) * 2 + 3] = Y[x + y * width + 1];
+        }
+    }
+}
+
+/**
+ * Convert to input YUV NV12 planar buffer to an interlaced UYVY
+ * Output buffer must have the right size, hence 16bits per pixel
+ *
+ * \param input Input NV12 planar buffer
+ * \param output Output UYVY planar buffer
+ * \param width Image width
+ * \param height Image height
+ */
+inline void cvtNV12toUYVY(const std::span<uint8_t>& input, std::span<uint8_t>& output, uint32_t width, uint32_t height)
+{
+    const auto data = input.data();
+    const auto Y = data;
+    const auto UV = data + width * height;
+    auto pixels = output.data();
+
+    for (uint32_t y = 0; y < height; ++y)
+    {
+        for (uint32_t x = 0; x < width; x += 2)
+        {
+            pixels[(x + y * width) * 2 + 0] = UV[x + (y / 2) * width];
+            pixels[(x + y * width) * 2 + 1] = Y[x + y * width];
+            pixels[(x + y * width) * 2 + 2] = UV[x + (y / 2) * width + 1];
+            pixels[(x + y * width) * 2 + 3] = Y[x + y * width + 1];
+        }
+    }
+}
+
+/**
+ * Convert to input YUV P216 planar buffer to an interlaced UYVY
+ * Output buffer must have the right size, hence 16bits per pixel
+ * This conversion scales all values by 256.
+ *
+ * \param input Input P216 planar buffer
+ * \param output Output UYVY planar buffer
+ * \param width Image width
+ * \param height Image height
+ */
+inline void cvtP216toUYVY(const std::span<uint16_t>& input, std::span<uint8_t>& output)
+{
+    for (uint32_t p = 0; p < input.size(); ++p)
+        output[p] = input[p] >> 8;
+}
 
 /**
  * Get the color balance (r/g and b/g) from a black body temperature

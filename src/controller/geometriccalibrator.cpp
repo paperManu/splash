@@ -50,7 +50,7 @@ void GeometricCalibrator::calibrate()
     }
 
     _running = true;
-    _calibrationFuture = std::async(std::launch::async, [=]() {
+    _calibrationFuture = std::async(std::launch::async, [this]() {
         const auto state = saveCurrentState();
         setupCalibrationState(state);
         const auto params = calibrationFunc(state);

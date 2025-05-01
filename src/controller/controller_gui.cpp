@@ -1,6 +1,8 @@
 #include "./controller/controller_gui.h"
 
 #include <fstream>
+#include <memory>
+#include <optional>
 
 #include "./controller/controller.h"
 #include "./controller/widget/widget_calibration.h"
@@ -26,12 +28,263 @@
 #include "./utils/osutils.h"
 #include "./utils/timer.h"
 
+#define GUI_WINDOW_NAME "__gui_window"
+
 namespace Splash
 {
 
+/**
+ * Convert GLFW keycodes to ImGui
+ *
+ * \param keycode GLFW keycode
+ * \return Return ImGui keycode
+ */
+ImGuiKey ImGuiGLFWToImGuiKey(int keycode)
+{
+    switch (keycode)
+    {
+    case GLFW_KEY_TAB:
+        return ImGuiKey_Tab;
+    case GLFW_KEY_LEFT:
+        return ImGuiKey_LeftArrow;
+    case GLFW_KEY_RIGHT:
+        return ImGuiKey_RightArrow;
+    case GLFW_KEY_UP:
+        return ImGuiKey_UpArrow;
+    case GLFW_KEY_DOWN:
+        return ImGuiKey_DownArrow;
+    case GLFW_KEY_PAGE_UP:
+        return ImGuiKey_PageUp;
+    case GLFW_KEY_PAGE_DOWN:
+        return ImGuiKey_PageDown;
+    case GLFW_KEY_HOME:
+        return ImGuiKey_Home;
+    case GLFW_KEY_END:
+        return ImGuiKey_End;
+    case GLFW_KEY_INSERT:
+        return ImGuiKey_Insert;
+    case GLFW_KEY_DELETE:
+        return ImGuiKey_Delete;
+    case GLFW_KEY_BACKSPACE:
+        return ImGuiKey_Backspace;
+    case GLFW_KEY_SPACE:
+        return ImGuiKey_Space;
+    case GLFW_KEY_ENTER:
+        return ImGuiKey_Enter;
+    case GLFW_KEY_ESCAPE:
+        return ImGuiKey_Escape;
+    case GLFW_KEY_APOSTROPHE:
+        return ImGuiKey_Apostrophe;
+    case GLFW_KEY_COMMA:
+        return ImGuiKey_Comma;
+    case GLFW_KEY_MINUS:
+        return ImGuiKey_Minus;
+    case GLFW_KEY_PERIOD:
+        return ImGuiKey_Period;
+    case GLFW_KEY_SLASH:
+        return ImGuiKey_Slash;
+    case GLFW_KEY_SEMICOLON:
+        return ImGuiKey_Semicolon;
+    case GLFW_KEY_EQUAL:
+        return ImGuiKey_Equal;
+    case GLFW_KEY_LEFT_BRACKET:
+        return ImGuiKey_LeftBracket;
+    case GLFW_KEY_BACKSLASH:
+        return ImGuiKey_Backslash;
+    case GLFW_KEY_RIGHT_BRACKET:
+        return ImGuiKey_RightBracket;
+    case GLFW_KEY_GRAVE_ACCENT:
+        return ImGuiKey_GraveAccent;
+    case GLFW_KEY_CAPS_LOCK:
+        return ImGuiKey_CapsLock;
+    case GLFW_KEY_SCROLL_LOCK:
+        return ImGuiKey_ScrollLock;
+    case GLFW_KEY_NUM_LOCK:
+        return ImGuiKey_NumLock;
+    case GLFW_KEY_PRINT_SCREEN:
+        return ImGuiKey_PrintScreen;
+    case GLFW_KEY_PAUSE:
+        return ImGuiKey_Pause;
+    case GLFW_KEY_KP_0:
+        return ImGuiKey_Keypad0;
+    case GLFW_KEY_KP_1:
+        return ImGuiKey_Keypad1;
+    case GLFW_KEY_KP_2:
+        return ImGuiKey_Keypad2;
+    case GLFW_KEY_KP_3:
+        return ImGuiKey_Keypad3;
+    case GLFW_KEY_KP_4:
+        return ImGuiKey_Keypad4;
+    case GLFW_KEY_KP_5:
+        return ImGuiKey_Keypad5;
+    case GLFW_KEY_KP_6:
+        return ImGuiKey_Keypad6;
+    case GLFW_KEY_KP_7:
+        return ImGuiKey_Keypad7;
+    case GLFW_KEY_KP_8:
+        return ImGuiKey_Keypad8;
+    case GLFW_KEY_KP_9:
+        return ImGuiKey_Keypad9;
+    case GLFW_KEY_KP_DECIMAL:
+        return ImGuiKey_KeypadDecimal;
+    case GLFW_KEY_KP_DIVIDE:
+        return ImGuiKey_KeypadDivide;
+    case GLFW_KEY_KP_MULTIPLY:
+        return ImGuiKey_KeypadMultiply;
+    case GLFW_KEY_KP_SUBTRACT:
+        return ImGuiKey_KeypadSubtract;
+    case GLFW_KEY_KP_ADD:
+        return ImGuiKey_KeypadAdd;
+    case GLFW_KEY_KP_ENTER:
+        return ImGuiKey_KeypadEnter;
+    case GLFW_KEY_KP_EQUAL:
+        return ImGuiKey_KeypadEqual;
+    case GLFW_KEY_LEFT_SHIFT:
+        return ImGuiKey_LeftShift;
+    case GLFW_KEY_LEFT_CONTROL:
+        return ImGuiKey_LeftCtrl;
+    case GLFW_KEY_LEFT_ALT:
+        return ImGuiKey_LeftAlt;
+    case GLFW_KEY_LEFT_SUPER:
+        return ImGuiKey_LeftSuper;
+    case GLFW_KEY_RIGHT_SHIFT:
+        return ImGuiKey_RightShift;
+    case GLFW_KEY_RIGHT_CONTROL:
+        return ImGuiKey_RightCtrl;
+    case GLFW_KEY_RIGHT_ALT:
+        return ImGuiKey_RightAlt;
+    case GLFW_KEY_RIGHT_SUPER:
+        return ImGuiKey_RightSuper;
+    case GLFW_KEY_MENU:
+        return ImGuiKey_Menu;
+    case GLFW_KEY_0:
+        return ImGuiKey_0;
+    case GLFW_KEY_1:
+        return ImGuiKey_1;
+    case GLFW_KEY_2:
+        return ImGuiKey_2;
+    case GLFW_KEY_3:
+        return ImGuiKey_3;
+    case GLFW_KEY_4:
+        return ImGuiKey_4;
+    case GLFW_KEY_5:
+        return ImGuiKey_5;
+    case GLFW_KEY_6:
+        return ImGuiKey_6;
+    case GLFW_KEY_7:
+        return ImGuiKey_7;
+    case GLFW_KEY_8:
+        return ImGuiKey_8;
+    case GLFW_KEY_9:
+        return ImGuiKey_9;
+    case GLFW_KEY_A:
+        return ImGuiKey_A;
+    case GLFW_KEY_B:
+        return ImGuiKey_B;
+    case GLFW_KEY_C:
+        return ImGuiKey_C;
+    case GLFW_KEY_D:
+        return ImGuiKey_D;
+    case GLFW_KEY_E:
+        return ImGuiKey_E;
+    case GLFW_KEY_F:
+        return ImGuiKey_F;
+    case GLFW_KEY_G:
+        return ImGuiKey_G;
+    case GLFW_KEY_H:
+        return ImGuiKey_H;
+    case GLFW_KEY_I:
+        return ImGuiKey_I;
+    case GLFW_KEY_J:
+        return ImGuiKey_J;
+    case GLFW_KEY_K:
+        return ImGuiKey_K;
+    case GLFW_KEY_L:
+        return ImGuiKey_L;
+    case GLFW_KEY_M:
+        return ImGuiKey_M;
+    case GLFW_KEY_N:
+        return ImGuiKey_N;
+    case GLFW_KEY_O:
+        return ImGuiKey_O;
+    case GLFW_KEY_P:
+        return ImGuiKey_P;
+    case GLFW_KEY_Q:
+        return ImGuiKey_Q;
+    case GLFW_KEY_R:
+        return ImGuiKey_R;
+    case GLFW_KEY_S:
+        return ImGuiKey_S;
+    case GLFW_KEY_T:
+        return ImGuiKey_T;
+    case GLFW_KEY_U:
+        return ImGuiKey_U;
+    case GLFW_KEY_V:
+        return ImGuiKey_V;
+    case GLFW_KEY_W:
+        return ImGuiKey_W;
+    case GLFW_KEY_X:
+        return ImGuiKey_X;
+    case GLFW_KEY_Y:
+        return ImGuiKey_Y;
+    case GLFW_KEY_Z:
+        return ImGuiKey_Z;
+    case GLFW_KEY_F1:
+        return ImGuiKey_F1;
+    case GLFW_KEY_F2:
+        return ImGuiKey_F2;
+    case GLFW_KEY_F3:
+        return ImGuiKey_F3;
+    case GLFW_KEY_F4:
+        return ImGuiKey_F4;
+    case GLFW_KEY_F5:
+        return ImGuiKey_F5;
+    case GLFW_KEY_F6:
+        return ImGuiKey_F6;
+    case GLFW_KEY_F7:
+        return ImGuiKey_F7;
+    case GLFW_KEY_F8:
+        return ImGuiKey_F8;
+    case GLFW_KEY_F9:
+        return ImGuiKey_F9;
+    case GLFW_KEY_F10:
+        return ImGuiKey_F10;
+    case GLFW_KEY_F11:
+        return ImGuiKey_F11;
+    case GLFW_KEY_F12:
+        return ImGuiKey_F12;
+    case GLFW_KEY_F13:
+        return ImGuiKey_F13;
+    case GLFW_KEY_F14:
+        return ImGuiKey_F14;
+    case GLFW_KEY_F15:
+        return ImGuiKey_F15;
+    case GLFW_KEY_F16:
+        return ImGuiKey_F16;
+    case GLFW_KEY_F17:
+        return ImGuiKey_F17;
+    case GLFW_KEY_F18:
+        return ImGuiKey_F18;
+    case GLFW_KEY_F19:
+        return ImGuiKey_F19;
+    case GLFW_KEY_F20:
+        return ImGuiKey_F20;
+    case GLFW_KEY_F21:
+        return ImGuiKey_F21;
+    case GLFW_KEY_F22:
+        return ImGuiKey_F22;
+    case GLFW_KEY_F23:
+        return ImGuiKey_F23;
+    case GLFW_KEY_F24:
+        return ImGuiKey_F24;
+    default:
+        return ImGuiKey_None;
+    }
+}
+
 /*************/
-Gui::Gui(RenderingContext* renderingContext, RootObject* scene)
-    : ControllerObject(scene)
+Gui::Gui(RenderingContext* renderingContext, RootObject* root)
+    : ControllerObject(root)
 {
     _type = "gui";
     _renderingPriority = Priority::GUI;
@@ -45,14 +298,6 @@ Gui::Gui(RenderingContext* renderingContext, RootObject* scene)
     _fbo = _renderer->createFramebuffer();
     _fbo->setResizable(true);
 
-    // Create the default GUI camera
-    _guiCamera = std::make_shared<Camera>(scene, TreeRegisterStatus::NotRegistered);
-    _guiCamera->setName("Overview camera");
-    _guiCamera->setAttribute("eye", {2.0, 2.0, 0.0});
-    _guiCamera->setAttribute("target", {0.0, 0.0, 0.5});
-    _guiCamera->setAttribute("size", {640, 480});
-    _guiCamera->setAttribute("savable", {false});
-
     // Intialize the GUI widgets
     ImGui::CreateContext();
     initImGui(_width, _height);
@@ -60,6 +305,9 @@ Gui::Gui(RenderingContext* renderingContext, RootObject* scene)
     loadIcon();
 
     registerAttributes();
+
+    // Callback for dragndrop: load the dropped file
+    UserInput::setCallback(UserInput::State("dragndrop"), [this](const UserInput::State& state) { setWorldAttribute("loadConfig", {state.value[0].as<std::string>()}); });
 }
 
 /*************/
@@ -242,12 +490,10 @@ void Gui::key(int key, int action, int mods)
             key = GLFW_KEY_ENTER;
 
         ImGuiIO& io = GetIO();
-        if (action == GLFW_PRESS || action == GLFW_REPEAT)
-            io.KeysDown[key] = true;
-        if (action == GLFW_RELEASE)
-            io.KeysDown[key] = false;
-        io.KeyCtrl = ((mods & GLFW_MOD_CONTROL) != 0) && (action == GLFW_PRESS || action == GLFW_REPEAT);
-        io.KeyShift = ((mods & GLFW_MOD_SHIFT) != 0) && (action == GLFW_PRESS || action == GLFW_REPEAT);
+        const ImGuiKey imguiKey = ImGuiGLFWToImGuiKey(key);
+        io.AddKeyEvent(imguiKey, (action == GLFW_PRESS || action == GLFW_REPEAT));
+        io.AddKeyEvent(ImGuiMod_Ctrl, ((mods & GLFW_MOD_CONTROL) != 0) && (action == GLFW_PRESS || action == GLFW_REPEAT));
+        io.AddKeyEvent(ImGuiMod_Shift, ((mods & GLFW_MOD_SHIFT) != 0) && (action == GLFW_PRESS || action == GLFW_REPEAT));
 
         break;
     }
@@ -255,8 +501,11 @@ void Gui::key(int key, int action, int mods)
     {
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
         {
-            _isVisible = !_isVisible;
+            if (!_fullscreen)
+                _isVisible = !_isVisible;
         }
+        else if (action == GLFW_PRESS && mods == GLFW_MOD_SHIFT)
+            toggleGuiDocking();
         else
             goto sendAsDefault;
         break;
@@ -352,9 +601,9 @@ void Gui::mouseButton(int btn, int action, int mods)
     using namespace ImGui;
     ImGuiIO& io = GetIO();
 
-    io.KeyCtrl = (mods & GLFW_MOD_CONTROL) != 0;
-    io.KeyShift = (mods & GLFW_MOD_SHIFT) != 0;
-    io.KeyAlt = (mods & GLFW_MOD_ALT) != 0;
+    io.AddKeyEvent(ImGuiMod_Ctrl, ((mods & GLFW_MOD_CONTROL) != 0));
+    io.AddKeyEvent(ImGuiMod_Shift, ((mods & GLFW_MOD_SHIFT) != 0));
+    io.AddKeyEvent(ImGuiMod_Alt, ((mods & GLFW_MOD_ALT) != 0));
 
     bool isPressed = action == GLFW_PRESS ? true : false;
     switch (btn)
@@ -393,7 +642,11 @@ bool Gui::linkIt(const std::shared_ptr<GraphObject>& obj)
     if (std::dynamic_pointer_cast<Object>(obj))
     {
         auto object = std::dynamic_pointer_cast<Object>(obj);
-        _guiCamera->linkTo(object);
+        for (auto& widget : _guiWidgets)
+            widget->linkTo(object);
+        for (auto& widget : _guiBottomWidgets)
+            widget->linkTo(object);
+
         return true;
     }
 
@@ -404,7 +657,12 @@ bool Gui::linkIt(const std::shared_ptr<GraphObject>& obj)
 void Gui::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 {
     if (std::dynamic_pointer_cast<Object>(obj).get() != nullptr)
-        _guiCamera->unlinkFrom(obj);
+    {
+        for (auto& widget : _guiWidgets)
+            widget->unlinkFrom(obj);
+        for (auto& widget : _guiBottomWidgets)
+            widget->unlinkFrom(obj);
+    }
 }
 
 /*************/
@@ -501,7 +759,8 @@ void Gui::drawMainTab()
     if (!clockDeviceValue.empty())
     {
         auto clockDeviceName = clockDeviceValue[0].as<std::string>();
-        if (SplashImGui::InputText("##clockDeviceName", clockDeviceName, ImGuiInputTextFlags_EnterReturnsTrue))
+        SplashImGui::InputText("##clockDeviceName", clockDeviceName);
+        if (ImGui::IsItemDeactivatedAfterEdit())
             setWorldAttribute("clockDeviceName", {clockDeviceName});
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("If a JACK audio server is used, specify the input device name to read the LTC clock from.\nOtherwise the default Pulseaudio input is used.");
@@ -525,11 +784,13 @@ void Gui::drawMainTab()
     ImGui::Separator();
     ImGui::Text("Blending parameters");
     static auto blendWidth = 0.05f;
-    if (ImGui::InputFloat("Blending width", &blendWidth, 0.01f, 0.04f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+    ImGui::InputFloat("Blending width", &blendWidth, 0.01f, 0.04f, "%.3f");
+    if (ImGui::IsItemDeactivatedAfterEdit())
         setObjectsOfType("camera", "blendWidth", {blendWidth});
 
     static auto blendPrecision = 0.1f;
-    if (ImGui::InputFloat("Blending precision", &blendPrecision, 0.01f, 0.04f, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+    ImGui::InputFloat("Blending precision", &blendPrecision, 0.01f, 0.04f, "%.3f");
+    if (ImGui::IsItemDeactivatedAfterEdit())
         setObjectsOfType("camera", "blendPrecision", {blendPrecision});
 
     auto depthAwareBlendingValue = getObjectAttribute("blender", "depthAwareBlending");
@@ -550,7 +811,8 @@ void Gui::drawMainTab()
     ImGui::Text("Testing tools");
 
     static auto syncTestFrameDelay = 0;
-    if (ImGui::InputInt("Outputs synchronization test", &syncTestFrameDelay, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
+    ImGui::InputInt("Outputs synchronization test", &syncTestFrameDelay, 1, 100);
+    if (ImGui::IsItemDeactivatedAfterEdit())
     {
         syncTestFrameDelay = std::max(syncTestFrameDelay, 0);
         setWorldAttribute("swapTest", {syncTestFrameDelay});
@@ -583,31 +845,41 @@ void Gui::drawMenuBar()
                 _menuAction = MenuAction::OpenConfiguration;
                 _showFileSelector = true;
             }
-
-            static std::string menuOpenProject = std::string("Open project (Ctrl+Shift+") + getLocalKeyName('O') + ")";
-            if (ImGui::MenuItem(menuOpenProject.c_str(), nullptr))
-            {
-                _menuAction = MenuAction::OpenProject;
-                _showFileSelector = true;
-            }
-            if (ImGui::MenuItem("Copy calibration from configuration", nullptr))
-            {
-                _menuAction = MenuAction::CopyCalibration;
-                _showFileSelector = true;
-            }
             ImGui::Separator();
             static std::string menuSaveConfiguration = std::string("Save configuration (Ctrl+") + getLocalKeyName('S') + ")";
             if (ImGui::MenuItem(menuSaveConfiguration.c_str(), nullptr))
             {
                 setWorldAttribute("save", {_configurationPath});
             }
-
             static std::string menuSaveConfigurationAs = std::string("Save configuration as... (Ctrl+Shift+") + getLocalKeyName('S') + ")";
             if (ImGui::MenuItem(menuSaveConfigurationAs.c_str(), nullptr))
             {
                 _menuAction = MenuAction::SaveConfigurationAs;
                 _showFileSelector = true;
             }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Copy calibration from configuration", nullptr))
+            {
+                _menuAction = MenuAction::CopyCalibration;
+                _showFileSelector = true;
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Quit", nullptr))
+            {
+                setWorldAttribute("quit", {});
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Project"))
+        {
+            static std::string menuOpenProject = std::string("Open project (Ctrl+Shift+") + getLocalKeyName('O') + ")";
+            if (ImGui::MenuItem(menuOpenProject.c_str(), nullptr))
+            {
+                _menuAction = MenuAction::OpenProject;
+                _showFileSelector = true;
+            }
+            ImGui::Separator();
             if (ImGui::MenuItem("Save project", nullptr))
             {
                 setWorldAttribute("saveProject", {_projectPath});
@@ -617,10 +889,14 @@ void Gui::drawMenuBar()
                 _menuAction = MenuAction::SaveProjectAs;
                 _showFileSelector = true;
             }
-            ImGui::Separator();
-            if (ImGui::MenuItem("Quit", nullptr))
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("View"))
+        {
+            if (ImGui::MenuItem("Toggle GUI docking (Shift+Tab)", nullptr))
             {
-                setWorldAttribute("quit", {});
+                toggleGuiDocking();
             }
             ImGui::EndMenu();
         }
@@ -722,7 +998,7 @@ void Gui::renderSplashScreen()
     if (_splashLogo)
     {
         ImGui::Columns(2, nullptr, false);
-        ImGui::Image((void*)(intptr_t)_splashLogo->getTexId(), ImVec2(256, 256));
+        ImGui::Image((ImTextureID)(intptr_t)_splashLogo->getTexId(), ImVec2(256, 256));
         ImGui::NextColumn();
         ImGui::Dummy(ImVec2(256, 80));
         ImGui::Text("Splash, a modular video-mapping engine");
@@ -750,7 +1026,8 @@ void Gui::renderHelp()
     ImGui::SetNextWindowSize(ImVec2(helpWidth, helpHeight));
     ImGui::Begin("Help", &isOpen, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
 
-    ImGui::Text("Tab: show / hide this GUI");
+    ImGui::Text("Ctrl+Tab: show / hide this GUI");
+    ImGui::Text("Shift+Tab: toggle setting this GUI to its own window");
     ImGui::Text("General shortcuts:");
     ImGui::Text("  Ctrl+%s: open a configuration", getLocalKeyName('O'));
     ImGui::Text("  Ctrl+Shift+%s: open a project", getLocalKeyName('O'));
@@ -799,6 +1076,69 @@ void Gui::renderHelp()
 }
 
 /*************/
+void Gui::toggleGuiDocking()
+{
+    // It can happen that no window is currently linked, for
+    // example when a self-owned window has been asked to be created
+    // by the updateGuiWindow method.
+    // If that is the case, we do nothing for now.
+    if (!_window)
+        return;
+
+    if (_window != _selfWindow.get())
+    {
+        setInScene("unlink", {_name, _window->getName()});
+    }
+    else if (_selfWindow)
+    {
+        const auto windowNames = getObjectsOfType("window");
+        const auto windows = getObjectsPtr(windowNames);
+        for (auto& window : windows)
+        {
+            if (window->getName() == _selfWindow->getName())
+                continue;
+            setInScene("link", {_name, window->getName()});
+            break;
+        }
+    }
+
+    // Make sure the GUI is visible
+    _isVisible = true;
+}
+
+/*************/
+void Gui::updateGuiWindow()
+{
+    if (!_window && !_selfWindow && !_creatingWindow)
+    {
+        // If no window exist for this GUI, and none is currently being created
+        setWorldAttribute("addObject", {"window", GUI_WINDOW_NAME});
+        _creatingWindow = true;
+    }
+    else if (_creatingWindow)
+    {
+        // If a window is currently being created
+        auto window = std::dynamic_pointer_cast<Window>(getObjectPtr(GUI_WINDOW_NAME));
+        if (!window)
+            return;
+        _selfWindow = window;
+        _selfWindow->setSavable(false);
+        setWorldAttribute("link", {_name, GUI_WINDOW_NAME});
+        _fullscreen = true;
+        _creatingWindow = false;
+    }
+    else if (_selfWindow && _window && _window != _selfWindow.get())
+    {
+        // If the window linked is not the same as the self-owned window
+        // This means the GUI was previously shown in the self-owned window,
+        // and that this changed recently.
+        setWorldAttribute("deleteObject", {GUI_WINDOW_NAME});
+        _selfWindow.reset();
+        _fullscreen = false;
+    }
+}
+
+/*************/
 void Gui::render()
 {
     if (!_isInitialized)
@@ -808,10 +1148,11 @@ void Gui::render()
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
 
-    using namespace ImGui;
+    // If not linked to any Window, create our own one
+    updateGuiWindow();
 
-    // Callback for dragndrop: load the dropped file
-    UserInput::setCallback(UserInput::State("dragndrop"), [=](const UserInput::State& state) { setWorldAttribute("loadConfig", {state.value[0].as<std::string>()}); });
+    // Let's start the UI for real
+    using namespace ImGui;
 
     ImGuiIO& io = GetIO();
     io.MouseDrawCursor = _mouseHoveringWindow;
@@ -851,16 +1192,11 @@ void Gui::render()
 
         drawMenuBar();
 
+        std::optional<std::string> activeObjectName;
         ImGui::BeginChild("##controlWidgets", ImVec2(0, -256));
+        ImGui::BeginChild("##tabulations", ImVec2(-384, 0));
         if (ImGui::BeginTabBar("Tabs", ImGuiTabBarFlags_None))
         {
-            // Main tabulation
-            if (ImGui::BeginTabItem("Main"))
-            {
-                drawMainTab();
-                ImGui::EndTabItem();
-            }
-
             // Controls tabulations
             for (auto& widget : _guiWidgets)
             {
@@ -869,13 +1205,31 @@ void Gui::render()
                 {
                     ImGui::BeginChild(widget->getName().c_str());
                     widget->render();
+                    activeObjectName = widget->getActiveObjectName();
                     ImGui::EndChild();
                     ImGui::EndTabItem();
                 }
                 _windowFlags |= widget->updateWindowFlags();
             }
 
+            // Options tabulation
+            if (ImGui::BeginTabItem("Options"))
+            {
+                drawMainTab();
+                ImGui::EndTabItem();
+            }
+
             ImGui::EndTabBar();
+        }
+        ImGui::EndChild();
+
+        if (activeObjectName)
+        {
+            ImGui::SameLine();
+            ImGui::BeginChild("##objectAttributes");
+            _guiAttributes->setTargetObjectName(activeObjectName.value());
+            _guiAttributes->render();
+            ImGui::EndChild();
         }
         ImGui::EndChild();
 
@@ -892,7 +1246,7 @@ void Gui::render()
             for (auto& widget : _guiBottomWidgets)
             {
                 widget->update();
-                ImGui::BeginChild(widget->getName().c_str(), ImVec2(availableSize.x / static_cast<float>(_guiBottomWidgets.size()), 0), true);
+                ImGui::BeginChild(widget->getName().c_str(), ImVec2(availableSize.x / static_cast<float>(_guiBottomWidgets.size()), 0), ImGuiChildFlags_Borders);
                 widget->render();
                 ImGui::EndChild();
                 ImGui::SameLine();
@@ -1033,24 +1387,6 @@ void Gui::initImGui(int width, int height)
     io.DisplaySize.y = height;
     io.DeltaTime = 1.f / 60.f;
 
-    io.KeyMap[ImGuiKey_Tab] = GLFW_KEY_TAB;
-    io.KeyMap[ImGuiKey_LeftArrow] = GLFW_KEY_LEFT;
-    io.KeyMap[ImGuiKey_RightArrow] = GLFW_KEY_RIGHT;
-    io.KeyMap[ImGuiKey_UpArrow] = GLFW_KEY_UP;
-    io.KeyMap[ImGuiKey_DownArrow] = GLFW_KEY_DOWN;
-    io.KeyMap[ImGuiKey_Home] = GLFW_KEY_HOME;
-    io.KeyMap[ImGuiKey_End] = GLFW_KEY_END;
-    io.KeyMap[ImGuiKey_Delete] = GLFW_KEY_DELETE;
-    io.KeyMap[ImGuiKey_Backspace] = GLFW_KEY_BACKSPACE;
-    io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
-    io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
-    io.KeyMap[ImGuiKey_A] = GLFW_KEY_A;
-    io.KeyMap[ImGuiKey_C] = GLFW_KEY_C;
-    io.KeyMap[ImGuiKey_V] = GLFW_KEY_V;
-    io.KeyMap[ImGuiKey_X] = GLFW_KEY_X;
-    io.KeyMap[ImGuiKey_Y] = GLFW_KEY_Y;
-    io.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
-
     // Set style
     ImGuiStyle& style = ImGui::GetStyle();
     style.AntiAliasedLines = true;
@@ -1119,73 +1455,52 @@ void Gui::initImGui(int width, int height)
     io.Fonts->TexID = _guiGfxImpl->initFontTexture(fontWidth, fontHeight, pixels);
 
     // Init clipboard callbacks
-    io.GetClipboardTextFn = Gui::getClipboardText;
-    io.SetClipboardTextFn = Gui::setClipboardText;
-    io.ClipboardUserData = static_cast<void*>(_renderingContext->getGLFWwindow());
+    ImGuiPlatformIO& platformIO = ImGui::GetPlatformIO();
+    platformIO.Platform_GetClipboardTextFn = Gui::getClipboardText;
+    platformIO.Platform_SetClipboardTextFn = Gui::setClipboardText;
+    platformIO.Platform_ClipboardUserData = static_cast<void*>(_renderingContext->getGLFWwindow());
 
     _isInitialized = true;
 }
 
 /*************/
-const char* Gui::getClipboardText(void* userData)
+const char* Gui::getClipboardText(ImGuiContext* userData)
 {
     if (userData)
-        return glfwGetClipboardString(static_cast<GLFWwindow*>(userData));
+        return glfwGetClipboardString(reinterpret_cast<GLFWwindow*>(userData));
     else
         return nullptr;
 }
 
 /*************/
-void Gui::setClipboardText(void* userData, const char* text)
+void Gui::setClipboardText(ImGuiContext* userData, const char* text)
 {
     if (userData)
-        glfwSetClipboardString(static_cast<GLFWwindow*>(userData), text);
+        glfwSetClipboardString(reinterpret_cast<GLFWwindow*>(userData), text);
 }
 
 /*************/
 void Gui::initImWidgets()
 {
-    // Control
-    auto controlView = std::make_shared<GuiControl>(_scene, "Graph");
-    _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(controlView));
+    // Attributes can be shown in whichever widget,
+    // this is why this widget is stored separately
+    _guiAttributes = std::make_shared<GuiAttributes>(_scene, "Attributes");
 
-    // Media
-    auto mediaSelector = std::make_shared<GuiMedia>(_scene, "Medias");
-    _guiWidgets.push_back(mediaSelector);
+    _guiWidgets.push_back(std::make_shared<GuiControl>(_scene, "Graph"));
+    _guiWidgets.push_back(std::make_shared<GuiMeshes>(_scene, "Meshes"));
+    _guiWidgets.push_back(std::make_shared<GuiMedia>(_scene, "Medias"));
+    _guiWidgets.push_back(std::make_shared<GuiFilters>(_scene, "Filters"));
 
-    // Filters
-    auto filterPanel = std::make_shared<GuiFilters>(_scene, "Filters");
-    _guiWidgets.push_back(filterPanel);
-
-    // Meshes
-    auto meshesSelector = std::make_shared<GuiMeshes>(_scene, "Meshes");
-    _guiWidgets.push_back(meshesSelector);
-
-    // GUI camera view
     auto globalView = std::make_shared<GuiCamera>(_scene, "Cameras");
-    globalView->setCamera(_guiCamera);
     _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(globalView));
 
-    // Warp control
-    auto warpControl = std::make_shared<GuiWarp>(_scene, "Warps");
-    _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWarp>(warpControl));
-
-    // Calibration (Calimiro)
-    auto calibrationControl = std::make_shared<GuiCalibration>(_scene, "Calibration");
-    _guiWidgets.push_back(std::dynamic_pointer_cast<GuiCalibration>(calibrationControl));
+    _guiWidgets.push_back(std::make_shared<GuiWarp>(_scene, "Warps"));
 
     if (Log::get().getVerbosity() == Log::DEBUGGING)
     {
-        // Performance graph
-        auto perfGraph = std::make_shared<GuiGraph>(_scene, "Performances");
-        _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(perfGraph));
-
-        auto texturesView = std::make_shared<GuiTexturesView>(_scene, "Textures");
-        _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(texturesView));
-
-        // Tree view
-        auto treeView = std::make_shared<GuiTree>(_scene, "Tree view");
-        _guiWidgets.push_back(std::dynamic_pointer_cast<GuiWidget>(treeView));
+        _guiWidgets.push_back(std::make_shared<GuiGraph>(_scene, "Performances"));
+        _guiWidgets.push_back(std::make_shared<GuiTexturesView>(_scene, "Textures"));
+        _guiWidgets.push_back(std::make_shared<GuiTree>(_scene, "Tree view"));
     }
 
     // Bottom widgets
@@ -1325,6 +1640,15 @@ void Gui::registerAttributes()
         [&]() -> Values { return {_fullscreen}; },
         {'b'});
     setAttributeDescription("fullscreen", "The GUI will take the whole window if set to true");
+
+    addAttribute(
+        "toggleDocking",
+        [&](const Values& /*args*/) {
+            toggleGuiDocking();
+            return true;
+        },
+        [&]() -> Values { return {false}; },
+        {'b'});
 }
 
 } // namespace Splash

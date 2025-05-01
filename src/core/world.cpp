@@ -43,6 +43,7 @@ World* World::_that;
 World::World(Context context)
     : RootObject(context)
 {
+    _type = "world";
     _name = "world";
 
     _that = this;
@@ -81,7 +82,7 @@ bool World::applyContext()
         auto pythonArgs = _context.pythonArgs;
 
         // The Python script will be added once the loop runs
-        addTask([=]() {
+        addTask([=, this]() {
             Log::get() << Log::MESSAGE
                        << "World::parseArguments - Adding Python script from command "
                           "line argument: "
@@ -103,7 +104,7 @@ bool World::applyContext()
     _link = std::make_unique<Link>(this, _name, _context.channelType);
 
     if (_context.log2file)
-        addTask([=] { setAttribute("logToFile", {_context.log2file}); });
+        addTask([this] { setAttribute("logToFile", {_context.log2file}); });
 
     if (_context.defaultConfigurationFile)
         Log::get() << Log::MESSAGE << "No filename specified, loading default file" << Log::endl;
@@ -340,7 +341,7 @@ bool World::applyConfig()
             {
                 if (link.size() < 2)
                     continue;
-                addTask([=]() { sendMessage(Constants::ALL_PEERS, "link", {link[0].asString(), link[1].asString()}); });
+                addTask([=, this]() { sendMessage(Constants::ALL_PEERS, "link", {link[0].asString(), link[1].asString()}); });
             }
         }
 
@@ -356,7 +357,7 @@ bool World::applyConfig()
             {
                 auto& obj = objects[objectName];
 
-                addTask([=]() {
+                addTask([=, this]() {
                     // Set their attributes
                     auto objMembers = obj.getMemberNames();
                     int idxAttr = 0;
@@ -969,7 +970,7 @@ bool World::loadProject(const std::string& filename)
             auto source = link[0].asString();
             auto sink = link[1].asString();
 
-            addTask([=]() {
+            addTask([=, this]() {
                 if (sink != Constants::CAMERA_LINK)
                 {
                     sendMessage(Constants::ALL_PEERS, "link", {link[0].asString(), link[1].asString()});
@@ -989,7 +990,7 @@ bool World::loadProject(const std::string& filename)
             auto& obj = partialConfig["objects"][objectName];
             auto configPath = Utils::getPathFromFilePath(_configFilename);
 
-            addTask([=]() {
+            addTask([=, this]() {
                 // Set their attributes
                 auto objMembers = obj.getMemberNames();
                 int idxAttr = 0;
@@ -1025,7 +1026,7 @@ void World::registerAttributes()
 {
     addAttribute("addObject",
         [&](const Values& args) {
-            addTask([=]() {
+            addTask([=, this]() {
                 auto type = args[0].as<std::string>();
                 auto name = args.size() < 2 ? "" : args[1].as<std::string>();
                 auto scene = args.size() < 3 ? "" : args[2].as<std::string>();
@@ -1074,7 +1075,7 @@ void World::registerAttributes()
 
     addAttribute("deleteObject",
         [&](const Values& args) {
-            addTask([=]() {
+            addTask([=, this]() {
                 std::lock_guard<std::recursive_mutex> lockObjects(_objectsMutex);
                 auto objectName = args[0].as<std::string>();
 
@@ -1098,7 +1099,7 @@ void World::registerAttributes()
 
     addAttribute("link",
         [&](const Values& args) {
-            addTask([=]() { sendMessage(Constants::ALL_PEERS, "link", args); });
+            addTask([=, this]() { sendMessage(Constants::ALL_PEERS, "link", args); });
             return true;
         },
         {'s', 's'});
@@ -1106,7 +1107,7 @@ void World::registerAttributes()
 
     addAttribute("unlink",
         [&](const Values& args) {
-            addTask([=]() { sendMessage(Constants::ALL_PEERS, "unlink", args); });
+            addTask([=, this]() { sendMessage(Constants::ALL_PEERS, "unlink", args); });
             return true;
         },
         {'s', 's'});
@@ -1115,7 +1116,7 @@ void World::registerAttributes()
     addAttribute("loadConfig",
         [&](const Values& args) {
             auto filename = args[0].as<std::string>();
-            addTask([=]() {
+            addTask([=, this]() {
                 Json::Value config;
                 if (loadConfig(filename, config))
                 {
@@ -1154,7 +1155,7 @@ void World::registerAttributes()
     addAttribute("copyCameraParameters",
         [&](const Values& args) {
             auto filename = args[0].as<std::string>();
-            addTask([=]() { copyCameraParameters(filename); });
+            addTask([=, this]() { copyCameraParameters(filename); });
             return true;
         },
         {'s'});
@@ -1191,7 +1192,7 @@ void World::registerAttributes()
 
             setAttribute("deleteObject", {objName});
             setAttribute("addObject", {objType, objName, "", false});
-            addTask([=]() {
+            addTask([=, this]() {
                 for (const auto& t : targets)
                     setAttribute("sendAllScenes", {"link", objName, t});
             });
@@ -1206,7 +1207,7 @@ void World::registerAttributes()
             if (args.size() != 0)
                 _configFilename = args[0].as<std::string>();
 
-            addTask([=]() {
+            addTask([=, this]() {
                 Log::get() << "Saving configuration to " << _configFilename << Log::endl;
                 saveConfig();
             });
@@ -1247,7 +1248,7 @@ void World::registerAttributes()
 
     addAttribute("sendAll",
         [&](const Values& args) {
-            addTask([=]() {
+            addTask([=, this]() {
                 auto name = args[0].as<std::string>();
                 auto attr = args[1].as<std::string>();
                 auto values = args;
@@ -1282,7 +1283,7 @@ void World::registerAttributes()
 
     addAttribute("sendToMasterScene",
         [&](const Values& args) {
-            addTask([=]() {
+            addTask([=, this]() {
                 auto attr = args[0].as<std::string>();
                 Values values = args;
                 values.erase(values.begin());
@@ -1361,7 +1362,7 @@ void World::registerAttributes()
 
     addAttribute("wireframe",
         [&](const Values& args) {
-            addTask([=]() { sendMessage(Constants::ALL_PEERS, "wireframe", args); });
+            addTask([=, this]() { sendMessage(Constants::ALL_PEERS, "wireframe", args); });
 
             return true;
         },
@@ -1405,7 +1406,7 @@ void World::registerAttributes()
     addAttribute(
         "clockDeviceName",
         [&](const Values& args) {
-            addTask([=]() {
+            addTask([=, this]() {
                 auto clockDeviceName = args[0].as<std::string>();
                 if (clockDeviceName != _clockDeviceName)
                 {

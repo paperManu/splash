@@ -13,8 +13,8 @@ namespace Splash
 {
 
 /*************/
-Mesh::Mesh(RootObject* root, MeshContainer meshContainer)
-    : BufferObject(root)
+Mesh::Mesh(RootObject* root, MeshContainer meshContainer, TreeRegisterStatus registerToTree)
+    : BufferObject(root, registerToTree)
     , _mesh(meshContainer)
 {
     _type = "mesh";
@@ -27,6 +27,12 @@ Mesh::Mesh(RootObject* root, MeshContainer meshContainer)
         return;
 
     createDefaultMesh();
+}
+
+/*************/
+Mesh::Mesh(RootObject* root, TreeRegisterStatus registerToTree)
+    : Mesh(root, MeshContainer(), registerToTree)
+{
 }
 
 /*************/

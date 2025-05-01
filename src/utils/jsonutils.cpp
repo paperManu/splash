@@ -199,6 +199,33 @@ bool checkAndUpgradeConfiguration(Json::Value& configuration)
         configuration = newConfig;
     }
 
+    if ((versionMajor == 0 && versionMinor < 10) || (versionMajor == 0 && versionMinor == 10 && versionMaintainance < 21))
+    {
+        Json::Value newConfig = configuration;
+        for (auto& scene : newConfig["scenes"])
+        {
+            if (!scene.isMember("objects"))
+                continue;
+
+            std::vector<std::string> windowsToDelete;
+            for (const auto& objectName : scene["objects"].getMemberNames())
+            {
+                auto& object = scene["objects"][objectName];
+                if (object["type"] != "window" && !object.isMember("fullscreen"))
+                    continue;
+
+                object["fullscreen"] = "windowed";
+                if (object.isMember("guiOnly") && object["guiOnly"][0].asBool())
+                    windowsToDelete.push_back(objectName);
+            }
+
+            for (const auto& objectName : windowsToDelete)
+                scene["objects"].removeMember(objectName);
+        }
+
+        configuration = newConfig;
+    }
+
     configuration["version"] = std::string(PACKAGE_VERSION);
 
     return true;

@@ -10,8 +10,8 @@ namespace Splash
 {
 
 /*************/
-Texture::Texture(RootObject* root)
-    : GraphObject(root)
+Texture::Texture(RootObject* root, TreeRegisterStatus registerToTree)
+    : GraphObject(root, registerToTree)
 {
     _type = "texture";
     registerAttributes();
