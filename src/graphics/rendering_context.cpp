@@ -77,6 +77,9 @@ RenderingContext::RenderingContext(std::string_view name, RenderingContext* cont
 /*************/
 RenderingContext::~RenderingContext()
 {
+    if (!_window)
+        return;
+
     // If the window is focused, we must be sure to consume all remaining inputs
     // before destroying it. Otherwise, glfwPollEvents might try to read events
     // for an already destroyed window, and lead to a crash.
@@ -92,8 +95,7 @@ RenderingContext::~RenderingContext()
         glfwPollEvents();
     }
 
-    if (_window != nullptr)
-        glfwDestroyWindow(_window);
+    glfwDestroyWindow(_window);
 }
 
 /*************/
