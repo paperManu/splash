@@ -1,6 +1,36 @@
 Splash release notes
 ====================
 
+Splash 0.11.0 (2025-05-01)
+-------------------------
+Improvements:
+* Add native support for NDI video source
+* Add GUI capability to create its own window if needed
+* Add Sh4lt as a submodule
+* Add sh4lt selection through a combo box
+* Add multiple choices selection to attributes, and a first use with
+* Add automatic resize to available size for camera overview camera
+* Add a preview camera to mesh UI
+* Add field validation when using tab in UI
+* Upgrade project to C++20
+* Set Wayland to be used by default if available
+* Change Window default size
+* Removed (never-functional) support for multiple meshes in a single object
+* Move attribute widgets to always be shown
+
+Documentation:
+* Update metainfo with URL for help, contact and donation
+
+Bugs fixed:
+* Fix attributes unit tests for attributes without setter
+* Fix camera vertex picking to better handle mesh boundaries
+* Fix warps not shown correctly in UI
+* Fix object deletion from the GUI
+* Fix dropdown not shown when more that 3 choices are available
+* Fix changing media and mesh type always using the first choice
+* Fix no mesh being selected by default in mesh UI
+* Fix shortcut issues in Camera UI
+
 Splash 0.10.20 (2024-11-04)
 -------------------------
 Bugs fixed:

@@ -151,7 +151,7 @@ TEST_CASE("Testing BaseObject class")
     auto attributes = object->getAttributesList();
     for (const auto& entry : descriptions)
     {
-        CHECK_EQ(entry.as<Values>().size(), 3);
+        CHECK_EQ(entry.as<Values>().size(), 4);
         auto name = entry.as<Values>()[0].as<std::string>();
         auto description = entry.as<Values>()[1].as<std::string>();
         CHECK(object->hasAttribute(name));

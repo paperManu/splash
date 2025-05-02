@@ -644,7 +644,7 @@ void Image_FFmpeg::seek(float seconds, bool clearQueues)
 /*************/
 void Image_FFmpeg::seek_async(float seconds, bool clearQueues)
 {
-    _seekFuture = std::async(std::launch::async, [=]() {
+    _seekFuture = std::async(std::launch::async, [=, this]() {
         seek(seconds, clearQueues);
         _timeJump = false;
     });

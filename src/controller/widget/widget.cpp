@@ -5,29 +5,17 @@
 #include <algorithm>
 #include <array>
 #include <filesystem>
-#include <fstream>
 
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <imgui_internal.h>
 
-#include "./graphics/camera.h"
-#include "./image/image.h"
-#include "./image/image_ffmpeg.h"
 #if HAVE_SHMDATA
 #include "./image/image_shmdata.h"
 #endif
 #include "./core/scene.h"
-#include "./graphics/object.h"
-#include "./graphics/texture.h"
-#include "./graphics/texture_image.h"
-#include "./utils/log.h"
 #include "./utils/osutils.h"
-#include "./utils/timer.h"
-
-#if HAVE_GPHOTO and HAVE_OPENCV
-#include "./controller/colorcalibrator.h"
-#endif
+#include "./utils/scope_guard.h"
 
 namespace filesystem = std::filesystem;
 
@@ -143,7 +131,7 @@ bool FileSelector(const std::string& label, std::string& path, bool& cancelled, 
             manualPath = true;
     }
 
-    ImGui::BeginChild("##filelist", ImVec2(0, -48), true);
+    ImGui::BeginChild("##filelist", ImVec2(0, -48), ImGuiChildFlags_Borders);
     static std::unordered_map<std::string, uint32_t> selectedId{};
     if (selectedId.find(label) == selectedId.end())
         selectedId[label] = 0;
@@ -239,7 +227,7 @@ bool InputText(const char* label, std::string& str, ImGuiInputTextFlags flags)
 /*************/
 /*************/
 GuiWidget::GuiWidget(Scene* scene, const std::string& name)
-    : ControllerObject(scene)
+    : ControllerObject(scene, TreeRegisterStatus::NotRegistered)
     , _scene(scene)
 {
     _name = name;
@@ -250,6 +238,7 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
 {
     const auto objAlias = getObjectAlias(objName);
     const auto lockedAttributes = getObjectAttribute(objName, "lockedAttributes");
+    const auto generatedAttributes = getGeneratedAttributes(objName);
 
     std::vector<std::string> attributeNames;
     for (const auto& attr : attributes)
@@ -265,7 +254,7 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
             continue;
 
         const auto& attribute = attributes.find(attrName)->second;
-        if (attribute.empty() || attribute.size() > 4)
+        if (attribute.empty())
             continue;
 
         // Check whether the attribute is locked, in which case we set
@@ -274,6 +263,11 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
             std::find_if(lockedAttributes.begin(), lockedAttributes.end(), [&](const Value& name) { return name.as<std::string>() == attrName; }) != lockedAttributes.end();
 
         ImGui::PushID((objName + attrName).c_str());
+        OnScopeExit
+        {
+            ImGui::PopID();
+        };
+
         if (isLocked)
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.15, 0.01, 0.01, 1.0));
         if (ImGui::Button("L"))
@@ -284,267 +278,359 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
             ImGui::PopStyleColor();
         ImGui::SameLine();
 
-        switch (attribute[0].getType())
-        {
-        default:
-            ImGui::Text("%s", attrName.c_str());
-            continue;
-        case Value::Type::boolean:
-        {
-            if (ImGui::Button("R"))
-                setObjectAttribute(objName, attrName, attribute);
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("If pressed, resend the value as-is");
-            ImGui::SameLine();
+        if (ImGui::Button("R"))
+            setObjectAttribute(objName, attrName, attribute);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("If pressed, resend the value as-is");
+        ImGui::SameLine();
 
-            auto tmp = attribute[0].as<bool>();
-            if (ImGui::Checkbox(attrName.c_str(), &tmp))
-                setObjectAttribute(objName, attrName, {static_cast<bool>(tmp)});
+        const auto isGenerated = std::find(generatedAttributes.begin(), generatedAttributes.end(), attrName) != generatedAttributes.end();
 
-            break;
-        }
-        case Value::Type::integer:
+        if (isGenerated && attribute.size() > 1)
         {
-            if (ImGui::Button("R"))
-                setObjectAttribute(objName, attrName, attribute);
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("If pressed, resend the value as-is");
-            ImGui::SameLine();
+            /**
+             * If the valid attribute values are generated, we should show a
+             * combo box. In this case the list of valid values are stored inside
+             * the attribute value (as per returned by the getter), and as such
+             * start at index 1.
+             */
+            std::vector<std::string> labels;
+            size_t currentSelection = 0;
 
-            switch (attribute.size())
+            switch (attribute[0].getType())
             {
             default:
+                assert(false);
                 continue;
-            case 1:
+            case Value::Type::boolean:
             {
-                auto tmp = attribute[0].as<int64_t>();
-                static const int step = 1;
-                if (ImGui::InputScalar(attrName.c_str(), ImGuiDataType_S64, &tmp, &step, &step, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
-                    setObjectAttribute(objName, attrName, {static_cast<int64_t>(tmp)});
+                const auto currentValue = attribute[0].as<bool>();
+                for (size_t i = 1; i < attribute.size(); ++i)
+                {
+                    labels.push_back(attribute[i].as<std::string>());
+                    if (attribute[i].as<bool>() == currentValue)
+                        currentSelection = i - 1;
+                }
                 break;
             }
-            case 2:
+            case Value::Type::integer:
             {
-                std::array<int64_t, 2> tmp;
-                tmp[0] = attribute[0].as<int64_t>();
-                tmp[1] = attribute[1].as<int64_t>();
-                if (ImGui::InputScalarN(attrName.c_str(), ImGuiDataType_S64, tmp.data(), 2, nullptr, nullptr, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
-                    setObjectAttribute(objName, attrName, {tmp[0], tmp[1]});
+                const auto currentValue = attribute[0].as<int64_t>();
+                for (size_t i = 1; i < attribute.size(); ++i)
+                {
+                    labels.push_back(attribute[i].as<std::string>());
+                    if (attribute[i].as<int64_t>() == currentValue)
+                        currentSelection = i - 1;
+                }
                 break;
             }
-            case 3:
+            case Value::Type::real:
             {
-                std::array<int64_t, 3> tmp;
-                tmp[0] = attribute[0].as<int64_t>();
-                tmp[1] = attribute[1].as<int64_t>();
-                tmp[2] = attribute[2].as<int64_t>();
-                if (ImGui::InputScalarN(attrName.c_str(), ImGuiDataType_S64, tmp.data(), 3, nullptr, nullptr, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
-                    setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2]});
+                const auto currentValue = attribute[0].as<float>();
+                for (size_t i = 1; i < attribute.size(); ++i)
+                {
+                    labels.push_back(attribute[i].as<std::string>());
+                    if (attribute[i].as<float>() == currentValue)
+                        currentSelection = i - 1;
+                }
                 break;
             }
-            case 4:
+            case Value::Type::string:
             {
-                std::array<int64_t, 4> tmp;
-                tmp[0] = attribute[0].as<int64_t>();
-                tmp[1] = attribute[1].as<int64_t>();
-                tmp[2] = attribute[2].as<int64_t>();
-                tmp[3] = attribute[3].as<int64_t>();
-                if (ImGui::InputScalarN(attrName.c_str(), ImGuiDataType_S64, tmp.data(), 4, nullptr, nullptr, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
-                    setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2], tmp[3]});
+                const auto currentValue = attribute[0].as<std::string>();
+                for (size_t i = 1; i < attribute.size(); ++i)
+                {
+                    labels.push_back(attribute[i].as<std::string>());
+                    if (attribute[i].as<std::string>() == currentValue)
+                        currentSelection = i - 1;
+                }
                 break;
             }
             }
 
-            break;
+            std::vector<const char*> labelsAsChars;
+            for (const auto& label : labels)
+                labelsAsChars.push_back(label.c_str());
+
+            // Now that we know the valid values, show them
+            if (ImGui::BeginCombo(attrName.c_str(), labelsAsChars[currentSelection]))
+            {
+                for (size_t i = 0; i < labelsAsChars.size(); ++i)
+                {
+                    const bool isSelected = (currentSelection == i);
+                    if (ImGui::Selectable(labelsAsChars[i], isSelected))
+                        setObjectAttribute(objName, attrName, {attribute[i + 1]});
+                    if (isSelected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
         }
-        case Value::Type::real:
+        else
         {
-            if (ImGui::Button("R"))
-                setObjectAttribute(objName, attrName, attribute);
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("If pressed, resend the value as-is");
-            ImGui::SameLine();
-
-            bool isReal = false;
-            if (attribute[0].getType() == Value::Type::real)
-                isReal = true;
-
-            switch (attribute.size())
+            switch (attribute[0].getType())
             {
             default:
+                ImGui::Text("%s: not displayed", attrName.c_str());
                 continue;
-            case 1:
+            case Value::Type::boolean:
             {
-                if (isReal)
-                {
-                    auto tmp = attribute[0].as<float>();
-                    const auto step = 0.01f * tmp;
-                    if (ImGui::InputFloat(attrName.c_str(), &tmp, step, step, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
-                        setObjectAttribute(objName, attrName, {tmp});
-                }
-                else
-                {
-                    auto tmp = attribute[0].as<int32_t>();
-                    const auto stepSlow = 1;
-                    const auto stepFast = 100;
-                    if (ImGui::InputInt(attrName.c_str(), &tmp, stepSlow, stepFast, ImGuiInputTextFlags_EnterReturnsTrue))
-                        setObjectAttribute(objName, attrName, {tmp});
-                }
+                auto tmp = attribute[0].as<bool>();
+                if (ImGui::Checkbox(attrName.c_str(), &tmp))
+                    setObjectAttribute(objName, attrName, {static_cast<bool>(tmp)});
+
                 break;
             }
-            case 2:
+            case Value::Type::integer:
             {
-                if (isReal)
+                switch (attribute.size())
                 {
-                    std::array<float, 2> tmp;
-                    tmp[0] = attribute[0].as<float>();
-                    tmp[1] = attribute[1].as<float>();
-                    if (ImGui::InputFloat2(attrName.c_str(), tmp.data(), "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+                default:
+                    ImGui::Text("%s: not displayed", attrName.c_str());
+                    continue;
+                case 1:
+                {
+                    auto tmp = attribute[0].as<int64_t>();
+                    static const int step = 1;
+                    ImGui::InputScalar(attrName.c_str(), ImGuiDataType_S64, &tmp, &step, &step, nullptr);
+                    if (ImGui::IsItemDeactivatedAfterEdit())
+                        setObjectAttribute(objName, attrName, {tmp});
+                    break;
+                }
+                case 2:
+                {
+                    std::array<int64_t, 2> tmp;
+                    tmp[0] = attribute[0].as<int64_t>();
+                    tmp[1] = attribute[1].as<int64_t>();
+                    ImGui::InputScalarN(attrName.c_str(), ImGuiDataType_S64, tmp.data(), 2, nullptr, nullptr, nullptr);
+                    if (ImGui::IsItemDeactivatedAfterEdit())
                         setObjectAttribute(objName, attrName, {tmp[0], tmp[1]});
+                    break;
                 }
-                else
+                case 3:
                 {
-                    std::array<int32_t, 2> tmp;
-                    tmp[0] = attribute[0].as<int32_t>();
-                    tmp[1] = attribute[1].as<int32_t>();
-                    if (ImGui::InputInt2(attrName.c_str(), tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
-                        setObjectAttribute(objName, attrName, {tmp[0], tmp[1]});
-                }
-                break;
-            }
-            case 3:
-            {
-                if (isReal)
-                {
-                    std::array<float, 3> tmp;
-                    tmp[0] = attribute[0].as<float>();
-                    tmp[1] = attribute[1].as<float>();
-                    tmp[2] = attribute[2].as<float>();
-                    if (ImGui::InputFloat3(attrName.c_str(), tmp.data(), "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+                    std::array<int64_t, 3> tmp;
+                    tmp[0] = attribute[0].as<int64_t>();
+                    tmp[1] = attribute[1].as<int64_t>();
+                    tmp[2] = attribute[2].as<int64_t>();
+                    ImGui::InputScalarN(attrName.c_str(), ImGuiDataType_S64, tmp.data(), 3, nullptr, nullptr, nullptr);
+                    if (ImGui::IsItemDeactivatedAfterEdit())
                         setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2]});
+                    break;
                 }
-                else
+                case 4:
                 {
-                    std::array<int32_t, 3> tmp;
-                    tmp[0] = attribute[0].as<int32_t>();
-                    tmp[1] = attribute[1].as<int32_t>();
-                    tmp[2] = attribute[2].as<int32_t>();
-                    if (ImGui::InputInt3(attrName.c_str(), tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
-                        setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2]});
+                    std::array<int64_t, 4> tmp;
+                    tmp[0] = attribute[0].as<int64_t>();
+                    tmp[1] = attribute[1].as<int64_t>();
+                    tmp[2] = attribute[2].as<int64_t>();
+                    tmp[3] = attribute[3].as<int64_t>();
+                    ImGui::InputScalarN(attrName.c_str(), ImGuiDataType_S64, tmp.data(), 4, nullptr, nullptr, nullptr);
+                    if (ImGui::IsItemDeactivatedAfterEdit())
+                        setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2], tmp[3]});
+                    break;
                 }
+                }
+
                 break;
             }
-            case 4:
+            case Value::Type::real:
             {
-                if (isReal)
+                bool isReal = false;
+                if (attribute[0].getType() == Value::Type::real)
+                    isReal = true;
+
+                switch (attribute.size())
                 {
-                    std::array<float, 4> tmp;
-                    tmp[0] = attribute[0].as<float>();
-                    tmp[1] = attribute[1].as<float>();
-                    tmp[2] = attribute[2].as<float>();
-                    tmp[3] = attribute[3].as<float>();
-                    if (ImGui::InputFloat4(attrName.c_str(), tmp.data(), "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
-                        setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2], tmp[3]});
-                }
-                else
+                default:
+                    ImGui::Text("%s: not displayed", attrName.c_str());
+                    continue;
+                case 1:
                 {
-                    std::array<int32_t, 4> tmp;
-                    tmp[0] = attribute[0].as<int32_t>();
-                    tmp[1] = attribute[1].as<int32_t>();
-                    tmp[2] = attribute[2].as<int32_t>();
-                    tmp[3] = attribute[3].as<int32_t>();
-                    if (ImGui::InputInt4(attrName.c_str(), tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
-                        setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2], tmp[3]});
+                    if (isReal)
+                    {
+                        auto tmp = attribute[0].as<float>();
+                        const auto step = 0.01f * tmp;
+                        ImGui::InputFloat(attrName.c_str(), &tmp, step, step, "%.3f");
+                        if (ImGui::IsItemDeactivatedAfterEdit())
+                            setObjectAttribute(objName, attrName, {tmp});
+                    }
+                    else
+                    {
+                        auto tmp = attribute[0].as<int32_t>();
+                        const auto stepSlow = 1;
+                        const auto stepFast = 100;
+                        ImGui::InputInt(attrName.c_str(), &tmp, stepSlow, stepFast);
+                        if (ImGui::IsItemDeactivatedAfterEdit())
+                            setObjectAttribute(objName, attrName, {tmp});
+                    }
+                    break;
                 }
+                case 2:
+                {
+                    if (isReal)
+                    {
+                        std::array<float, 2> tmp;
+                        tmp[0] = attribute[0].as<float>();
+                        tmp[1] = attribute[1].as<float>();
+                        ImGui::InputFloat2(attrName.c_str(), tmp.data(), "%.3f");
+                        if (ImGui::IsItemDeactivatedAfterEdit())
+                            setObjectAttribute(objName, attrName, {tmp[0], tmp[1]});
+                    }
+                    else
+                    {
+                        std::array<int32_t, 2> tmp;
+                        tmp[0] = attribute[0].as<int32_t>();
+                        tmp[1] = attribute[1].as<int32_t>();
+                        ImGui::InputInt2(attrName.c_str(), tmp.data());
+                        if (ImGui::IsItemDeactivatedAfterEdit())
+                            setObjectAttribute(objName, attrName, {tmp[0], tmp[1]});
+                    }
+                    break;
+                }
+                case 3:
+                {
+                    if (isReal)
+                    {
+                        std::array<float, 3> tmp;
+                        tmp[0] = attribute[0].as<float>();
+                        tmp[1] = attribute[1].as<float>();
+                        tmp[2] = attribute[2].as<float>();
+                        ImGui::InputFloat3(attrName.c_str(), tmp.data(), "%.3f");
+                        if (ImGui::IsItemDeactivatedAfterEdit())
+                            setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2]});
+                    }
+                    else
+                    {
+                        std::array<int32_t, 3> tmp;
+                        tmp[0] = attribute[0].as<int32_t>();
+                        tmp[1] = attribute[1].as<int32_t>();
+                        tmp[2] = attribute[2].as<int32_t>();
+                        ImGui::InputInt3(attrName.c_str(), tmp.data());
+                        if (ImGui::IsItemDeactivatedAfterEdit())
+                            setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2]});
+                    }
+                    break;
+                }
+                case 4:
+                {
+                    if (isReal)
+                    {
+                        std::array<float, 4> tmp;
+                        tmp[0] = attribute[0].as<float>();
+                        tmp[1] = attribute[1].as<float>();
+                        tmp[2] = attribute[2].as<float>();
+                        tmp[3] = attribute[3].as<float>();
+                        ImGui::InputFloat4(attrName.c_str(), tmp.data(), "%.3f");
+                        if (ImGui::IsItemDeactivatedAfterEdit())
+                            setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2], tmp[3]});
+                    }
+                    else
+                    {
+                        std::array<int32_t, 4> tmp;
+                        tmp[0] = attribute[0].as<int32_t>();
+                        tmp[1] = attribute[1].as<int32_t>();
+                        tmp[2] = attribute[2].as<int32_t>();
+                        tmp[3] = attribute[3].as<int32_t>();
+                        ImGui::InputInt4(attrName.c_str(), tmp.data());
+                        if (ImGui::IsItemDeactivatedAfterEdit())
+                            setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2], tmp[3]});
+                    }
+                    break;
+                }
+                }
+
                 break;
             }
-            }
-
-            break;
-        }
-        case Value::Type::values:
-        {
-            // We skip anything that looks like a vector / matrix
-            // (for usefulness reasons...)
-            Values values = attribute[0].as<Values>();
-            if (values.size() > 16)
+            case Value::Type::values:
             {
-                if (values[0].isConvertibleToType(Value::Type::real))
+                // We skip anything that looks like a vector / matrix
+                // (for usefulness reasons...)
+                Values values = attribute[0].as<Values>();
+                if (values.size() > 16)
                 {
-                    float minValue = std::numeric_limits<float>::max();
-                    float maxValue = std::numeric_limits<float>::min();
-                    std::vector<float> samples;
-                    for (const auto& v : values)
+                    if (values[0].isConvertibleToType(Value::Type::real))
                     {
-                        auto value = v.as<float>();
-                        maxValue = std::max(value, maxValue);
-                        minValue = std::min(value, minValue);
-                        samples.push_back(value);
-                    }
-
-                    ImGui::PlotLines(attrName.c_str(),
-                        samples.data(),
-                        samples.size(),
-                        samples.size(),
-                        ("[" + std::to_string(minValue) + ", " + std::to_string(maxValue) + "]").c_str(),
-                        minValue,
-                        maxValue,
-                        ImVec2(0, 100));
-                }
-            }
-            break;
-        }
-        case Value::Type::string:
-        {
-            for (const auto& v : attribute)
-            {
-                // We have a special way to handle file paths
-                if (attrName.find("file") == 0)
-                {
-
-                    std::string tmp = v.as<std::string>();
-                    if (SplashImGui::InputText("", tmp, ImGuiInputTextFlags_EnterReturnsTrue))
-                        setObjectAttribute(objName, attrName, {tmp});
-
-                    // Callback for dragndrop: replace the file path in the field
-                    if (ImGui::IsItemHovered())
-                        UserInput::setCallback(
-                            UserInput::State("dragndrop"), [=](const UserInput::State& state) { setObjectAttribute(objName, attrName, {state.value[0].as<std::string>()}); });
-                    else // Not really necessary as the GUI sets a default dragndrop
-                         // callback at each frame, but anyway
-                        UserInput::resetCallback(UserInput::State("dragndrop"));
-
-                    ImGui::SameLine();
-                    if (ImGui::Button("..."))
-                    {
-                        _fileSelectorTarget = objName;
-                    }
-                    if (_fileSelectorTarget == objName)
-                    {
-                        static std::string path = _root->getMediaPath();
-                        bool cancelled;
-                        std::vector<std::string> extensions{{".bmp"}, {".jpg"}, {".png"}, {".tga"}, {".tif"}, {".avi"}, {".mov"}, {".mp4"}, {".obj"}};
-                        if (SplashImGui::FileSelector(objAlias, path, cancelled, extensions))
+                        float minValue = std::numeric_limits<float>::max();
+                        float maxValue = std::numeric_limits<float>::min();
+                        std::vector<float> samples;
+                        for (const auto& v : values)
                         {
-                            if (!cancelled)
-                                setObjectAttribute(objName, attrName, {path});
-                            path = _root->getMediaPath();
-                            _fileSelectorTarget = "";
+                            auto value = v.as<float>();
+                            maxValue = std::max(value, maxValue);
+                            minValue = std::min(value, minValue);
+                            samples.push_back(value);
+                        }
+
+                        ImGui::PlotLines(attrName.c_str(),
+                            samples.data(),
+                            samples.size(),
+                            samples.size(),
+                            ("[" + std::to_string(minValue) + ", " + std::to_string(maxValue) + "]").c_str(),
+                            minValue,
+                            maxValue,
+                            ImVec2(0, 100));
+                    }
+                }
+                else
+                {
+                    ImGui::Text("%s: not displayed", attrName.c_str());
+                }
+                break;
+            }
+            case Value::Type::string:
+            {
+                for (const auto& v : attribute)
+                {
+                    // We have a special way to handle file paths
+                    if (attrName.find("file") == 0)
+                    {
+
+                        std::string tmp = v.as<std::string>();
+                        SplashImGui::InputText("", tmp);
+                        if (ImGui::IsItemDeactivatedAfterEdit())
+                            setObjectAttribute(objName, attrName, {tmp});
+
+                        // Callback for dragndrop: replace the file path in the field
+                        if (ImGui::IsItemHovered())
+                            UserInput::setCallback(UserInput::State("dragndrop"),
+                                [=, this](const UserInput::State& state) { setObjectAttribute(objName, attrName, {state.value[0].as<std::string>()}); });
+                        else // Not really necessary as the GUI sets a default dragndrop
+                             // callback at each frame, but anyway
+                            UserInput::resetCallback(UserInput::State("dragndrop"));
+
+                        ImGui::SameLine();
+                        if (ImGui::Button("..."))
+                        {
+                            _fileSelectorTarget = objName;
+                        }
+                        if (_fileSelectorTarget == objName)
+                        {
+                            static std::string path = _root->getMediaPath();
+                            bool cancelled;
+                            std::vector<std::string> extensions{{".bmp"}, {".jpg"}, {".png"}, {".tga"}, {".tif"}, {".avi"}, {".mov"}, {".mp4"}, {".obj"}};
+                            if (SplashImGui::FileSelector(objAlias, path, cancelled, extensions))
+                            {
+                                if (!cancelled)
+                                    setObjectAttribute(objName, attrName, {path});
+                                path = _root->getMediaPath();
+                                _fileSelectorTarget = "";
+                            }
                         }
                     }
+                    // For everything else ...
+                    else
+                    {
+                        std::string tmp = v.as<std::string>();
+                        SplashImGui::InputText(attrName.c_str(), tmp);
+                        if (ImGui::IsItemDeactivatedAfterEdit())
+                            setObjectAttribute(objName, attrName, {tmp});
+                    }
                 }
-                // For everything else ...
-                else
-                {
-                    std::string tmp = v.as<std::string>();
-                    if (SplashImGui::InputText(attrName.c_str(), tmp, ImGuiInputTextFlags_EnterReturnsTrue))
-                        setObjectAttribute(objName, attrName, {tmp});
-                }
+                break;
             }
-            break;
+            }
         }
-        }
-        ImGui::PopID();
 
         if (ImGui::IsItemHovered())
         {

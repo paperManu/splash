@@ -21,8 +21,11 @@ void GuiFilters::render()
     }
     filterList.erase(std::remove_if(filterList.begin(), filterList.end(), [](const auto& filter) { return !filter->getSavable(); }), filterList.end());
 
+    if (filterList.size() != 0 && _selectedFilterName.empty())
+        _selectedFilterName = filterList[0]->getName();
+
     ImVec2 availableSize = ImGui::GetContentRegionAvail();
-    ImGui::BeginChild("##filters", ImVec2(availableSize.x * 0.25, availableSize.y), true);
+    ImGui::BeginChild("##filters", ImVec2(availableSize.x * 0.25, availableSize.y), ImGuiChildFlags_Borders);
     ImGui::Text("Filter list");
 
     auto leftMargin = static_cast<int>(ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x);
@@ -34,7 +37,7 @@ void GuiFilters::render()
         int w = ImGui::GetWindowWidth() - 3 * leftMargin;
         int h = w * spec.height / spec.width;
 
-        if (ImGui::ImageButton(filter->getName().c_str(), (void*)(intptr_t)filter->getTexId(), ImVec2(w, h), ImVec2(0, 0), ImVec2(1, 1)))
+        if (ImGui::ImageButton(filter->getName().c_str(), (ImTextureID)(intptr_t)filter->getTexId(), ImVec2(w, h), ImVec2(0, 0), ImVec2(1, 1)))
             _selectedFilterName = filter->getName();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", filter->getAlias().c_str());
@@ -46,13 +49,12 @@ void GuiFilters::render()
         return;
 
     ImGui::SameLine();
-    ImGui::BeginChild("##filterInfo", ImVec2(0, 0), true);
+    ImGui::BeginChild("##filterInfo", ImVec2(0, 0), ImGuiChildFlags_Borders);
 
-    ImGui::Text("Parameters:");
-    auto attributes = getObjectAttributes(_selectedFilterName);
-    drawAttributes(_selectedFilterName, attributes);
+    ImGui::Text("Filter name: %s", _selectedFilterName.c_str());
 
     // If RGB curves are present, special treatment for them
+    auto attributes = getObjectAttributes(_selectedFilterName);
     auto colorCurves = attributes.find("colorCurves");
     if (colorCurves != attributes.end())
     {
@@ -68,7 +70,7 @@ void GuiFilters::render()
 
         if (hasCurves)
         {
-            ImGui::BeginChild(colorCurves->first.c_str(), ImVec2(0, curveHeight + 4), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
+            ImGui::BeginChild(colorCurves->first.c_str(), ImVec2(0, curveHeight + 4), ImGuiChildFlags_Borders, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
 
             int curveCount = colorCurves->second.size();
             int w = ImGui::GetWindowWidth() - 3 * leftMargin;
@@ -118,17 +120,15 @@ void GuiFilters::render()
         }
     }
 
-    if (ImGui::TreeNode(("Filter preview: " + _selectedFilterName).c_str()))
     {
-        auto spec = filter->getSpec();
-        auto ratio = static_cast<float>(spec.height) / static_cast<float>(spec.width);
+        const auto spec = filter->getSpec();
+        const auto ratio = static_cast<float>(spec.height) / static_cast<float>(spec.width);
 
-        auto leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
-        int w = ImGui::GetWindowWidth() - 2 * leftMargin;
-        int h = w * ratio;
+        const auto leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
+        const int w = ImGui::GetWindowWidth() - 2 * leftMargin;
+        const int h = w * ratio;
 
-        ImGui::Image(reinterpret_cast<ImTextureID>(filter->getTexId()), ImVec2(w, h));
-        ImGui::TreePop();
+        ImGui::Image((ImTextureID)(intptr_t)(filter->getTexId()), ImVec2(w, h));
     }
 
     ImGui::EndChild();

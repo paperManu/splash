@@ -22,8 +22,8 @@ namespace Splash
 {
 
 /*************/
-Object::Object(RootObject* root)
-    : GraphObject(root)
+Object::Object(RootObject* root, TreeRegisterStatus registerToTree)
+    : GraphObject(root, registerToTree)
 {
     init();
 }
@@ -52,9 +52,6 @@ Object::~Object()
 /*************/
 void Object::activate()
 {
-    if (_geometries.size() == 0)
-        return;
-
     _mutex.lock();
 
     // Create and store the shader depending on its type
@@ -112,10 +109,10 @@ void Object::activate()
     _shader->setUniform("_normalExp", _normalExponent);
     _shader->setUniform("_color", {_color.r, _color.g, _color.b, _color.a});
 
-    if (_geometries.size() > 0)
+    if (_geometry)
     {
-        _geometries[0]->update();
-        _geometries[0]->activate();
+        _geometry->update();
+        _geometry->activate();
     }
     _shader->activate();
 
@@ -151,8 +148,8 @@ glm::dmat4 Object::computeModelMatrix() const
 void Object::deactivate()
 {
     _shader->deactivate();
-    if (_geometries.size() > 0)
-        _geometries[0]->deactivate();
+    if (_geometry)
+        _geometry->deactivate();
     _mutex.unlock();
 }
 
@@ -191,20 +188,15 @@ void Object::removeCalibrationPoint(const glm::dvec3& point)
 /*************/
 void Object::draw()
 {
-    if (_geometries.size() == 0)
-        return;
-
-    for (const auto& geometry : _geometries)
-        geometry->draw();
+    if (_geometry)
+        _geometry->draw();
+    return;
 }
 
 /*************/
 int Object::getVerticesNumber() const
 {
-    int nbr = 0;
-    for (auto& g : _geometries)
-        nbr += g->getVerticesNumber();
-    return nbr;
+    return _geometry->getVerticesNumber();
 }
 
 /*************/
@@ -256,8 +248,10 @@ bool Object::linkIt(const std::shared_ptr<GraphObject>& obj)
     }
     else if (obj->getType().find("geometry") != std::string::npos)
     {
+        if (_geometry)
+            return false;
         auto geom = std::dynamic_pointer_cast<Geometry>(obj);
-        addGeometry(geom);
+        setGeometry(geom);
         return true;
     }
 
@@ -317,7 +311,8 @@ void Object::unlinkIt(const std::shared_ptr<GraphObject>& obj)
     else if (type.find("geometry") != std::string::npos)
     {
         auto geom = std::dynamic_pointer_cast<Geometry>(obj);
-        removeGeometry(geom);
+        if (geom == _geometry)
+            resetGeometry();
     }
     else if (obj->getType().find("queue") != std::string::npos)
     {
@@ -332,26 +327,21 @@ float Object::pickVertex(glm::dvec3 p, glm::dvec3& v)
     float distance = std::numeric_limits<float>::max();
     glm::dvec3 closestVertex;
     float tmpDist;
-    for (auto& geom : _geometries)
-    {
         glm::dvec3 vertex;
-        if ((tmpDist = geom->pickVertex(p, vertex)) < distance)
+        if ((tmpDist = _geometry->pickVertex(p, vertex)) < distance)
         {
             distance = tmpDist;
             closestVertex = vertex;
         }
-    }
 
     v = closestVertex;
     return distance;
 }
 
 /*************/
-void Object::removeGeometry(const std::shared_ptr<Geometry>& geometry)
+void Object::resetGeometry()
 {
-    auto geomIt = find(_geometries.begin(), _geometries.end(), geometry);
-    if (geomIt != _geometries.end())
-        _geometries.erase(geomIt);
+    _geometry.reset();
 }
 
 /*************/
@@ -375,17 +365,14 @@ void Object::resetVisibility(int primitiveIdShift)
 
     if (_computeShaderResetVisibility)
     {
-        for (auto& geom : _geometries)
-        {
-            geom->update();
-            geom->activateAsSharedBuffer();
-            auto verticesNbr = geom->getVerticesNumber();
-            _computeShaderResetVisibility->setUniform("_vertexNbr", verticesNbr);
-            _computeShaderResetVisibility->setUniform("_primitiveIdShift", primitiveIdShift);
-            if (!_computeShaderResetVisibility->doCompute(verticesNbr / 3 / 128 + 1))
-                Log::get() << Log::WARNING << "Object::" << __FUNCTION__ << " - Error while computing the visibility" << Log::endl;
-            geom->deactivate();
-        }
+        _geometry->update();
+        _geometry->activateAsSharedBuffer();
+        auto verticesNbr = _geometry->getVerticesNumber();
+        _computeShaderResetVisibility->setUniform("_vertexNbr", verticesNbr);
+        _computeShaderResetVisibility->setUniform("_primitiveIdShift", primitiveIdShift);
+        if (!_computeShaderResetVisibility->doCompute(verticesNbr / (3 * 128) + 1))
+            Log::get() << Log::WARNING << "Object::" << __FUNCTION__ << " - Error while computing the visibility" << Log::endl;
+        _geometry->deactivate();
     }
 }
 
@@ -402,15 +389,12 @@ void Object::resetBlendingAttribute()
 
     if (_computeShaderResetBlendingAttributes)
     {
-        for (auto& geom : _geometries)
-        {
-            geom->update();
-            geom->activateAsSharedBuffer();
-            auto verticesNbr = geom->getVerticesNumber();
-            _computeShaderResetBlendingAttributes->setUniform("_vertexNbr", verticesNbr);
-            _computeShaderResetBlendingAttributes->doCompute(verticesNbr / 3 / 128 + 1);
-            geom->deactivate();
-        }
+        _geometry->update();
+        _geometry->activateAsSharedBuffer();
+        auto verticesNbr = _geometry->getVerticesNumber();
+        _computeShaderResetBlendingAttributes->setUniform("_vertexNbr", verticesNbr);
+        _computeShaderResetBlendingAttributes->doCompute(verticesNbr / 3 / 128 + 1);
+        _geometry->deactivate();
     }
 }
 
@@ -418,11 +402,7 @@ void Object::resetBlendingAttribute()
 void Object::resetTessellation()
 {
     std::lock_guard<std::mutex> lock(_mutex);
-
-    for (auto& geom : _geometries)
-    {
-        geom->useAlternativeBuffers(false);
-    }
+    _geometry->useAlternativeBuffers(false);
 }
 
 /*************/
@@ -444,12 +424,10 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
     _feedbackShaderSubdivideCamera->setCulling(_culling);
     _feedbackShaderSubdivideCamera->setUniform("_fov", {fovX, fovY});
 
-    for (auto& geom : _geometries)
-    {
         do
         {
-            geom->update();
-            geom->activate();
+            _geometry->update();
+            _geometry->activate();
 
             auto mv = viewMatrix * computeModelMatrix();
             auto mvAsValues = Values(glm::value_ptr(mv), glm::value_ptr(mv) + 16);
@@ -467,19 +445,18 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
             auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
             _feedbackShaderSubdivideCamera->setUniform("_mNormal", mNormalAsValues);
 
-            geom->activateForFeedback();
+            _geometry->activateForFeedback();
             _feedbackShaderSubdivideCamera->activate();
-            geom->draw();
+            _geometry->draw();
             _feedbackShaderSubdivideCamera->deactivate();
 
-            geom->deactivateFeedback();
-            geom->deactivate();
+            _geometry->deactivateFeedback();
+            _geometry->deactivate();
 
-        } while (geom->hasBeenResized());
+        } while (_geometry->hasBeenResized());
 
-        geom->swapBuffers();
-        geom->useAlternativeBuffers(true);
-    }
+        _geometry->swapBuffers();
+        _geometry->useAlternativeBuffers(true);
 }
 
 /*************/
@@ -498,13 +475,10 @@ void Object::transferVisibilityFromTexToAttr(int width, int height, int primitiv
     _computeShaderTransferVisibilityToAttr->setUniform("_texSize", {static_cast<float>(width), static_cast<float>(height)});
     _computeShaderTransferVisibilityToAttr->setUniform("_idShift", primitiveIdShift);
 
-    for (auto& geom : _geometries)
-    {
-        geom->update();
-        geom->activateAsSharedBuffer();
-        _computeShaderTransferVisibilityToAttr->doCompute(width / 32 + 1, height / 32 + 1);
-        geom->deactivate();
-    }
+    _geometry->update();
+    _geometry->activateAsSharedBuffer();
+    _computeShaderTransferVisibilityToAttr->doCompute(width / 32 + 1, height / 32 + 1);
+    _geometry->deactivate();
 }
 
 /*************/
@@ -525,56 +499,53 @@ void Object::computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 project
 
     _farthestVisibleVertexDistance = 0.f;
 
-    for (auto& geom : _geometries)
+    _geometry->update();
+    _geometry->activateAsSharedBuffer();
+
+    // Set uniforms
+    const auto verticesNbr = _geometry->getVerticesNumber();
+    _computeShaderComputeBlending->setUniform("_vertexNbr", verticesNbr);
+
+    const auto mv = viewMatrix * computeModelMatrix();
+    const auto mvAsValues = Values(glm::value_ptr(mv), glm::value_ptr(mv) + 16);
+    _computeShaderComputeBlending->setUniform("_mv", mvAsValues);
+
+    const auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
+    const auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
+    _computeShaderComputeBlending->setUniform("_mvp", mvpAsValues);
+
+    const auto mNormal = projectionMatrix * glm::transpose(glm::inverse(viewMatrix * computeModelMatrix()));
+    const auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
+    _computeShaderComputeBlending->setUniform("_mNormal", mNormalAsValues);
+
+    _computeShaderComputeBlending->doCompute(verticesNbr / 3);
+    _geometry->deactivate();
+
+    if (_computeFarthestVisibleVertexDistance)
     {
-        geom->update();
-        geom->activateAsSharedBuffer();
-
-        // Set uniforms
-        const auto verticesNbr = geom->getVerticesNumber();
-        _computeShaderComputeBlending->setUniform("_vertexNbr", verticesNbr);
-
-        const auto mv = viewMatrix * computeModelMatrix();
-        const auto mvAsValues = Values(glm::value_ptr(mv), glm::value_ptr(mv) + 16);
-        _computeShaderComputeBlending->setUniform("_mv", mvAsValues);
-
-        const auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
-        const auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
-        _computeShaderComputeBlending->setUniform("_mvp", mvpAsValues);
-
-        const auto mNormal = projectionMatrix * glm::transpose(glm::inverse(viewMatrix * computeModelMatrix()));
-        const auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
-        _computeShaderComputeBlending->setUniform("_mNormal", mNormalAsValues);
-
-        _computeShaderComputeBlending->doCompute(verticesNbr / 3);
-        geom->deactivate();
-
-        if (_computeFarthestVisibleVertexDistance)
+        // Get the annexe buffer from the geometry, and get the farthest projected vertex
+        // Note that the annexe buffer holds float32 values
+        const auto annexeBufferAsChar = _geometry->getGpuBufferAsVector(Geometry::BufferType::Annexe);
+        if (!annexeBufferAsChar.empty())
         {
-            // Get the annexe buffer from the geometry, and get the farthest projected vertex
-            // Note that the annexe buffer holds float32 values
-            const auto annexeBufferAsChar = geom->getGpuBufferAsVector(Geometry::BufferType::Annexe);
-            if (!annexeBufferAsChar.empty())
+            size_t annexeBufferSize = annexeBufferAsChar.size() / 4;
+            const float* annexePtr = reinterpret_cast<const float*>(annexeBufferAsChar.data());
+            std::vector<float> distanceBuffer((size_t)annexeBufferSize / 4);
+            // Initialize the distanceBuffer using only the w component of the annexeBuffer
+            for (size_t i = 3; i < annexeBufferSize / 4; i += 4)
             {
-                size_t annexeBufferSize = annexeBufferAsChar.size() / 4;
-                const float* annexePtr = reinterpret_cast<const float*>(annexeBufferAsChar.data());
-                std::vector<float> distanceBuffer((size_t)annexeBufferSize / 4);
-                // Initialize the distanceBuffer using only the w component of the annexeBuffer
-                for (size_t i = 3; i < annexeBufferSize / 4; i += 4)
-                {
-                    // The vertices are farther away from the camera when the distance goes lower,
-                    // so we need to invert the values from the annexe buffer
-                    distanceBuffer[(i - 3) / 4] = -annexePtr[i];
-                }
-                const auto maxDistance = std::max_element(distanceBuffer.cbegin(), distanceBuffer.cend());
-                _farthestVisibleVertexDistance = std::max(_farthestVisibleVertexDistance, *maxDistance);
+                // The vertices are farther away from the camera when the distance goes lower,
+                // so we need to invert the values from the annexe buffer
+                distanceBuffer[(i - 3) / 4] = -annexePtr[i];
             }
+            const auto maxDistance = std::max_element(distanceBuffer.cbegin(), distanceBuffer.cend());
+            _farthestVisibleVertexDistance = std::max(_farthestVisibleVertexDistance, *maxDistance);
+        }
         }
         else
         {
             _farthestVisibleVertexDistance = 0.f;
         }
-    }
 }
 
 /*************/
@@ -588,6 +559,7 @@ void Object::setShader(const std::shared_ptr<Shader>& shader)
 {
     _graphicsShaders["userDefined"] = shader;
     _fill = "userDefined";
+    _fillParameters.clear();
 }
 
 /*************/
@@ -598,8 +570,7 @@ void Object::registerAttributes()
     addAttribute("activateVertexBlending",
         [&](const Values& args) {
             _vertexBlendingActive = args[0].as<bool>();
-            for (auto& geom : _geometries)
-                geom->useAlternativeBuffers(_vertexBlendingActive);
+            _geometry->useAlternativeBuffers(_vertexBlendingActive);
             return true;
         },
         {'b'});

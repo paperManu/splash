@@ -210,7 +210,6 @@ class Scene : public RootObject
 
     // Gui exists in master scene whatever the configuration
     std::shared_ptr<Gui> _gui;
-    bool _guiLinkedToWindow{false};
 
     // Default input objects
     std::shared_ptr<GraphObject> _keyboard{nullptr};

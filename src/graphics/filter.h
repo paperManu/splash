@@ -49,8 +49,9 @@ class Filter : public Texture
     /**
      * Constructor
      * \param root Root object
+     * \param registerToTree Register the object into the root tree
      */
-    explicit Filter(RootObject* root);
+    explicit Filter(RootObject* root, TreeRegisterStatus registerToTree = TreeRegisterStatus::Registered);
 
     /**
      * Destructor

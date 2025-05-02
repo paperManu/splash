@@ -23,6 +23,7 @@ void GuiNodeView::initializeNodePositions(const std::vector<std::string>& object
         auto links = getObjectLinks();
         auto reversedLinks = getObjectReversedLinks();
 
+        // Get the forward level
         for (const auto& objectName : objectNames)
         {
             std::vector<std::string> crossedObject;
@@ -32,12 +33,16 @@ void GuiNodeView::initializeNodePositions(const std::vector<std::string>& object
             while (!currentLinks.empty())
             {
                 ++level;
+
+                // Generate the list of objects at the next level
                 std::vector<std::string> nextLinks;
                 for (const auto& link : currentLinks)
                 {
+                    // If the link is not to an object mentioned in objectNames, do no add its own links
                     if (std::find(objectNames.cbegin(), objectNames.cend(), link) == objectNames.cend())
                         continue;
 
+                    // If the link is to an object already visited, do not add it either
                     if (std::find(crossedObject.cbegin(), crossedObject.cend(), link) != crossedObject.cend())
                         continue;
 
@@ -55,6 +60,7 @@ void GuiNodeView::initializeNodePositions(const std::vector<std::string>& object
         }
     }
 
+    // Evaluate the number of objects per level
     std::map<int, int> countPerLevel;
     int maxCountPerLevel = 0;
     for (const auto& object : descendants)
@@ -132,7 +138,7 @@ void GuiNodeView::render()
     ImGui::Text("Click: select ; Shift + click: link ; Ctrl + click: unlink ; Middle click or Alt + right click: pan");
 
     // Begin a subwindow to enclose nodes
-    ImGui::BeginChild("NodeView", ImVec2(0, -26), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+    ImGui::BeginChild("NodeView", ImVec2(0, -26), ImGuiChildFlags_Borders, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
     if (_firstRender)
     {
@@ -234,7 +240,7 @@ void GuiNodeView::render()
     if (auto sourceItem = std::find(items.begin(), items.end(), _sourceNode); sourceItem != items.end())
         _comboObjectIndex = std::distance(items.begin(), sourceItem);
 
-    ImGui::PushItemWidth(-260.f);
+    ImGui::PushItemWidth(-380.f);
     if (ImGui::Combo("##objectList", &_comboObjectIndex, items.data(), items.size()))
     {
         _sourceNode = items[_comboObjectIndex];
@@ -247,6 +253,16 @@ void GuiNodeView::render()
         _viewShift[1] = -nodePos->second[1] + _graphSize[1] / 2.f - _nodeSize[1] / 2.f;
     }
     ImGui::SameLine();
+
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.15, 0.01, 0.01, 1.0));
+    if (ImGui::Button("Delete selected object"))
+    {
+        setWorldAttribute("deleteObject", {_sourceNode});
+        _sourceNode.clear();
+    }
+    ImGui::PopStyleColor();
+    ImGui::SameLine();
+
     if (ImGui::Button("Reorder graph"))
         initializeNodePositions(objectNames);
     ImGui::SameLine();
@@ -274,7 +290,7 @@ void GuiNodeView::renderNode(const std::string& name)
         coloredSelectedNode = true;
     }
 
-    ImGui::BeginChild(std::string("node_" + name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1]), false);
+    ImGui::BeginChild(std::string("node_" + name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1]), ImGuiChildFlags_None);
 
     ImGui::Button(getObjectAlias(name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1]));
     if (ImGui::IsItemHovered())

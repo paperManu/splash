@@ -1,6 +1,7 @@
 #include "./graphics/filter_custom.h"
 
 #include "./graphics/api/shader_gfx_impl.h"
+#include "./utils/files.h"
 
 namespace Splash
 {
@@ -65,11 +66,11 @@ bool FilterCustom::setFilterSource(const std::string& source)
         _filterUniforms[u.first] = u.second;
         addAttribute(
             u.first,
-            [=](const Values& args) {
+            [=, this](const Values& args) {
                 _filterUniforms[u.first] = args;
                 return true;
             },
-            [=]() -> Values { return _filterUniforms[u.first]; },
+            [=, this]() -> Values { return _filterUniforms[u.first]; },
             types);
 
         auto documentation = uniformsDocumentation.find(u.first);
@@ -98,7 +99,7 @@ void FilterCustom::registerAttributes()
                 return true; // No shader specified
             _shaderSource = src;
             _shaderSourceFile = "";
-            addTask([=]() { setFilterSource(src); });
+            addTask([=, this]() { setFilterSource(src); });
             return true;
         },
         [&]() -> Values { return {_shaderSource}; },
@@ -112,20 +113,13 @@ void FilterCustom::registerAttributes()
             if (srcFile.empty())
                 return true; // No shader specified
 
-            std::ifstream in(srcFile, std::ios::in | std::ios::binary);
-            if (in)
+            const auto source = Utils::getTextFileContent(srcFile);
+            if (!source.empty())
             {
-                std::string contents;
-                in.seekg(0, std::ios::end);
-                contents.resize(in.tellg());
-                in.seekg(0, std::ios::beg);
-                in.read(&contents[0], contents.size());
-                in.close();
-
                 _shaderSourceFile = srcFile;
                 _shaderSource = "";
-                addTask([=]() {
-                    setFilterSource(contents);
+                addTask([=, this]() {
+                    setFilterSource(source);
                     _lastShaderSourceRead = Timer::getTime();
                 });
 
@@ -153,7 +147,7 @@ void FilterCustom::registerAttributes()
             {
                 addPeriodicTask(
                     "watchShader",
-                    [=]() {
+                    [=, this]() {
                         if (_shaderSourceFile.empty())
                             return;
 

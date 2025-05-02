@@ -40,6 +40,7 @@
 #include "./controller/colorcalibrator.h"
 #endif
 #include "./controller/widget/widget.h"
+#include "./controller/widget/widget_attributes.h"
 #include "./core/attribute.h"
 #include "./graphics/api/framebuffer_gfx_impl.h"
 #include "./graphics/api/gui_gfx_impl.h"
@@ -228,15 +229,16 @@ class Gui final : public ControllerObject
     bool _resized{false};
     int _initialGuiPos[2]{16, 16}; //!< Gui position at startup
 
-    // GUI specific camera
-    std::shared_ptr<Camera> _guiCamera{nullptr};
     std::shared_ptr<Texture_Image> _splashLogo{nullptr};
+    std::shared_ptr<Window> _selfWindow{nullptr}; //!< Self-owned window when GUI is not linked to any other
+    bool _creatingWindow{false}; //!< True if a self-owned window is being created
 
     // ImGUI objects
     bool _showFileSelector{false};
     MenuAction _menuAction{MenuAction::None};
     ImGuiWindowFlags _windowFlags{0};
     std::map<FontType, ImFont*> _guiFonts{};
+    std::shared_ptr<GuiAttributes> _guiAttributes;
     std::vector<std::shared_ptr<GuiWidget>> _guiWidgets;
     std::vector<std::shared_ptr<GuiWidget>> _guiBottomWidgets;
 
@@ -312,13 +314,13 @@ class Gui final : public ControllerObject
      * Get the clipboard
      * \return Return a pointer to the text
      */
-    static const char* getClipboardText(void* userData);
+    static const char* getClipboardText(ImGuiContext* userData);
 
     /**
      * Set the clipboard
      * \param text Text to set the clipboard to
      */
-    static void setClipboardText(void* userData, const char* text);
+    static void setClipboardText(ImGuiContext* userData, const char* text);
 
     /**
      * Copy camera parameters from the specified configuration file to the current configuration
@@ -345,6 +347,20 @@ class Gui final : public ControllerObject
      * Register new functors to modify attributes
      */
     void registerAttributes();
+
+    /**
+     * Update GUI display into a Window.
+     * If it is not linked to any Window, it will create its own one.
+     * If it then gets linked to a Window, it destroys its own one.
+     */
+    void updateGuiWindow();
+
+    /**
+     * Switch the GUI docking state into a Window.
+     * If linked to a Window, unlinks and uses its own window.
+     * If not, links to the first window as returned by Controller::getObjectsOfType.
+     */
+    void toggleGuiDocking();
 };
 
 } // namespace Splash

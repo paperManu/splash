@@ -8,6 +8,9 @@
 
 #include "./graphics/window.h"
 
+#define DEFAULT_WINDOW_WIDTH 1024
+#define DEFAULT_WINDOW_HEIGHT 768
+
 namespace Splash
 {
 
@@ -21,11 +24,9 @@ RenderingContext::RenderingContext(std::string_view name, const gfx::PlatformVer
     if (!_glfwInitialized)
     {
         glfwSetErrorCallback(glfwErrorCallback);
-
-        // By default, GLFW will prefer using X11 as Wayland support is not complete
-        // Using Wayland can be forced with the SPLASH_USE_WAYLAND env var
-        if (getenv(Constants::SPLASH_USE_WAYLAND))
-            glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_WAYLAND);
+        glfwInitHint(GLFW_PLATFORM, GLFW_ANY_PLATFORM);
+        if (glfwPlatformSupported(GLFW_PLATFORM_WAYLAND))
+            glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_PREFER_LIBDECOR);
 
         if (!glfwInit())
         {
@@ -61,7 +62,7 @@ RenderingContext::RenderingContext(std::string_view name, const gfx::PlatformVer
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, static_cast<int>(platformVersion.minor));
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
-    _window = glfwCreateWindow(512, 512, name.data(), nullptr, nullptr);
+    _window = glfwCreateWindow(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, name.data(), nullptr, nullptr);
 }
 
 /*************/
@@ -69,15 +70,32 @@ RenderingContext::RenderingContext(std::string_view name, RenderingContext* cont
 {
     assert(context != nullptr);
     _name = std::string(name);
-    _window = glfwCreateWindow(512, 512, name.data(), nullptr, context->_window);
+    _window = glfwCreateWindow(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, name.data(), nullptr, context->_window);
     _mainContext = context;
 }
 
 /*************/
 RenderingContext::~RenderingContext()
 {
-    if (_window != nullptr)
-        glfwDestroyWindow(_window);
+    if (!_window)
+        return;
+
+    // If the window is focused, we must be sure to consume all remaining inputs
+    // before destroying it. Otherwise, glfwPollEvents might try to read events
+    // for an already destroyed window, and lead to a crash.
+    // To try to make sure of that, we hide the window, wait a bit and
+    // call glfwPollEvents again to catch all events before destroying the window.
+    // This might not work on slow systems, umong other situations.
+    const auto focused = glfwGetWindowAttrib(_window, GLFW_FOCUSED);
+    if (focused)
+    {
+        glfwHideWindow(_window);
+        glfwPollEvents();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        glfwPollEvents();
+    }
+
+    glfwDestroyWindow(_window);
 }
 
 /*************/

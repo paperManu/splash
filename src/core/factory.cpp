@@ -18,6 +18,7 @@
 #include "./image/image.h"
 #include "./image/image_ffmpeg.h"
 #include "./image/image_list.h"
+#include "./image/image_ndi.h"
 #include "./image/queue.h"
 #include "./mesh/mesh.h"
 #include "./mesh/mesh_depthmap.h"
@@ -42,7 +43,6 @@
 #endif
 
 #if HAVE_SHMDATA
-#include "./image/image_ndi.h"
 #include "./image/image_shmdata.h"
 #include "./mesh/mesh_shmdata.h"
 #include "./sink/sink_shmdata.h"
@@ -325,7 +325,6 @@ void Factory::registerObjects()
         true);
 #endif
 
-#if HAVE_SHMDATA
     _objectBook["image_ndi"] = Page(
         [&](RootObject* root) {
             std::shared_ptr<GraphObject> object;
@@ -336,10 +335,11 @@ void Factory::registerObjects()
             return object;
         },
         GraphObject::Category::IMAGE,
-        "video through NDI",
-        "Image object reading frames from a NDI server.",
+        "video through NDI®",
+        "Image object reading frames from a NDI® server.",
         true);
 
+#if HAVE_SHMDATA
     _objectBook["image_shmdata"] = Page(
         [&](RootObject* root) {
             std::shared_ptr<GraphObject> object;

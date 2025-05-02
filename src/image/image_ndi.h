@@ -22,17 +22,19 @@
  * The Image_NDI class
  */
 
-#ifndef SPLASH_IMAGE_NDI_H
-#define SPLASH_IMAGE_NDI_H
+#ifndef SPLASH_IMAGE_NDI2_H
+#define SPLASH_IMAGE_NDI2_H
+
+#include <cstddef>
+#include <mutex>
+#include <string>
+#include <string_view>
+#include <thread>
+#include <vector>
+
+#include <Processing.NDI.Lib.h>
 
 #include "./image/image.h"
-
-#include <memory>
-
-#include <spawn.h>
-
-#include "./image/image_shmdata.h"
-#include "./utils/subprocess.h"
 
 namespace Splash
 {
@@ -44,37 +46,61 @@ class Image_NDI final : public Image
      * Constructor
      */
     explicit Image_NDI(RootObject* root);
-
-    /**
-     * Destructor
-     */
     ~Image_NDI() final;
-
-    /**
-     * Constructors/operators
-     */
     Image_NDI(const Image_NDI&) = delete;
     Image_NDI& operator=(const Image_NDI&) = delete;
     Image_NDI(const Image_NDI&&) = delete;
     Image_NDI& operator=(const Image_NDI&&) = delete;
 
     /**
-     * Set the NDI server to connect to
+     * Set the NDI server to connect to.
      * \param sourceName NDI source to connect to
      * \return Return true the NDI client was set successfully
      */
     bool read(const std::string& sourceName) final;
 
-    /**
-     * Update the content of the image
-     * Image is double buffered, so this has to be called after
-     * any new buffer is set for changes to be effective
-     */
-    void update() final;
-
   private:
-    Image_Shmdata _shmdata;
-    std::unique_ptr<Utils::Subprocess> _subprocess{nullptr};
+    enum class NDILoadStatus : uint8_t
+    {
+        NotLoaded,
+        Loaded,
+        Failed
+    };
+
+    static NDILoadStatus _ndiLoaded;
+    static NDIlib_v4* _ndiLib;
+
+    static std::mutex _ndiFindMutex;
+    static NDIlib_find_instance_t _ndiFind;
+
+    static std::mutex _ndiSourcesMutex;
+    static std::vector<NDIlib_source_t> _ndiSources;
+
+    std::string _sourceName = "";
+    NDIlib_recv_instance_t _ndiReceiver;
+    std::mutex _recvMutex;
+    bool _receive = false;
+    std::thread _recvThread;
+
+    /**
+     * Load the NDI library.
+     * \return True if the library has been (or was already) loaded successfully
+     */
+    static bool loadNDILib();
+
+    /**
+     * Connect to an existing NDI source by its name
+     * \param name Source name
+     * \return True if connection is succesful
+     */
+    bool connectByName(std::string_view name);
+
+    /**
+     * Read the given NDI video frame and put it in and ImageBuffer
+     * \param ndiFrame NDI video frame
+     * \return An ImageBuffer
+     */
+    ImageBuffer readNDIVideoFrame(const NDIlib_video_frame_v2_t& ndiFrame);
 
     /**
      * Register new functors to modify attributes

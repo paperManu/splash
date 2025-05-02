@@ -17,11 +17,12 @@ CallbackHandle::~CallbackHandle()
 }
 
 /*************/
-Attribute::Attribute(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::function<Values()>& getFunc, const std::vector<char>& types)
+Attribute::Attribute(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::function<Values()>& getFunc, const std::vector<char>& types, bool generated)
     : _name(name)
     , _valuesTypes(types)
     , _setFunc(setFunc)
     , _getFunc(getFunc)
+    , _generated(generated)
 {
 }
 
@@ -54,6 +55,7 @@ Attribute& Attribute::operator=(Attribute&& a) noexcept
 
         _setFunc = std::move(a._setFunc);
         _getFunc = std::move(a._getFunc);
+        _generated = a._generated;
 
         _syncMethod = a._syncMethod;
         _callbacks = std::move(a._callbacks);

@@ -115,7 +115,7 @@ Values BaseObject::getAttributesDescriptions() const
     std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     Values descriptions;
     for (const auto& attr : _attribFunctions)
-        descriptions.push_back(Values({attr.first, attr.second.getDescription(), attr.second.getArgsTypes()}));
+        descriptions.push_back(Values({attr.first, attr.second.getDescription(), attr.second.getArgsTypes(), attr.second.getIsGenerated()}));
     return descriptions;
 }
 
@@ -146,11 +146,11 @@ void BaseObject::runAsyncTask(const std::function<void(void)>& func)
 
 /*************/
 Attribute& BaseObject::addAttribute(
-    const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types)
+    const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types, bool generated)
 {
     std::unique_lock<std::recursive_mutex> lock(_attribMutex);
-    _attribFunctions[name] = Attribute(name, set, get, types);
-    _attribFunctions[name].setObjectName(_name);
+    _attribFunctions[name] = Attribute(name, set, get, types, generated);
+    _attribFunctions[name].setObjectName(_name.empty() ? _type : name);
     return _attribFunctions[name];
 }
 
@@ -159,7 +159,7 @@ Attribute& BaseObject::addAttribute(const std::string& name, const std::function
 {
     std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     _attribFunctions[name] = Attribute(name, set, nullptr, types);
-    _attribFunctions[name].setObjectName(_name);
+    _attribFunctions[name].setObjectName(_name.empty() ? _type : name);
     return _attribFunctions[name];
 }
 
@@ -168,7 +168,7 @@ Attribute& BaseObject::addAttribute(const std::string& name, const std::function
 {
     std::unique_lock<std::recursive_mutex> lock(_attribMutex);
     _attribFunctions[name] = Attribute(name, get);
-    _attribFunctions[name].setObjectName(_name);
+    _attribFunctions[name].setObjectName(_name.empty() ? _type : name);
     return _attribFunctions[name];
 }
 

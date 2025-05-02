@@ -141,7 +141,6 @@ void Sink_Shmdata_Encoded::freeFFmpegObjects()
 {
     if (_context)
     {
-        avcodec_close(_context);
         av_free(_context);
         _context = nullptr;
     }

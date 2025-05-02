@@ -46,6 +46,7 @@ class ObjectLibrary
      * Constructor
      */
     explicit ObjectLibrary(Scene* scene);
+    ~ObjectLibrary() = default;
 
     /**
      * Load a 3D model for later use

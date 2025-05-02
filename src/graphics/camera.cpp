@@ -83,9 +83,6 @@ Camera::Camera(RootObject* root, TreeRegisterStatus registerToTree)
     _msFbo->setMultisampling(_multisample);
     _msFbo->setSixteenBpc(_render16bits);
     _outFbo->setSixteenBpc(_render16bits);
-
-    // Load some models
-    loadDefaultModels();
 }
 
 /*************/
@@ -438,11 +435,38 @@ void Camera::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 Values Camera::pickVertex(float x, float y)
 {
     // Convert the normalized coordinates ([0, 1]) to pixel coordinates
-    float realX = x * _width;
-    float realY = y * _height;
+    const float realX = x * _width;
+    const float realY = y * _height;
 
     // Get the depth at the given point
     auto depth = _outFbo->getDepthAt(realX, realY);
+
+    if (depth == 1.f)
+    {
+        float depthSum = 0.f;
+        float count = 0.f;
+
+        for (float shiftx = -_depthSearchRadius; shiftx <= _depthSearchRadius; shiftx += _depthSearchRadius)
+        {
+            for (float shifty = -_depthSearchRadius; shifty <= _depthSearchRadius; shifty += _depthSearchRadius)
+            {
+                const auto shiftedX = (x + shiftx) * _width;
+                const auto shiftedY = (y + shifty) * _height;
+                depth = _outFbo->getDepthAt(shiftedX, shiftedY);
+                if (depth != 1.f)
+                {
+                    depthSum += depth;
+                    count++;
+                }
+            }
+        }
+
+        if (count != 0.f)
+            depth = depthSum / count;
+        else
+            depth = 1.f;
+    }
+
     if (depth == 1.f)
         return Values();
 
@@ -1029,28 +1053,6 @@ dmat4 Camera::computeViewMatrix()
 
     dmat4 viewMatrix = lookAt(_eye, _target, _up);
     return viewMatrix;
-}
-
-/*************/
-void Camera::loadDefaultModels()
-{
-    auto datapath = std::string(DATADIR);
-    std::map<std::string, std::string> files{
-        {"3d_marker", datapath + "/3d_marker.obj"}, {"2d_marker", datapath + "/2d_marker.obj"}, {"camera", datapath + "/camera.obj"}, {"probe", datapath + "/probe.obj"}};
-
-    auto scene = dynamic_cast<Scene*>(_root);
-    assert(scene != nullptr);
-
-    for (auto& file : files)
-    {
-        if (!scene->getObjectLibrary()->loadModel(file.first, file.second))
-            continue;
-
-        auto object = scene->getObjectLibrary()->getModel(file.first);
-        assert(object != nullptr);
-
-        object->setAttribute("fill", {"color"});
-    }
 }
 
 /*************/

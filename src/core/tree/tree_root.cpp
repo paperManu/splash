@@ -161,9 +161,6 @@ bool Root::createBranchAt(const std::string& path, bool silent)
     auto parts = processPath(path);
     if (parts.empty())
     {
-#ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Given path is not valid: " << path << Log::endl;
-#endif
         return false;
     }
 
@@ -188,9 +185,6 @@ bool Root::createBranchAt(const std::string& path, bool silent)
     auto newBranch = std::make_unique<Branch>(newBranchName);
     if (!holdingBranch->addBranch(std::move(newBranch)))
     {
-#ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Branch " << holdingBranch->getPath() << " already has a branch named " << newBranchName << Log::endl;
-#endif
         return false;
     }
 
@@ -236,12 +230,7 @@ bool Root::createLeafAt(const std::string& path, Values value, bool silent)
 
     auto newLeaf = std::make_unique<Leaf>(newLeafName, value);
     if (!holdingBranch->addLeaf(std::move(newLeaf)))
-    {
-#ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Branch " << holdingBranch->getPath() << " already has a leaf named " << newLeafName << Log::endl;
-#endif
         return false;
-    }
 
     if (!silent)
     {
@@ -692,21 +681,10 @@ bool Root::removeBranchAt(const std::string& path, bool silent)
     std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
-    {
-#ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Could not find branch holding path " << path << Log::endl;
-#endif
         return false;
-    }
 
     if (!holdingBranch->removeBranch(branchToRemove))
-    {
-#ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Branch " << holdingBranch->getPath() << " does not have a branch named " << branchToRemove
-                   << Log::endl;
-#endif
         return false;
-    }
 
     if (!silent)
     {
@@ -736,20 +714,10 @@ bool Root::removeLeafAt(const std::string& path, bool silent)
     std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
-    {
-#ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Could not find branch holding leaf " << path << Log::endl;
-#endif
         return false;
-    }
 
     if (!holdingBranch->removeLeaf(leafToRemove))
-    {
-#ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Branch " << holdingBranch->getPath() << " does not have a leaf named " << leafToRemove << Log::endl;
-#endif
         return false;
-    }
 
     if (!silent)
     {
@@ -779,20 +747,10 @@ bool Root::renameBranchAt(const std::string& path, const std::string& name, bool
     std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
-    {
-#ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Could not find branch holding path " << path << Log::endl;
-#endif
         return false;
-    }
 
     if (!holdingBranch->renameBranch(branchToRename, name))
-    {
-#ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Could not rename branch " << path << " to " << name << Log::endl;
-#endif
         return false;
-    }
 
     if (!silent)
     {
@@ -822,20 +780,10 @@ bool Root::renameLeafAt(const std::string& path, const std::string& name, bool s
     std::lock_guard<std::recursive_mutex> lockTree(_treeMutex);
     auto holdingBranch = getBranchAt(parts);
     if (!holdingBranch)
-    {
-#ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Could not find branch holding path " << path << Log::endl;
-#endif
         return false;
-    }
 
     if (!holdingBranch->renameLeaf(leafToRename, name))
-    {
-#ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Could not rename leaf " << path << " to " << name << Log::endl;
-#endif
         return false;
-    }
 
     if (!silent)
     {
@@ -905,12 +853,7 @@ Branch* Root::getBranchAt(const std::vector<std::string>& path) const
     {
         auto childBranch = branch->getBranch(part);
         if (!childBranch)
-        {
-#ifdef DEBUG
-            Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Branch " << branch->getPath() << " does not have branch " << part << Log::endl;
-#endif
             return nullptr;
-        }
         branch = childBranch;
     }
 
@@ -955,23 +898,13 @@ Leaf* Root::getLeafAt(const std::vector<std::string>& path) const
 
         auto childBranch = branch->getBranch(part);
         if (!childBranch)
-        {
-#ifdef DEBUG
-            Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Branch " << branch->getPath() << " does not have branch " << part << Log::endl;
-#endif
             return nullptr;
-        }
         branch = childBranch;
     }
 
     auto leaf = branch->getLeaf(leafName);
     if (!leaf)
-    {
-#ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Tree::Root::" << __FUNCTION__ << " - Branch " << branch->getPath() << " does not have a leaf name " << leafName << Log::endl;
-#endif
         return nullptr;
-    }
 
     return leaf;
 }

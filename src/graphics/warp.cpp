@@ -86,12 +86,12 @@ std::unordered_map<std::string, Values> Warp::getShaderUniforms() const
 /*************/
 std::shared_ptr<Texture> Warp::getTexture() const
 {
-    if (!_screenMesh->isPatchModified())
+    if (!_screenMesh->isPatchModified() && !_showControlPoints)
     {
         if (!_inCamera.expired())
         {
             auto inCameraPtr = _inCamera.lock();
-            inCameraPtr->getTexture();
+            return inCameraPtr->getTexture();
         }
         else if (!_inTexture.expired())
         {
@@ -104,24 +104,29 @@ std::shared_ptr<Texture> Warp::getTexture() const
 }
 
 /*************/
-GLuint Warp::getTexId() const
+ImageBufferSpec Warp::getSpec() const
 {
-    if (!_screenMesh->isPatchModified())
+    if (!_screenMesh->isPatchModified() && !_showControlPoints)
     {
         if (!_inCamera.expired())
         {
             auto inCameraPtr = _inCamera.lock();
-            inCameraPtr->getTexture()->getTexId();
-            ;
+            return inCameraPtr->getTexture()->getSpec();
         }
         else if (!_inTexture.expired())
         {
             const auto inTexturePtr = _inTexture.lock();
-            return inTexturePtr->getTexId();
+            return inTexturePtr->getSpec();
         }
     }
 
-    return _fbo->getColorTexture()->getTexId();
+    return _spec;
+}
+
+/*************/
+GLuint Warp::getTexId() const
+{
+    return getTexture()->getTexId();
 }
 
 /*************/
@@ -347,7 +352,7 @@ void Warp::setupFBO()
     auto virtualScreen = _renderer->createGeometry(_root);
     _screenMesh = std::make_shared<Mesh_BezierPatch>(_root);
     virtualScreen->linkTo(_screenMesh);
-    _screen->addGeometry(virtualScreen);
+    _screen->setGeometry(virtualScreen);
 }
 
 /*************/

@@ -25,6 +25,7 @@
 #ifndef SPLASH_RESIZABLE_ARRAY_H
 #define SPLASH_RESIZABLE_ARRAY_H
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 

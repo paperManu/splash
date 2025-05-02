@@ -44,8 +44,14 @@ void GuiGraph::render()
 
                 maxValue = std::ceil(maxValue * 0.1f) * 10.f;
 
-                ImGui::PlotLines(
-                    "", values.data(), values.size(), values.size(), (leafName + " - " + std::to_string((int)maxValue) + "ms").c_str(), 0.f, maxValue, ImVec2(width - 30, 80));
+                ImGui::PlotLines(durationName.c_str(),
+                    values.data(),
+                    values.size(),
+                    values.size(),
+                    (leafName + " - " + std::to_string((int)maxValue) + "ms").c_str(),
+                    0.f,
+                    maxValue,
+                    ImVec2(width - 30, 80));
             }
 
             ImGui::TreePop();

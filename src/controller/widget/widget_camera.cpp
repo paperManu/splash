@@ -13,6 +13,22 @@ namespace Splash
 {
 
 /*************/
+GuiCamera::GuiCamera(Scene* scene, const std::string& name)
+    : GuiWidget(scene, name)
+{
+    // Create the default GUI camera
+    _overviewCamera = std::make_shared<Camera>(scene, TreeRegisterStatus::NotRegistered);
+    _overviewCamera->setName("Overview camera");
+    _overviewCamera->setAttribute("eye", {4.0, 4.0, 0.0});
+    _overviewCamera->setAttribute("target", {0.0, 0.0, 0.5});
+    _overviewCamera->setAttribute("fov", {50.0});
+    _overviewCamera->setAttribute("size", {800, 600});
+    _overviewCamera->setAttribute("savable", {false});
+
+    _camera = _overviewCamera;
+}
+
+/*************/
 void GuiCamera::captureJoystick()
 {
     if (_joystickCaptured)
@@ -33,6 +49,24 @@ void GuiCamera::captureJoystick()
     });
 
     _joystickCaptured = true;
+}
+
+/*************/
+bool GuiCamera::linkIt(const std::shared_ptr<GraphObject>& obj)
+{
+    if (std::dynamic_pointer_cast<Object>(obj))
+    {
+        auto object = std::dynamic_pointer_cast<Object>(obj);
+        return _overviewCamera->linkTo(object);
+    }
+    return false;
+}
+
+/*************/
+void GuiCamera::unlinkIt(const std::shared_ptr<GraphObject>& obj)
+{
+    if (std::dynamic_pointer_cast<Object>(obj).get() != nullptr)
+        _overviewCamera->unlinkFrom(obj);
 }
 
 /*************/
@@ -62,7 +96,7 @@ void GuiCamera::render()
     //
     // Draw all cameras to allow for selecting one
     //
-    ImGui::BeginChild("Cameras", ImVec2(availableSize.x * 0.25, availableSize.y), true);
+    ImGui::BeginChild("Cameras", ImVec2(availableSize.x * 0.25, availableSize.y), ImGuiChildFlags_Borders);
     ImGui::Text("Camera list");
 
     double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
@@ -79,7 +113,7 @@ void GuiCamera::render()
 
         // We must make sure that the camera name, used as ID, is not empty
         const std::string cameraName = camera->getName().empty() ? "##" : camera->getName();
-        if (ImGui::ImageButton(cameraName.c_str(), (void*)(intptr_t)camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
+        if (ImGui::ImageButton(cameraName.c_str(), (ImTextureID)(intptr_t)camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
         {
             // If shift is pressed, we hide / unhide this camera
             if (io.KeyCtrl)
@@ -132,7 +166,7 @@ void GuiCamera::render()
     // Draw the selected camera and some display parameters
     //
     ImGui::SameLine();
-    ImGui::BeginChild("Calibration", ImVec2(0, availableSize.y), true);
+    ImGui::BeginChild("Calibration", ImVec2(0, availableSize.y), ImGuiChildFlags_Borders);
 
     if (ImGui::Button("Calibrate camera"))
         doCalibration();
@@ -196,6 +230,13 @@ void GuiCamera::render()
 
     if (_camera != nullptr)
     {
+        if (_camera == _overviewCamera)
+        {
+            // Adjust the overview camera to be as big as possible
+            const auto targetCameraSize = ImGui::GetContentRegionAvail();
+            _camera->setAttribute("size", {static_cast<int>(targetCameraSize.x), static_cast<int>(targetCameraSize.y)});
+        }
+
         Values reprojectionError;
         _camera->getAttribute("getReprojectionError", reprojectionError);
         ImGui::Text("Current camera: %s - Reprojection error: %f", _camera->getAlias().c_str(), reprojectionError[0].as<float>());
@@ -219,7 +260,7 @@ void GuiCamera::render()
         _camWidth = w;
         _camHeight = h;
 
-        ImGui::Image((void*)(intptr_t)_camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+        ImGui::Image((ImTextureID)(intptr_t)_camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly))
             _noMove = true;
         else
@@ -266,17 +307,6 @@ int GuiCamera::updateWindowFlags()
 }
 
 /*************/
-void GuiCamera::setCamera(const std::shared_ptr<Camera>& cam)
-{
-    if (cam != nullptr)
-    {
-        _camera = cam;
-        _guiCamera = cam;
-        _camera->setAttribute("size", {800, 600});
-    }
-}
-
-/*************/
 void GuiCamera::setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons)
 {
     _joyAxes = axes;
@@ -311,8 +341,8 @@ void GuiCamera::nextCamera()
     setObjectAttribute(_camera->getName(), "displayCalibration", {0});
 
     if (cameras.size() == 0)
-        _camera = _guiCamera;
-    else if (_camera == _guiCamera)
+        _camera = _overviewCamera;
+    else if (_camera == _overviewCamera)
         _camera = cameras[0];
     else
     {
@@ -320,7 +350,7 @@ void GuiCamera::nextCamera()
         {
             if (cameras[i] == _camera && i == cameras.size() - 1)
             {
-                _camera = _guiCamera;
+                _camera = _overviewCamera;
                 break;
             }
             else if (cameras[i] == _camera)
@@ -331,7 +361,7 @@ void GuiCamera::nextCamera()
         }
     }
 
-    if (_camera != _guiCamera)
+    if (_camera != _overviewCamera)
     {
         setObjectAttribute(_camera->getName(), "frame", {1});
         setObjectAttribute(_camera->getName(), "displayCalibration", {1});
@@ -369,8 +399,8 @@ void GuiCamera::showAllCalibrationPoints(Camera::CalibrationPointsVisibility sho
 /*************/
 void GuiCamera::showAllCamerasCalibrationPoints()
 {
-    if (_camera == _guiCamera)
-        _guiCamera->setAttribute("switchDisplayAllCalibration", {});
+    if (_camera == _overviewCamera)
+        _overviewCamera->setAttribute("switchDisplayAllCalibration", {});
     else
         setObjectAttribute(_camera->getName(), "switchDisplayAllCalibration", {});
 }
@@ -378,7 +408,7 @@ void GuiCamera::showAllCamerasCalibrationPoints()
 /*************/
 void GuiCamera::colorizeCameraWireframes(bool colorize)
 {
-    if ((_camera == _guiCamera && colorize) || colorize == _camerasColorizedPreviousValue)
+    if ((_camera == _overviewCamera && colorize) || colorize == _camerasColorizedPreviousValue)
         return;
 
     _camerasColorizedPreviousValue = colorize;
@@ -491,38 +521,38 @@ void GuiCamera::processKeyEvents()
         return;
 
     ImGuiIO& io = ImGui::GetIO();
-    if (ImGui::IsKeyPressed((ImGuiKey)' ', false))
+    if (ImGui::IsKeyPressed(ImGuiKey_Space, false))
     {
         nextCamera();
         return;
     }
-    else if (ImGui::IsKeyPressed((ImGuiKey)'A', false))
+    else if (ImGui::IsKeyPressed(ImGuiKey_A, false))
     {
         showAllCalibrationPoints();
         return;
     }
-    else if (ImGui::IsKeyPressed((ImGuiKey)'C', false))
+    else if (ImGui::IsKeyPressed(ImGuiKey_C, false))
     {
         doCalibration();
         return;
     }
-    else if (ImGui::IsKeyPressed((ImGuiKey)'H', false))
+    else if (ImGui::IsKeyPressed(ImGuiKey_H, false))
     {
         _hideCameras = !_camerasHidden;
         return;
     }
-    else if (ImGui::IsKeyPressed((ImGuiKey)'O', false))
+    else if (ImGui::IsKeyPressed(ImGuiKey_O, false))
     {
         showAllCamerasCalibrationPoints();
         return;
     }
-    else if (ImGui::IsKeyPressed((ImGuiKey)'V', false))
+    else if (ImGui::IsKeyPressed(ImGuiKey_V, false))
     {
         _camerasColorized = !_camerasColorized;
         return;
     }
     // Reset to the previous camera calibration
-    else if (ImGui::IsKeyPressed((ImGuiKey)'Z', false))
+    else if (ImGui::IsKeyPressed(ImGuiKey_Z, false))
     {
         if (io.KeyCtrl)
             revertCalibration();
@@ -573,18 +603,18 @@ void GuiCamera::processMouseEvents()
         if (io.MouseDown[0])
         {
             // If selected camera is guiCamera, do nothing
-            if (_camera == _guiCamera)
+            if (_camera == _overviewCamera)
                 return;
 
             // Set a calibration point
-            if (io.KeyCtrl && io.MouseClicked[0])
+            if (ImGui::IsKeyPressed(ImGuiMod_Ctrl) && io.MouseClicked[0])
             {
                 Values position = _camera->pickCalibrationPoint(mousePos.x, mousePos.y);
                 if (position.size() == 3)
                     setObjectAttribute(_camera->getName(), "removeCalibrationPoint", {position[0], position[1], position[2]});
             }
-            else if (io.KeyShift) // Define the screenpoint corresponding to the
-                                  // selected calibration point
+            else if (ImGui::IsKeyPressed(ImGuiMod_Shift)) // Define the screenpoint corresponding to the
+                                                          // selected calibration point
                 setObjectAttribute(_camera->getName(), "setCalibrationPoint", {mousePos.x * 2.f - 1.f, mousePos.y * 2.f - 1.f});
             else if (io.MouseClicked[0]) // Add a new calibration point
             {
@@ -621,7 +651,7 @@ void GuiCamera::processMouseEvents()
             camFov += io.MouseWheel;
             camFov = std::max(2.f, std::min(180.f, camFov));
 
-            if (_camera != _guiCamera)
+            if (_camera != _overviewCamera)
                 setObjectAttribute(_camera->getName(), "fov", {camFov});
             else
                 _camera->setAttribute("fov", {camFov});
@@ -653,7 +683,7 @@ void GuiCamera::processMouseEvents()
             // We reset the up vector. Not ideal, but prevent the camera from being
             // unusable.
             setObjectAttribute(_camera->getName(), "up", {0.0, 0.0, 1.0});
-            if (_camera != _guiCamera)
+            if (_camera != _overviewCamera)
             {
                 if (_newTarget.size() == 3)
                     setObjectAttribute(
@@ -674,7 +704,7 @@ void GuiCamera::processMouseEvents()
         {
             float dx = io.MouseDelta.x * _newTargetDistance;
             float dy = io.MouseDelta.y * _newTargetDistance;
-            if (_camera != _guiCamera)
+            if (_camera != _overviewCamera)
                 setObjectAttribute(_camera->getName(), "pan", {-dx / 100.f, dy / 100.f, 0.0});
             else
                 _camera->setAttribute("pan", {-dx / 100.f, dy / 100.f, 0.0});
@@ -682,7 +712,7 @@ void GuiCamera::processMouseEvents()
         else if (!io.KeyShift && io.KeyCtrl)
         {
             float dy = io.MouseDelta.y * _newTargetDistance / 100.f;
-            if (_camera != _guiCamera)
+            if (_camera != _overviewCamera)
                 setObjectAttribute(_camera->getName(), "forward", {dy});
             else
                 _camera->setAttribute("forward", {dy});
@@ -695,12 +725,10 @@ std::vector<std::shared_ptr<Camera>> GuiCamera::getCameras()
 {
     auto cameras = std::vector<std::shared_ptr<Camera>>();
 
-    _guiCamera->setAttribute("size", {static_cast<int>(ImGui::GetWindowWidth()), static_cast<int>(ImGui::GetWindowWidth() * 3.f / 4.f)});
-
     auto rtMatrices = getCamerasRTMatrices();
     for (auto& matrix : rtMatrices)
-        _guiCamera->drawModelOnce("camera", matrix);
-    cameras.push_back(_guiCamera);
+        _overviewCamera->drawModelOnce("camera", matrix);
+    cameras.push_back(_overviewCamera);
 
     auto listOfCameras = getObjectsPtr(getObjectsOfType("camera"));
     for (auto& camera : listOfCameras)
@@ -715,7 +743,7 @@ void GuiCamera::drawVirtualProbes()
     auto rtMatrices = std::vector<glm::dmat4>();
     auto probes = getObjectsPtr(getObjectsOfType("virtual_probe"));
     for (auto& probe : probes)
-        _guiCamera->drawModelOnce("probe", std::dynamic_pointer_cast<VirtualProbe>(probe)->computeViewMatrix());
+        _overviewCamera->drawModelOnce("probe", std::dynamic_pointer_cast<VirtualProbe>(probe)->computeViewMatrix());
 }
 
 #pragma clang diagnostic pop

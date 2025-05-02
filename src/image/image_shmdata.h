@@ -92,11 +92,6 @@ class Image_Shmdata final : public Image
     void computeLUT();
 
     /**
-     * Base init for the class
-     */
-    void init();
-
-    /**
      * Callback called when receiving a new caps
      * \param dataType String holding the data type
      */

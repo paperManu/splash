@@ -25,7 +25,12 @@
 #ifndef SPLASH_IMAGE_SH4LT_H
 #define SPLASH_IMAGE_SH4LT_H
 
+#include <map>
+#include <mutex>
+#include <set>
+
 #include <sh4lt/follower.hpp>
+#include <sh4lt/monitor/monitor.hpp>
 
 #include "./core/constants.h"
 
@@ -67,6 +72,12 @@ class Image_Sh4lt final : public Image
     std::string _group{sh4lt::ShType::default_group()};
     std::unique_ptr<sh4lt::Follower> _reader{nullptr};
 
+    std::unique_ptr<sh4lt::monitor::Monitor> _monitor{nullptr};
+    std::mutex _monitorMutex;
+    std::set<std::string> _groups;              //!< All available groups
+    std::set<std::string> _labels;              //!< Available labels for current _group
+    std::map<std::string, std::string> _medias; //!< Media info for all of _labels
+
     ImageBuffer _readerBuffer;
     uint32_t _bpp{0};
     uint32_t _width{0};
@@ -91,11 +102,6 @@ class Image_Sh4lt final : public Image
     void computeLUT();
 
     /**
-     * Base init for the class
-     */
-    void init();
-
-    /**
      * Callback called when receiving a new caps
      * \param dataType String holding the data type
      */
@@ -104,7 +110,7 @@ class Image_Sh4lt final : public Image
     /**
      * Construct the internal Sh4lt using label and group
      **/
-    bool read_by_label();
+    bool readByLabel();
 
     /**
      * Callback called when receiving a new frame
@@ -128,6 +134,7 @@ class Image_Sh4lt final : public Image
      * Register new functors to modify attributes
      */
     void registerAttributes();
+
     /**
      * Small function to work around a bug in GCC's libstdc++
      *

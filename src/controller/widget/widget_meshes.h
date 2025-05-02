@@ -30,6 +30,11 @@
 namespace Splash
 {
 
+class Camera;
+class Image;
+class Object;
+class Shader;
+
 /*************/
 class GuiMeshes : public GuiWidget
 {
@@ -37,16 +42,28 @@ class GuiMeshes : public GuiWidget
     GuiMeshes(Scene* scene, const std::string& name);
     void render() final;
     int updateWindowFlags() final;
+    std::optional<std::string> getActiveObjectName() const final { return _selectedMeshName.empty() ? std::optional<std::string>() : _selectedMeshName; }
 
   private:
     std::map<std::string, int> _meshTypeIndex;
     std::map<std::string, std::string> _meshType;
     std::map<std::string, std::string> _meshTypeReversed{}; // Created from the previous map
 
+    std::shared_ptr<Camera> _previewCamera{nullptr};
+    std::shared_ptr<Object> _previewObject{nullptr};
+    std::shared_ptr<Shader> _previewShader{nullptr};
+    std::shared_ptr<Image> _previewImage{nullptr};
+    std::shared_ptr<Mesh> _currentMesh{nullptr};
+    int _camWidth{0}, _camHeight{0}; //!< Size of the view
+
+    Values _cameraTarget;
+    float _cameraTargetDistance{1.f};
+
     Values _newMedia{"image", "", 0.f, 0.f};
     std::string _selectedMeshName;
 
     const std::list<std::shared_ptr<Mesh>> getSceneMeshes();
+    void processMouseEvents();
     void replaceMesh(const std::string& previousMedia, const std::string& media, const std::string& type);
 };
 

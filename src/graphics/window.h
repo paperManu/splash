@@ -212,7 +212,6 @@ class Window final : public GraphObject
     int64_t _presentationDelay{0};
 
     bool _withDecoration{true};
-    int _fullscreen{-1};
     std::array<int32_t, 4> _windowRect{};
     bool _resized{true};
     Values _layout{0, 1, 2, 3};

@@ -31,6 +31,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 
 #include "./core/constants.h"
@@ -83,6 +84,10 @@ bool InputText(const char* label, std::string& str, ImGuiInputTextFlags flags = 
 class GuiWidget : public ControllerObject
 {
   public:
+    /**
+     * Constructor
+     * \param root RootObject
+     */
     GuiWidget(Scene* scene, const std::string& name = "");
     virtual ~GuiWidget() override = default;
 
@@ -90,6 +95,13 @@ class GuiWidget : public ControllerObject
      * Render the widget
      */
     virtual void render() override {}
+
+    /**
+     * Get the currently active object name
+     *
+     * \return The object name, if any
+     */
+    virtual std::optional<std::string> getActiveObjectName() const { return {}; }
 
     /**
      * Get the window flags as updated by the widget
@@ -122,6 +134,15 @@ class GuiWidget : public ControllerObject
      * \return Return the keyboard key in the current locale
      */
     const char* getLocalKeyName(char key);
+
+    /**
+     * Linking method to be defined by derived types
+     * We do not want UI elements to show an error when linking is not handled,
+     * so we return true by default instead of false for other GraphObjects.
+     *
+     * \param obj Object to link to
+     */
+    bool linkIt(const std::shared_ptr<GraphObject>&) override { return true; }
 };
 
 } // namespace Splash

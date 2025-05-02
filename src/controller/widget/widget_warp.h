@@ -42,6 +42,7 @@ class GuiWarp : public GuiWidget
     void render() final;
     void update() final;
     int updateWindowFlags() final;
+    std::optional<std::string> getActiveObjectName() const final { return _currentWarpName.empty() ? std::optional<std::string>() : _currentWarpName; }
 
   private:
     bool _noMove{false};

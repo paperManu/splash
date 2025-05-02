@@ -23,7 +23,7 @@ Program::~Program()
 /*************/
 bool Program::activate()
 {
-    OnOpenGLScopeExit(std::string("ShaderStage::").append(__FUNCTION__));
+    OnOpenGLScopeExit(std::string("Program::").append(__FUNCTION__));
 
     if (_isActive)
         return true;
@@ -47,7 +47,7 @@ bool Program::activate()
 /*************/
 void Program::deactivate()
 {
-    OnOpenGLScopeExit(std::string("ShaderStage::").append(__FUNCTION__));
+    OnOpenGLScopeExit(std::string("Program::").append(__FUNCTION__));
 
     glUseProgram(0);
     _isActive = false;
@@ -56,7 +56,7 @@ void Program::deactivate()
 /*************/
 void Program::attachShaderStage(const ShaderStage& stage)
 {
-    OnOpenGLScopeExit(std::string("ShaderStage::").append(__FUNCTION__));
+    OnOpenGLScopeExit(std::string("Program::").append(__FUNCTION__));
 
     assert(stage.isValid());
     const auto type = stage.getType();
@@ -71,7 +71,7 @@ void Program::attachShaderStage(const ShaderStage& stage)
 /*************/
 void Program::detachShaderStage(gfx::ShaderType type)
 {
-    OnOpenGLScopeExit(std::string("ShaderStage::").append(__FUNCTION__));
+    OnOpenGLScopeExit(std::string("Program::").append(__FUNCTION__));
 
     auto shaderIt = _shaderStages.find(type);
     if (shaderIt != _shaderStages.end())
@@ -83,7 +83,7 @@ void Program::detachShaderStage(gfx::ShaderType type)
 /*************/
 bool Program::isValid() const
 {
-    OnOpenGLScopeExit(std::string("ShaderStage::").append(__FUNCTION__));
+    OnOpenGLScopeExit(std::string("Program::").append(__FUNCTION__));
 
     return glIsProgram(_program);
 }
@@ -91,7 +91,7 @@ bool Program::isValid() const
 /*************/
 std::string Program::getProgramInfoLog() const
 {
-    OnOpenGLScopeExit(std::string("ShaderStage::").append(__FUNCTION__));
+    OnOpenGLScopeExit(std::string("Program::").append(__FUNCTION__));
 
     GLint length;
     glGetProgramiv(_program, GL_INFO_LOG_LENGTH, &length);
@@ -112,7 +112,7 @@ const std::map<std::string, Values> Program::getUniformValues() const
 /*************/
 bool Program::link()
 {
-    OnOpenGLScopeExit(std::string("ShaderStage::").append(__FUNCTION__));
+    OnOpenGLScopeExit(std::string("Program::").append(__FUNCTION__));
 
     GLint status;
     glLinkProgram(_program);
@@ -143,7 +143,7 @@ bool Program::link()
 /*************/
 void Program::parseUniforms(std::string_view source)
 {
-    OnOpenGLScopeExit(std::string("ShaderStage::").append(__FUNCTION__));
+    OnOpenGLScopeExit(std::string("Program::").append(__FUNCTION__));
 
     const auto sourceAsStr = std::string(source);
     std::istringstream input(sourceAsStr);
@@ -320,7 +320,7 @@ void Program::parseUniforms(std::string_view source)
 /*************/
 void Program::selectVaryings(const std::vector<std::string>& varyingNames)
 {
-    OnOpenGLScopeExit(std::string("ShaderStage::").append(__FUNCTION__));
+    OnOpenGLScopeExit(std::string("Program::").append(__FUNCTION__));
 
     assert(_type == ProgramType::Feedback);
     std::vector<const GLchar*> varyingNamesAsChar(varyingNames.size(), nullptr);
@@ -333,7 +333,7 @@ void Program::selectVaryings(const std::vector<std::string>& varyingNames)
 /*************/
 void Program::updateUniforms()
 {
-    OnOpenGLScopeExit(std::string("ShaderStage::").append(__FUNCTION__));
+    OnOpenGLScopeExit(std::string("Program::").append(__FUNCTION__));
 
     if (_isActive)
     {
@@ -483,7 +483,7 @@ bool Program::setUniform(const std::string& name, const Value& value)
 /*************/
 bool Program::setUniform(const std::string& name, const glm::mat4 mat)
 {
-    OnOpenGLScopeExit(std::string("ShaderStage::").append(__FUNCTION__));
+    OnOpenGLScopeExit(std::string("Program::").append(__FUNCTION__).append("::").append(name));
 
     const auto uniformIt = _uniforms.find(name);
     if (uniformIt == _uniforms.end())

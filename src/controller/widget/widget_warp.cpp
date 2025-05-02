@@ -18,7 +18,7 @@ void GuiWarp::render()
 
     ImVec2 availableSize = ImGui::GetContentRegionAvail();
 
-    ImGui::BeginChild("Warps", ImVec2(ImGui::GetWindowWidth() * 0.25, availableSize.y), true);
+    ImGui::BeginChild("Warps", ImVec2(ImGui::GetWindowWidth() * 0.25, availableSize.y), ImGuiChildFlags_Borders);
     ImGui::Text("Warp list");
 
     auto leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
@@ -52,7 +52,7 @@ void GuiWarp::render()
         int w = ImGui::GetWindowWidth() - 4 * leftMargin;
         int h = w * warpSpec.height / warpSpec.width;
 
-        if (ImGui::ImageButton(warp->getName().c_str(), (void*)(intptr_t)warp->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
+        if (ImGui::ImageButton(warp->getName().c_str(), (ImTextureID)(intptr_t)warp->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
             _currentWarp = i;
 
         if (ImGui::IsItemHovered())
@@ -61,7 +61,7 @@ void GuiWarp::render()
     ImGui::EndChild();
 
     ImGui::SameLine();
-    ImGui::BeginChild("Configure warp", ImVec2(0, 0), true);
+    ImGui::BeginChild("Configure warp", ImVec2(0, 0), ImGuiChildFlags_Borders);
     if (_currentWarp < warps.size())
     {
         auto& warp = warps[_currentWarp];
@@ -69,21 +69,13 @@ void GuiWarp::render()
         Values values;
         ImGui::PushID(warp->getName().c_str());
 
+        ImGui::Text("Warp name: %s", warp->getName().c_str());
+
         auto availableSize = ImGui::GetContentRegionAvail();
-        if (ImGui::Button("Reset warp", ImVec2(availableSize[0], 24.f)))
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.15, 0.01, 0.01, 1.0));
+        if (ImGui::Button("Reset warp", ImVec2(availableSize[0], 32.f)))
             setObjectAttribute(warp->getName(), "resetPatch");
-
-        warp->getAttribute("patchResolution", values);
-        if (ImGui::InputInt("patchResolution", static_cast<int*>(values[0].data()), 1, 32, ImGuiInputTextFlags_EnterReturnsTrue))
-            setObjectAttribute(warp->getName(), "patchResolution", {values[0].as<int>()});
-
-        warp->getAttribute("patchSize", values);
-        std::vector<int> tmp;
-        tmp.push_back(values[0].as<int>());
-        tmp.push_back(values[1].as<int>());
-
-        if (ImGui::InputInt2("patchSize", tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
-            setObjectAttribute(warp->getName(), "patchSize", {tmp[0], tmp[1]});
+        ImGui::PopStyleColor();
 
         if (const auto texture = warp->getTexture())
         {
@@ -100,7 +92,7 @@ void GuiWarp::render()
                     w = h * warpSpec.width / warpSpec.height;
                 }
 
-                ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(texture->getTexId())), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+                ImGui::Image((ImTextureID)(intptr_t)(texture->getTexId()), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
 
                 if (ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly))
                 {
