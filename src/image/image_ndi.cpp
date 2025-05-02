@@ -209,8 +209,8 @@ bool Image_NDI::connectByName(std::string_view name)
     lock.unlock();
 
     // Run a thread to grab video frames
+    _receive = true;
     _recvThread = std::thread([=, this]() {
-        _receive = true;
         while (_receive)
         {
             NDIlib_video_frame_v2_t videoFrame;
