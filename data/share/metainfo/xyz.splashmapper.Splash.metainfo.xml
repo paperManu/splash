@@ -14,9 +14,7 @@
       will take care of calibrating the videoprojectors (intrinsic and extrinsic
       parameters, blending and color), and feed them with the input video
       sources. Splash can handle multiple inputs, mapped on multiple 3D models,
-      and has been tested with up to eight outputs on two graphic cards. It
-      currently runs on a single computer but support for multiple computers is
-      planned.
+      and has been tested with up to eight outputs on two graphic cards.
     </p>
   </description>
   <categories>
@@ -36,7 +34,45 @@
     </screenshot>
   </screenshots>
   <releases>
-    <release version="0.11.0" date="2025-05-01" />
+    <release version="0.11.0" date="2025-05-01">
+      <description>
+        <p>Splash 0.11.0 brings many updates to the UI, among other improvements.
+
+        Improvements:</p>
+        <ul>
+          <li>Add native support for NDI video source</li>
+          <li>Add GUI capability to create its own window if needed</li>
+          <li>Add Sh4lt as a submodule</li>
+          <li>Add sh4lt selection through a combo box</li>
+          <li>Add multiple choices selection to attributes, and a first use with</li>
+          <li>Add automatic resize to available size for camera overview camera</li>
+          <li>Add a preview camera to mesh UI</li>
+          <li>Add field validation when using tab in UI</li>
+          <li>Upgrade project to C++20</li>
+          <li>Set Wayland to be used by default if available</li>
+          <li>Change Window default size</li>
+          <li>Removed (never-functional) support for multiple meshes in a single object</li>
+          <li>Move attribute widgets to always be shown</li>
+        </ul>
+        
+        <p>Documentation:</p>
+        <ul>
+          <li>Update metainfo with URL for help, contact and donation</li>
+        </ul>
+        
+        <p>Bugs fixed:</p>
+        <ul>
+          <li>Fix attributes unit tests for attributes without setter</li>
+          <li>Fix camera vertex picking to better handle mesh boundaries</li>
+          <li>Fix warps not shown correctly in UI</li>
+          <li>Fix object deletion from the GUI</li>
+          <li>Fix dropdown not shown when more that 3 choices are available</li>
+          <li>Fix changing media and mesh type always using the first choice</li>
+          <li>Fix no mesh being selected by default in mesh UI</li>
+          <li>Fix shortcut issues in Camera UI</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.10.20" date="2024-11-04" />
     <release version="0.10.18" date="2024-09-02" />
     <release version="0.10.16" date="2024-07-24" />
