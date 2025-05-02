@@ -142,6 +142,7 @@ def update_metainfo_file(project: str, version: List[int]) -> None:
                     new_file.write(new_line)
                 new_file.write(line)
 
+    subprocess.call([get_git_config("core.editor", "vim"), changed_file])
     os.rename(changed_file, metainfo_file)
     git_add([metainfo_file])
 
