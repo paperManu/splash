@@ -52,6 +52,7 @@ Object::~Object()
 /*************/
 void Object::activate()
 {
+    DebugGraphicsScope;
     _mutex.lock();
 
     // Create and store the shader depending on its type
@@ -147,6 +148,7 @@ glm::dmat4 Object::computeModelMatrix() const
 /*************/
 void Object::deactivate()
 {
+    DebugGraphicsScope;
     _shader->deactivate();
     if (_geometry)
         _geometry->deactivate();

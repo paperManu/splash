@@ -83,6 +83,24 @@ Camera::Camera(RootObject* root, TreeRegisterStatus registerToTree)
     _msFbo->setMultisampling(_multisample);
     _msFbo->setSixteenBpc(_render16bits);
     _outFbo->setSixteenBpc(_render16bits);
+
+    // Load models used
+    if (auto objectLibrary = _scene->getObjectLibrary(); objectLibrary != nullptr)
+    {
+        const auto datapath = std::string(DATADIR);
+        const std::map<std::string, std::string> files{
+            {"3d_marker", datapath + "/3d_marker.obj"}, {"2d_marker", datapath + "/2d_marker.obj"}, {"camera", datapath + "/camera.obj"}, {"probe", datapath + "/probe.obj"}};
+
+        for (const auto& file : files)
+        {
+            if (!objectLibrary->loadModel(file.first, file.second))
+                continue;
+
+            auto object = objectLibrary->getModel(file.first);
+            assert(object != nullptr);
+            object->setAttribute("fill", {"color"});
+        }
+    }
 }
 
 /*************/
@@ -579,13 +597,7 @@ Values Camera::pickVertexOrCalibrationPoint(float x, float y)
 /*************/
 void Camera::render()
 {
-#ifdef DEBUGGL
-    _renderer->setRendererMsgCallbackData(getRendererMsgCallbackDataPtr());
-    OnScopeExit
-    {
-        _renderer->setRendererMsgCallbackData(_scene->getRendererMsgCallbackDataPtr());
-    };
-#endif
+    DebugGraphicsScope;
 
     // Keep the timestamp of the newest object
     int64_t timestamp{0};

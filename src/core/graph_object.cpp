@@ -1,6 +1,7 @@
 #include "./core/graph_object.h"
 
 #include <algorithm>
+#include <sstream>
 
 #include "./core/root_object.h"
 #include "./core/scene.h"
@@ -422,7 +423,16 @@ void GraphObject::uninitializeTree()
 /*************/
 const gfx::Renderer::RendererMsgCallbackData* GraphObject::getRendererMsgCallbackDataPtr()
 {
-    _rendererMsgCallbackData.name = _name;
+    if (!_name.empty())
+    {
+        _rendererMsgCallbackData.name = _name;
+    }
+    else
+    {
+        std::stringstream ss;
+        ss << static_cast<const void*>(this);
+        _rendererMsgCallbackData.name = ss.str();
+    }
     _rendererMsgCallbackData.type = _type;
     return &_rendererMsgCallbackData;
 }

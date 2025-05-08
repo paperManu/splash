@@ -15,6 +15,8 @@ FilterBlackLevel::FilterBlackLevel(RootObject* root)
 /*************/
 void FilterBlackLevel::render()
 {
+    DebugGraphicsScope;
+
     _screen->setAttribute("fill", {"blacklevel_filter"});
     Filter::render();
 

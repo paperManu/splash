@@ -201,13 +201,7 @@ void Warp::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 /*************/
 void Warp::render()
 {
-#ifdef DEBUGGL
-    _renderer->setRendererMsgCallbackData(getRendererMsgCallbackDataPtr());
-    OnScopeExit
-    {
-        _renderer->setRendererMsgCallbackData(_scene->getRendererMsgCallbackDataPtr());
-    };
-#endif
+    DebugGraphicsScope;
 
     // If the Bezier patch is still the default one, no rendering is needed. We just
     // need to pass the input texture to the output
@@ -297,6 +291,8 @@ void Warp::render()
 /*************/
 int Warp::pickControlPoint(glm::vec2 p, glm::vec2& v)
 {
+    DebugGraphicsScope;
+
     float distance = std::numeric_limits<float>::max();
 
     _screenMesh->switchMeshes(true);
@@ -343,6 +339,8 @@ void Warp::loadDefaultModels()
 /*************/
 void Warp::setupFBO()
 {
+    DebugGraphicsScope;
+
     _fbo = _renderer->createFramebuffer();
     _fbo->setSixteenBpc(true);
 

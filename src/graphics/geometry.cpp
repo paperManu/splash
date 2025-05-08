@@ -37,12 +37,16 @@ Geometry::Geometry(RootObject* root, std::unique_ptr<gfx::GeometryGfxImpl> gfxIm
 /*************/
 void Geometry::activate()
 {
+    DebugGraphicsScope;
+
     _gfxImpl->activate();
 }
 
 /*************/
 void Geometry::activateAsSharedBuffer()
 {
+    DebugGraphicsScope;
+
     _gfxImpl->activateAsSharedBuffer();
 }
 

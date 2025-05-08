@@ -14,8 +14,8 @@ GeometryGfxImpl::GeometryGfxImpl()
 /*************/
 GeometryGfxImpl::~GeometryGfxImpl()
 {
-    for (auto v : _vertexArray)
-        glDeleteVertexArrays(1, &(v.second));
+    for (auto& [context, array] : _vertexArray)
+        glDeleteVertexArrays(1, &array);
 
     glDeleteQueries(1, &_feedbackQuery);
 }

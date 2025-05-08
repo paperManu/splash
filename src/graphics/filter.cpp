@@ -176,13 +176,7 @@ void Filter::updateSizeWrtRatio()
 /*************/
 void Filter::render()
 {
-#ifdef DEBUGGL
-    _renderer->setRendererMsgCallbackData(getRendererMsgCallbackDataPtr());
-    OnScopeExit
-    {
-        _renderer->setRendererMsgCallbackData(_scene->getRendererMsgCallbackDataPtr());
-    };
-#endif
+    DebugGraphicsScope;
 
     // Intialize FBO, textures and everything OpenGL
     if (!_shaderAttributesRegistered)
