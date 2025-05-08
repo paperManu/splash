@@ -75,7 +75,7 @@ void GuiMeshes::render()
     {
         int w = ImGui::GetWindowWidth() - 2 * leftMargin;
 
-        if (ImGui::Button(mesh->getName().c_str(), ImVec2(w, w)))
+        if (ImGui::Button(mesh->getAlias().c_str(), ImVec2(w, w)))
         {
             _selectedMeshName = mesh->getName();
             if (_currentMesh)

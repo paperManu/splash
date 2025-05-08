@@ -1180,9 +1180,9 @@ void World::registerAttributes()
 
     addAttribute("replaceObject",
         [&](const Values& args) {
-            auto objName = args[0].as<std::string>();
-            auto objType = args[1].as<std::string>();
-            auto objAlias = args[2].as<std::string>();
+            const auto objName = args[0].as<std::string>();
+            const auto objType = args[1].as<std::string>();
+            const auto objAlias = args[2].as<std::string>();
             std::vector<std::string> targets;
             for (uint32_t i = 3; i < args.size(); ++i)
                 targets.push_back(args[i].as<std::string>());
@@ -1193,6 +1193,8 @@ void World::registerAttributes()
             setAttribute("deleteObject", {objName});
             setAttribute("addObject", {objType, objName, "", false});
             addTask([=, this]() {
+                if (!objAlias.empty())
+                    setAttribute("sendAll", {objName, "alias", objAlias});
                 for (const auto& t : targets)
                     setAttribute("sendAllScenes", {"link", objName, t});
             });
