@@ -11,4 +11,4 @@ RUN apt update -qq && apt upgrade -y \
        libgl1-mesa-dev libopencv-dev software-properties-common uuid-dev \
        libavcodec-dev libavformat-dev libavutil-dev libswscale-dev \
        libsnappy-dev libzmq3-dev libwayland-dev libxkbcommon-dev ninja-build \
-       pkg-config zip
+       pkg-config zip xvfb
