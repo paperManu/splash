@@ -12,7 +12,7 @@ void GuiAttributes::render()
     ImVec2 availableSize = ImGui::GetContentRegionAvail();
     ImGui::BeginChild("##objectParameters", availableSize, ImGuiChildFlags_Borders);
 
-    if (_targetObjectName != "")
+    if (checkObjectExists(_targetObjectName))
     {
         ImGui::Text("Object name: %s", _targetObjectName.c_str());
         ImGui::Text("Type: %s", getObjectTypes()[_targetObjectName].c_str());
