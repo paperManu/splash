@@ -28,6 +28,28 @@
 #include "./core/base_object.h"
 #include "./graphics/api/renderer.h"
 #include "./utils/dense_set.h"
+#include "./utils/scope_guard.h"
+
+/**
+ * DebugGraphicsScope
+ * Set the current graphics debug message callback data,
+ * and returns it back to its previous value when exiting the scope
+ */
+#ifdef DEBUGGL
+#define DebugGraphicsScope                                                                                                                                                         \
+    if (_renderer)                                                                                                                                                                 \
+    {                                                                                                                                                                              \
+        _renderer->pushRendererMsgCallbackData(getRendererMsgCallbackDataPtr());                                                                                                   \
+        OnScopeExit                                                                                                                                                                \
+        {                                                                                                                                                                          \
+            _renderer->popRendererMsgCallbackData();                                                                                                                               \
+        };                                                                                                                                                                         \
+    }
+#else
+#define DebugGraphicsScope                                                                                                                                                         \
+    {                                                                                                                                                                              \
+    }
+#endif
 
 namespace Splash
 {
@@ -276,12 +298,6 @@ class GraphObject : public BaseObject
      */
     virtual void render() {}
 
-    /**
-     * Get a pointer to the rendering callback data, to be used by the rendering API error callback
-     * \return Return a pointer to the rendering callback data
-     */
-    virtual const gfx::Renderer::RendererMsgCallbackData* getRendererMsgCallbackDataPtr();
-
   protected:
     Category _category{Category::MISC};   //!< Object category, updated by the factory
     std::string _remoteType{""};          //!< When the object root is a Scene, this is the type of the corresponding object in the World
@@ -304,6 +320,12 @@ class GraphObject : public BaseObject
     TreeRegisterStatus _registerToTree; //!< Register the object to the root tree if true
 
     std::vector<std::weak_ptr<GraphObject>> _linkedObjects; //!< Linked objects
+
+    /**
+     * Get a pointer to the rendering callback data, to be used by the rendering API error callback
+     * \return Return a pointer to the rendering callback data
+     */
+    virtual const gfx::Renderer::RendererMsgCallbackData* getRendererMsgCallbackDataPtr();
 
     /**
      * Linking method to be defined by derived types

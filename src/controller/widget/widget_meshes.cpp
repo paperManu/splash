@@ -64,6 +64,7 @@ void GuiMeshes::render()
         assert(meshList.front() != nullptr);
         _selectedMeshName = meshList.front()->getName();
         _previewObject->linkTo(meshList.front());
+        _currentMesh = meshList.front();
     }
 
     ImVec2 availableSize = ImGui::GetContentRegionAvail();
@@ -75,13 +76,16 @@ void GuiMeshes::render()
     {
         int w = ImGui::GetWindowWidth() - 2 * leftMargin;
 
-        if (ImGui::Button(mesh->getName().c_str(), ImVec2(w, w)))
+        if (ImGui::Button(mesh->getAlias().c_str(), ImVec2(w, w)))
         {
-            _selectedMeshName = mesh->getName();
-            if (_currentMesh)
-                _previewObject->unlinkFrom(_currentMesh);
-            _previewObject->linkTo(mesh);
-            _currentMesh = mesh;
+            if (mesh->getName() != _selectedMeshName)
+            {
+                _selectedMeshName = mesh->getName();
+                if (_currentMesh)
+                    _previewObject->unlinkFrom(_currentMesh);
+                _previewObject->linkTo(mesh);
+                _currentMesh = mesh;
+            }
         }
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", mesh->getAlias().c_str());
@@ -94,7 +98,7 @@ void GuiMeshes::render()
     auto mesh = getObjectPtr(_selectedMeshName);
     if (!mesh)
     {
-        ImGui::Text("Select a mesh on the left");
+        ImGui::Text("/!\\ Select a mesh on the left");
     }
     else
     {
@@ -259,6 +263,13 @@ void GuiMeshes::replaceMesh(const std::string& previousMedia, const std::string&
     }
 
     setWorldAttribute("replaceObject", msg);
+
+    // The existing object will be replaced soon, so we unlink from it.
+    // We also make sure that the selected mesh name does not reference it, and
+    // we delete our own shared pointer to it.
+    _previewObject->unlinkFrom(_currentMesh);
+    _selectedMeshName = "##no-selection";
+    _currentMesh.reset();
 }
 
 /*************/
@@ -281,6 +292,9 @@ const std::list<std::shared_ptr<Mesh>> GuiMeshes::getSceneMeshes()
             if (object->getSavable())
                 meshList.push_back(std::dynamic_pointer_cast<Mesh>(object));
     }
+
+    meshList.sort();
+    meshList.unique();
 
     return meshList;
 }

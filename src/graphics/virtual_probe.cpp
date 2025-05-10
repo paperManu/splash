@@ -92,13 +92,7 @@ void VirtualProbe::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 /*************/
 void VirtualProbe::render()
 {
-#ifdef DEBUGGL
-    _renderer->setRendererMsgCallbackData(getRendererMsgCallbackDataPtr());
-    OnScopeExit
-    {
-        _renderer->setRendererMsgCallbackData(_scene->getRendererMsgCallbackDataPtr());
-    };
-#endif
+    DebugGraphicsScope;
 
     if (_newWidth != 0 && _newHeight != 0)
     {
@@ -170,6 +164,8 @@ glm::dmat4 VirtualProbe::computeViewMatrix() const
 /*************/
 void VirtualProbe::setupFBO()
 {
+    DebugGraphicsScope;
+
     _fbo = _renderer->createFramebuffer();
     _fbo->setSize(_width, _height);
     _fbo->setCubemap(true);
@@ -189,6 +185,8 @@ void VirtualProbe::setupFBO()
 /*************/
 void VirtualProbe::setOutputSize(int width, int height)
 {
+    DebugGraphicsScope;
+
     if (width == 0 || height == 0)
         return;
 

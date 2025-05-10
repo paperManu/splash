@@ -580,8 +580,10 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
             }
             case Value::Type::string:
             {
+                uint32_t index = 0;
                 for (const auto& v : attribute)
                 {
+                    ImGui::PushID(std::to_string(index).c_str());
                     // We have a special way to handle file paths
                     if (attrName.find("file") == 0)
                     {
@@ -626,6 +628,9 @@ void GuiWidget::drawAttributes(const std::string& objName, const std::unordered_
                         if (ImGui::IsItemDeactivatedAfterEdit())
                             setObjectAttribute(objName, attrName, {tmp});
                     }
+                    ImGui::PopID();
+
+                    ++index;
                 }
                 break;
             }

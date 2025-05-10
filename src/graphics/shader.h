@@ -217,12 +217,25 @@ class Shader
     gfx::Renderer* _renderer;
     std::unique_ptr<gfx::ShaderGfxImpl> _gfxImpl;
 
+    gfx::Renderer::RendererMsgCallbackData _rendererMsgCallbackData;
+
     std::unordered_map<gfx::ShaderType, std::string> _currentSources;
     std::vector<std::shared_ptr<Texture>> _textures; // Currently used textures
     std::string _currentProgramName{};
 
     // Rendering parameters
     std::string _shaderOptions{""};
+
+    /**
+     * Get a pointer to the rendering callback data, to be used by the rendering API error callback
+     * \return Return a pointer to the rendering callback data
+     */
+    inline const gfx::Renderer::RendererMsgCallbackData* getRendererMsgCallbackDataPtr()
+    {
+        _rendererMsgCallbackData.name = _currentProgramName;
+        _rendererMsgCallbackData.type = "shader";
+        return &_rendererMsgCallbackData;
+    }
 
     /**
      * Parses the shader to replace includes by the corresponding sources

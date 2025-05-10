@@ -80,9 +80,8 @@ void Renderer::init(std::string_view name)
     Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - GL vendor: " << _platformVendor << Log::endl;
     Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - GL renderer: " << _platformRenderer << Log::endl;
 
-// Activate GL debug messages
 #ifdef DEBUGGL
-    Renderer::setRendererMsgCallbackData(getRendererMsgCallbackDataPtr());
+    pushRendererMsgCallbackData(getRendererMsgCallbackDataPtr());
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
 #endif
@@ -109,7 +108,7 @@ void Renderer::init(std::string_view name)
 void Renderer::setSharedWindowFlags()
 {
 #ifdef DEBUGGL
-    setRendererMsgCallbackData(getRendererMsgCallbackDataPtr());
+    pushRendererMsgCallbackData(getRendererMsgCallbackDataPtr());
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
 #endif

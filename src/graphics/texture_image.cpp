@@ -112,6 +112,8 @@ std::shared_ptr<Image> Texture_Image::read(int mipmapLevel) const
 /*************/
 void Texture_Image::reset(int width, int height, const std::string& pixelFormat, int multisample, bool cubemap)
 {
+    DebugGraphicsScope;
+
     if (width == 0 || height == 0)
     {
 #ifdef DEBUG
@@ -135,6 +137,8 @@ void Texture_Image::reset(int width, int height, const std::string& pixelFormat,
 /*************/
 void Texture_Image::resize(int width, int height)
 {
+    DebugGraphicsScope;
+
     if (!_resizable)
         return;
     if (static_cast<uint32_t>(width) != _spec.width || static_cast<uint32_t>(height) != _spec.height)
@@ -173,6 +177,8 @@ void Texture_Image::updateShaderUniforms(const ImageBufferSpec& spec, const std:
 /*************/
 void Texture_Image::update()
 {
+    DebugGraphicsScope;
+
     // If _img is nullptr, this texture is not set from an Image
     if (_img.expired())
         return;

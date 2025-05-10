@@ -154,10 +154,15 @@ class Renderer
     RenderingContext* getMainContext() { return _mainRenderingContext.get(); }
 
     /**
-     * Set the user data for the GL callback
+     * Push and set the user data for the GL callback
      * \param data User data for the callback
      */
-    virtual void setRendererMsgCallbackData(const Renderer::RendererMsgCallbackData* data) = 0;
+    virtual void pushRendererMsgCallbackData(const Renderer::RendererMsgCallbackData* data) = 0;
+
+    /**
+     * Pop and set the previous user data for the GL callback
+     */
+    virtual void popRendererMsgCallbackData() = 0;
 
     /**
      * Create a new Camera graphics implementation

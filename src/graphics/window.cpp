@@ -93,9 +93,11 @@ Window::~Window()
     if (!_root)
         return;
 
-#ifdef DEBUG
-    Log::get() << Log::DEBUGGING << "Window::~Window - Destructor" << Log::endl;
-#endif
+    // Graphic Object must be destroyed within an active context
+    _gfxImpl->setAsCurrentContext();
+    _screenGui.reset();
+    _screen.reset();
+    _gfxImpl->releaseContext();
 }
 
 /*************/
@@ -295,13 +297,7 @@ void Window::unlinkIt(const std::shared_ptr<GraphObject>& obj)
 /*************/
 void Window::render()
 {
-#ifdef DEBUGGL
-    _renderer->setRendererMsgCallbackData(getRendererMsgCallbackDataPtr());
-    OnScopeExit
-    {
-        _renderer->setRendererMsgCallbackData(_scene->getRendererMsgCallbackDataPtr());
-    };
-#endif
+    DebugGraphicsScope;
 
     // Update the window position and size
     // This is called only if another resizing operation is _not_ in progress
@@ -399,6 +395,8 @@ void Window::render()
 /*************/
 void Window::swapBuffers()
 {
+    DebugGraphicsScope;
+
     // Only one window will wait for vblank, the others draws directly into front buffer
     const auto windowIndex = _swappableWindowsCount++;
 
@@ -411,6 +409,8 @@ void Window::swapBuffers()
 /*************/
 void Window::showCursor(bool visibility)
 {
+    DebugGraphicsScope;
+
     _gfxImpl->getRenderingContext()->setCursorVisible(visibility);
 }
 

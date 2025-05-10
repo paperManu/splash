@@ -199,12 +199,6 @@ class Scene : public RootObject
      */
     Values sendMessageToWorldWithAnswer(const std::string& message, const Values& value = {}, const unsigned long long timeout = 0);
 
-    /**
-     * Get a pointer to the rendering callback data, to be used by the rendering API error callback
-     * \return Return a pointer to the rendering callback data
-     */
-    const gfx::Renderer::RendererMsgCallbackData* getRendererMsgCallbackDataPtr();
-
   protected:
     std::atomic_bool _isRunning{false};
 
@@ -250,6 +244,12 @@ class Scene : public RootObject
      * \return Return MAJOR and MINOR
      */
     std::vector<int> findGLVersion();
+
+    /**
+     * Get a pointer to the rendering callback data, to be used by the rendering API error callback
+     * \return Return a pointer to the rendering callback data
+     */
+    const gfx::Renderer::RendererMsgCallbackData* getRendererMsgCallbackDataPtr();
 
     /**
      *  Set up the context and everything

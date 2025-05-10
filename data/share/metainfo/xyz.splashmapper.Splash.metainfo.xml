@@ -34,6 +34,35 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.11.2" date="2025-05-10">
+      <description>
+        <p>Improvements:</p>
+        <ul>
+          <li>Add a specific branch to trigger Windows build by the CI</li>
+          <li>Add running splash through xvfb in CI</li>
+          <li>Add a new macro to help with graphics debug</li>
+          <li>Update metainfo</li>
+        </ul>
+        
+        <p>Bugs fixed:</p>
+        <ul>
+          <li>Fix GUI window being created in all scenes instead of only the main one</li>
+          <li>Fix unit tests for Json loading</li>
+          <li>Fix multiple string attr display, and now hides textureList attr for Window</li>
+          <li>Fix loading configuration as exported by the Blender addon</li>
+          <li>Fix crash when replacing a mesh</li>
+          <li>Fix keeping alias when replacing object, and display it as preview in UI if needed</li>
+          <li>Fix Image_OpenCV media input</li>
+          <li>Fix random freeze when deleting Image_NDI</li>
+          <li>Fix ZMQ compilation with newer cmake</li>
+        </ul>
+        
+        <p>Documentation:</p>
+        <ul>
+          <li>Update Snappy to version 1.2.2</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.11.0" date="2025-05-01">
       <description>
         <p>Splash 0.11.0 brings many updates to the UI, among other improvements.
