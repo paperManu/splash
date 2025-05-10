@@ -399,7 +399,7 @@ staging:windows:
       - "splash-*-win64.exe"
     expire_in: 2 weeks
   rules:
-    - if: $CI_COMMIT_BRANCH == 'staging'
+    - if: $CI_COMMIT_BRANCH == 'staging' || $CI_COMMIT_BRANCH == 'windows'
 
 #
 # ┏━┓┏━┓┏━╸╻┏ ┏━┓┏━╸┏━╸
