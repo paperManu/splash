@@ -215,7 +215,11 @@ bool checkAndUpgradeConfiguration(Json::Value& configuration)
                     continue;
 
                 object["fullscreen"] = "windowed";
-                if (object.isMember("guiOnly") && object["guiOnly"][0].asBool())
+                if (!object.isMember("guiOnly"))
+                    continue;
+
+                const bool isAttrArray = object["guiOnly"].isArray();
+                if ((isAttrArray && object["guiOnly"][0].asBool()) || (!isAttrArray && object["guiOnly"].asBool()))
                     windowsToDelete.push_back(objectName);
             }
 
