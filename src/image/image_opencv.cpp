@@ -130,7 +130,24 @@ void Image_OpenCV::readLoop()
         if (static_cast<int>(spec.width) != capture.rows || static_cast<int>(spec.height) != capture.cols || static_cast<int>(spec.channels) != capture.channels())
         {
             ImageBufferSpec newSpec(capture.cols, capture.rows, capture.channels(), 8 * capture.channels(), ImageBufferSpec::Type::UINT8);
-            newSpec.format = "BGRA";
+            switch (capture.channels())
+            {
+            default:
+                assert(false);
+                break;
+            case 1:
+                newSpec.format = "R";
+                break;
+            case 2:
+                newSpec.format = "RG";
+                break;
+            case 3:
+                newSpec.format = "BGR";
+                break;
+            case 4:
+                newSpec.format = "BGRA";
+                break;
+            }
             _readBuffer = ImageBuffer(newSpec);
         }
         unsigned char* pixels = reinterpret_cast<unsigned char*>(_readBuffer.data());

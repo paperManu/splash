@@ -63,7 +63,7 @@ void GuiMedia::render()
             // draw a mere button with its name to access it without a preview
             int w = ImGui::GetWindowWidth() - 2 * leftMargin;
 
-            if (ImGui::Button(media->getName().c_str(), ImVec2(w, w)))
+            if (ImGui::Button(media->getAlias().c_str(), ImVec2(w, w)))
                 _selectedMediaName = media->getName();
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("%s", media->getAlias().c_str());

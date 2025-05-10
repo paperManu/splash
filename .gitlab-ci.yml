@@ -117,8 +117,8 @@ test:22.04:gcc-amd64-bundled-libs:
     - make -sC build -j$(nproc)
     - make check -sC build
     - ./build/src/splash --info
-    - ./build/src/splash --child --prefix unittest local &
-    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+    - xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./build/src/splash --child --prefix unittest local &
+    - xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
 
@@ -135,8 +135,8 @@ test:22.04:clang-amd64-system-libs:
     - make -sC build -j$(nproc)
     - make check -sC build
     - ./build/src/splash --info
-    - ./build/src/splash --child --prefix unittest local &
-    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+    - xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./build/src/splash --child --prefix unittest local &
+    - xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
 
@@ -202,14 +202,16 @@ analysis:thread-sanitizer:
     - rm -rf build && mkdir build
     - CC=clang CXX=clang++ cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=thread" -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
-    - make check -sC build
-    - ./build/src/splash --info
-    - ./build/src/splash --child --prefix unittest local &
-    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+    # Here we use setarch to disable address randomization, which messes with
+    # the sanitizers since Linux kernl 6.6.6
+    - setarch $(uname -m) -R make check -sC build
+    - setarch $(uname -m) -R ./build/src/splash --info
+    - xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' setarch $(uname -m) -R ./build/src/splash --child --prefix unittest local &
+    - xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' setarch $(uname -m) -R ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
-    - if: $CI_COMMIT_BRANCH == 'staging'
+    - if: $CI_COMMIT_BRANCH == 'staging' || $CI_COMMIT_BRANCH == 'sanitize'
 
-analysis:address-sanitizer:
+analysis:sanitizer:
   stage: analysis
   image: ${CI_REGISTRY_IMAGE}:ubuntu-22.04-${ARCH}
   extends:
@@ -220,14 +222,14 @@ analysis:address-sanitizer:
     - DEBIAN_FRONTEND=noninteractive apt install -y clang
     - ./make_deps.sh
     - rm -rf build && mkdir build
-    - CC=clang CXX=clang++ cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address" -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - CC=clang CXX=clang++ cmake -B build -DCMAKE_BUILD_TYPE=Debug -DWITH_SANITIZE=ON -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
     - make -sC build -j$(nproc)
-    - make check -sC build
-    - ./build/src/splash --info
-    - ./build/src/splash --child --prefix unittest local &
-    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+    - setarch $(uname -m) -R make check -sC build
+    - setarch $(uname -m) -R ./build/src/splash --info
+    - xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' setarch $(uname -m) -R ./build/src/splash --child --prefix unittest local &
+    - xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' setarch $(uname -m) -R ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
-    - if: $CI_COMMIT_BRANCH == 'staging'
+    - if: $CI_COMMIT_BRANCH == 'staging' || $CI_COMMIT_BRANCH == 'sanitize'
 
 #
 # ┏━┓╺┳╸┏━┓┏━╸╻┏┓╻┏━╸
@@ -249,8 +251,8 @@ staging:22.04:gcc-arm64-bundled-libs:
     - make check -sC build
     - make package -sC build
     - ./build/src/splash --info
-    - ./build/src/splash --child --prefix unittest local &
-    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+    - xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./build/src/splash --child --prefix unittest local &
+    - xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging'
 
@@ -267,8 +269,8 @@ staging:24.04:gcc-amd64-system-libs:
     - make check -sC build
     - make package -sC build
     - ./build/src/splash --info
-    - ./build/src/splash --child --prefix unittest local &
-    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+    - xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./build/src/splash --child --prefix unittest local &
+    - xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging'
 
@@ -285,8 +287,8 @@ staging:24.04:clang-amd64-system-libs:
     - make check -sC build
     - make package -sC build
     - ./build/src/splash --info
-    - ./build/src/splash --child --prefix unittest local &
-    - ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
+    - xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./build/src/splash --child --prefix unittest local &
+    - xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging'
  
@@ -304,17 +306,20 @@ staging:fedora:gcc-amd64-system-libs:
         yasm portaudio-devel python3-numpy opencv-devel jsoncpp-devel libuuid-devel libX11-devel
         libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel mesa-libGL-devel ccache
         libavcodec-free-devel libavformat-free-devel libavutil-free-devel libswscale-free-devel
-        libasan libubsan wayland-devel libxkbcommon-devel ninja-build
+        libasan libubsan wayland-devel libxkbcommon-devel ninja-build xorg-x11-server-Xvfb gawk
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
     - export PATH="/usr/lib/ccache:${PATH}"
     - ./make_deps.sh
-    - rm -rf build && mkdir build && cd build
   script:
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DPROFILE=ON -DWITH_SANITIZE=ON -DCMAKE_INSTALL_PREFIX=/usr ..
-    - make -j$(nproc)
-    - make check
+    - rm -rf build && mkdir build
+    - cmake -B build -DCMAKE_BUILD_TYPE=Debug -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - make -sC build -j$(nproc)
+    - make -sC build check
+    - ./build/src/splash --info
+    - xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./build/src/splash --child --prefix unittest local &
+    - xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging' || $CI_COMMIT_BRANCH == 'fedora'
 
@@ -328,17 +333,20 @@ staging:archlinux:gcc-amd64-bundled-libs:
     - pacman -Syyu --noconfirm --disable-download-timeout
     - pacman -Sy --noconfirm --disable-download-timeout git cmake ninja gcc yasm pkgconfig
       libxi libxinerama libxrandr libxcursor jsoncpp mesa glm gsl libgphoto2 python3
-      portaudio zip zlib ffmpeg opencv qt6-base vtk hdf5 glew libxkbcommon fmt make
+      portaudio zip zlib ffmpeg opencv qt6-base vtk hdf5 glew libxkbcommon fmt make xorg-server-xvfb
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
     - export PATH="/usr/lib/ccache:${PATH}"
     - ./make_deps.sh
-    - rm -rf build && mkdir build && cd build
   script:
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DPROFILE=ON -DWITH_SANITIZE=ON -DCMAKE_INSTALL_PREFIX=/usr ..
-    - make -j$(nproc)
-    - make check
+    - rm -rf build && mkdir build
+    - cmake -B build -DCMAKE_BUILD_TYPE=Debug -DPROFILE=ON -DCMAKE_INSTALL_PREFIX=/usr
+    - make -sC build -j$(nproc)
+    - make -sC build check
+    - ./build/src/splash --info
+    - xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./build/src/splash --child --prefix unittest local &
+    - xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./build/src/splash --doNotSpawn --prefix unittest ./data/share/splash/splash.json
   rules:
     - if: $CI_COMMIT_BRANCH == 'staging' || $CI_COMMIT_BRANCH == 'archlinux'
 
@@ -391,7 +399,7 @@ staging:windows:
       - "splash-*-win64.exe"
     expire_in: 2 weeks
   rules:
-    - if: $CI_COMMIT_BRANCH == 'staging'
+    - if: $CI_COMMIT_BRANCH == 'staging' || $CI_COMMIT_BRANCH == 'windows'
 
 #
 # ┏━┓┏━┓┏━╸╻┏ ┏━┓┏━╸┏━╸

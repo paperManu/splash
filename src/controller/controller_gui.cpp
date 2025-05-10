@@ -1112,7 +1112,7 @@ void Gui::updateGuiWindow()
     if (!_window && !_selfWindow && !_creatingWindow)
     {
         // If no window exist for this GUI, and none is currently being created
-        setWorldAttribute("addObject", {"window", GUI_WINDOW_NAME});
+        setWorldAttribute("addObject", {"window", GUI_WINDOW_NAME, _scene->getName()});
         _creatingWindow = true;
     }
     else if (_creatingWindow)
@@ -1125,6 +1125,7 @@ void Gui::updateGuiWindow()
         _selfWindow->setSavable(false);
         setWorldAttribute("link", {_name, GUI_WINDOW_NAME});
         _fullscreen = true;
+        _isVisible = true;
         _creatingWindow = false;
     }
     else if (_selfWindow && _window && _window != _selfWindow.get())
@@ -1135,6 +1136,7 @@ void Gui::updateGuiWindow()
         setWorldAttribute("deleteObject", {GUI_WINDOW_NAME});
         _selfWindow.reset();
         _fullscreen = false;
+        _isVisible = true;
     }
 }
 

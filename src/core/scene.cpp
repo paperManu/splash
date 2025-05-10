@@ -396,6 +396,7 @@ void Scene::run()
     auto mainRenderingContext = _renderer->getMainContext();
     mainRenderingContext->setAsCurrentContext();
     TracyGpuContext;
+    DebugGraphicsScope;
 
     while (_isRunning)
     {
@@ -581,28 +582,6 @@ void Scene::init(const std::string& name)
         return;
 
     _objectLibrary = std::make_unique<ObjectLibrary>(this);
-    // *Note*: strange non-elucidated issues arise if the object library
-    // is not populated _before_ preloading objects, to the GUI in particular.
-    // Namely, one observed issue is that destroyed a Window will make
-    // the GUI disappear completely.
-    // A possibility is that some OpenGL state gets initialized correctly
-    // in the process, which is not otherwise. It might also be outside of
-    // OpenGL. Anyway, beware when moving this away from here.
-    addTask([this]() {
-        const auto datapath = std::string(DATADIR);
-        const std::map<std::string, std::string> files{
-            {"3d_marker", datapath + "/3d_marker.obj"}, {"2d_marker", datapath + "/2d_marker.obj"}, {"camera", datapath + "/camera.obj"}, {"probe", datapath + "/probe.obj"}};
-
-        for (const auto& file : files)
-        {
-            if (!_objectLibrary->loadModel(file.first, file.second))
-                continue;
-
-            auto object = _objectLibrary->getModel(file.first);
-            assert(object != nullptr);
-            object->setAttribute("fill", {"color"});
-        }
-    });
 
     _isInitialized = true;
     _renderer->init(name);

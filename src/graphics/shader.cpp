@@ -44,12 +44,16 @@ Shader::Shader(gfx::Renderer* renderer, ProgramType type)
 /*************/
 void Shader::activate()
 {
+    DebugGraphicsScope;
+
     _gfxImpl->activate();
 }
 
 /*************/
 void Shader::deactivate()
 {
+    DebugGraphicsScope;
+
     _gfxImpl->deactivate();
 }
 
@@ -80,6 +84,8 @@ std::map<std::string, std::string> Shader::getUniformsDocumentation() const
 /*************/
 void Shader::selectComputePhase(ComputePhase phase)
 {
+    DebugGraphicsScope;
+
     std::string options = ShaderSources::VERSION_DIRECTIVE_GL32_ES;
 
     switch (phase)
@@ -105,6 +111,8 @@ void Shader::selectComputePhase(ComputePhase phase)
 /*************/
 void Shader::selectFeedbackPhase(FeedbackPhase phase, const std::vector<std::string>& varyings)
 {
+    DebugGraphicsScope;
+
     auto feedbackShader = dynamic_cast<gfx::FeedbackShaderGfxImpl*>(_gfxImpl.get());
     assert(feedbackShader != nullptr);
 
@@ -130,6 +138,8 @@ void Shader::selectFeedbackPhase(FeedbackPhase phase, const std::vector<std::str
 /*************/
 void Shader::setCulling(const Culling culling)
 {
+    DebugGraphicsScope;
+
     _gfxImpl->setCulling(static_cast<gfx::Culling>(culling));
 }
 
@@ -142,6 +152,8 @@ Shader::Culling Shader::getCulling() const
 /*************/
 void Shader::setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 {
+    DebugGraphicsScope;
+
     auto graphicShader = dynamic_cast<gfx::GraphicShaderGfxImpl*>(_gfxImpl.get());
     assert(graphicShader != nullptr);
     graphicShader->setModelViewProjectionMatrix(mv, mp);
@@ -150,6 +162,8 @@ void Shader::setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4
 /*************/
 bool Shader::setSource(const gfx::ShaderType type, const std::string& src)
 {
+    DebugGraphicsScope;
+
     const auto parsedSources = parseIncludes(src);
     _currentSources[type] = parsedSources;
     return _gfxImpl->setSource(type, parsedSources);
@@ -158,6 +172,8 @@ bool Shader::setSource(const gfx::ShaderType type, const std::string& src)
 /*************/
 bool Shader::setSource(const std::map<gfx::ShaderType, std::string>& sources)
 {
+    DebugGraphicsScope;
+
     _gfxImpl->removeShaderType(gfx::ShaderType::vertex);
     _gfxImpl->removeShaderType(gfx::ShaderType::geometry);
     _gfxImpl->removeShaderType(gfx::ShaderType::fragment);
@@ -174,6 +190,8 @@ bool Shader::setSource(const std::map<gfx::ShaderType, std::string>& sources)
 /*************/
 bool Shader::setSourceFromFile(const gfx::ShaderType type, const std::string& filename)
 {
+    DebugGraphicsScope;
+
     const auto content = Utils::getTextFileContent(filename);
     if (!content.empty())
     {
@@ -189,6 +207,8 @@ bool Shader::setSourceFromFile(const gfx::ShaderType type, const std::string& fi
 /*************/
 void Shader::setTexture(const std::shared_ptr<Texture>& texture, const GLuint textureUnit, const std::string& name)
 {
+    DebugGraphicsScope;
+
     auto graphicShader = dynamic_cast<gfx::GraphicShaderGfxImpl*>(_gfxImpl.get());
     assert(graphicShader != nullptr);
     graphicShader->setTexture(texture.get(), textureUnit, name);
@@ -197,6 +217,8 @@ void Shader::setTexture(const std::shared_ptr<Texture>& texture, const GLuint te
 /*************/
 void Shader::setUniform(const std::string& name, const Value& value)
 {
+    DebugGraphicsScope;
+
     _gfxImpl->setUniform(name, value);
 }
 
@@ -240,6 +262,8 @@ std::string Shader::parseIncludes(const std::string& src)
 /*************/
 void Shader::selectFillMode(std::string_view mode, const std::vector<std::string>& parameters)
 {
+    DebugGraphicsScope;
+
     std::string options = ShaderSources::VERSION_DIRECTIVE_GL32_ES;
     for (const auto& param : parameters)
         options.append("#define ").append(param).append("\n");

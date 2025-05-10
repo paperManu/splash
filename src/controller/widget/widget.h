@@ -118,7 +118,7 @@ class GuiWidget : public ControllerObject
   protected:
     Scene* _scene;
     std::string _fileSelectorTarget{""};
-    std::list<std::string> _hiddenAttributes{"savable", "lockedAttributes", "buffer"};
+    std::list<std::string> _hiddenAttributes{"savable", "lockedAttributes", "buffer", "textureList"};
 
     /**
      * Draws the widgets for the attributes of the given object

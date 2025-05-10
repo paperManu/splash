@@ -69,9 +69,22 @@ class Renderer : public gfx::Renderer
      * Set the user data for the GL callback
      * \param data User data for the callback
      */
-    void setRendererMsgCallbackData(const Renderer::RendererMsgCallbackData* data) override final
+    void pushRendererMsgCallbackData(const Renderer::RendererMsgCallbackData* data) override final
     {
+        _rendererCallbackDataStack.push_back(data);
         glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<const void*>(data));
+    }
+
+    /**
+     * Pop the previous user data for the GL callback
+     */
+    void popRendererMsgCallbackData() override final
+    {
+        if (_rendererCallbackDataStack.empty())
+            glDebugMessageCallback(Renderer::glMsgCallback, nullptr);
+        
+        glDebugMessageCallback(Renderer::glMsgCallback, reinterpret_cast<const void*>(_rendererCallbackDataStack.back()));
+        _rendererCallbackDataStack.pop_back();
     }
 
     /**
@@ -132,7 +145,6 @@ class Renderer : public gfx::Renderer
 
     /**
      * Create a new Texture_Image
-     * \param root Root object
      * \return Return a shared pointer to a default Texture_Image
      */
     std::unique_ptr<gfx::Texture_ImageGfxImpl> createTexture_ImageGfxImpl() const override final { return std::make_unique<gfx::opengl::Texture_ImageGfxImpl>(); }
@@ -144,6 +156,8 @@ class Renderer : public gfx::Renderer
     std::unique_ptr<gfx::WindowGfxImpl> createWindowGfxImpl() const override final { return std::make_unique<gfx::opengl::WindowGfxImpl>(); }
 
   private:
+    std::deque<const gfx::Renderer::RendererMsgCallbackData*> _rendererCallbackDataStack;
+
     /**
      * Calls the appropriate loader for each API. Calls `gladLoadGLES2Loader` for OpenGL ES, and `gladLoadGLLoader`. Note that calling an incorrect loader might lead to
      * segfaults due to API specific function not getting loaded, leaving the pointers as null.

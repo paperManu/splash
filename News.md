@@ -1,6 +1,28 @@
 Splash release notes
 ====================
 
+Splash 0.11.2 (2025-05-10)
+-------------------------
+Improvements:
+* Add a specific branch to trigger Windows build by the CI
+* Add running splash through xvfb in CI
+* Add a new macro to help with graphics debug
+* Update metainfo
+
+Bugs fixed:
+* Fix GUI window being created in all scenes instead of only the main one
+* Fix unit tests for Json loading
+* Fix multiple string attr display, and now hides textureList attr for Window
+* Fix loading configuration as exported by the Blender addon
+* Fix crash when replacing a mesh
+* Fix keeping alias when replacing object, and display it as preview in UI if needed
+* Fix Image_OpenCV media input
+* Fix random freeze when deleting Image_NDI
+* Fix ZMQ compilation with newer cmake
+
+Documentation:
+* Update Snappy to version 1.2.2
+
 Splash 0.11.0 (2025-05-01)
 -------------------------
 Improvements:

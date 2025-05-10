@@ -1,0 +1,147 @@
+// Splash configuration file
+// Exported with Blender Splash add-on
+{
+    "description" : "splashConfiguration",
+    "world" : {
+        "framerate" : 60
+    },
+    "scenes" : [
+        {
+            "name" : "GPU 1",
+            "display" : 0,
+            "swapInterval" : 1
+        },
+        {
+            "name" : "GPU 2",
+            "display" : 1,
+            "swapInterval" : 1
+        }
+    ],
+    "GPU 1" : {
+        "Gui" : {
+            "type" : "window",
+            "decorated" : 1,
+            "position" : [0.0, 0.0],
+            "size" : [732, 932],
+            "guiOnly" : 1
+        },
+        "Window_Sides" : {
+            "type" : "window",
+            "decorated" : 0,
+            "fullscreen" : -1,
+            "position" : [0, 0],
+            "size" : [7680, 1080],
+            "srgb" : 1,
+            "layout" : [0, 1, 2, 3]
+        },
+        "Cam_South" : {
+            "type" : "camera",
+            "eye" : [0.0, -10.0, 0.0],
+            "target" : [1.3390923361336158e-17, -9.060307502746582, 0.3420200049877167],
+            "up" : [7.594373658862419e-17, -0.3420200049877167, 0.9396926760673523],
+            "fov" : 41.11209023703316,
+            "principalPoint" : [0.5, 0.5],
+            "size" : [1920, 1080]
+        },
+        "Object" : {
+            "type" : "object",
+            "color" : [1.0, 1.0, 1.0, 1.0],
+            "culling" : 0
+        },
+        "Image" : {
+            "type" : "image",
+            "file" : "../../data/share/splash/color_map.png",
+            "flip" : 0,
+            "flop" : 0,
+            "srgb" : 1
+        },
+        "Mesh" : {
+            "type" : "mesh",
+            "file" : "splash_Dome.obj"
+        },
+        "Cam_West" : {
+            "type" : "camera",
+            "eye" : [-10.0, 0.0, 0.0],
+            "target" : [-9.060307502746582, 8.287355512948125e-08, 0.34202009439468384],
+            "up" : [-0.34202006459236145, -7.183985673009374e-08, 0.9396926760673523],
+            "fov" : 41.11209023703316,
+            "principalPoint" : [0.5, 0.5],
+            "size" : [1920, 1080]
+        },
+        "Cam_East" : {
+            "type" : "camera",
+            "eye" : [10.0, 0.0, 0.0],
+            "target" : [9.060307502746582, 4.834888045479602e-08, 0.34202009439468384],
+            "up" : [0.34202009439468384, -7.183985673009374e-08, 0.9396926164627075],
+            "fov" : 41.11209023703316,
+            "principalPoint" : [0.5, 0.5],
+            "size" : [1920, 1080]
+        },
+        "Cam_North" : {
+            "type" : "camera",
+            "eye" : [0.0, 10.0, 0.0],
+            "target" : [1.4188965735684178e-07, 9.060307502746582, 0.3420200049877167],
+            "up" : [-5.164358896081467e-08, 0.3420199751853943, 0.9396926760673523],
+            "fov" : 41.11209023703316,
+            "principalPoint" : [0.5, 0.5],
+            "size" : [1920, 1080]
+        },
+        "links" : [
+            ["Gui", "GPU 1"],
+            ["Window_Sides", "GPU 1"],
+            ["Cam_South", "Window_Sides"],
+            ["Object", "Cam_South"],
+            ["Image", "Object"],
+            ["Mesh", "Object"],
+            ["Cam_West", "Window_Sides"],
+            ["Object", "Cam_West"],
+            ["Cam_East", "Window_Sides"],
+            ["Object", "Cam_East"],
+            ["Cam_North", "Window_Sides"],
+            ["Object", "Cam_North"]
+        ]
+    },
+    "GPU 2" : {
+        "Window_Zenith" : {
+            "type" : "window",
+            "decorated" : 0,
+            "fullscreen" : -1,
+            "position" : [0, 0],
+            "size" : [1920, 1080],
+            "srgb" : 1,
+            "layout" : [0]
+        },
+        "Cam_Zenith" : {
+            "type" : "camera",
+            "eye" : [7.0, 7.0, 0.0],
+            "target" : [6.5, 6.5, 0.7071067094802856],
+            "up" : [0.5000000596046448, 0.4999999403953552, 0.7071067690849304],
+            "fov" : 41.11209023703316,
+            "principalPoint" : [0.5, 0.5],
+            "size" : [1920, 1080]
+        },
+        "Object" : {
+            "type" : "object",
+            "color" : [1.0, 1.0, 1.0, 1.0],
+            "culling" : 0
+        },
+        "Image" : {
+            "type" : "image",
+            "file" : "../../data/share/splash/color_map.png",
+            "flip" : 0,
+            "flop" : 0,
+            "srgb" : 1
+        },
+        "Mesh" : {
+            "type" : "mesh",
+            "file" : "splash_Dome.obj"
+        },
+        "links" : [
+            ["Window_Zenith", "GPU 2"],
+            ["Cam_Zenith", "Window_Zenith"],
+            ["Object", "Cam_Zenith"],
+            ["Image", "Object"],
+            ["Mesh", "Object"]
+        ]
+    }
+}
