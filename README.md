@@ -1,6 +1,6 @@
 # IMPORTANT #
 
-This repository will *NOT* be updated anymore, as I don't trust Github to use correctly whatever data I put in there. Also, most of the development has been done elsewhere anyway and this one was kept up-to-date for visibility purpose.
+This repository has *MOVED* to another forge, namely [Gitlab](https://gitlab.com/splashmapper/splash), as I don't trust Github to use correctly whatever data I put in there.
 
 For people willing to know more about Splash and its most recent improvements, go check the offical website: [https://splashmapper.xyz](https://splashmapper.xyz)
 
